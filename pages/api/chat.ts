@@ -65,8 +65,8 @@ Remember: You're not here to argue or convert, but to provide thoughtful, inform
     }
 
     const aiResponse = mode === 'fast' 
-      ? response.content[0].text 
-      : response.choices[0].message.content;
+      ? (response as any).content[0].text 
+      : (response as any).choices[0].message.content;
 
     return res.status(200).json({
       response: aiResponse,
