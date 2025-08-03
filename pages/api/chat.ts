@@ -7,9 +7,9 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const anthropic = new Anthropic({
+const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
-});
+}) : null;
 
 export default async function handler(
   req: NextApiRequest,
@@ -44,6 +44,11 @@ Remember: You're not here to argue or convert, but to provide thoughtful, inform
 
     if (mode === 'fast') {
       // Use Claude for faster, more concise responses
+      if (!anthropic) {
+        return res.status(500).json({ 
+          error: 'Anthropic API key not configured. Please set ANTHROPIC_API_KEY environment variable.' 
+        });
+      }
       response = await (anthropic as any).messages.create({
         model: 'claude-3-haiku-20240307',
         max_tokens: 500,
