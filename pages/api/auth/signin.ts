@@ -28,7 +28,7 @@ export default async function handler(
       });
     }
 
-    if (!data.user) {
+    if (!data || !data.user) {
       return res.status(401).json({ 
         error: 'Authentication failed' 
       });
