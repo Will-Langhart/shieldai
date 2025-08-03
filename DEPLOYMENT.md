@@ -70,7 +70,7 @@ Add these environment variables in Vercel dashboard:
 
 ```bash
 # OpenAI
-OPENAI_API_KEY=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
+OPENAI_API_KEY=your_openai_api_key_here
 
 # Anthropic Claude
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
@@ -121,7 +121,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://yyfhspfqncogzitfpfbw.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
 # OpenAI
-OPENAI_API_KEY=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
+OPENAI_API_KEY=your_openai_api_key_here
 
 # Anthropic
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
