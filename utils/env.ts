@@ -1,7 +1,6 @@
 export function validateEnvironment() {
   const requiredEnvVars = [
     'OPENAI_API_KEY',
-    'ANTHROPIC_API_KEY',
     'PINECONE_API_KEY',
     'PINECONE_ENVIRONMENT',
     'PINECONE_INDEX_NAME',
@@ -29,10 +28,6 @@ export function getEnvironmentConfig() {
     openai: {
       apiKey: process.env.OPENAI_API_KEY!,
       model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
-    },
-    anthropic: {
-      apiKey: process.env.ANTHROPIC_API_KEY!,
-      model: process.env.CLAUDE_MODEL || 'claude-3-sonnet-20240229',
     },
     pinecone: {
       apiKey: process.env.PINECONE_API_KEY!,

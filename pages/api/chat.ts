@@ -1,15 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
 
-// Initialize AI clients
+// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-}) : null;
 
 export default async function handler(
   req: NextApiRequest,
@@ -40,38 +35,20 @@ Your role is to provide thoughtful, biblically-grounded responses to theological
 
 Remember: You're not here to argue or convert, but to provide thoughtful, informed responses that help people understand the Christian perspective.`;
 
-    let response;
+    // Use different models based on mode
+    const model = mode === 'fast' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
+    const maxTokens = mode === 'fast' ? 500 : 1000;
 
-    if (mode === 'fast') {
-      // Use Claude for faster, more concise responses
-      if (!anthropic) {
-        return res.status(500).json({ 
-          error: 'Anthropic API key not configured. Please set ANTHROPIC_API_KEY environment variable.' 
-        });
-      }
-      response = await (anthropic as any).messages.create({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 500,
-        messages: [
-          { role: 'user', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-      });
-    } else {
-      // Use GPT-4 for more detailed, comprehensive responses
-      response = await openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        max_tokens: 1000,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-      });
-    }
+    const response = await openai.chat.completions.create({
+      model: model,
+      max_tokens: maxTokens,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: message }
+      ],
+    });
 
-    const aiResponse = mode === 'fast' 
-      ? (response as any).content[0].text 
-      : (response as any).choices[0].message.content;
+    const aiResponse = response.choices[0].message.content;
 
     return res.status(200).json({
       response: aiResponse,
