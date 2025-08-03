@@ -17,7 +17,7 @@
     "@anthropic-ai/sdk": "^0.9.1",
     "@pinecone-database/pinecone": "^1.1.2",
     "@supabase/supabase-js": "^2.38.4",
-    "langchain": "^0.1.0",
+    "langchain": "^0.3.30",
     "@langchain/openai": "^0.0.14",
     "@langchain/anthropic": "^0.0.10",
     "@langchain/pinecone": "^0.0.1",
