@@ -38,7 +38,7 @@ export default async function handler(
     if (error) {
       console.error('Signup error:', error);
       return res.status(400).json({ 
-        error: error.message || 'Failed to create account' 
+        error: (error as any).message || 'Failed to create account' 
       });
     }
 

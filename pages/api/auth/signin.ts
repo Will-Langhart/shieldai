@@ -24,7 +24,7 @@ export default async function handler(
     if (error) {
       console.error('Signin error:', error);
       return res.status(401).json({ 
-        error: 'Invalid email or password' 
+        error: (error as any).message || 'Invalid email or password' 
       });
     }
 
