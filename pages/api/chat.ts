@@ -44,7 +44,7 @@ Remember: You're not here to argue or convert, but to provide thoughtful, inform
 
     if (mode === 'fast') {
       // Use Claude for faster, more concise responses
-      response = await anthropic.messages.create({
+      response = await (anthropic as any).messages.create({
         model: 'claude-3-haiku-20240307',
         max_tokens: 500,
         messages: [
