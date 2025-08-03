@@ -45,8 +45,8 @@ export default async function handler(
     return res.status(201).json({
       message: 'Account created successfully',
       user: {
-        id: data.user?.id,
-        email: data.user?.email,
+        id: data?.user?.id,
+        email: data?.user?.email,
         fullName: fullName
       }
     });

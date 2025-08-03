@@ -43,9 +43,9 @@ export default async function handler(
     return res.status(200).json({
       message: 'Signed in successfully',
       user: {
-        id: data.user.id,
-        email: data.user.email,
-        fullName: data.user.user_metadata?.full_name
+        id: data?.user?.id,
+        email: data?.user?.email,
+        fullName: data?.user?.user_metadata?.full_name
       },
       token
     });
