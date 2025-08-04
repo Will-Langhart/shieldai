@@ -20,7 +20,7 @@
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "langchain": "^0.1.0",
+    "langchain": "^0.2.19",
     "lucide-react": "^0.292.0",
     "next": "14.0.0",
     "openai": "^4.20.1",
