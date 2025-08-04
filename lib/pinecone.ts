@@ -10,7 +10,7 @@ function initializePinecone() {
       apiKey: process.env.PINECONE_API_KEY || '',
       environment: process.env.PINECONE_ENVIRONMENT || 'nvidia',
     });
-    index = pc.index(process.env.PINECONE_INDEX_NAME || 'quickstart');
+    index = pc.index(process.env.PINECONE_INDEX_NAME || 'shieldai');
   }
   return { pc, index };
 }
