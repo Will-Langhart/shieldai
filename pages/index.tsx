@@ -22,18 +22,25 @@ export default function Home() {
     // Use a stable session ID based on user ID or create a persistent one
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('shieldai_session_id');
-      if (stored) return stored;
+      if (stored) {
+        console.log('Using stored session ID:', stored);
+        return stored;
+      }
       const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('Creating new session ID:', newId);
       localStorage.setItem('shieldai_session_id', newId);
       return newId;
     }
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log('Creating new session ID (server):', newId);
+    return newId;
   });
 
   // Update session ID when user changes
   useEffect(() => {
     if (user) {
       const userSessionId = `user_${user.id}_session`;
+      console.log('Setting user session ID:', userSessionId);
       localStorage.setItem('shieldai_session_id', userSessionId);
       // Force reload of chat history with new session ID
       loadChatHistory();
@@ -159,17 +166,22 @@ export default function Home() {
       // Save conversation state if user is authenticated
       if (user) {
         try {
+          console.log('Saving messages for authenticated user:', user.id);
+          
           // Get current conversation or create new one
           const conversation = await ChatService.getOrCreateConversation(sessionId);
+          console.log('Using conversation:', conversation.id, conversation.title);
           
           // Save both messages to the database
           await ChatService.addMessage(conversation.id, userMessage.content, 'user', userMessage.mode as 'fast' | 'accurate');
           await ChatService.addMessage(conversation.id, aiMessage.content, 'assistant', aiMessage.mode as 'fast' | 'accurate');
           
-          // Update conversation title if it's the first message
-          if (messages.length === 0) {
+          // Update conversation title if this is the first message in the conversation
+          const currentMessagesCount = messages.length;
+          if (currentMessagesCount === 0) {
             const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
             await ChatService.updateConversationTitle(conversation.id, title);
+            console.log('Updated conversation title to:', title);
           }
           
           // Update current conversation ID
@@ -179,6 +191,7 @@ export default function Home() {
           setTimeout(() => {
             // This will trigger the ConversationHistory component to refresh
             window.dispatchEvent(new CustomEvent('conversation-updated'));
+            console.log('Dispatched conversation-updated event');
           }, 500);
           
           // Also trigger a reload of the current conversation
@@ -190,11 +203,14 @@ export default function Home() {
             conversationId: conversation.id,
             userMessage: userMessage.content,
             aiMessage: aiMessage.content,
-            sessionId: sessionId
+            sessionId: sessionId,
+            messagesCount: currentMessagesCount
           });
         } catch (error) {
           console.error('Error saving conversation state:', error);
         }
+      } else {
+        console.log('No authenticated user, skipping message save');
       }
     } catch (error) {
       console.error('Error calling AI API:', error);

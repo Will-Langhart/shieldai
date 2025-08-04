@@ -57,9 +57,10 @@ export default function ConversationHistory({
 
   const loadConversations = async () => {
     try {
+      console.log('Loading conversations...');
       const data = await ChatService.getConversations();
       setConversations(data);
-      console.log('Loaded conversations:', data.length);
+      console.log('Loaded conversations:', data.length, data.map(c => ({ id: c.id, title: c.title })));
     } catch (error) {
       console.error('Error loading conversations:', error);
     } finally {
