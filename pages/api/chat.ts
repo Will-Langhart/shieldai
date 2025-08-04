@@ -36,7 +36,7 @@ export default async function handler(
 
     // Search for similar messages using vector similarity if user is authenticated
     let similarMessages: Array<{ content: string; role: string; score: number }> = [];
-    if (userId) {
+    if (userId && conversationId && typeof conversationId === 'string') {
       try {
         similarMessages = await ChatService.searchSimilarMessages(message, userId, conversationId, 3);
         console.log('Found similar messages:', similarMessages.length);
@@ -78,6 +78,23 @@ export default async function handler(
     });
 
     const aiResponse = response.choices[0].message.content;
+
+    // Save messages to database and Pinecone if user is authenticated
+    if (userId && conversationId && typeof conversationId === 'string') {
+      const convId = conversationId;
+      try {
+        // Save user message
+        await ChatService.addMessage(convId, message, 'user', mode);
+        
+        // Save AI response
+        await ChatService.addMessage(convId, aiResponse, 'assistant', mode);
+        
+        console.log('Messages saved to database and Pinecone');
+      } catch (error) {
+        console.error('Error saving messages to database:', error);
+        // Continue even if database save fails
+      }
+    }
 
     // Update conversation history
     conversationHistory.push(
