@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Shield, Palette, Bell, Download, Trash2, Save } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, User, Mail, Shield, Palette, Bell, Download, Trash2, Save, Upload, Camera } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { supabase } from '../lib/supabase';
 
@@ -12,6 +12,7 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -21,6 +22,7 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
     autoSave: true,
     defaultMode: 'fast'
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user && isOpen) {
@@ -71,6 +73,61 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type and size
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      setAvatarUrl(publicUrl);
+      
+      // Update user profile
+      await supabase
+        .from('users')
+        .upsert({
+          id: user.id,
+          avatar_url: publicUrl
+        });
+
+      alert('Profile picture updated successfully!');
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Error uploading file. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleExportData = async () => {
@@ -193,7 +250,46 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Avatar URL</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Profile Picture</label>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-16 bg-shield-blue/20 border border-shield-blue/30 rounded-full flex items-center justify-center overflow-hidden">
+                        {avatarUrl ? (
+                          <img 
+                            src={avatarUrl} 
+                            alt="Profile" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-shield-blue font-bold text-xl">
+                            {user?.email?.charAt(0).toUpperCase() || 'U'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <button
+                          onClick={handleUploadClick}
+                          disabled={uploading}
+                          className="flex items-center space-x-2 px-4 py-2 bg-shield-blue text-shield-white rounded-lg hover:bg-shield-blue/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Camera size={16} />
+                          <span>{uploading ? 'Uploading...' : 'Upload Photo'}</span>
+                        </button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">
+                          JPG, PNG, GIF, or WebP up to 5MB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Avatar URL (Alternative)</label>
                     <input
                       type="url"
                       value={avatarUrl}
@@ -201,6 +297,9 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
                       className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white placeholder-gray-400 focus:outline-none focus:border-shield-blue/50 transition-colors"
                       placeholder="Enter avatar URL (optional)"
                     />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Or enter a direct URL to an image
+                    </p>
                   </div>
                 </div>
 

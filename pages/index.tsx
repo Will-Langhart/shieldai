@@ -339,8 +339,23 @@ export default function Home() {
                   >
                     <div className="flex items-start space-x-2 sm:space-x-3">
                       {message.role === 'assistant' && (
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
-                          <span className="text-shield-white font-bold text-xs sm:text-sm">S</span>
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                          <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
+                        </div>
+                      )}
+                      {message.role === 'user' && (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue/20 border border-shield-blue/30 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                          {user?.user_metadata?.avatar_url ? (
+                            <img 
+                              src={user.user_metadata.avatar_url} 
+                              alt="User" 
+                              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-shield-blue font-bold text-xs sm:text-sm">
+                              {user?.email?.charAt(0).toUpperCase() || 'U'}
+                            </span>
+                          )}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
@@ -351,11 +366,6 @@ export default function Home() {
                           </p>
                         )}
                       </div>
-                      {message.role === 'user' && (
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-shield-blue/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
-                          <span className="text-shield-white font-bold text-xs sm:text-sm">U</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
