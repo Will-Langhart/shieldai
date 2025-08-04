@@ -30,6 +30,13 @@ export interface UserSubscription {
   canceled_at?: Date;
   created_at: Date;
   updated_at: Date;
+  subscription_plans?: {
+    name: 'basic' | 'premium';
+    display_name: string;
+    description: string;
+    price_weekly: number;
+    features: string[];
+  };
 }
 
 export interface Payment {
