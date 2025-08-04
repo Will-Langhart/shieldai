@@ -75,6 +75,31 @@ body {
     rgb(var(--background-start-rgb));
 }
 
+/* Mobile-specific improvements */
+@media (max-width: 640px) {
+  /* Prevent horizontal scrolling */
+  html, body {
+    overflow-x: hidden;
+  }
+  
+  /* Improve touch targets */
+  button, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Better text readability on mobile */
+  p, span, div {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Improve input field on mobile */
+  input, textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
 a {
   color: inherit;
   text-decoration: none;

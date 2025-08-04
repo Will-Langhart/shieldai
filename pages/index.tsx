@@ -81,15 +81,15 @@ export default function Home() {
         <Header />
 
         {/* Main content */}
-        <main className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 py-6`}>
+        <main className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6`}>
           {/* Shield AI Logo and Branding - Only show when no messages */}
           {!hasMessages && (
-            <div className="text-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex items-center justify-center mb-8">
-                <img src="/logo.png" alt="Shield AI Logo" className="w-56 h-56 mr-6 drop-shadow-lg" />
-                <h1 className="text-6xl font-bold text-shield-white drop-shadow-lg">Shield AI</h1>
+            <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex flex-col sm:flex-row items-center justify-center mb-6 sm:mb-8">
+                <img src="/logo.png" alt="Shield AI Logo" className="w-32 h-32 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mb-4 sm:mb-0 sm:mr-6 drop-shadow-lg" />
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-shield-white drop-shadow-lg">Shield AI</h1>
               </div>
-              <p className="text-gray-300 text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
+              <p className="text-gray-300 text-base sm:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
                 Your AI-powered apologetics companion. Ask me anything about theology, philosophy, or defending the Christian worldview.
               </p>
             </div>
@@ -97,27 +97,27 @@ export default function Home() {
 
           {/* Messages Display */}
           {hasMessages && (
-            <div className="w-full max-w-4xl mx-auto space-y-6 mb-8">
+            <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 mb-6 sm:mb-8 px-2 sm:px-0">
               {messages.map((message, index) => (
                 <div
                   key={index}
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                 >
                   <div
-                    className={`max-w-2xl px-6 py-4 rounded-2xl shadow-lg ${
+                    className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg ${
                       message.role === 'user' 
                         ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white' 
                         : 'bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50 text-shield-white'
                     }`}
                   >
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-start space-x-2 sm:space-x-3">
                       {message.role === 'assistant' && (
-                        <div className="w-8 h-8 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
-                          <span className="text-shield-white font-bold text-sm">S</span>
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                          <span className="text-shield-white font-bold text-xs sm:text-sm">S</span>
                         </div>
                       )}
-                      <div className="flex-1">
-                        <p className="text-shield-white leading-relaxed">{message.content}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-shield-white leading-relaxed text-sm sm:text-base">{message.content}</p>
                         {message.timestamp && (
                           <p className="text-gray-400 text-xs mt-2 opacity-60">
                             {new Date(message.timestamp).toLocaleTimeString()}
@@ -125,8 +125,8 @@ export default function Home() {
                         )}
                       </div>
                       {message.role === 'user' && (
-                        <div className="w-8 h-8 bg-shield-blue/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
-                          <span className="text-shield-white font-bold text-sm">U</span>
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 bg-shield-blue/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                          <span className="text-shield-white font-bold text-xs sm:text-sm">U</span>
                         </div>
                       )}
                     </div>
@@ -157,7 +157,7 @@ export default function Home() {
           )}
 
           {/* Input Bar - Positioned differently based on message state */}
-          <div className={`w-full max-w-4xl mx-auto ${hasMessages ? 'mt-auto' : 'mb-8'}`}>
+          <div className={`w-full max-w-4xl mx-auto px-2 sm:px-0 ${hasMessages ? 'mt-auto' : 'mb-6 sm:mb-8'}`}>
             <InputBar 
               onSubmit={handleSubmit} 
               mode={currentMode}
@@ -168,8 +168,8 @@ export default function Home() {
 
           {/* Footer text - Only show when no messages */}
           {!hasMessages && (
-            <div className="text-center mt-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-              <p className="text-gray-400 text-sm">
+            <div className="text-center mt-6 sm:mt-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+              <p className="text-gray-400 text-xs sm:text-sm px-4">
                 By messaging Shield AI, you agree to our{' '}
                 <a href="#" className="text-shield-blue hover:underline transition-colors">Terms</a>
                 {' '}and{' '}
