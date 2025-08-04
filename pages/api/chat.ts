@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
 import { analyzeQuestion, generateSpecializedPrompt } from '../../lib/prompt-engineering';
 import { ChatService } from '../../lib/chat-service';
+import { supabase } from '../../lib/supabase';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -20,10 +21,27 @@ export default async function handler(
   }
 
   try {
-    const { message, mode = 'fast', sessionId = 'default', conversationId, userId } = req.body;
+    const { message, mode = 'fast', sessionId = 'default', conversationId } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
+    }
+
+    // Get authenticated user from Authorization header
+    const authHeader = req.headers.authorization;
+    let user = null;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+      if (!authError && authUser) {
+        user = authUser;
+      }
+    }
+    
+    if (!user) {
+      console.log('No authenticated user found');
+      // Continue without authentication for now
     }
 
     // Get conversation history for this session
@@ -36,9 +54,9 @@ export default async function handler(
 
     // Search for similar messages using vector similarity if user is authenticated
     let similarMessages: Array<{ content: string; role: string; score: number }> = [];
-    if (userId && conversationId && typeof conversationId === 'string') {
+    if (user && conversationId && typeof conversationId === 'string') {
       try {
-        similarMessages = await ChatService.searchSimilarMessages(message, userId, conversationId, 3);
+        similarMessages = await ChatService.searchSimilarMessages(message, user.id, conversationId, 3);
         console.log('Found similar messages:', similarMessages.length);
       } catch (error) {
         console.error('Error searching similar messages:', error);
@@ -83,7 +101,7 @@ export default async function handler(
     let isNewConversation = false;
 
     // Handle conversation creation and message saving if user is authenticated
-    if (userId) {
+    if (user) {
       try {
         // If no conversation ID, create a new conversation
         if (!currentConvId) {

@@ -6,6 +6,7 @@ import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
 import { useAuth } from '../lib/auth-context';
 import { ClientService } from '../lib/client-service';
+import { supabase } from '../lib/supabase';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -160,16 +161,20 @@ export default function Home() {
     setIsLoading(true);
 
     try {
+      // Get session token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      const sessionToken = session?.access_token;
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
         },
         body: JSON.stringify({
           message,
           mode: currentMode,
           sessionId: sessionId,
-          userId: user?.id,
           conversationId: currentConversationId
         }),
       });

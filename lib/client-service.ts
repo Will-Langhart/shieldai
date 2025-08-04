@@ -1,5 +1,6 @@
 // Client-side service that only calls API endpoints
 // This ensures no server-side code (like OpenAI) is bundled in the client
+import { supabase } from './supabase';
 
 export interface Conversation {
   id: string;
@@ -19,12 +20,21 @@ export interface Message {
 }
 
 export class ClientService {
+  // Helper method to get session token
+  private static async getSessionToken(): Promise<string | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || null;
+  }
+
   // Get all conversations for the current user
   static async getConversations(): Promise<Conversation[]> {
+    const sessionToken = await this.getSessionToken();
+    
     const response = await fetch('/api/conversations', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
       },
     });
 
@@ -37,10 +47,13 @@ export class ClientService {
 
   // Get messages for a specific conversation
   static async getMessages(conversationId: string): Promise<Message[]> {
+    const sessionToken = await this.getSessionToken();
+    
     const response = await fetch(`/api/messages?conversationId=${conversationId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
       },
     });
 
@@ -53,10 +66,13 @@ export class ClientService {
 
   // Create a new conversation
   static async createConversation(title: string): Promise<Conversation> {
+    const sessionToken = await this.getSessionToken();
+    
     const response = await fetch('/api/conversations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
       },
       body: JSON.stringify({ title }),
     });
@@ -75,10 +91,13 @@ export class ClientService {
     role: 'user' | 'assistant',
     mode?: 'fast' | 'accurate'
   ): Promise<Message> {
+    const sessionToken = await this.getSessionToken();
+    
     const response = await fetch('/api/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
       },
       body: JSON.stringify({
         conversationId,
@@ -100,10 +119,13 @@ export class ClientService {
     conversationId: string,
     title: string
   ): Promise<void> {
+    const sessionToken = await this.getSessionToken();
+    
     const response = await fetch('/api/conversations', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
       },
       body: JSON.stringify({ conversationId, title }),
     });
@@ -115,10 +137,13 @@ export class ClientService {
 
   // Delete a conversation
   static async deleteConversation(conversationId: string): Promise<void> {
+    const sessionToken = await this.getSessionToken();
+    
     const response = await fetch(`/api/conversations?conversationId=${conversationId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
+        ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
       },
     });
 

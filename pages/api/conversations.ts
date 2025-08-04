@@ -1,10 +1,27 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { ChatService } from '../../lib/chat-service';
+import { supabase } from '../../lib/supabase';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // Get authenticated user from Authorization header
+  const authHeader = req.headers.authorization;
+  let user = null;
+  
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+    if (!authError && authUser) {
+      user = authUser;
+    }
+  }
+
+  if (!user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
   if (req.method === 'GET') {
     try {
       const conversations = await ChatService.getConversations();
