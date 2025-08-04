@@ -1,0 +1,304 @@
+# Shield AI - Application Architecture
+
+## Overview
+Shield AI is an AI-powered apologetics companion designed to help believers, seekers, and faith leaders explore and defend the Christian worldview. Built with Next.js, React, and TypeScript, it features a modern, Grok-inspired interface with real-time chat capabilities.
+
+## Technology Stack
+
+### Frontend
+- **Framework**: Next.js 14 (React 18)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **Font**: Inter (Google Fonts)
+- **Deployment**: Vercel
+
+### Backend
+- **Runtime**: Node.js 22.x
+- **API**: Next.js API Routes
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **AI Integration**: OpenAI API
+
+## Project Structure
+
+```
+shieldai/
+├── components/                 # Reusable UI components
+│   ├── Header.tsx            # Navigation and branding component
+│   └── InputBar.tsx          # Main chat input interface
+├── pages/                    # Next.js pages and API routes
+│   ├── _app.tsx             # App wrapper and global state
+│   ├── _document.tsx        # HTML structure and meta tags
+│   ├── index.tsx            # Main chat interface
+│   ├── test.tsx             # Test/debug page
+│   └── api/                 # API endpoints
+│       ├── auth/            # Authentication endpoints
+│       │   ├── signin.ts    # Sign in functionality
+│       │   └── signup.ts    # Sign up functionality
+│       ├── chat.ts          # Main AI chat endpoint
+│       └── health.ts        # Health check endpoint
+├── lib/                     # Utility libraries
+│   ├── auth.ts              # Authentication utilities
+│   └── supabase.ts          # Supabase client configuration
+├── database/                # Database schema
+│   └── schema.sql           # PostgreSQL schema definitions
+├── styles/                  # Global styles
+│   └── globals.css          # Custom CSS and animations
+├── public/                  # Static assets
+│   ├── logo.png            # Custom Shield AI logo
+│   ├── logo.svg            # SVG version of logo
+│   ├── favicon.ico         # Browser favicon
+│   └── robots.txt          # SEO robots file
+├── utils/                   # Utility functions
+│   └── env.ts              # Environment variable utilities
+├── package.json             # Dependencies and scripts
+├── tailwind.config.js       # Tailwind CSS configuration
+├── next.config.js           # Next.js configuration
+├── tsconfig.json            # TypeScript configuration
+├── vercel.json              # Vercel deployment configuration
+└── README.md               # Project documentation
+```
+
+## Core Components
+
+### Header Component (`components/Header.tsx`)
+**Purpose**: Navigation and branding interface
+**Features**:
+- Logo display with custom branding
+- Search, filter, and settings icons
+- Sign in/Sign up buttons
+- Backdrop blur effects for modern styling
+- Hover animations and transitions
+
+**Key Props**: None (static component)
+**Styling**: Tailwind CSS with custom animations
+
+### InputBar Component (`components/InputBar.tsx`)
+**Purpose**: Main chat input interface with AI mode selection
+**Features**:
+- Text input with placeholder
+- Microphone button for voice input
+- Mode toggle (Fast/Accurate) with sparkles icon
+- Send button with loading states
+- Backdrop blur and glassmorphism effects
+
+**Key Props**:
+- `onSubmit`: Function to handle message submission
+- `mode`: Current AI mode ('fast' | 'accurate')
+- `onModeChange`: Function to change AI mode
+- `isLoading`: Boolean for loading state
+
+**Styling**: Modern rounded design with hover effects
+
+## Pages Architecture
+
+### Main Page (`pages/index.tsx`)
+**Purpose**: Primary chat interface and application entry point
+**Features**:
+- Dynamic layout based on message state
+- Welcome screen with large logo when no messages
+- Message display with avatars and timestamps
+- Loading indicators during AI responses
+- Responsive design for all screen sizes
+
+**State Management**:
+- `messages`: Array of chat messages
+- `isLoading`: Boolean for AI response state
+- `currentMode`: String for AI mode selection
+
+**Key Functions**:
+- `handleSubmit`: Processes user messages and calls AI API
+- Message formatting and display logic
+- Error handling for API failures
+
+### API Routes
+
+#### Chat Endpoint (`pages/api/chat.ts`)
+**Purpose**: Main AI communication endpoint
+**Features**:
+- OpenAI API integration
+- Message processing and response generation
+- Error handling and validation
+- CORS support for cross-origin requests
+
+**Request Format**:
+```typescript
+{
+  message: string,
+  mode: 'fast' | 'accurate'
+}
+```
+
+**Response Format**:
+```typescript
+{
+  response: string,
+  timestamp: string,
+  mode: string
+}
+```
+
+#### Authentication Endpoints
+- `pages/api/auth/signin.ts`: User sign-in functionality
+- `pages/api/auth/signup.ts`: User registration functionality
+
+#### Health Check (`pages/api/health.ts`)
+**Purpose**: Application health monitoring
+**Response**: Status and version information
+
+## Design System
+
+### Color Palette
+- **Shield Black**: `#000000` (Primary background)
+- **Shield White**: `#FFFFFF` (Primary text)
+- **Shield Blue**: `#46A1E2` (Accent color)
+- **Shield Gray**: `#1a1a1a` (Secondary background)
+- **Shield Light Gray**: `#2a2a2a` (Interactive elements)
+
+### Typography
+- **Font Family**: Inter (Google Fonts)
+- **Weights**: 300, 400, 500, 600, 700
+- **Sizes**: Responsive scaling with Tailwind classes
+
+### Animations
+- **Custom CSS Keyframes**: fadeInUp, slideInFromBottom, pulse
+- **Tailwind Classes**: animate-in, fade-in, slide-in-from-bottom
+- **Duration**: 200ms-500ms for smooth transitions
+- **Easing**: ease-out for natural motion
+
+## State Management
+
+### Local State (React Hooks)
+- **useState**: Message history, loading states, UI modes
+- **useEffect**: Side effects and API calls
+- **Custom Hooks**: Potential for future state management
+
+### Data Flow
+1. User input → InputBar component
+2. InputBar → Main page handleSubmit
+3. Main page → API endpoint
+4. API → OpenAI → Response
+5. Response → Message state → UI update
+
+## Authentication Architecture
+
+### Supabase Integration
+- **Client**: Configured in `lib/supabase.ts`
+- **Auth**: User management and session handling
+- **Database**: User data and chat history storage
+
+### Security Features
+- Environment variable protection
+- CORS configuration
+- API route validation
+- Error handling and logging
+
+## Database Schema
+
+### Tables (defined in `database/schema.sql`)
+- **users**: User account information
+- **messages**: Chat message history
+- **sessions**: User session management
+- **preferences**: User settings and preferences
+
+## Deployment Architecture
+
+### Vercel Configuration
+- **Auto-deployment**: Connected to GitHub main branch
+- **Environment Variables**: Secure configuration management
+- **Edge Functions**: API route optimization
+- **CDN**: Global content delivery
+
+### Environment Management
+- **Development**: Local environment with hot reloading
+- **Staging**: Vercel preview deployments
+- **Production**: Vercel production environment
+
+## Performance Optimizations
+
+### Frontend
+- **Code Splitting**: Next.js automatic optimization
+- **Image Optimization**: Next.js Image component
+- **CSS Optimization**: Tailwind CSS purging
+- **Bundle Analysis**: Webpack bundle optimization
+
+### Backend
+- **API Caching**: Response caching strategies
+- **Database Indexing**: Optimized queries
+- **CDN**: Static asset delivery
+- **Edge Functions**: Serverless API optimization
+
+## Security Considerations
+
+### Data Protection
+- **Input Validation**: All user inputs sanitized
+- **SQL Injection Prevention**: Parameterized queries
+- **XSS Protection**: Content Security Policy
+- **CORS**: Proper cross-origin configuration
+
+### Authentication Security
+- **JWT Tokens**: Secure session management
+- **Password Hashing**: bcrypt encryption
+- **Rate Limiting**: API abuse prevention
+- **Environment Variables**: Sensitive data protection
+
+## Monitoring and Analytics
+
+### Error Tracking
+- **Console Logging**: Development debugging
+- **Error Boundaries**: React error handling
+- **API Monitoring**: Vercel function logging
+- **Performance Monitoring**: Core Web Vitals
+
+### User Analytics
+- **Page Views**: Next.js analytics
+- **User Interactions**: Custom event tracking
+- **Performance Metrics**: Lighthouse scores
+- **Error Reporting**: User experience monitoring
+
+## Future Enhancements
+
+### Planned Features
+- **Voice Input**: Speech-to-text integration
+- **File Upload**: Document analysis capabilities
+- **User Profiles**: Personalized experience
+- **Chat History**: Persistent conversation storage
+- **Export Functionality**: Conversation export options
+
+### Technical Improvements
+- **State Management**: Redux or Zustand integration
+- **Testing**: Jest and React Testing Library
+- **CI/CD**: Automated testing and deployment
+- **Documentation**: API documentation with Swagger
+- **Internationalization**: Multi-language support
+
+## Development Workflow
+
+### Git Branch Strategy
+- **main**: Production-ready code
+- **dev**: Development and testing
+- **prod**: Production deployment branch
+- **feature branches**: Individual feature development
+
+### Code Quality
+- **TypeScript**: Static type checking
+- **ESLint**: Code linting and formatting
+- **Prettier**: Code formatting consistency
+- **Git Hooks**: Pre-commit validation
+
+## API Documentation
+
+### Endpoints Summary
+- `POST /api/chat`: Main AI chat functionality
+- `POST /api/auth/signin`: User authentication
+- `POST /api/auth/signup`: User registration
+- `GET /api/health`: Application health check
+
+### Error Handling
+- **HTTP Status Codes**: Proper error responses
+- **Error Messages**: User-friendly error descriptions
+- **Logging**: Server-side error tracking
+- **Fallbacks**: Graceful degradation
+
+This architecture provides a solid foundation for the Shield AI application, ensuring scalability, maintainability, and user experience excellence. 
