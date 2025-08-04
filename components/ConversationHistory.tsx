@@ -39,7 +39,18 @@ export default function ConversationHistory({
   useEffect(() => {
     if (user) {
       const interval = setInterval(loadConversations, 2000); // Refresh every 2 seconds
-      return () => clearInterval(interval);
+      
+      // Listen for conversation updates
+      const handleConversationUpdate = () => {
+        loadConversations();
+      };
+      
+      window.addEventListener('conversation-updated', handleConversationUpdate);
+      
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('conversation-updated', handleConversationUpdate);
+      };
     }
   }, [user]);
 

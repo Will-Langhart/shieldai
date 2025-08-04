@@ -20,7 +20,7 @@ export default function Home() {
   const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>();
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(false); // Start with sidebar closed
 
   // Load chat history when user is authenticated
   useEffect(() => {
@@ -65,6 +65,7 @@ export default function Home() {
     setMessages([]);
     setCurrentConversationId(undefined);
     setShowSidebar(false);
+    console.log('New conversation started, sidebar closed');
   };
 
   const handleSubmit = async (message: string) => {
@@ -125,6 +126,12 @@ export default function Home() {
           // Update current conversation ID
           setCurrentConversationId(conversation.id);
           
+          // Force a refresh of the conversation history
+          setTimeout(() => {
+            // This will trigger the ConversationHistory component to refresh
+            window.dispatchEvent(new CustomEvent('conversation-updated'));
+          }, 100);
+          
           console.log('Messages saved successfully:', {
             conversationId: conversation.id,
             userMessage: userMessage.content,
@@ -180,7 +187,7 @@ export default function Home() {
           {/* Sidebar backdrop for mobile */}
           {user && showSidebar && (
             <div 
-              className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+              className="fixed inset-0 bg-black/50 z-20"
               onClick={() => setShowSidebar(false)}
             />
           )}
@@ -189,7 +196,7 @@ export default function Home() {
           {user && (
             <div className={`fixed inset-y-0 left-0 z-30 w-80 bg-shield-gray/50 border-r border-gray-700/50 transition-transform duration-300 ${
               showSidebar ? 'translate-x-0' : '-translate-x-full'
-            } lg:translate-x-0 lg:static`}>
+            }`}>
               <ConversationHistory
                 onSelectConversation={handleSelectConversation}
                 currentConversationId={currentConversationId}
@@ -201,7 +208,10 @@ export default function Home() {
           {/* Sidebar toggle button */}
           {user && (
             <button
-              onClick={() => setShowSidebar(!showSidebar)}
+              onClick={() => {
+                console.log('Sidebar toggle clicked, current state:', showSidebar);
+                setShowSidebar(!showSidebar);
+              }}
               className="fixed top-1/2 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors transform -translate-y-1/2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,7 +221,7 @@ export default function Home() {
           )}
 
           {/* Main content */}
-          <div className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6 transition-all duration-300 ${user && showSidebar ? 'lg:ml-80' : ''}`}>
+          <div className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6 transition-all duration-300 ${user && showSidebar ? 'ml-80' : 'ml-0'}`}>
           {/* Shield AI Logo and Branding - Only show when no messages */}
           {!hasMessages && (
             <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
