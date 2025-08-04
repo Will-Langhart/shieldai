@@ -35,6 +35,14 @@ export default function ConversationHistory({
     }
   }, [user]);
 
+  // Refresh conversations when a new one is created
+  useEffect(() => {
+    if (user) {
+      const interval = setInterval(loadConversations, 5000); // Refresh every 5 seconds
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
   const loadConversations = async () => {
     try {
       const data = await ChatService.getConversations();

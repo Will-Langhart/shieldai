@@ -20,7 +20,7 @@ export default function Home() {
   const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>();
-  const [showSidebar, setShowSidebar] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
 
   // Load chat history when user is authenticated
   useEffect(() => {
@@ -72,7 +72,8 @@ export default function Home() {
     const userMessage: Message = { 
       role: 'user', 
       content: message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      mode: currentMode
     };
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
@@ -108,15 +109,18 @@ export default function Home() {
       // Save conversation state if user is authenticated
       if (user) {
         try {
-          await ChatService.saveConversationState(sessionId, [
-            ...messages,
-            userMessage,
-            aiMessage
-          ].map(msg => ({
-            role: msg.role,
-            content: msg.content,
-            mode: msg.mode as 'fast' | 'accurate' | undefined
-          })));
+          // Get current conversation or create new one
+          const conversation = await ChatService.getOrCreateConversation(sessionId);
+          
+          // Save both messages to the database
+          await ChatService.addMessage(conversation.id, userMessage.content, 'user', userMessage.mode as 'fast' | 'accurate');
+          await ChatService.addMessage(conversation.id, aiMessage.content, 'assistant', aiMessage.mode as 'fast' | 'accurate');
+          
+          // Update conversation title if it's the first message
+          if (messages.length === 0) {
+            const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
+            await ChatService.updateConversationTitle(conversation.id, title);
+          }
         } catch (error) {
           console.error('Error saving conversation state:', error);
         }
@@ -164,11 +168,19 @@ export default function Home() {
 
         {/* Main content */}
         <main className="flex-1 flex">
+          {/* Sidebar backdrop for mobile */}
+          {user && showSidebar && (
+            <div 
+              className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+              onClick={() => setShowSidebar(false)}
+            />
+          )}
+
           {/* Sidebar */}
           {user && (
-            <div className={`w-80 bg-shield-gray/50 border-r border-gray-700/50 transition-transform duration-300 ${
+            <div className={`fixed lg:static inset-y-0 left-0 z-30 w-80 bg-shield-gray/50 border-r border-gray-700/50 transition-transform duration-300 ${
               showSidebar ? 'translate-x-0' : '-translate-x-full'
-            } lg:translate-x-0 lg:static lg:block`}>
+            } lg:translate-x-0`}>
               <ConversationHistory
                 onSelectConversation={handleSelectConversation}
                 currentConversationId={currentConversationId}
@@ -177,11 +189,23 @@ export default function Home() {
             </div>
           )}
 
-          {/* Mobile sidebar toggle */}
+          {/* Sidebar toggle button */}
           {user && (
             <button
               onClick={() => setShowSidebar(!showSidebar)}
-              className="lg:hidden fixed top-20 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors"
+              className="fixed lg:hidden top-20 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          )}
+
+          {/* Desktop sidebar toggle */}
+          {user && (
+            <button
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="hidden lg:block fixed top-20 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -190,7 +214,7 @@ export default function Home() {
           )}
 
           {/* Main content */}
-          <div className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6`}>
+          <div className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6 ${user && showSidebar ? 'lg:ml-80' : ''}`}>
           {/* Shield AI Logo and Branding - Only show when no messages */}
           {!hasMessages && (
             <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
