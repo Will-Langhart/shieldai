@@ -1,195 +1,158 @@
-# 🛡️ Shield AI - Supabase & JWT Setup Guide
+# Supabase Setup Guide for Shield AI
 
-## 🚀 Step-by-Step Supabase Configuration
+## 🚀 Quick Setup
 
 ### 1. Create Supabase Project
 
-1. **Go to [Supabase](https://supabase.com/)**
-2. **Sign up/Login** with your account
-3. **Create New Project:**
+1. Go to [supabase.com](https://supabase.com)
+2. Sign up or log in
+3. Click "New Project"
+4. Choose your organization
+5. Enter project details:
    - **Name**: `shieldai`
-   - **Database Password**: Choose a strong password
+   - **Database Password**: Generate a strong password
    - **Region**: Choose closest to your users
-   - **Pricing Plan**: Free tier (or Pro if needed)
+6. Click "Create new project"
 
-### 2. Get Your Supabase Credentials
+### 2. Get Your API Keys
 
-1. **Go to Project Settings** (gear icon in sidebar)
-2. **Navigate to API tab**
-3. **Copy these values:**
-   - **Project URL** (starts with `https://`)
-   - **Anon/Public Key** (starts with `eyJ`)
+1. In your Supabase dashboard, go to **Settings** → **API**
+2. Copy the following values:
+   - **Project URL** (e.g., `https://your-project-id.supabase.co`)
+   - **Anon public key** (starts with `eyJ...`)
 
-### 3. Set Up Environment Variables
+### 3. Configure Environment Variables
 
-Add these to your `.env.local`:
+#### For Local Development:
+1. Copy `.env.example` to `.env.local`
+2. Update the following variables:
 
 ```bash
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-
-# JWT Secret (Generate a secure one)
-JWT_SECRET=your-super-secure-jwt-secret-key-here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 ```
+
+#### For Production (Vercel):
+1. Go to your Vercel project dashboard
+2. Navigate to **Settings** → **Environment Variables**
+3. Add the following variables:
+   - `NEXT_PUBLIC_SUPABASE_URL` = Your Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = Your Supabase anon key
 
 ### 4. Set Up Database Schema
 
-1. **Go to SQL Editor** in Supabase dashboard
-2. **Copy and paste** the entire contents of `database/schema.sql`
-3. **Click "Run"** to execute the schema
+1. In your Supabase dashboard, go to **SQL Editor**
+2. Copy the entire content from `database/schema.sql`
+3. Paste it into the SQL editor
+4. Click "Run" to execute the schema
 
 ### 5. Configure Authentication
 
-1. **Go to Authentication > Settings**
-2. **Configure Email Templates:**
-   - **Confirm signup**: Customize welcome message
-   - **Reset password**: Customize reset message
-3. **Enable Email Confirmations** (recommended)
-4. **Set up SMTP** (optional, for custom email domain)
+1. In Supabase dashboard, go to **Authentication** → **Settings**
+2. Configure the following:
 
-### 6. Set Up Row Level Security (RLS)
+#### Email Templates:
+- **Confirm signup**: Customize the email template
+- **Reset password**: Customize the email template
 
-The schema already includes RLS policies, but verify:
+#### Site URL:
+- Set to your production URL (e.g., `https://your-app.vercel.app`)
+- For local development: `http://localhost:3001`
 
-1. **Go to Authentication > Policies**
-2. **Ensure RLS is enabled** for all tables
-3. **Verify policies** are created correctly
+#### Redirect URLs:
+- Add your production URL: `https://your-app.vercel.app`
+- Add local development URL: `http://localhost:3001`
 
-## 🔐 JWT Configuration
+### 6. Test Authentication
 
-### Generate Secure JWT Secret
+1. Start your development server: `npm run dev`
+2. Try to sign up with a test email
+3. Check your email for confirmation
+4. Sign in with your credentials
 
-```bash
-# Generate a secure JWT secret
-openssl rand -base64 32
-```
+## 🔧 Troubleshooting
 
-### Update JWT Secret in Supabase
+### Common Issues:
 
-1. **Go to SQL Editor**
-2. **Run this command:**
-   ```sql
-   ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-generated-jwt-secret';
-   ```
+#### 1. "Failed to fetch" Error
+- **Cause**: Supabase URL or API key is incorrect
+- **Solution**: Double-check your environment variables
 
-## 🧪 Testing the Setup
+#### 2. "Invalid API key" Error
+- **Cause**: Wrong API key or project URL
+- **Solution**: Verify your Supabase project settings
 
-### 1. Test User Registration
+#### 3. Email Not Received
+- **Cause**: Email service not configured
+- **Solution**: Check Supabase email settings
 
-```bash
-curl -X POST http://localhost:3001/api/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "password123",
-    "fullName": "Test User"
-  }'
-```
+#### 4. Database Connection Issues
+- **Cause**: Schema not properly set up
+- **Solution**: Run the database schema again
 
-### 2. Test User Login
+### Environment Variables Checklist:
 
 ```bash
-curl -X POST http://localhost:3001/api/auth/signin \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "password123"
-  }'
-```
-
-### 3. Test Protected API
-
-```bash
-curl -X POST http://localhost:3001/api/chat \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "message": "What is the problem of evil?",
-    "mode": "fast"
-  }'
-```
-
-## 🔧 Environment Variables Checklist
-
-Make sure your `.env.local` has all these:
-
-```bash
-# OpenAI
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Anthropic Claude
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-
-# Pinecone
-PINECONE_API_KEY=pcsk_7EHeL4_MwuoUVnDmfAXDetkY8XzmJmaqcCHj2eeYyQ8j5pgrRvRGFm41NmaypZ9WsxGYa7
-PINECONE_ENVIRONMENT=us-east-1-aws
-PINECONE_INDEX_NAME=shieldai
-
-# Supabase
+# Required for Authentication
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
-# JWT
-JWT_SECRET=your-super-secure-jwt-secret-key-here
+# Required for Chat API
+OPENAI_API_KEY=sk-...
 
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3001
-NODE_ENV=development
+# Optional for Production
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
 ```
 
-## 🚨 Troubleshooting
+## 📊 Database Schema Overview
 
-### Common Issues
+The application uses the following tables:
 
-1. **"Invalid JWT" errors:**
-   - Ensure JWT_SECRET is set correctly
-   - Check that the secret matches in Supabase
+### `users`
+- Extends Supabase auth.users
+- Stores user profiles and preferences
 
-2. **"RLS policy violation":**
-   - Verify RLS policies are created
-   - Check user authentication status
+### `conversations`
+- Stores chat sessions
+- Links to user accounts
 
-3. **"Supabase client not initialized":**
-   - Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
-   - Restart development server
+### `messages`
+- Stores individual chat messages
+- Links to conversations
 
-4. **"Database connection failed":**
-   - Check Supabase project status
-   - Verify database password
+## 🔒 Security Features
 
-### Debug Steps
+- **Row Level Security (RLS)**: Users can only access their own data
+- **JWT Authentication**: Secure token-based auth
+- **Email Verification**: Required for new accounts
+- **Password Reset**: Secure password recovery
 
-1. **Check Supabase Dashboard:**
-   - Go to Authentication > Users
-   - Verify user creation
+## 🚀 Deployment Checklist
 
-2. **Check Database Tables:**
-   - Go to Table Editor
-   - Verify tables are created
+- [ ] Supabase project created
+- [ ] Environment variables configured
+- [ ] Database schema executed
+- [ ] Authentication settings configured
+- [ ] Email templates customized
+- [ ] Site URLs configured
+- [ ] Local testing completed
+- [ ] Production deployment tested
 
-3. **Check API Logs:**
-   - Monitor browser console
-   - Check server logs
+## 📞 Support
 
-## 🔒 Security Best Practices
+If you encounter issues:
 
-1. **Never commit `.env.local`** to version control
-2. **Use different JWT secrets** for development/production
-3. **Enable email confirmations** for production
-4. **Set up proper CORS** for production deployment
-5. **Monitor API usage** and set rate limits
+1. Check the Supabase dashboard logs
+2. Verify environment variables
+3. Test with a fresh browser session
+4. Check browser console for errors
+5. Review this setup guide
 
-## 📚 Next Steps
+## 🔄 Updates
 
-After setup, you can:
-
-1. **Add user profiles** with avatars and preferences
-2. **Implement conversation history** persistence
-3. **Add user preferences** for AI model selection
-4. **Create admin dashboard** for user management
-5. **Add analytics** for conversation insights
-
----
-
-**Need help?** Check the Supabase documentation or the console for detailed error messages. 
+Keep your Supabase project updated:
+- Regularly check for security updates
+- Monitor usage and limits
+- Backup important data
+- Test authentication flows after updates 

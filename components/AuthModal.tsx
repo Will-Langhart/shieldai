@@ -30,20 +30,34 @@ export default function AuthModal({ isOpen, onClose, mode }: AuthModalProps) {
       if (isSignUp) {
         const { error } = await signUp(email, password, fullName);
         if (error) {
-          setError(error.message);
+          // Provide more specific error messages
+          if (error.message.includes('fetch')) {
+            setError('Unable to connect to authentication service. Please check your internet connection and try again.');
+          } else if (error.message.includes('Invalid API key')) {
+            setError('Authentication service is not properly configured. Please contact support.');
+          } else {
+            setError(error.message);
+          }
         } else {
           setSuccess('Check your email to confirm your account!');
         }
       } else {
         const { error } = await signIn(email, password);
         if (error) {
-          setError(error.message);
+          if (error.message.includes('fetch')) {
+            setError('Unable to connect to authentication service. Please check your internet connection and try again.');
+          } else if (error.message.includes('Invalid API key')) {
+            setError('Authentication service is not properly configured. Please contact support.');
+          } else {
+            setError(error.message);
+          }
         } else {
           onClose();
         }
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      console.error('Authentication error:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -133,6 +147,11 @@ export default function AuthModal({ isOpen, onClose, mode }: AuthModalProps) {
           {error && (
             <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm">
               {error}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-2 text-xs text-gray-400">
+                  Debug: Check your Supabase configuration in .env.local
+                </div>
+              )}
             </div>
           )}
 
