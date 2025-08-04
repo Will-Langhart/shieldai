@@ -1,0 +1,8 @@
+<!-- Replace this entire content with your actual SVG logo -->
+<!-- Example: Copy your SVG file content here -->
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Your actual logo SVG content goes here -->
+  <!-- For example, if you have a shield logo: -->
+  <path d="M32 4L56 20V36C56 48.15 45.15 58 32 58C18.85 58 8 48.15 8 36V20L32 4Z" fill="#46A1E2"/>
+  <path d="M32 12L48 24V36C48 44.84 40.84 52 32 52C23.16 52 16 44.84 16 36V24L32 12Z" fill="white"/>
+</svg> 
