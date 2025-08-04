@@ -7,9 +7,10 @@ interface InputBarProps {
   onModeChange: (mode: 'fast' | 'accurate') => void;
   isLoading?: boolean;
   disabled?: boolean;
+  theme?: 'light' | 'dark';
 }
 
-const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false }) => {
+const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false, theme = 'dark' }) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -30,10 +31,12 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
   return (
     <div className="w-full max-w-4xl mx-auto px-2 sm:px-4">
       <form onSubmit={handleSubmit} className="relative">
-        <div className={`flex items-center backdrop-blur-sm rounded-2xl p-3 sm:p-4 border shadow-lg ${
+        <div className={`flex items-center backdrop-blur-sm rounded-2xl p-3 sm:p-4 border shadow-lg transition-colors duration-300 ${
           disabled 
-            ? 'bg-gray-600/50 border-gray-500/50' 
-            : 'bg-shield-light-gray/50 border-gray-700/50'
+            ? theme === 'dark' ? 'bg-gray-600/50 border-gray-500/50' : 'bg-gray-200 border-gray-300'
+            : theme === 'dark'
+              ? 'bg-shield-light-gray/50 border-gray-700/50'
+              : 'bg-white border-gray-200'
         }`}>
           {/* Left side - Microphone */}
           <button
@@ -42,7 +45,9 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
             className={`p-2 sm:p-2.5 rounded-xl transition-all duration-200 mr-2 sm:mr-3 group ${
               disabled 
                 ? 'text-gray-400 cursor-not-allowed' 
-                : 'text-shield-white hover:bg-shield-gray/50'
+                : theme === 'dark'
+                  ? 'text-shield-white hover:bg-shield-gray/50'
+                  : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
             <Mic size={18} className="sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
@@ -51,12 +56,14 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
           {/* Mode toggle */}
           <div className={`flex items-center space-x-1 sm:space-x-2 mr-2 sm:mr-4 rounded-lg px-2 sm:px-3 py-1 sm:py-1.5 ${
             disabled 
-              ? 'bg-gray-500/30' 
-              : 'bg-shield-gray/30'
+              ? theme === 'dark' ? 'bg-gray-500/30' : 'bg-gray-200'
+              : theme === 'dark' ? 'bg-shield-gray/30' : 'bg-gray-100'
           }`}>
-            <Sparkles size={12} className="sm:w-3.5 sm:h-3.5 text-shield-blue" />
+            <Sparkles size={12} className="sm:w-3.5 sm:h-3.5 text-blue-500" />
             <span className={`text-xs sm:text-sm font-medium ${
-              disabled ? 'text-gray-400' : 'text-shield-white'
+              disabled 
+                ? 'text-gray-400' 
+                : theme === 'dark' ? 'text-shield-white' : 'text-gray-700'
             }`}>
               {mode === 'fast' ? 'Fast' : 'Accurate'}
             </span>
@@ -67,7 +74,9 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
               className={`p-1 rounded transition-all duration-200 ${
                 disabled 
                   ? 'text-gray-400 cursor-not-allowed' 
-                  : 'text-shield-white hover:bg-shield-gray/50'
+                  : theme === 'dark'
+                    ? 'text-shield-white hover:bg-shield-gray/50'
+                    : 'text-gray-700 hover:bg-gray-200'
               }`}
             >
               <ChevronDown size={12} className="sm:w-3.5 sm:h-3.5 transition-transform hover:rotate-180" />
@@ -81,10 +90,10 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={disabled ? "Upgrade required to continue..." : "Ask me anything about apologetics, theology, or philosophy..."}
             disabled={isLoading || disabled}
-            className={`flex-1 bg-transparent outline-none text-base sm:text-lg font-medium min-w-0 ${
+            className={`flex-1 bg-transparent outline-none text-base sm:text-lg font-medium min-w-0 transition-colors duration-300 ${
               disabled 
-                ? 'text-gray-400 placeholder-gray-500' 
-                : 'text-shield-white placeholder-gray-400'
+                ? theme === 'dark' ? 'text-gray-400 placeholder-gray-500' : 'text-gray-400 placeholder-gray-400'
+                : theme === 'dark' ? 'text-shield-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
             }`}
           />
 
@@ -96,7 +105,9 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
             className={`p-2 sm:p-2.5 rounded-xl transition-all duration-200 ml-2 sm:ml-3 disabled:opacity-50 disabled:cursor-not-allowed group ${
               disabled 
                 ? 'text-gray-400' 
-                : 'text-shield-white hover:bg-shield-blue/20'
+                : theme === 'dark'
+                  ? 'text-shield-white hover:bg-shield-blue/20'
+                  : 'text-blue-600 hover:bg-blue-50'
             }`}
           >
             <Send size={18} className="sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />

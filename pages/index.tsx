@@ -9,7 +9,7 @@ import SubscriptionModal from '../components/SubscriptionModal';
 import { useAuth } from '../lib/auth-context';
 import { ClientService } from '../lib/client-service';
 import { supabase } from '../lib/supabase';
-import { Shield, Crown, AlertTriangle } from 'lucide-react';
+import { Shield, Crown, AlertTriangle, Sun, Moon, Monitor } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -25,6 +25,8 @@ interface SubscriptionStatus {
   remainingMessages: number;
 }
 
+type Theme = 'light' | 'dark' | 'auto';
+
 export default function Home() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -34,6 +36,8 @@ export default function Home() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [theme, setTheme] = useState<Theme>('auto');
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
   const [sessionId] = useState(() => {
     // Use a stable session ID based on user ID or create a persistent one
     if (typeof window !== 'undefined') {
@@ -51,6 +55,56 @@ export default function Home() {
     console.log('Creating new session ID (server):', newId);
     return newId;
   });
+
+  // Theme management
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('shieldai-theme') as Theme || 'auto';
+    setTheme(savedTheme);
+  }, []);
+
+  useEffect(() => {
+    const updateResolvedTheme = () => {
+      if (theme === 'auto') {
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setResolvedTheme(isDark ? 'dark' : 'light');
+      } else {
+        setResolvedTheme(theme);
+      }
+    };
+
+    updateResolvedTheme();
+    
+    if (theme === 'auto') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      mediaQuery.addEventListener('change', updateResolvedTheme);
+      return () => mediaQuery.removeEventListener('change', updateResolvedTheme);
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('shieldai-theme', theme);
+    document.documentElement.setAttribute('data-theme', resolvedTheme);
+  }, [theme, resolvedTheme]);
+
+  const toggleTheme = () => {
+    const themes: Theme[] = ['auto', 'light', 'dark'];
+    const currentIndex = themes.indexOf(theme);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    setTheme(themes[nextIndex]);
+  };
+
+  const getThemeIcon = () => {
+    switch (theme) {
+      case 'light':
+        return <Sun className="w-4 h-4" />;
+      case 'dark':
+        return <Moon className="w-4 h-4" />;
+      case 'auto':
+        return <Monitor className="w-4 h-4" />;
+      default:
+        return <Monitor className="w-4 h-4" />;
+    }
+  };
 
   // Update session ID when user changes
   useEffect(() => {
@@ -374,11 +428,18 @@ export default function Home() {
         <link rel="icon" href="/logo.png" />
       </Head>
 
-      <div className="min-h-screen bg-shield-black flex flex-col">
+      <div className={`min-h-screen flex flex-col transition-colors duration-300 ${
+        resolvedTheme === 'dark' 
+          ? 'bg-shield-black text-shield-white' 
+          : 'bg-gray-50 text-gray-900'
+      }`}>
         {/* Header */}
         <Header 
           onMenuClick={() => setShowSidebar(!showSidebar)}
           showSidebar={showSidebar}
+          theme={resolvedTheme}
+          onThemeToggle={toggleTheme}
+          themeIcon={getThemeIcon()}
         />
 
         {/* Main content */}
@@ -393,13 +454,18 @@ export default function Home() {
 
           {/* Sidebar */}
           {user && (
-            <div className={`fixed inset-y-0 left-0 z-30 w-80 bg-shield-gray/50 border-r border-gray-700/50 transition-transform duration-300 ${
+            <div className={`fixed inset-y-0 left-0 z-30 w-80 border-r transition-transform duration-300 ${
               showSidebar ? 'translate-x-0' : '-translate-x-full'
-            } md:relative md:translate-x-0 md:block ${showSidebar ? 'md:block' : 'md:hidden'}`}>
+            } md:relative md:translate-x-0 md:block ${showSidebar ? 'md:block' : 'md:hidden'} ${
+              resolvedTheme === 'dark' 
+                ? 'bg-shield-gray/50 border-gray-700/50' 
+                : 'bg-white border-gray-200'
+            }`}>
               <ConversationHistory
                 onSelectConversation={handleSelectConversation}
                 currentConversationId={currentConversationId}
                 onNewConversation={handleNewConversation}
+                theme={resolvedTheme}
               />
             </div>
           )}
@@ -408,7 +474,11 @@ export default function Home() {
           {user && (
             <button
               onClick={() => setShowSidebar(!showSidebar)}
-              className="fixed top-1/2 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors transform -translate-y-1/2 md:left-4"
+              className={`fixed top-1/2 left-4 z-40 p-2 rounded-lg transition-colors transform -translate-y-1/2 md:left-4 ${
+                resolvedTheme === 'dark'
+                  ? 'bg-shield-gray/80 border border-gray-700/50 text-shield-white hover:bg-shield-gray/60'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-lg'
+              }`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showSidebar ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} />
@@ -423,17 +493,25 @@ export default function Home() {
               <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex flex-col sm:flex-row items-center justify-center mb-6 sm:mb-8">
                   <img src="/logo.png" alt="Shield AI Logo" className="w-32 h-32 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mb-4 sm:mb-0 sm:mr-6 drop-shadow-lg" />
-                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-shield-white drop-shadow-lg">Shield AI</h1>
+                  <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold drop-shadow-lg ${
+                    resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
+                  }`}>Shield AI</h1>
                 </div>
-                <p className="text-gray-300 text-base sm:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
+                <p className={`text-base sm:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4 ${
+                  resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>
                   Your AI-powered apologetics companion. Ask me anything about theology, philosophy, or defending the Christian worldview.
                 </p>
                 {user && (
                   <div className="text-center">
-                    <p className="text-shield-blue text-sm font-medium">
+                    <p className={`text-sm font-medium ${
+                      resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
+                    }`}>
                       Signed in as {user.email}
                     </p>
-                    <p className="text-gray-400 text-xs mt-1">
+                    <p className={`text-xs mt-1 ${
+                      resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
                       Your conversations will be saved automatically
                     </p>
                   </div>
@@ -453,18 +531,28 @@ export default function Home() {
                       <div
                         className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg ${
                           message.role === 'user' 
-                            ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white' 
-                            : 'bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50 text-shield-white'
+                            ? resolvedTheme === 'dark'
+                              ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white'
+                              : 'bg-blue-100 border border-blue-200 text-gray-900'
+                            : resolvedTheme === 'dark'
+                              ? 'bg-transparent border border-gray-700/30 text-shield-white'
+                              : 'bg-transparent border border-gray-200 text-gray-900'
                         }`}
                       >
                         <div className="flex items-start space-x-2 sm:space-x-3">
                           {message.role === 'assistant' && (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
+                              resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
+                            }`}>
                               <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
                             </div>
                           )}
                           {message.role === 'user' && (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue/20 border border-shield-blue/30 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
+                              resolvedTheme === 'dark'
+                                ? 'bg-shield-blue/20 border border-shield-blue/30'
+                                : 'bg-blue-100 border border-blue-200'
+                            }`}>
                               {user?.user_metadata?.avatar_url ? (
                                 <img 
                                   src={user.user_metadata.avatar_url} 
@@ -472,19 +560,23 @@ export default function Home() {
                                   className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
                                 />
                               ) : (
-                                <span className="text-shield-blue font-bold text-xs sm:text-sm">
+                                <span className={`font-bold text-xs sm:text-sm ${
+                                  resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
+                                }`}>
                                   {user?.email?.charAt(0).toUpperCase() || 'U'}
                                 </span>
                               )}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-shield-white leading-relaxed text-sm sm:text-base break-words">{message.content}</p>
-                            {message.timestamp && (
-                              <p className="text-gray-400 text-xs mt-2 opacity-60">
-                                {new Date(message.timestamp).toLocaleTimeString()}
-                              </p>
-                            )}
+                            <p className={`leading-relaxed text-sm sm:text-base break-words ${
+                              resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
+                            }`}>{message.content}</p>
+                            <p className={`text-xs mt-2 opacity-60 ${
+                              resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                            }`}>
+                              {message.timestamp && new Date(message.timestamp).toLocaleTimeString()}
+                            </p>
                           </div>
                         </div>
                         
@@ -498,6 +590,7 @@ export default function Home() {
                             onCopy={() => handleCopyMessage(message.content)}
                             onShare={() => handleShareMessage(currentConversationId)}
                             onFeedback={(type) => handleFeedback(index, type)}
+                            theme={resolvedTheme}
                           />
                         )}
                       </div>
@@ -507,16 +600,30 @@ export default function Home() {
                   {/* Loading indicator */}
                   {isLoading && (
                     <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      <div className="max-w-2xl px-6 py-4 rounded-2xl shadow-lg bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50">
+                      <div className={`max-w-2xl px-6 py-4 rounded-2xl shadow-lg backdrop-blur-sm border ${
+                        resolvedTheme === 'dark'
+                          ? 'bg-transparent border-gray-700/30'
+                          : 'bg-transparent border-gray-200'
+                      }`}>
                         <div className="flex items-start space-x-3">
-                          <div className="w-8 h-8 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
-                            <span className="text-shield-white font-bold text-sm">S</span>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${
+                            resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
+                          }`}>
+                            <span className={`font-bold text-sm ${
+                              resolvedTheme === 'dark' ? 'text-shield-white' : 'text-white'
+                            }`}>S</span>
                           </div>
                           <div className="flex-1">
                             <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce"></div>
-                              <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                              <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                              <div className={`w-2 h-2 rounded-full animate-bounce ${
+                                resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
+                              }`}></div>
+                              <div className={`w-2 h-2 rounded-full animate-bounce ${
+                                resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
+                              }`} style={{ animationDelay: '0.1s' }}></div>
+                              <div className={`w-2 h-2 rounded-full animate-bounce ${
+                                resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
+                              }`} style={{ animationDelay: '0.2s' }}></div>
                             </div>
                           </div>
                         </div>
@@ -535,17 +642,24 @@ export default function Home() {
                 onModeChange={setCurrentMode}
                 isLoading={isLoading}
                 disabled={shouldShowUpgradePrompt}
+                theme={resolvedTheme}
               />
             </div>
 
             {/* Footer text - Only show when no messages */}
             {!hasMessages && (
               <div className="text-center mt-6 sm:mt-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-                <p className="text-gray-400 text-xs sm:text-sm px-4">
+                <p className={`text-xs sm:text-sm px-4 ${
+                  resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                }`}>
                   By messaging Shield AI, you agree to our{' '}
-                  <a href="#" className="text-shield-blue hover:underline transition-colors">Terms</a>
+                  <a href="#" className={`hover:underline transition-colors ${
+                    resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
+                  }`}>Terms</a>
                   {' '}and{' '}
-                  <a href="#" className="text-shield-blue hover:underline transition-colors">Privacy Policy</a>
+                  <a href="#" className={`hover:underline transition-colors ${
+                    resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
+                  }`}>Privacy Policy</a>
                 </p>
               </div>
             )}
@@ -588,6 +702,7 @@ export default function Home() {
           onClose={() => setShowSubscriptionModal(false)}
           currentSubscription={null}
           isInTrial={subscriptionStatus?.isInTrial}
+          theme={resolvedTheme}
         />
       </div>
     </>

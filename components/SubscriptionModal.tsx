@@ -2,111 +2,94 @@ import React, { useState, useEffect } from 'react';
 import { X, Check, Star, Zap, Shield, Crown, Sparkles } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
 interface SubscriptionPlan {
-  id: string;
   name: 'basic' | 'premium';
   display_name: string;
   description: string;
   price_weekly: number;
-  price_monthly?: number;
-  price_yearly?: number;
   features: string[];
 }
 
 interface SubscriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentSubscription?: any;
+  currentSubscription: any;
   isInTrial?: boolean;
+  theme?: 'light' | 'dark';
 }
 
-export default function SubscriptionModal({
-  isOpen,
-  onClose,
-  currentSubscription,
+const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  currentSubscription, 
   isInTrial = false,
-}: SubscriptionModalProps) {
+  theme = 'dark'
+}) => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'premium' | null>(null);
-  const [billingCycle, setBillingCycle] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      fetchPlans();
+      loadPlans();
     }
   }, [isOpen]);
 
-  const fetchPlans = async () => {
+  const loadPlans = async () => {
     try {
       const response = await fetch('/api/subscriptions/plans');
       const data = await response.json();
-      setPlans(data.plans);
+      if (data.success) {
+        setPlans(data.plans);
+      }
     } catch (error) {
-      console.error('Error fetching plans:', error);
+      console.error('Error loading plans:', error);
     }
   };
 
-  const handleSubscribe = async (planName: 'basic' | 'premium') => {
+  const handleSubscribe = async (planName: string) => {
     setLoading(true);
+    setSelectedPlan(planName);
+
     try {
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error('Stripe failed to load');
+      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+      if (!stripe) {
+        throw new Error('Stripe failed to load');
+      }
 
       const response = await fetch('/api/subscriptions/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`,
         },
         body: JSON.stringify({ planName }),
       });
 
-      const { clientSecret } = await response.json();
-
-      if (clientSecret) {
-        const { error } = await stripe.confirmCardPayment(clientSecret);
+      const data = await response.json();
+      if (data.success && data.clientSecret) {
+        const { error } = await stripe.confirmCardPayment(data.clientSecret);
         if (error) {
           console.error('Payment failed:', error);
         } else {
           onClose();
-          // Refresh subscription status
+          // Optionally refresh the page or update subscription status
           window.location.reload();
         }
       }
     } catch (error) {
-      console.error('Error creating subscription:', error);
+      console.error('Subscription error:', error);
     } finally {
       setLoading(false);
+      setSelectedPlan(null);
     }
   };
 
   const getPrice = (plan: SubscriptionPlan) => {
-    switch (billingCycle) {
-      case 'weekly':
-        return plan.price_weekly;
-      case 'monthly':
-        return plan.price_monthly || plan.price_weekly * 4;
-      case 'yearly':
-        return plan.price_yearly || plan.price_weekly * 52;
-      default:
-        return plan.price_weekly;
-    }
+    return plan.price_weekly.toFixed(2);
   };
 
   const getBillingText = () => {
-    switch (billingCycle) {
-      case 'weekly':
-        return 'per week';
-      case 'monthly':
-        return 'per month';
-      case 'yearly':
-        return 'per year';
-      default:
-        return 'per week';
-    }
+    return '/week';
   };
 
   const getPlanIcon = (planName: string) => {
@@ -122,14 +105,8 @@ export default function SubscriptionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-5xl mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -144,45 +121,14 @@ export default function SubscriptionModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className={`p-2 rounded-lg transition-colors ${
+              theme === 'dark' 
+                ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100' 
+                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+            }`}
           >
-            <X className="w-6 h-6 text-gray-500" />
+            <X className="w-6 h-6" />
           </button>
-        </div>
-
-        {/* Trial Banner */}
-        {isInTrial && (
-          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 text-center">
-            <div className="flex items-center justify-center space-x-2">
-              <Star className="w-5 h-5" />
-              <span className="font-semibold">Free Trial Active</span>
-            </div>
-            <p className="text-sm opacity-90 mt-1">
-              Your trial ends in 7 days. Choose a plan to continue using Shield AI.
-            </p>
-          </div>
-        )}
-
-        {/* Billing Cycle Toggle */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-center space-x-4">
-            <span className="text-sm font-medium text-gray-700">Billing Cycle:</span>
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              {(['weekly', 'monthly', 'yearly'] as const).map((cycle) => (
-                <button
-                  key={cycle}
-                  onClick={() => setBillingCycle(cycle)}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    billingCycle === cycle
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {cycle.charAt(0).toUpperCase() + cycle.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Plans */}
@@ -190,11 +136,11 @@ export default function SubscriptionModal({
           <div className="grid md:grid-cols-2 gap-8">
             {plans.map((plan) => (
               <div
-                key={plan.id}
-                className={`relative p-8 rounded-xl border-2 transition-all hover:shadow-lg ${
+                key={plan.name}
+                className={`relative p-6 rounded-xl border-2 transition-all duration-300 ${
                   plan.name === 'premium'
-                    ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-blue-50'
-                    : 'border-blue-300 hover:border-blue-400'
+                    ? 'border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50'
+                    : 'border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50'
                 }`}
               >
                 {plan.name === 'premium' && (
@@ -206,7 +152,7 @@ export default function SubscriptionModal({
                   </div>
                 )}
 
-                <div className="text-center mb-8">
+                <div className="text-center mb-6">
                   <div className="flex justify-center mb-4">
                     <div className={`p-3 bg-gradient-to-r ${getPlanColor(plan.name)} rounded-full`}>
                       {getPlanIcon(plan.name)}
@@ -250,7 +196,7 @@ export default function SubscriptionModal({
                       <span>Processing...</span>
                     </div>
                   ) : (
-                    `Subscribe to ${plan.display_name}`
+                    'Choose Plan'
                   )}
                 </button>
               </div>
@@ -267,14 +213,13 @@ export default function SubscriptionModal({
             </div>
             <p>All plans include a 7-day free trial. Cancel anytime.</p>
             <p className="mt-1">
-              Need help? Contact our support team at{' '}
-              <a href="mailto:support@shieldai.com" className="text-blue-600 hover:underline">
-                support@shieldai.com
-              </a>
+              By subscribing, you agree to our <a href="#" className="text-blue-600 hover:underline">Terms of Service</a> and <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>.
             </p>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+};
+
+export default SubscriptionModal; 
