@@ -8,6 +8,27 @@ export interface SubscriptionCheck {
   message?: string;
 }
 
+export interface UserSubscription {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  stripe_subscription_id?: string;
+  status: 'trial' | 'active' | 'past_due' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'trialing' | 'unpaid';
+  current_period_start?: Date;
+  current_period_end?: Date;
+  cancel_at_period_end: boolean;
+  canceled_at?: Date;
+  created_at: Date;
+  updated_at: Date;
+  subscription_plans?: {
+    name: 'basic' | 'premium';
+    display_name: string;
+    description: string;
+    price_weekly: number;
+    features: string[];
+  };
+}
+
 export class SubscriptionMiddleware {
   static async checkAccess(userId: string): Promise<SubscriptionCheck> {
     try {
