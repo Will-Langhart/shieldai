@@ -51,6 +51,8 @@ export class ChatService {
       throw new Error('No authenticated user found');
     }
 
+    console.log('Creating conversation for user:', user.id, 'with title:', title);
+
     const { data, error } = await supabase
       .from('conversations')
       .insert({ 
@@ -60,7 +62,12 @@ export class ChatService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating conversation:', error);
+      throw error;
+    }
+    
+    console.log('Successfully created conversation:', data.id, data.title);
     return data;
   }
 
@@ -71,6 +78,8 @@ export class ChatService {
     role: 'user' | 'assistant',
     mode?: 'fast' | 'accurate'
   ): Promise<Message> {
+    console.log('Adding message to conversation:', conversationId, 'role:', role, 'content length:', content.length);
+    
     const { data, error } = await supabase
       .from('messages')
       .insert({
@@ -82,7 +91,12 @@ export class ChatService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error adding message:', error);
+      throw error;
+    }
+
+    console.log('Successfully added message:', data.id);
 
     // Update conversation's last_message and updated_at
     await supabase

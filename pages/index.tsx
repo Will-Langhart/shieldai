@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
@@ -14,6 +15,7 @@ interface Message {
 }
 
 export default function Home() {
+  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -122,6 +124,10 @@ export default function Home() {
     setCurrentConversationId(undefined);
     setShowSidebar(false);
     console.log('New conversation started, sidebar closed');
+    // Clear any existing session data
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('shieldai_session_id');
+    }
   };
 
   const handleSubmit = async (message: string) => {
@@ -180,10 +186,12 @@ export default function Home() {
           // Update conversation's last message
           await ChatService.updateConversationLastMessage(conversation.id, aiMessage.content);
           
-          // Redirect to the conversation page
-          window.location.href = `/chat/${conversation.id}`;
+          // Trigger conversation history refresh before redirecting
+          window.dispatchEvent(new CustomEvent('conversation-updated'));
           
+          // Redirect to the conversation page using Next.js router
           console.log('Messages saved and redirecting to conversation:', conversation.id);
+          router.push(`/chat/${conversation.id}`);
         } catch (error) {
           console.error('Error creating conversation:', error);
         }
