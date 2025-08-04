@@ -163,54 +163,32 @@ export default function Home() {
 
       setMessages(prev => [...prev, aiMessage]);
 
-      // Save conversation state if user is authenticated
+      // Create new conversation and save messages if user is authenticated
       if (user) {
         try {
-          console.log('Saving messages for authenticated user:', user.id);
+          console.log('Creating new conversation for user:', user.id);
           
-          // Get current conversation or create new one
-          const conversation = await ChatService.getOrCreateConversation(sessionId);
-          console.log('Using conversation:', conversation.id, conversation.title);
+          // Create new conversation with title from first message
+          const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
+          const conversation = await ChatService.createConversation(title);
+          console.log('Created new conversation:', conversation.id, conversation.title);
           
           // Save both messages to the database
           await ChatService.addMessage(conversation.id, userMessage.content, 'user', userMessage.mode as 'fast' | 'accurate');
           await ChatService.addMessage(conversation.id, aiMessage.content, 'assistant', aiMessage.mode as 'fast' | 'accurate');
           
-          // Update conversation title if this is the first message in the conversation
-          const currentMessagesCount = messages.length;
-          if (currentMessagesCount === 0) {
-            const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
-            await ChatService.updateConversationTitle(conversation.id, title);
-            console.log('Updated conversation title to:', title);
-          }
+          // Update conversation's last message
+          await ChatService.updateConversationLastMessage(conversation.id, aiMessage.content);
           
-          // Update current conversation ID
-          setCurrentConversationId(conversation.id);
+          // Redirect to the conversation page
+          window.location.href = `/chat/${conversation.id}`;
           
-          // Force a refresh of the conversation history
-          setTimeout(() => {
-            // This will trigger the ConversationHistory component to refresh
-            window.dispatchEvent(new CustomEvent('conversation-updated'));
-            console.log('Dispatched conversation-updated event');
-          }, 500);
-          
-          // Also trigger a reload of the current conversation
-          setTimeout(() => {
-            loadChatHistory();
-          }, 1000);
-          
-          console.log('Messages saved successfully:', {
-            conversationId: conversation.id,
-            userMessage: userMessage.content,
-            aiMessage: aiMessage.content,
-            sessionId: sessionId,
-            messagesCount: currentMessagesCount
-          });
+          console.log('Messages saved and redirecting to conversation:', conversation.id);
         } catch (error) {
-          console.error('Error saving conversation state:', error);
+          console.error('Error creating conversation:', error);
         }
       } else {
-        console.log('No authenticated user, skipping message save');
+        console.log('No authenticated user, skipping conversation creation');
       }
     } catch (error) {
       console.error('Error calling AI API:', error);

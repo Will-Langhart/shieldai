@@ -191,7 +191,10 @@ export default function ConversationHistory({
                     ? 'bg-shield-blue/20 border border-shield-blue/50'
                     : 'hover:bg-shield-light-gray/30 border border-transparent'
                 }`}
-                onClick={() => onSelectConversation(conversation.id)}
+                onClick={() => {
+                  console.log('Selecting conversation:', conversation.id);
+                  onSelectConversation(conversation.id);
+                }}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">

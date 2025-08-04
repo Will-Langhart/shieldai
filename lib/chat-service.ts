@@ -106,6 +106,34 @@ export class ChatService {
     if (error) throw error;
   }
 
+  // Update conversation's last message
+  static async updateConversationLastMessage(
+    conversationId: string,
+    lastMessage: string
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('conversations')
+      .update({ last_message: lastMessage })
+      .eq('id', conversationId);
+
+    if (error) throw error;
+  }
+
+  // Get a specific conversation
+  static async getConversation(conversationId: string): Promise<Conversation | null> {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('id', conversationId)
+      .single();
+
+    if (error) {
+      console.error('Error getting conversation:', error);
+      return null;
+    }
+    return data;
+  }
+
   // Delete a conversation and all its messages
   static async deleteConversation(conversationId: string): Promise<void> {
     const { error } = await supabase
