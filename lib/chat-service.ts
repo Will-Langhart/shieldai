@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import { Database } from './supabase';
+import { PineconeService } from './pinecone';
+import { EmbeddingService } from './embeddings';
 
 type Conversation = Database['public']['Tables']['conversations']['Row'];
 type Message = Database['public']['Tables']['messages']['Row'];
@@ -103,6 +105,27 @@ export class ChatService {
       .from('conversations')
       .update({ last_message: content })
       .eq('id', conversationId);
+
+    // Store embedding in Pinecone
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const embedding = await EmbeddingService.generateEmbedding(content);
+        await PineconeService.storeMessage(
+          data.id,
+          content,
+          role,
+          conversationId,
+          user.id,
+          embedding,
+          { mode }
+        );
+        console.log('Stored message embedding in Pinecone');
+      }
+    } catch (error) {
+      console.error('Error storing embedding in Pinecone:', error);
+      // Don't throw error to avoid breaking the main flow
+    }
 
     return data;
   }
@@ -223,6 +246,57 @@ export class ChatService {
       return messages;
     } catch (error) {
       console.error('Error loading conversation state:', error);
+      return [];
+    }
+  }
+
+  // Search for similar messages using vector similarity
+  static async searchSimilarMessages(
+    query: string,
+    userId: string,
+    conversationId?: string,
+    topK: number = 5
+  ): Promise<Array<{ content: string; role: string; score: number }>> {
+    try {
+      const embedding = await EmbeddingService.generateEmbedding(query);
+      const results = await PineconeService.searchSimilarMessages(
+        embedding,
+        userId,
+        conversationId,
+        topK
+      );
+      
+      return results.map(result => ({
+        content: result.content,
+        role: result.role,
+        score: result.score,
+      }));
+    } catch (error) {
+      console.error('Error searching similar messages:', error);
+      return [];
+    }
+  }
+
+  // Get conversation context from vector database
+  static async getConversationContext(
+    conversationId: string,
+    userId: string,
+    topK: number = 10
+  ): Promise<Array<{ content: string; role: string; score: number }>> {
+    try {
+      const results = await PineconeService.getConversationContext(
+        conversationId,
+        userId,
+        topK
+      );
+      
+      return results.map(result => ({
+        content: result.content,
+        role: result.role,
+        score: result.score,
+      }));
+    } catch (error) {
+      console.error('Error getting conversation context:', error);
       return [];
     }
   }

@@ -5,7 +5,7 @@ import Header from '../components/Header';
 import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
 import { useAuth } from '../lib/auth-context';
-import { ChatService } from '../lib/chat-service';
+import { ClientService } from '../lib/client-service';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -66,36 +66,21 @@ export default function Home() {
       }
 
       console.log('Loading chat history for user:', user.id, 'sessionId:', sessionId);
-      const savedMessages = await ChatService.loadConversationState(sessionId);
-      console.log('Loaded messages:', savedMessages.length);
-      
-      if (savedMessages.length > 0) {
-        const formattedMessages = savedMessages.map(msg => ({
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.created_at,
-          mode: msg.mode
-        }));
-        setMessages(formattedMessages);
-        console.log('Messages loaded successfully:', formattedMessages.length);
-      } else {
-        console.log('No saved messages found for this session, trying to load most recent conversation');
-        // Try to load the most recent conversation as a fallback
-        const conversations = await ChatService.getConversations();
-        if (conversations.length > 0) {
-          const mostRecent = conversations[0];
-          const messages = await ChatService.getMessages(mostRecent.id);
-          if (messages.length > 0) {
-            const formattedMessages = messages.map(msg => ({
-              role: msg.role,
-              content: msg.content,
-              timestamp: msg.created_at,
-              mode: msg.mode
-            }));
-            setMessages(formattedMessages);
-            setCurrentConversationId(mostRecent.id);
-            console.log('Loaded most recent conversation:', mostRecent.title, 'with', messages.length, 'messages');
-          }
+      // For now, we'll load the most recent conversation since we don't have session-based loading in ClientService
+      const conversations = await ClientService.getConversations();
+      if (conversations.length > 0) {
+        const mostRecent = conversations[0];
+        const messages = await ClientService.getMessages(mostRecent.id);
+        if (messages.length > 0) {
+          const formattedMessages = messages.map((msg: any) => ({
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.created_at,
+            mode: msg.mode
+          }));
+          setMessages(formattedMessages);
+          setCurrentConversationId(mostRecent.id);
+          console.log('Loaded most recent conversation:', mostRecent.title, 'with', messages.length, 'messages');
         }
       }
     } catch (error) {
@@ -105,8 +90,8 @@ export default function Home() {
 
   const handleSelectConversation = async (conversationId: string) => {
     try {
-      const messages = await ChatService.getMessages(conversationId);
-      setMessages(messages.map(msg => ({
+      const messages = await ClientService.getMessages(conversationId);
+      setMessages(messages.map((msg: any) => ({
         role: msg.role,
         content: msg.content,
         timestamp: msg.created_at,
@@ -150,7 +135,9 @@ export default function Home() {
         body: JSON.stringify({
           message,
           mode: currentMode,
-          sessionId: sessionId
+          sessionId: sessionId,
+          userId: user?.id,
+          conversationId: currentConversationId
         }),
       });
 
@@ -176,15 +163,14 @@ export default function Home() {
           
           // Create new conversation with title from first message
           const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
-          const conversation = await ChatService.createConversation(title);
+          const conversation = await ClientService.createConversation(title);
           console.log('Created new conversation:', conversation.id, conversation.title);
           
           // Save both messages to the database
-          await ChatService.addMessage(conversation.id, userMessage.content, 'user', userMessage.mode as 'fast' | 'accurate');
-          await ChatService.addMessage(conversation.id, aiMessage.content, 'assistant', aiMessage.mode as 'fast' | 'accurate');
+          await ClientService.addMessage(conversation.id, userMessage.content, 'user', userMessage.mode as 'fast' | 'accurate');
+          await ClientService.addMessage(conversation.id, aiMessage.content, 'assistant', aiMessage.mode as 'fast' | 'accurate');
           
-          // Update conversation's last message
-          await ChatService.updateConversationLastMessage(conversation.id, aiMessage.content);
+          // Note: updateConversationLastMessage is handled automatically by the API when adding messages
           
           // Trigger conversation history refresh before redirecting
           window.dispatchEvent(new CustomEvent('conversation-updated'));

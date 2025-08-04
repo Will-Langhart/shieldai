@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Trash2, Edit3, Plus, Search, Clock } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
-import { ChatService } from '../lib/chat-service';
+import { ClientService, Conversation } from '../lib/client-service';
 
-interface Conversation {
-  id: string;
-  title: string;
-  last_message?: string;
-  created_at: string;
-  updated_at: string;
-}
+
 
 interface ConversationHistoryProps {
   onSelectConversation: (conversationId: string) => void;
@@ -58,7 +52,7 @@ export default function ConversationHistory({
   const loadConversations = async () => {
     try {
       console.log('Loading conversations...');
-      const data = await ChatService.getConversations();
+      const data = await ClientService.getConversations();
       setConversations(data);
       console.log('Loaded conversations:', data.length, data.map(c => ({ id: c.id, title: c.title })));
     } catch (error) {
@@ -71,7 +65,7 @@ export default function ConversationHistory({
   const handleDeleteConversation = async (conversationId: string) => {
     if (confirm('Are you sure you want to delete this conversation?')) {
       try {
-        await ChatService.deleteConversation(conversationId);
+        await ClientService.deleteConversation(conversationId);
         await loadConversations();
       } catch (error) {
         console.error('Error deleting conversation:', error);
@@ -82,7 +76,7 @@ export default function ConversationHistory({
   const handleUpdateTitle = async (conversationId: string) => {
     if (newTitle.trim()) {
       try {
-        await ChatService.updateConversationTitle(conversationId, newTitle.trim());
+        await ClientService.updateConversationTitle(conversationId, newTitle.trim());
         await loadConversations();
         setEditingTitle(null);
         setNewTitle('');

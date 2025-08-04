@@ -5,7 +5,7 @@ import Header from '../../components/Header';
 import InputBar from '../../components/InputBar';
 import ConversationHistory from '../../components/ConversationHistory';
 import { useAuth } from '../../lib/auth-context';
-import { ChatService } from '../../lib/chat-service';
+import { ClientService } from '../../lib/client-service';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -34,14 +34,10 @@ export default function ConversationPage() {
   const loadConversation = async (convId: string) => {
     try {
       console.log('Loading conversation:', convId);
-      const messages = await ChatService.getMessages(convId);
-      const conversation = await ChatService.getConversation(convId);
+      const messages = await ClientService.getMessages(convId);
+      // Note: We don't have getConversation in ClientService, so we'll skip the title for now
       
-      if (conversation) {
-        setConversationTitle(conversation.title);
-      }
-      
-      setMessages(messages.map(msg => ({
+      setMessages(messages.map((msg: any) => ({
         role: msg.role,
         content: msg.content,
         timestamp: msg.created_at,
@@ -88,7 +84,9 @@ export default function ConversationPage() {
         body: JSON.stringify({
           message,
           mode: currentMode,
-          conversationId: conversationId
+          conversationId: conversationId,
+          userId: user?.id,
+          sessionId: conversationId
         }),
       });
 
@@ -110,11 +108,10 @@ export default function ConversationPage() {
       // Save both messages to the database
       if (user) {
         try {
-          await ChatService.addMessage(conversationId, userMessage.content, 'user', userMessage.mode as 'fast' | 'accurate');
-          await ChatService.addMessage(conversationId, aiMessage.content, 'assistant', aiMessage.mode as 'fast' | 'accurate');
+          await ClientService.addMessage(conversationId, userMessage.content, 'user', userMessage.mode as 'fast' | 'accurate');
+          await ClientService.addMessage(conversationId, aiMessage.content, 'assistant', aiMessage.mode as 'fast' | 'accurate');
           
-          // Update conversation's last_message
-          await ChatService.updateConversationLastMessage(conversationId, aiMessage.content);
+          // Note: updateConversationLastMessage is handled automatically by the API when adding messages
           
           // Trigger conversation history refresh
           window.dispatchEvent(new CustomEvent('conversation-updated'));

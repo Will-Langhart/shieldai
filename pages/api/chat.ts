@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
 import { analyzeQuestion, generateSpecializedPrompt } from '../../lib/prompt-engineering';
+import { ChatService } from '../../lib/chat-service';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -19,7 +20,7 @@ export default async function handler(
   }
 
   try {
-    const { message, mode = 'fast', sessionId = 'default' } = req.body;
+    const { message, mode = 'fast', sessionId = 'default', conversationId, userId } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -31,6 +32,17 @@ export default async function handler(
     // Limit conversation history to last 10 messages to manage context
     if (conversationHistory.length > 10) {
       conversationHistory = conversationHistory.slice(-10);
+    }
+
+    // Search for similar messages using vector similarity if user is authenticated
+    let similarMessages: Array<{ content: string; role: string; score: number }> = [];
+    if (userId) {
+      try {
+        similarMessages = await ChatService.searchSimilarMessages(message, userId, conversationId, 3);
+        console.log('Found similar messages:', similarMessages.length);
+      } catch (error) {
+        console.error('Error searching similar messages:', error);
+      }
     }
 
     // Analyze the question to determine context
@@ -45,12 +57,18 @@ export default async function handler(
     const maxTokens = mode === 'fast' ? 800 : 1500;
     const temperature = mode === 'fast' ? 0.7 : 0.8;
 
-    // Build messages array with conversation history
+    // Build messages array with conversation history and similar messages
     const messages = [
       { role: 'system', content: systemPrompt },
       ...conversationHistory,
       { role: 'user', content: message }
     ];
+
+    // Add similar messages as context if found
+    if (similarMessages.length > 0) {
+      const contextMessage = `Based on similar previous conversations, here are relevant examples:\n${similarMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n')}\n\nPlease use this context to provide a more informed response.`;
+      messages.splice(-1, 0, { role: 'system', content: contextMessage });
+    }
 
     const response = await openai.chat.completions.create({
       model: model,
