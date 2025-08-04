@@ -81,13 +81,15 @@ export default async function handler(
 
     // Save messages to database and Pinecone if user is authenticated
     if (userId && conversationId && typeof conversationId === 'string') {
-      const convId = conversationId;
+      const convId = conversationId as string;
       try {
         // Save user message
         await ChatService.addMessage(convId, message, 'user', mode);
         
         // Save AI response
-        await ChatService.addMessage(convId, aiResponse, 'assistant', mode);
+        if (aiResponse) {
+          await ChatService.addMessage(convId, aiResponse, 'assistant', mode);
+        }
         
         console.log('Messages saved to database and Pinecone');
       } catch (error) {
@@ -99,12 +101,12 @@ export default async function handler(
     // Update conversation history
     conversationHistory.push(
       { role: 'user', content: message },
-      { role: 'assistant', content: aiResponse }
+      { role: 'assistant', content: aiResponse || 'No response generated' }
     );
     conversationStore.set(sessionId, conversationHistory);
 
     return res.status(200).json({
-      response: aiResponse,
+      response: aiResponse || 'No response generated',
       mode: mode,
       timestamp: new Date().toISOString(),
       sessionId: sessionId
