@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Header from '../components/Header';
 import InputBar from '../components/InputBar';
+import { useAuth } from '../lib/auth-context';
+import { ChatService } from '../lib/chat-service';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -11,10 +13,34 @@ interface Message {
 }
 
 export default function Home() {
+  const { user, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+
+  // Load chat history when user is authenticated
+  useEffect(() => {
+    if (user) {
+      loadChatHistory();
+    }
+  }, [user]);
+
+  const loadChatHistory = async () => {
+    try {
+      const savedMessages = await ChatService.loadConversationState(sessionId);
+      if (savedMessages.length > 0) {
+        setMessages(savedMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.created_at,
+          mode: msg.mode
+        })));
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
+  };
 
   const handleSubmit = async (message: string) => {
     // Add user message
@@ -53,6 +79,19 @@ export default function Home() {
       };
 
       setMessages(prev => [...prev, aiMessage]);
+
+      // Save conversation state if user is authenticated
+      if (user) {
+        try {
+          await ChatService.saveConversationState(sessionId, [
+            ...messages,
+            userMessage,
+            aiMessage
+          ]);
+        } catch (error) {
+          console.error('Error saving conversation state:', error);
+        }
+      }
     } catch (error) {
       console.error('Error calling AI API:', error);
       const errorMessage: Message = {
@@ -67,6 +106,20 @@ export default function Home() {
   };
 
   const hasMessages = messages.length > 0;
+
+  // Show loading screen while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-shield-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-shield-blue rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-shield-white font-bold text-2xl">S</span>
+          </div>
+          <p className="text-shield-white text-lg">Loading Shield AI...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -92,6 +145,16 @@ export default function Home() {
               <p className="text-gray-300 text-base sm:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
                 Your AI-powered apologetics companion. Ask me anything about theology, philosophy, or defending the Christian worldview.
               </p>
+              {user && (
+                <div className="text-center">
+                  <p className="text-shield-blue text-sm font-medium">
+                    Signed in as {user.email}
+                  </p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    Your conversations will be saved automatically
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
