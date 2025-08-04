@@ -56,7 +56,19 @@ export default function Home() {
     if (user) {
       loadChatHistory();
     }
-  }, [user, sessionId]);
+  }, [user]);
+
+  // Listen for conversation updates
+  useEffect(() => {
+    const handleConversationUpdate = () => {
+      if (user) {
+        loadChatHistory();
+      }
+    };
+
+    window.addEventListener('conversation-updated', handleConversationUpdate);
+    return () => window.removeEventListener('conversation-updated', handleConversationUpdate);
+  }, [user]);
 
   const loadChatHistory = async () => {
     try {
@@ -65,8 +77,29 @@ export default function Home() {
         return;
       }
 
-      console.log('Loading chat history for user:', user.id, 'sessionId:', sessionId);
-      // For now, we'll load the most recent conversation since we don't have session-based loading in ClientService
+      console.log('Loading chat history for user:', user.id);
+      
+      // If we have a current conversation ID, load its messages
+      if (currentConversationId) {
+        try {
+          const messages = await ClientService.getMessages(currentConversationId);
+          if (messages.length > 0) {
+            const formattedMessages = messages.map((msg: any) => ({
+              role: msg.role,
+              content: msg.content,
+              timestamp: msg.created_at,
+              mode: msg.mode
+            }));
+            setMessages(formattedMessages);
+            console.log('Loaded current conversation:', currentConversationId, 'with', messages.length, 'messages');
+            return;
+          }
+        } catch (error) {
+          console.error('Error loading current conversation:', error);
+        }
+      }
+
+      // Otherwise, load the most recent conversation
       const conversations = await ClientService.getConversations();
       if (conversations.length > 0) {
         const mostRecent = conversations[0];
@@ -156,33 +189,29 @@ export default function Home() {
 
       setMessages(prev => [...prev, aiMessage]);
 
-      // Create new conversation and save messages if user is authenticated
-      if (user) {
+      // Handle new conversation creation and redirection
+      if (user && data.isNewConversation && data.conversationId) {
         try {
-          console.log('Creating new conversation for user:', user.id);
+          console.log('New conversation created:', data.conversationId);
           
-          // Create new conversation with title from first message
-          const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
-          const conversation = await ClientService.createConversation(title);
-          console.log('Created new conversation:', conversation.id, conversation.title);
+          // Set the current conversation ID
+          setCurrentConversationId(data.conversationId);
           
-          // Save both messages to the database
-          await ClientService.addMessage(conversation.id, userMessage.content, 'user', userMessage.mode as 'fast' | 'accurate');
-          await ClientService.addMessage(conversation.id, aiMessage.content, 'assistant', aiMessage.mode as 'fast' | 'accurate');
-          
-          // Note: updateConversationLastMessage is handled automatically by the API when adding messages
-          
-          // Trigger conversation history refresh before redirecting
+          // Trigger conversation history refresh
           window.dispatchEvent(new CustomEvent('conversation-updated'));
           
-          // Redirect to the conversation page using Next.js router
-          console.log('Messages saved and redirecting to conversation:', conversation.id);
-          router.push(`/chat/${conversation.id}`);
+          // Redirect to the conversation page
+          console.log('Redirecting to conversation:', data.conversationId);
+          router.push(`/chat/${data.conversationId}`);
         } catch (error) {
-          console.error('Error creating conversation:', error);
+          console.error('Error handling new conversation:', error);
         }
-      } else {
-        console.log('No authenticated user, skipping conversation creation');
+      } else if (user && data.conversationId) {
+        // Update current conversation ID if it was provided
+        setCurrentConversationId(data.conversationId);
+        
+        // Trigger conversation history refresh
+        window.dispatchEvent(new CustomEvent('conversation-updated'));
       }
     } catch (error) {
       console.error('Error calling AI API:', error);

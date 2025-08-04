@@ -1,7 +1,7 @@
 # Shield AI - Application Architecture
 
 ## Overview
-Shield AI is an AI-powered apologetics companion designed to help believers, seekers, and faith leaders explore and defend the Christian worldview. Built with Next.js, React, and TypeScript, it features a modern, Grok-inspired interface with real-time chat capabilities.
+Shield AI is an AI-powered apologetics companion designed to help believers, seekers, and faith leaders explore and defend the Christian worldview. Built with Next.js, React, and TypeScript, it features a modern, Grok-inspired interface with real-time chat capabilities, vector search, and conversation management.
 
 ## Technology Stack
 
@@ -18,67 +18,99 @@ Shield AI is an AI-powered apologetics companion designed to help believers, see
 - **API**: Next.js API Routes
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
-- **AI Integration**: OpenAI API
+- **AI Integration**: OpenAI API (GPT-3.5-turbo, GPT-4-turbo-preview)
+- **Vector Database**: Pinecone
+- **Embeddings**: OpenAI Text Embeddings
 
 ## Project Structure
 
 ```
 shieldai/
 ├── components/                 # Reusable UI components
-│   ├── Header.tsx            # Navigation and branding component
-│   └── InputBar.tsx          # Main chat input interface
-├── pages/                    # Next.js pages and API routes
-│   ├── _app.tsx             # App wrapper and global state
-│   ├── _document.tsx        # HTML structure and meta tags
-│   ├── index.tsx            # Main chat interface
-│   ├── test.tsx             # Test/debug page
-│   └── api/                 # API endpoints
-│       ├── auth/            # Authentication endpoints
-│       │   ├── signin.ts    # Sign in functionality
-│       │   └── signup.ts    # Sign up functionality
-│       ├── chat.ts          # Main AI chat endpoint
-│       └── health.ts        # Health check endpoint
-├── lib/                     # Utility libraries
-│   ├── auth.ts              # Authentication utilities
-│   └── supabase.ts          # Supabase client configuration
-├── database/                # Database schema
-│   └── schema.sql           # PostgreSQL schema definitions
-├── styles/                  # Global styles
-│   └── globals.css          # Custom CSS and animations
-├── public/                  # Static assets
-│   ├── logo.png            # Custom Shield AI logo
-│   ├── logo.svg            # SVG version of logo
-│   ├── favicon.ico         # Browser favicon
-│   └── robots.txt          # SEO robots file
-├── utils/                   # Utility functions
-│   └── env.ts              # Environment variable utilities
-├── package.json             # Dependencies and scripts
-├── tailwind.config.js       # Tailwind CSS configuration
-├── next.config.js           # Next.js configuration
-├── tsconfig.json            # TypeScript configuration
-├── vercel.json              # Vercel deployment configuration
-└── README.md               # Project documentation
+│   ├── AuthModal.tsx          # Authentication modal component
+│   ├── ConversationHistory.tsx # Conversation list and management
+│   ├── FilterModal.tsx        # Search and filter interface
+│   ├── Header.tsx             # Navigation and branding component
+│   ├── InputBar.tsx           # Main chat input interface
+│   └── UserSettings.tsx       # User preferences and settings
+├── pages/                     # Next.js pages and API routes
+│   ├── _app.tsx              # App wrapper and global state
+│   ├── _document.tsx         # HTML structure and meta tags
+│   ├── index.tsx             # Main chat interface
+│   ├── test.tsx              # Test/debug page
+│   ├── chat/                 # Chat-specific pages
+│   │   └── [conversationId].tsx # Individual conversation view
+│   └── api/                  # API endpoints
+│       ├── auth/             # Authentication endpoints
+│       │   ├── signin.ts     # Sign in functionality
+│       │   └── signup.ts     # Sign up functionality
+│       ├── chat.ts           # Main AI chat endpoint
+│       ├── conversations.ts  # Conversation management
+│       ├── messages.ts       # Message retrieval
+│       └── health.ts         # Health check endpoint
+├── lib/                      # Core libraries and services
+│   ├── auth-context.tsx      # React context for authentication
+│   ├── auth.ts               # Authentication utilities
+│   ├── chat-service.ts       # Chat and conversation services
+│   ├── client-service.ts     # Client-side API services
+│   ├── embeddings.ts         # Text embedding utilities
+│   ├── pinecone.ts           # Pinecone vector database service
+│   ├── prompt-engineering.ts # AI prompt engineering utilities
+│   └── supabase.ts           # Supabase client configuration
+├── database/                 # Database schema
+│   └── schema.sql            # PostgreSQL schema definitions
+├── styles/                   # Global styles
+│   └── globals.css           # Custom CSS and animations
+├── public/                   # Static assets
+│   ├── logo.png             # Custom Shield AI logo
+│   ├── logo.svg             # SVG version of logo
+│   ├── favicon.ico          # Browser favicon
+│   └── robots.txt           # SEO robots file
+├── utils/                    # Utility functions
+│   └── env.ts               # Environment variable utilities
+├── package.json              # Dependencies and scripts
+├── tailwind.config.js        # Tailwind CSS configuration
+├── next.config.js            # Next.js configuration
+├── tsconfig.json             # TypeScript configuration
+├── vercel.json               # Vercel deployment configuration
+├── postcss.config.js         # PostCSS configuration
+├── next-env.d.ts            # Next.js TypeScript definitions
+└── README.md                # Project documentation
 ```
 
 ## Core Components
 
-### Header Component (`components/Header.tsx`)
-**Purpose**: Navigation and branding interface
+### Authentication Components
+
+#### AuthModal Component (`components/AuthModal.tsx`)
+**Purpose**: User authentication interface
 **Features**:
-- Logo display with custom branding
-- Search, filter, and settings icons
-- Sign in/Sign up buttons
-- Backdrop blur effects for modern styling
-- Hover animations and transitions
+- Sign in/Sign up form switching
+- Email and password validation
+- Error handling and user feedback
+- Modal overlay with backdrop blur
+- Responsive design for all screen sizes
 
-**Key Props**: None (static component)
-**Styling**: Tailwind CSS with custom animations
+**Key Props**:
+- `isOpen`: Boolean for modal visibility
+- `onClose`: Function to close modal
+- `mode`: 'signin' | 'signup' for form type
 
-### InputBar Component (`components/InputBar.tsx`)
+#### AuthContext (`lib/auth-context.tsx`)
+**Purpose**: Global authentication state management
+**Features**:
+- User session management
+- Authentication state persistence
+- Login/logout functionality
+- User profile data access
+
+### Chat Components
+
+#### InputBar Component (`components/InputBar.tsx`)
 **Purpose**: Main chat input interface with AI mode selection
 **Features**:
 - Text input with placeholder
-- Microphone button for voice input
+- Microphone button for voice input (future)
 - Mode toggle (Fast/Accurate) with sparkles icon
 - Send button with loading states
 - Backdrop blur and glassmorphism effects
@@ -89,7 +121,52 @@ shieldai/
 - `onModeChange`: Function to change AI mode
 - `isLoading`: Boolean for loading state
 
-**Styling**: Modern rounded design with hover effects
+#### ConversationHistory Component (`components/ConversationHistory.tsx`)
+**Purpose**: Conversation list and management interface
+**Features**:
+- List of user conversations
+- Search and filter functionality
+- Conversation deletion
+- Real-time updates
+- Responsive grid layout
+
+**Key Props**:
+- `conversations`: Array of conversation objects
+- `onSelect`: Function to select conversation
+- `onDelete`: Function to delete conversation
+- `onSearch`: Function to search conversations
+
+### Navigation Components
+
+#### Header Component (`components/Header.tsx`)
+**Purpose**: Navigation and branding interface
+**Features**:
+- Logo display with custom branding
+- Search, filter, and settings icons
+- User authentication status
+- Backdrop blur effects for modern styling
+- Hover animations and transitions
+
+**Key Props**: None (static component)
+**Styling**: Tailwind CSS with custom animations
+
+#### FilterModal Component (`components/FilterModal.tsx`)
+**Purpose**: Advanced search and filtering interface
+**Features**:
+- Search by conversation content
+- Date range filtering
+- AI mode filtering
+- Sort options
+- Modal overlay with form controls
+
+#### UserSettings Component (`components/UserSettings.tsx`)
+**Purpose**: User preferences and account management
+**Features**:
+- Profile information display
+- Theme preferences
+- Notification settings
+- Account deletion
+- Export conversation data
 
 ## Pages Architecture
 
@@ -101,24 +178,43 @@ shieldai/
 - Message display with avatars and timestamps
 - Loading indicators during AI responses
 - Responsive design for all screen sizes
+- Authentication integration
 
 **State Management**:
 - `messages`: Array of chat messages
 - `isLoading`: Boolean for AI response state
 - `currentMode`: String for AI mode selection
+- `sessionId`: String for conversation tracking
 
 **Key Functions**:
 - `handleSubmit`: Processes user messages and calls AI API
 - Message formatting and display logic
 - Error handling for API failures
+- Conversation management
+
+### Conversation Page (`pages/chat/[conversationId].tsx`)
+**Purpose**: Individual conversation view and management
+**Features**:
+- Load existing conversation messages
+- Continue conversation with AI
+- Message history display
+- Conversation metadata
+- Export functionality
+
+**Dynamic Routing**:
+- `conversationId`: URL parameter for specific conversation
+- Real-time message updates
+- Error handling for invalid conversations
 
 ### API Routes
 
 #### Chat Endpoint (`pages/api/chat.ts`)
 **Purpose**: Main AI communication endpoint
 **Features**:
-- OpenAI API integration
+- OpenAI API integration with multiple models
 - Message processing and response generation
+- Vector similarity search for context
+- Conversation history management
 - Error handling and validation
 - CORS support for cross-origin requests
 
@@ -126,7 +222,10 @@ shieldai/
 ```typescript
 {
   message: string,
-  mode: 'fast' | 'accurate'
+  mode: 'fast' | 'accurate',
+  sessionId?: string,
+  conversationId?: string,
+  userId?: string
 }
 ```
 
@@ -135,9 +234,27 @@ shieldai/
 {
   response: string,
   timestamp: string,
-  mode: string
+  mode: string,
+  sessionId: string
 }
 ```
+
+#### Conversation Management (`pages/api/conversations.ts`)
+**Purpose**: Conversation CRUD operations
+**Features**:
+- Get user conversations
+- Create new conversations
+- Update conversation metadata
+- Delete conversations
+- Search conversations
+
+#### Message Management (`pages/api/messages.ts`)
+**Purpose**: Message retrieval and management
+**Features**:
+- Get messages for conversation
+- Message pagination
+- Message search
+- Message export
 
 #### Authentication Endpoints
 - `pages/api/auth/signin.ts`: User sign-in functionality
@@ -146,6 +263,119 @@ shieldai/
 #### Health Check (`pages/api/health.ts`)
 **Purpose**: Application health monitoring
 **Response**: Status and version information
+
+## Core Services
+
+### ChatService (`lib/chat-service.ts`)
+**Purpose**: Chat and conversation management
+**Features**:
+- Conversation CRUD operations
+- Message management
+- Vector similarity search
+- Database integration
+- Error handling
+
+**Key Methods**:
+- `getConversations()`: Retrieve user conversations
+- `createConversation()`: Create new conversation
+- `addMessage()`: Add message to conversation
+- `searchSimilarMessages()`: Vector similarity search
+- `getMessages()`: Get conversation messages
+
+### PineconeService (`lib/pinecone.ts`)
+**Purpose**: Vector database operations
+**Features**:
+- Text embedding storage
+- Similarity search
+- Vector indexing
+- Batch operations
+
+### EmbeddingService (`lib/embeddings.ts`)
+**Purpose**: Text embedding generation
+**Features**:
+- OpenAI embeddings integration
+- Text preprocessing
+- Batch processing
+- Error handling
+
+### PromptEngineering (`lib/prompt-engineering.ts`)
+**Purpose**: AI prompt optimization
+**Features**:
+- Context-aware prompt generation
+- Question analysis
+- Specialized prompt templates
+- Mode-specific optimization
+
+### ClientService (`lib/client-service.ts`)
+**Purpose**: Client-side API communication
+**Features**:
+- HTTP request management
+- Error handling
+- Response caching
+- Authentication headers
+
+## Database Schema
+
+### Tables (defined in `database/schema.sql`)
+
+#### users
+- `id`: UUID (Primary Key)
+- `email`: VARCHAR (Unique)
+- `created_at`: TIMESTAMP
+- `updated_at`: TIMESTAMP
+
+#### conversations
+- `id`: UUID (Primary Key)
+- `user_id`: UUID (Foreign Key)
+- `title`: VARCHAR
+- `created_at`: TIMESTAMP
+- `updated_at`: TIMESTAMP
+- `last_message`: TEXT
+
+#### messages
+- `id`: UUID (Primary Key)
+- `conversation_id`: UUID (Foreign Key)
+- `content`: TEXT
+- `role`: VARCHAR ('user' | 'assistant')
+- `mode`: VARCHAR ('fast' | 'accurate')
+- `created_at`: TIMESTAMP
+- `embedding`: VECTOR (Pinecone)
+
+## Vector Search Architecture
+
+### Pinecone Integration
+- **Index**: `shieldai` (1536 dimensions)
+- **Environment**: `us-east-1-aws`
+- **Similarity**: Cosine similarity
+- **Metadata**: Message role, conversation ID, timestamp
+
+### Embedding Process
+1. **Text Preprocessing**: Clean and normalize text
+2. **OpenAI Embeddings**: Generate 1536-dimensional vectors
+3. **Pinecone Storage**: Store with metadata
+4. **Similarity Search**: Query similar messages for context
+
+### Search Workflow
+1. User sends message
+2. Generate embedding for query
+3. Search Pinecone for similar messages
+4. Include relevant context in AI prompt
+5. Generate response with enhanced context
+
+## Authentication Architecture
+
+### Supabase Integration
+- **Client**: Configured in `lib/supabase.ts`
+- **Auth**: User management and session handling
+- **Database**: User data and chat history storage
+- **Context**: React context for global auth state
+
+### Security Features
+- Environment variable protection
+- CORS configuration
+- API route validation
+- Error handling and logging
+- JWT token management
 
 ## Design System
 
@@ -172,6 +402,7 @@ shieldai/
 ### Local State (React Hooks)
 - **useState**: Message history, loading states, UI modes
 - **useEffect**: Side effects and API calls
+- **useContext**: Authentication state
 - **Custom Hooks**: Potential for future state management
 
 ### Data Flow
@@ -180,27 +411,7 @@ shieldai/
 3. Main page → API endpoint
 4. API → OpenAI → Response
 5. Response → Message state → UI update
-
-## Authentication Architecture
-
-### Supabase Integration
-- **Client**: Configured in `lib/supabase.ts`
-- **Auth**: User management and session handling
-- **Database**: User data and chat history storage
-
-### Security Features
-- Environment variable protection
-- CORS configuration
-- API route validation
-- Error handling and logging
-
-## Database Schema
-
-### Tables (defined in `database/schema.sql`)
-- **users**: User account information
-- **messages**: Chat message history
-- **sessions**: User session management
-- **preferences**: User settings and preferences
+6. Message → Pinecone embedding storage
 
 ## Deployment Architecture
 
@@ -228,6 +439,7 @@ shieldai/
 - **Database Indexing**: Optimized queries
 - **CDN**: Static asset delivery
 - **Edge Functions**: Serverless API optimization
+- **Vector Search**: Pinecone query optimization
 
 ## Security Considerations
 
@@ -243,6 +455,11 @@ shieldai/
 - **Rate Limiting**: API abuse prevention
 - **Environment Variables**: Sensitive data protection
 
+### Vector Database Security
+- **API Key Protection**: Secure Pinecone credentials
+- **Data Encryption**: Encrypted vector storage
+- **Access Control**: User-specific data isolation
+
 ## Monitoring and Analytics
 
 ### Error Tracking
@@ -257,14 +474,20 @@ shieldai/
 - **Performance Metrics**: Lighthouse scores
 - **Error Reporting**: User experience monitoring
 
+### Vector Search Analytics
+- **Search Performance**: Query response times
+- **Similarity Metrics**: Search result relevance
+- **Index Health**: Pinecone index monitoring
+
 ## Future Enhancements
 
 ### Planned Features
 - **Voice Input**: Speech-to-text integration
 - **File Upload**: Document analysis capabilities
 - **User Profiles**: Personalized experience
-- **Chat History**: Persistent conversation storage
+- **Advanced Search**: Semantic search improvements
 - **Export Functionality**: Conversation export options
+- **Real-time Collaboration**: Multi-user conversations
 
 ### Technical Improvements
 - **State Management**: Redux or Zustand integration
@@ -272,13 +495,13 @@ shieldai/
 - **CI/CD**: Automated testing and deployment
 - **Documentation**: API documentation with Swagger
 - **Internationalization**: Multi-language support
+- **Advanced AI**: Fine-tuned models for apologetics
 
 ## Development Workflow
 
 ### Git Branch Strategy
 - **main**: Production-ready code
 - **dev**: Development and testing
-- **prod**: Production deployment branch
 - **feature branches**: Individual feature development
 
 ### Code Quality
@@ -291,6 +514,8 @@ shieldai/
 
 ### Endpoints Summary
 - `POST /api/chat`: Main AI chat functionality
+- `GET /api/conversations`: Conversation management
+- `GET /api/messages`: Message retrieval
 - `POST /api/auth/signin`: User authentication
 - `POST /api/auth/signup`: User registration
 - `GET /api/health`: Application health check
@@ -301,4 +526,35 @@ shieldai/
 - **Logging**: Server-side error tracking
 - **Fallbacks**: Graceful degradation
 
-This architecture provides a solid foundation for the Shield AI application, ensuring scalability, maintainability, and user experience excellence. 
+## Environment Variables
+
+### Required Variables
+```bash
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4-turbo-preview
+
+# Pinecone Vector Database
+PINECONE_API_KEY=your_pinecone_api_key_here
+PINECONE_ENVIRONMENT=us-east-1-aws
+PINECONE_INDEX_NAME=shieldai
+
+# Database Configuration (PostgreSQL/Supabase)
+DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.yyfhspfqncogzitfpfbw.supabase.co:5432/postgres
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+
+# App Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3001
+NODE_ENV=development
+
+# Security
+JWT_SECRET=your_jwt_secret_here
+ENCRYPTION_KEY=your_encryption_key_here
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+```
+
+This architecture provides a solid foundation for the Shield AI application, ensuring scalability, maintainability, and user experience excellence with advanced AI capabilities and vector search functionality. 

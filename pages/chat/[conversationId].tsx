@@ -105,20 +105,13 @@ export default function ConversationPage() {
 
       setMessages(prev => [...prev, aiMessage]);
 
-      // Save both messages to the database
+      // Trigger conversation history refresh since messages are saved by the API
       if (user) {
         try {
-          await ClientService.addMessage(conversationId, userMessage.content, 'user', userMessage.mode as 'fast' | 'accurate');
-          await ClientService.addMessage(conversationId, aiMessage.content, 'assistant', aiMessage.mode as 'fast' | 'accurate');
-          
-          // Note: updateConversationLastMessage is handled automatically by the API when adding messages
-          
-          // Trigger conversation history refresh
           window.dispatchEvent(new CustomEvent('conversation-updated'));
-          
-          console.log('Messages saved to conversation:', conversationId);
+          console.log('Messages saved by API, conversation updated');
         } catch (error) {
-          console.error('Error saving messages:', error);
+          console.error('Error updating conversation:', error);
         }
       }
     } catch (error) {

@@ -8,8 +8,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// In-memory conversation store (in production, use a database)
-const conversationStore = new Map();
+// In-memory conversation store (for development/testing)
+const conversationStore = new Map<string, Array<{ role: 'system' | 'user' | 'assistant'; content: string }>>();
 
 export default async function handler(
   req: NextApiRequest,
@@ -58,7 +58,7 @@ export default async function handler(
     const temperature = mode === 'fast' ? 0.7 : 0.8;
 
     // Build messages array with conversation history and similar messages
-    const messages = [
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: systemPrompt },
       ...conversationHistory,
       { role: 'user', content: message }
@@ -79,19 +79,32 @@ export default async function handler(
 
     const aiResponse = response.choices[0].message.content;
 
-    // Save messages to database and Pinecone if user is authenticated
-    if (userId && conversationId && typeof conversationId === 'string') {
-      const convId = conversationId as string;
+    let currentConvId = conversationId;
+    let isNewConversation = false;
+
+    // Handle conversation creation and message saving if user is authenticated
+    if (userId) {
       try {
-        // Save user message
-        await ChatService.addMessage(convId, message, 'user', mode);
+        // If no conversation ID, create a new conversation
+        if (!currentConvId) {
+          const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
+          const conversation = await ChatService.createConversation(title);
+          currentConvId = conversation.id;
+          isNewConversation = true;
+          console.log('Created new conversation:', currentConvId, conversation.title);
+        }
+
+        // Save user message to database and Pinecone
+        await ChatService.addMessage(currentConvId, message, 'user', mode);
+        console.log('Saved user message to database and Pinecone');
         
-        // Save AI response
+        // Save AI response to database and Pinecone
         if (aiResponse) {
-          await ChatService.addMessage(convId, aiResponse, 'assistant', mode);
+          await ChatService.addMessage(currentConvId, aiResponse, 'assistant', mode);
+          console.log('Saved AI response to database and Pinecone');
         }
         
-        console.log('Messages saved to database and Pinecone');
+        console.log('All messages saved to database and Pinecone successfully');
       } catch (error) {
         console.error('Error saving messages to database:', error);
         // Continue even if database save fails
@@ -109,7 +122,9 @@ export default async function handler(
       response: aiResponse || 'No response generated',
       mode: mode,
       timestamp: new Date().toISOString(),
-      sessionId: sessionId
+      sessionId: sessionId,
+      conversationId: currentConvId,
+      isNewConversation: isNewConversation
     });
 
   } catch (error) {
