@@ -109,6 +109,8 @@ export default async function handler(
         console.error('Error saving messages to database:', error);
         // Continue even if database save fails
       }
+    } else {
+      console.log('No authenticated user - messages will not be saved to database');
     }
 
     // Update conversation history
