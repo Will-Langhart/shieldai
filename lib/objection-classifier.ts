@@ -201,7 +201,7 @@ export const objectionHandlers = {
       'Free will defense',
       'Soul-making theodicy',
       'Biblical examples of suffering and redemption',
-      'God's character and purposes'
+      "God's character and purposes"
     ],
     scriptures: ['Romans 8:28', 'James 1:2-4', '2 Corinthians 4:17-18'],
     philosophers: ['Alvin Plantinga', 'John Hick', 'C.S. Lewis']
