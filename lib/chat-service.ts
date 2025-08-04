@@ -9,9 +9,17 @@ type NewMessage = Database['public']['Tables']['messages']['Insert'];
 export class ChatService {
   // Get all conversations for the current user
   static async getConversations(): Promise<Conversation[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      console.log('No authenticated user found');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('conversations')
       .select('*')
+      .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
 
     if (error) {
@@ -19,7 +27,7 @@ export class ChatService {
       throw error;
     }
     
-    console.log('Retrieved conversations:', data?.length || 0);
+    console.log('Retrieved conversations for user:', user.id, data?.length || 0);
     return data || [];
   }
 
@@ -37,9 +45,18 @@ export class ChatService {
 
   // Create a new conversation
   static async createConversation(title: string): Promise<Conversation> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('No authenticated user found');
+    }
+
     const { data, error } = await supabase
       .from('conversations')
-      .insert({ title })
+      .insert({ 
+        title,
+        user_id: user.id
+      })
       .select()
       .single();
 
@@ -101,11 +118,18 @@ export class ChatService {
 
   // Get or create a conversation for the current session
   static async getOrCreateConversation(sessionId: string): Promise<Conversation> {
-    // Try to find existing conversation for this session
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('No authenticated user found');
+    }
+
+    // Try to find existing conversation for this session and user
     const { data: existing } = await supabase
       .from('conversations')
       .select('*')
       .eq('title', `Session ${sessionId}`)
+      .eq('user_id', user.id)
       .maybeSingle();
 
     if (existing) {

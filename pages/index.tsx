@@ -29,6 +29,16 @@ export default function Home() {
     }
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   });
+
+  // Update session ID when user changes
+  useEffect(() => {
+    if (user) {
+      const userSessionId = `user_${user.id}_session`;
+      localStorage.setItem('shieldai_session_id', userSessionId);
+      // Force reload of chat history with new session ID
+      loadChatHistory();
+    }
+  }, [user]);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>();
   const [showSidebar, setShowSidebar] = useState(false); // Start with sidebar closed
 
@@ -41,7 +51,12 @@ export default function Home() {
 
   const loadChatHistory = async () => {
     try {
-      console.log('Loading chat history for sessionId:', sessionId);
+      if (!user) {
+        console.log('No user authenticated, skipping chat history load');
+        return;
+      }
+
+      console.log('Loading chat history for user:', user.id, 'sessionId:', sessionId);
       const savedMessages = await ChatService.loadConversationState(sessionId);
       console.log('Loaded messages:', savedMessages.length);
       
