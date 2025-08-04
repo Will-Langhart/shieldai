@@ -28,6 +28,10 @@ export default async function handler(
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    if (!serverSupabase) {
+      return res.status(500).json({ error: 'Failed to create server client' });
+    }
+
     // Check if user profile exists
     const { data: userProfile, error: userError } = await serverSupabase
       .from('users')
