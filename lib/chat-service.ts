@@ -11,6 +11,42 @@ type NewConversation = Database['public']['Tables']['conversations']['Insert'];
 type NewMessage = Database['public']['Tables']['messages']['Insert'];
 
 export class ChatService {
+  // Helper method to ensure user profile exists
+  private static async ensureUserProfile(supabaseClient: any, user: any): Promise<void> {
+    try {
+      // Check if user profile exists
+      const { data: userProfile, error: userError } = await supabaseClient
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (userError && userError.code === 'PGRST116') {
+        // User profile doesn't exist, create it
+        console.log('Creating user profile for:', user.id, user.email);
+        const { error: createError } = await supabaseClient
+          .from('users')
+          .insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || user.user_metadata?.name || 'User'
+          });
+
+        if (createError) {
+          console.error('Failed to create user profile:', createError);
+          throw new Error('Failed to create user profile');
+        }
+        console.log('User profile created successfully');
+      } else if (userError) {
+        console.error('Error checking user profile:', userError);
+        throw new Error('Failed to check user profile');
+      }
+    } catch (error) {
+      console.error('Error ensuring user profile:', error);
+      throw error;
+    }
+  }
+
   // Get all conversations for the current user
   static async getConversations(supabaseClient?: SupabaseClient): Promise<Conversation[]> {
     const client = supabaseClient || supabase;
@@ -20,6 +56,9 @@ export class ChatService {
       console.log('No authenticated user found');
       return [];
     }
+
+    // Ensure user profile exists
+    await this.ensureUserProfile(client, user);
 
     const { data, error } = await client
       .from('conversations')
@@ -57,6 +96,9 @@ export class ChatService {
     if (!user) {
       throw new Error('No authenticated user found');
     }
+
+    // Ensure user profile exists
+    await this.ensureUserProfile(client, user);
 
     console.log('Creating conversation for user:', user.id, 'with title:', title);
 
