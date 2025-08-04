@@ -1,10 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
+import { analyzeQuestion, generateSpecializedPrompt } from '../../lib/prompt-engineering';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// In-memory conversation store (in production, use a database)
+const conversationStore = new Map();
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,45 +19,60 @@ export default async function handler(
   }
 
   try {
-    const { message, mode = 'fast' } = req.body;
+    const { message, mode = 'fast', sessionId = 'default' } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    // Shield AI system prompt for apologetics
-    const systemPrompt = `You are Shield AI, an AI-powered apologetics companion designed to help believers, seekers, and faith leaders explore and defend the Christian worldview.
+    // Get conversation history for this session
+    let conversationHistory = conversationStore.get(sessionId) || [];
+    
+    // Limit conversation history to last 10 messages to manage context
+    if (conversationHistory.length > 10) {
+      conversationHistory = conversationHistory.slice(-10);
+    }
 
-Your role is to provide thoughtful, biblically-grounded responses to theological, philosophical, and cultural questions. You should:
+    // Analyze the question to determine context
+    const questionContext = analyzeQuestion(message);
+    questionContext.sessionLength = conversationHistory.length / 2; // Each exchange is 2 messages
 
-1. **Be respectful and understanding** - Many users are genuinely seeking answers
-2. **Provide scriptural references** - When appropriate, cite relevant Bible passages
-3. **Address philosophical arguments** - Engage with common objections to Christianity
-4. **Maintain a loving tone** - Reflect Christ's compassion and patience
-5. **Acknowledge complexity** - Some questions don't have simple answers
-6. **Encourage further study** - Point users toward additional resources when helpful
+    // Generate specialized prompt based on context
+    const systemPrompt = generateSpecializedPrompt(questionContext, mode);
 
-Remember: You're not here to argue or convert, but to provide thoughtful, informed responses that help people understand the Christian perspective.`;
-
-    // Use different models based on mode
+    // Use different models and settings based on mode
     const model = mode === 'fast' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
-    const maxTokens = mode === 'fast' ? 500 : 1000;
+    const maxTokens = mode === 'fast' ? 800 : 1500;
+    const temperature = mode === 'fast' ? 0.7 : 0.8;
+
+    // Build messages array with conversation history
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...conversationHistory,
+      { role: 'user', content: message }
+    ];
 
     const response = await openai.chat.completions.create({
       model: model,
       max_tokens: maxTokens,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message }
-      ],
+      temperature: temperature,
+      messages: messages,
     });
 
     const aiResponse = response.choices[0].message.content;
 
+    // Update conversation history
+    conversationHistory.push(
+      { role: 'user', content: message },
+      { role: 'assistant', content: aiResponse }
+    );
+    conversationStore.set(sessionId, conversationHistory);
+
     return res.status(200).json({
       response: aiResponse,
       mode: mode,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      sessionId: sessionId
     });
 
   } catch (error) {

@@ -14,6 +14,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
   const handleSubmit = async (message: string) => {
     // Add user message
@@ -33,7 +34,8 @@ export default function Home() {
         },
         body: JSON.stringify({
           message,
-          mode: currentMode
+          mode: currentMode,
+          sessionId: sessionId
         }),
       });
 
