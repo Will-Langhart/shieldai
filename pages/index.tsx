@@ -121,6 +121,15 @@ export default function Home() {
             const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
             await ChatService.updateConversationTitle(conversation.id, title);
           }
+          
+          // Update current conversation ID
+          setCurrentConversationId(conversation.id);
+          
+          console.log('Messages saved successfully:', {
+            conversationId: conversation.id,
+            userMessage: userMessage.content,
+            aiMessage: aiMessage.content
+          });
         } catch (error) {
           console.error('Error saving conversation state:', error);
         }
@@ -178,9 +187,9 @@ export default function Home() {
 
           {/* Sidebar */}
           {user && (
-            <div className={`fixed lg:static inset-y-0 left-0 z-30 w-80 bg-shield-gray/50 border-r border-gray-700/50 transition-transform duration-300 ${
+            <div className={`fixed inset-y-0 left-0 z-30 w-80 bg-shield-gray/50 border-r border-gray-700/50 transition-transform duration-300 ${
               showSidebar ? 'translate-x-0' : '-translate-x-full'
-            } lg:translate-x-0`}>
+            } lg:translate-x-0 lg:static`}>
               <ConversationHistory
                 onSelectConversation={handleSelectConversation}
                 currentConversationId={currentConversationId}
@@ -193,28 +202,16 @@ export default function Home() {
           {user && (
             <button
               onClick={() => setShowSidebar(!showSidebar)}
-              className="fixed lg:hidden top-20 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors"
+              className="fixed top-1/2 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors transform -translate-y-1/2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          )}
-
-          {/* Desktop sidebar toggle */}
-          {user && (
-            <button
-              onClick={() => setShowSidebar(!showSidebar)}
-              className="hidden lg:block fixed top-20 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showSidebar ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} />
               </svg>
             </button>
           )}
 
           {/* Main content */}
-          <div className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6 ${user && showSidebar ? 'lg:ml-80' : ''}`}>
+          <div className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6 transition-all duration-300 ${user && showSidebar ? 'lg:ml-80' : ''}`}>
           {/* Shield AI Logo and Branding - Only show when no messages */}
           {!hasMessages && (
             <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">

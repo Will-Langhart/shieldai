@@ -38,7 +38,7 @@ export default function ConversationHistory({
   // Refresh conversations when a new one is created
   useEffect(() => {
     if (user) {
-      const interval = setInterval(loadConversations, 5000); // Refresh every 5 seconds
+      const interval = setInterval(loadConversations, 2000); // Refresh every 2 seconds
       return () => clearInterval(interval);
     }
   }, [user]);
@@ -47,6 +47,7 @@ export default function ConversationHistory({
     try {
       const data = await ChatService.getConversations();
       setConversations(data);
+      console.log('Loaded conversations:', data.length);
     } catch (error) {
       console.error('Error loading conversations:', error);
     } finally {
@@ -114,13 +115,24 @@ export default function ConversationHistory({
       <div className="p-4 border-b border-gray-700/50">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-shield-white">Conversations</h3>
-          <button
-            onClick={onNewConversation}
-            className="p-2 bg-shield-blue text-shield-white rounded-lg hover:bg-shield-blue/90 transition-colors"
-            title="New Conversation"
-          >
-            <Plus size={16} />
-          </button>
+          <div className="flex space-x-2">
+            <button
+              onClick={loadConversations}
+              className="p-2 text-shield-white hover:bg-shield-light-gray/50 rounded-lg transition-colors"
+              title="Refresh"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+            <button
+              onClick={onNewConversation}
+              className="p-2 bg-shield-blue text-shield-white rounded-lg hover:bg-shield-blue/90 transition-colors"
+              title="New Conversation"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
         </div>
         
         {/* Search */}
