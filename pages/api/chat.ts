@@ -1,6 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
 import { analyzeQuestion, generateSpecializedPrompt } from '../../lib/prompt-engineering';
+import { classifyObjection, generateSpecializedResponse, objectionHandlers } from '../../lib/objection-classifier';
+import { advancedPrompts, responseEnhancers } from '../../lib/advanced-prompts';
+import { searchApologeticsContent, enhanceResponseWithContent } from '../../lib/apologetics-knowledge';
+import { AnalyticsService } from '../../lib/analytics-service';
 import { ChatService } from '../../lib/chat-service';
 import { createServerSupabaseClient } from '../../lib/supabase';
 
@@ -57,6 +61,27 @@ export default async function handler(
       conversationHistory = conversationHistory.slice(-10);
     }
 
+    // Analyze the question to determine context
+    const questionContext = analyzeQuestion(message);
+    questionContext.sessionLength = conversationHistory.length / 2; // Each exchange is 2 messages
+
+    // Advanced objection classification
+    const objectionAnalysis = classifyObjection(message);
+    console.log('Objection analysis:', objectionAnalysis);
+
+    // Track analytics for the question
+    if (user) {
+      AnalyticsService.trackQuestion(
+        user.id,
+        message,
+        objectionAnalysis.primaryType,
+        objectionAnalysis.userStance,
+        objectionAnalysis.intensity,
+        sessionId,
+        conversationId
+      );
+    }
+
     // Search for similar messages using vector similarity if user is authenticated
     let similarMessages: Array<{ content: string; role: string; score: number }> = [];
     if (user && conversationId && typeof conversationId === 'string') {
@@ -68,12 +93,33 @@ export default async function handler(
       }
     }
 
-    // Analyze the question to determine context
-    const questionContext = analyzeQuestion(message);
-    questionContext.sessionLength = conversationHistory.length / 2; // Each exchange is 2 messages
+    // Search apologetics knowledge base for relevant content
+    const relevantContent = searchApologeticsContent(message, objectionAnalysis.primaryType);
+    console.log('Found relevant apologetics content:', relevantContent.length);
 
-    // Generate specialized prompt based on context
-    const systemPrompt = generateSpecializedPrompt(questionContext, mode);
+    // Generate specialized prompt based on context and objection type
+    let systemPrompt = generateSpecializedPrompt(questionContext, mode);
+    
+    // Add advanced objection-specific guidance
+    if (objectionAnalysis.primaryType === 'logical' && objectionAnalysis.keyThemes.includes('problem of evil')) {
+      const evilPrompt = advancedPrompts.problemOfEvil(objectionAnalysis.intensity);
+      systemPrompt += `\n\n${evilPrompt.systemPrompt}`;
+    } else if (objectionAnalysis.primaryType === 'moral') {
+      const moralPrompt = advancedPrompts.moralObjections(objectionAnalysis.intensity);
+      systemPrompt += `\n\n${moralPrompt.systemPrompt}`;
+    } else if (objectionAnalysis.primaryType === 'scientific') {
+      const scientificPrompt = advancedPrompts.scientificObjections(objectionAnalysis.intensity);
+      systemPrompt += `\n\n${scientificPrompt.systemPrompt}`;
+    } else if (objectionAnalysis.primaryType === 'historical') {
+      const historicalPrompt = advancedPrompts.historicalObjections(objectionAnalysis.intensity);
+      systemPrompt += `\n\n${historicalPrompt.systemPrompt}`;
+    } else if (objectionAnalysis.primaryType === 'emotional' || objectionAnalysis.primaryType === 'personal') {
+      const pastoralPrompt = advancedPrompts.personalStruggles(objectionAnalysis.intensity);
+      systemPrompt += `\n\n${pastoralPrompt.systemPrompt}`;
+    } else if (objectionAnalysis.primaryType === 'cultural') {
+      const culturalPrompt = advancedPrompts.culturalEngagement(objectionAnalysis.intensity);
+      systemPrompt += `\n\n${culturalPrompt.systemPrompt}`;
+    }
 
     // Use different models and settings based on mode
     const model = mode === 'fast' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
@@ -101,6 +147,33 @@ export default async function handler(
     });
 
     const aiResponse = response.choices[0].message.content;
+
+    // Enhance response with apologetics knowledge base content
+    let enhancedResponse = aiResponse;
+    if (relevantContent.length > 0 && aiResponse) {
+      const content = relevantContent[0];
+      enhancedResponse = `${aiResponse}
+
+**Additional Resources:**
+${content.title}
+
+${content.content.substring(0, 200)}...
+
+**Key Scriptures:** ${content.scriptures.join(', ')}
+**Further Reading:** ${content.sources.join(', ')}`;
+    }
+
+    // Track analytics for the response
+    if (user) {
+      AnalyticsService.trackResponse(
+        user.id,
+        enhancedResponse || aiResponse || '',
+        objectionAnalysis.responseStrategy,
+        objectionAnalysis.primaryType,
+        sessionId,
+        conversationId
+      );
+    }
 
     let currentConvId = conversationId;
     let isNewConversation = false;
@@ -144,7 +217,7 @@ export default async function handler(
     conversationStore.set(sessionId, conversationHistory);
 
     return res.status(200).json({
-      response: aiResponse || 'No response generated',
+      response: enhancedResponse || 'No response generated',
       mode: mode,
       timestamp: new Date().toISOString(),
       sessionId: sessionId,
