@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Header from '../components/Header';
 import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
+import MessageActions from '../components/MessageActions';
 import { useAuth } from '../lib/auth-context';
 import { ClientService } from '../lib/client-service';
 import { supabase } from '../lib/supabase';
@@ -163,6 +164,57 @@ export default function Home() {
     // Clear any existing session data
     if (typeof window !== 'undefined') {
       localStorage.removeItem('shieldai_session_id');
+    }
+  };
+
+  const handleRegenerate = async (messageIndex: number) => {
+    // Find the user message that preceded this AI response
+    const userMessageIndex = messageIndex - 1;
+    if (userMessageIndex >= 0 && messages[userMessageIndex].role === 'user') {
+      const userMessage = messages[userMessageIndex].content;
+      
+      // Remove the current AI response
+      setMessages(prev => prev.filter((_, index) => index !== messageIndex));
+      
+      // Regenerate the response
+      await handleSubmit(userMessage);
+    }
+  };
+
+  const handleCopyMessage = (content: string) => {
+    console.log('Message copied to clipboard');
+  };
+
+  const handleShareMessage = (conversationId?: string) => {
+    console.log('Share link copied to clipboard');
+  };
+
+  const handleFeedback = async (messageIndex: number, type: 'positive' | 'negative') => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const sessionToken = session?.access_token;
+
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
+        },
+        body: JSON.stringify({
+          messageId: `msg_${messageIndex}`,
+          feedback: type,
+          conversationId: currentConversationId,
+          objectionType: 'general' // This could be enhanced to detect objection type
+        }),
+      });
+
+      if (response.ok) {
+        console.log(`Feedback sent: ${type} for message ${messageIndex}`);
+      } else {
+        console.error('Failed to send feedback');
+      }
+    } catch (error) {
+      console.error('Error sending feedback:', error);
     }
   };
 
@@ -392,6 +444,19 @@ export default function Home() {
                         )}
                       </div>
                     </div>
+                    
+                    {/* Message Actions for AI responses */}
+                    {message.role === 'assistant' && (
+                      <MessageActions
+                        messageId={`msg_${index}`}
+                        content={message.content}
+                        conversationId={currentConversationId}
+                        onRegenerate={() => handleRegenerate(index)}
+                        onCopy={() => handleCopyMessage(message.content)}
+                        onShare={() => handleShareMessage(currentConversationId)}
+                        onFeedback={(type) => handleFeedback(index, type)}
+                      />
+                    )}
                   </div>
                 </div>
               ))}
