@@ -23,7 +23,8 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-800/50 backdrop-blur-sm bg-shield-black/50">
+    <>
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-800/50 backdrop-blur-sm bg-shield-black/50">
       {/* Left side - Logo */}
       <div className="flex items-center space-x-2">
         <img src="/logo.png" alt="Shield AI Logo" className="w-10 h-10 sm:w-14 sm:h-14" />
@@ -79,16 +80,16 @@ const Header: React.FC = () => {
           </>
         )}
       </div>
-          </header>
-      
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        mode={authMode}
-      />
-    </>
-  );
+    </header>
+    
+    {/* Auth Modal */}
+    <AuthModal
+      isOpen={authModalOpen}
+      onClose={() => setAuthModalOpen(false)}
+      mode={authMode}
+    />
+  </>
+);
 };
 
 export default Header; 

@@ -87,7 +87,11 @@ export default function Home() {
             ...messages,
             userMessage,
             aiMessage
-          ]);
+          ].map(msg => ({
+            role: msg.role,
+            content: msg.content,
+            mode: msg.mode as 'fast' | 'accurate' | undefined
+          })));
         } catch (error) {
           console.error('Error saving conversation state:', error);
         }
