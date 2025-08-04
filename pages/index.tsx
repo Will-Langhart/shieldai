@@ -80,7 +80,18 @@ export default function Home() {
 
       console.log('Loading chat history for user:', user.id);
       
-      // If we have a current conversation ID, load its messages
+      // First, try to get all conversations
+      const conversations = await ClientService.getConversations();
+      console.log('Found conversations:', conversations.length);
+      
+      if (conversations.length === 0) {
+        console.log('No conversations found for user');
+        setMessages([]);
+        setCurrentConversationId(undefined);
+        return;
+      }
+
+      // If we have a current conversation ID, try to load its messages
       if (currentConversationId) {
         try {
           const messages = await ClientService.getMessages(currentConversationId);
@@ -94,31 +105,37 @@ export default function Home() {
             setMessages(formattedMessages);
             console.log('Loaded current conversation:', currentConversationId, 'with', messages.length, 'messages');
             return;
+          } else {
+            console.log('Current conversation has no messages, falling back to most recent');
           }
         } catch (error) {
           console.error('Error loading current conversation:', error);
         }
       }
 
-      // Otherwise, load the most recent conversation
-      const conversations = await ClientService.getConversations();
-      if (conversations.length > 0) {
-        const mostRecent = conversations[0];
-        const messages = await ClientService.getMessages(mostRecent.id);
-        if (messages.length > 0) {
-          const formattedMessages = messages.map((msg: any) => ({
-            role: msg.role,
-            content: msg.content,
-            timestamp: msg.created_at,
-            mode: msg.mode
-          }));
-          setMessages(formattedMessages);
-          setCurrentConversationId(mostRecent.id);
-          console.log('Loaded most recent conversation:', mostRecent.title, 'with', messages.length, 'messages');
-        }
+      // Load the most recent conversation
+      const mostRecent = conversations[0];
+      console.log('Loading most recent conversation:', mostRecent.id, mostRecent.title);
+      
+      const messages = await ClientService.getMessages(mostRecent.id);
+      if (messages.length > 0) {
+        const formattedMessages = messages.map((msg: any) => ({
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.created_at,
+          mode: msg.mode
+        }));
+        setMessages(formattedMessages);
+        setCurrentConversationId(mostRecent.id);
+        console.log('Loaded most recent conversation:', mostRecent.title, 'with', messages.length, 'messages');
+      } else {
+        console.log('Most recent conversation has no messages');
+        setMessages([]);
+        setCurrentConversationId(mostRecent.id);
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
+      setMessages([]);
     }
   };
 
@@ -217,6 +234,14 @@ export default function Home() {
         
         // Trigger conversation history refresh
         window.dispatchEvent(new CustomEvent('conversation-updated'));
+        
+        console.log('Updated conversation ID:', data.conversationId);
+      } else if (user) {
+        // If no conversation ID was returned, trigger a refresh to load the most recent conversation
+        console.log('No conversation ID returned, triggering refresh');
+        setTimeout(() => {
+          loadChatHistory();
+        }, 1000); // Small delay to ensure the API has processed the message
       }
     } catch (error) {
       console.error('Error calling AI API:', error);
