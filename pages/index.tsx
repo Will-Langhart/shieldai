@@ -6,10 +6,14 @@ import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
 import MessageActions from '../components/MessageActions';
 import SubscriptionModal from '../components/SubscriptionModal';
+import AchievementSystem from '../components/AchievementSystem';
+import MoodVerseSystem from '../components/MoodVerseSystem';
+import ChurchFinder from '../components/ChurchFinder';
 import { useAuth } from '../lib/auth-context';
 import { ClientService } from '../lib/client-service';
 import { supabase } from '../lib/supabase';
-import { Shield, Crown, AlertTriangle, Sun, Moon, Monitor } from 'lucide-react';
+import { GamificationService } from '../lib/gamification-service';
+import { Shield, Crown, AlertTriangle, Sun, Moon, Monitor, Heart, MapPin } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -36,8 +40,12 @@ export default function Home() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [showAchievementSystem, setShowAchievementSystem] = useState(false);
+  const [showMoodVerseSystem, setShowMoodVerseSystem] = useState(false);
+  const [showChurchFinder, setShowChurchFinder] = useState(false);
   const [theme, setTheme] = useState<Theme>('auto');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
+  const [userProgress, setUserProgress] = useState<any>(null);
   const [sessionId] = useState(() => {
     // Use a stable session ID based on user ID or create a persistent one
     if (typeof window !== 'undefined') {
@@ -104,6 +112,75 @@ export default function Home() {
       default:
         return <Monitor className="w-4 h-4" />;
     }
+  };
+
+  // Load user progress
+  useEffect(() => {
+    if (user) {
+      loadUserProgress();
+    }
+  }, [user]);
+
+  const loadUserProgress = async () => {
+    if (!user) return;
+    
+    try {
+      const progress = await GamificationService.getUserProgress(user.id);
+      setUserProgress(progress || mockUserProgress);
+    } catch (error) {
+      console.error('Error loading user progress:', error);
+      setUserProgress(mockUserProgress);
+    }
+  };
+
+  // Handle XP tracking for conversations
+  const handleConversationComplete = async () => {
+    if (!user) return;
+    
+    try {
+      await GamificationService.addXP(
+        user.id, 
+        'conversation', 
+        15, 
+        'Completed apologetics conversation'
+      );
+      await loadUserProgress(); // Refresh progress
+    } catch (error) {
+      console.error('Error adding XP:', error);
+    }
+  };
+
+  // Handle verse selection from mood system
+  const handleVerseSelect = (verse: string) => {
+    // Add the verse to the input field
+    const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+    if (inputElement) {
+      inputElement.value = `Can you help me understand this verse: ${verse}`;
+      inputElement.focus();
+    }
+  };
+
+  // Handle church selection
+  const handleChurchSelect = (church: any) => {
+    const message = `Tell me about ${church.name} in ${church.city}. What are their main ministries and how can I get involved?`;
+    const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+    if (inputElement) {
+      inputElement.value = message;
+      inputElement.focus();
+    }
+  };
+
+  // Mock user progress data - will be replaced with real data from GamificationService
+  const mockUserProgress = {
+    level: 10,
+    currentXP: 1890,
+    xpToNextLevel: 2100,
+    totalXP: 1890,
+    achievementsUnlocked: 3,
+    totalAchievements: 6,
+    streakDays: 5,
+    conversationsCompleted: 35,
+    versesReferenced: 67
   };
 
   // Update session ID when user changes
@@ -304,91 +381,59 @@ export default function Home() {
   const handleSubmit = async (message: string) => {
     if (!message.trim() || isLoading) return;
 
-    const userMessage: Message = {
+    const newMessage: Message = {
       role: 'user',
       content: message,
       timestamp: new Date().toISOString(),
-      mode: currentMode,
+      mode: currentMode
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => [...prev, newMessage]);
     setIsLoading(true);
 
     try {
-      // Get session token for authentication
       const { data: { session } } = await supabase.auth.getSession();
-      const sessionToken = session?.access_token;
-
-      // Developer bypass for langhartcw@gmail.com
-      const isDeveloper = user?.email === 'langhartcw@gmail.com';
-      const requestBody = {
-        message,
-        mode: currentMode,
-        sessionId,
-        conversationId: currentConversationId,
-        ...(isDeveloper && { developerMode: true })
-      };
+      const token = session?.access_token;
 
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          message,
+          conversationId: currentConversationId,
+          mode: currentMode,
+          developerMode: user?.email === 'langhartcw@gmail.com'
+        })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('API Error:', errorData);
-        
-        // Handle subscription-related errors (but not for developer)
-        if (errorData.requiresUpgrade && !isDeveloper) {
-          setShowUpgradePrompt(true);
-          setIsLoading(false);
-          return;
-        }
-        
-        throw new Error(errorData.error || 'Failed to send message');
-      }
-
       const data = await response.json();
-      
-      // Update subscription status from response (but not for developer)
-      if (data.subscription && !isDeveloper) {
-        setSubscriptionStatus({
-          isInTrial: data.subscription.isInTrial,
-          hasActiveSubscription: data.subscription.hasActiveSubscription,
-          messageLimit: data.subscription.messageLimit,
-          remainingMessages: data.subscription.remainingMessages,
-        });
+
+      if (data.error) {
+        if (data.requiresUpgrade) {
+          setShowUpgradePrompt(true);
+        } else {
+          console.error('Chat error:', data.error);
+        }
+        return;
       }
 
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.response,
-        timestamp: data.timestamp,
-        mode: data.mode,
+        timestamp: new Date().toISOString(),
+        mode: currentMode
       };
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Update conversation ID if this is a new conversation
-      if (data.isNewConversation && data.conversationId) {
-        setCurrentConversationId(data.conversationId);
-        // Trigger conversation list update
-        window.dispatchEvent(new Event('conversation-updated'));
-      }
+      // Track XP for conversation completion
+      await handleConversationComplete();
+
     } catch (error) {
       console.error('Error sending message:', error);
-      // Add error message to chat
-      const errorMessage: Message = {
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
-        timestamp: new Date().toISOString(),
-        mode: currentMode,
-      };
-      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -440,6 +485,9 @@ export default function Home() {
           theme={resolvedTheme}
           onThemeToggle={toggleTheme}
           themeIcon={getThemeIcon()}
+          onAchievementClick={() => setShowAchievementSystem(true)}
+          onMoodVerseClick={() => setShowMoodVerseSystem(true)}
+          onChurchFinderClick={() => setShowChurchFinder(true)}
         />
 
         {/* Main content */}
@@ -702,6 +750,30 @@ export default function Home() {
           onClose={() => setShowSubscriptionModal(false)}
           currentSubscription={null}
           isInTrial={subscriptionStatus?.isInTrial}
+          theme={resolvedTheme}
+        />
+
+        {/* Achievement System */}
+        <AchievementSystem
+          isOpen={showAchievementSystem}
+          onClose={() => setShowAchievementSystem(false)}
+          theme={resolvedTheme}
+          userProgress={userProgress}
+        />
+
+        {/* Mood Verse System */}
+        <MoodVerseSystem
+          isOpen={showMoodVerseSystem}
+          onClose={() => setShowMoodVerseSystem(false)}
+          onVerseSelect={handleVerseSelect}
+          theme={resolvedTheme}
+        />
+
+        {/* Church Finder */}
+        <ChurchFinder
+          isOpen={showChurchFinder}
+          onClose={() => setShowChurchFinder(false)}
+          onChurchSelect={handleChurchSelect}
           theme={resolvedTheme}
         />
       </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Settings, User, LogOut, MessageSquare, Menu } from 'lucide-react';
+import { Search, Filter, Settings, User, LogOut, MessageSquare, Menu, Heart, MapPin } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import AuthModal from './AuthModal';
 import UserSettings from './UserSettings';
@@ -11,9 +11,21 @@ interface HeaderProps {
   theme?: 'light' | 'dark';
   onThemeToggle?: () => void;
   themeIcon?: React.ReactNode;
+  onAchievementClick?: () => void;
+  onMoodVerseClick?: () => void;
+  onChurchFinderClick?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick, showSidebar, theme = 'dark', onThemeToggle, themeIcon }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  onMenuClick, 
+  showSidebar, 
+  theme = 'dark', 
+  onThemeToggle, 
+  themeIcon, 
+  onAchievementClick,
+  onMoodVerseClick,
+  onChurchFinderClick
+}) => {
   const { user, signOut } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -54,16 +66,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, showSidebar, theme = 'dark
           ? 'border-gray-800/50 bg-shield-black/50' 
           : 'border-gray-200 bg-white/50'
       }`}>
-        {/* Left side - Logo and Menu */}
+        {/* Left side - Logo */}
         <div className="flex items-center space-x-2">
-          {/* Mobile menu button */}
-          <button
-            onClick={onMenuClick}
-            className="md:hidden p-2 rounded-xl transition-all duration-200 hover:bg-opacity-50"
-          >
-            <Menu size={20} className={theme === 'dark' ? 'text-shield-white' : 'text-gray-700'} />
-          </button>
-          
           <img src="/logo.png" alt="Shield AI Logo" className="w-10 h-10 sm:w-14 sm:h-14" />
           <span className={`font-semibold text-lg sm:text-xl ${
             theme === 'dark' ? 'text-shield-white' : 'text-gray-900'
@@ -85,8 +89,49 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, showSidebar, theme = 'dark
             {themeIcon}
           </button>
 
-          {/* Icons */}
-          <button className={`p-2 rounded-xl transition-all duration-200 group ${
+          {/* Achievement System */}
+          <button
+            onClick={onAchievementClick}
+            className={`p-2 rounded-xl transition-all duration-200 group ${
+              theme === 'dark' 
+                ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title="Achievements & Progress"
+          >
+            <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+            </svg>
+          </button>
+
+          {/* Mood Verse System */}
+          <button
+            onClick={onMoodVerseClick}
+            className={`p-2 rounded-xl transition-all duration-200 group ${
+              theme === 'dark' 
+                ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title="Mood-based Bible Verses"
+          >
+            <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          </button>
+
+          {/* Church Finder */}
+          <button
+            onClick={onChurchFinderClick}
+            className={`p-2 rounded-xl transition-all duration-200 group ${
+              theme === 'dark' 
+                ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title="Find Local Churches"
+          >
+            <MapPin className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          </button>
+
+          {/* Icons - Hide search on mobile for space */}
+          <button className={`p-2 rounded-xl transition-all duration-200 group hidden sm:block ${
             theme === 'dark' 
               ? 'text-shield-white hover:bg-shield-light-gray/50' 
               : 'text-gray-700 hover:bg-gray-100'
