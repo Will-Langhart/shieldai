@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, Star, Zap, Shield } from 'lucide-react';
+import { X, Check, Star, Zap, Shield, Crown, Sparkles } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -109,6 +109,16 @@ export default function SubscriptionModal({
     }
   };
 
+  const getPlanIcon = (planName: string) => {
+    return planName === 'premium' ? <Crown className="w-6 h-6" /> : <Shield className="w-6 h-6" />;
+  };
+
+  const getPlanColor = (planName: string) => {
+    return planName === 'premium' 
+      ? 'from-purple-600 to-blue-600' 
+      : 'from-blue-600 to-indigo-600';
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -120,14 +130,16 @@ export default function SubscriptionModal({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-4xl mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-5xl mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <Shield className="w-8 h-8 text-blue-600" />
+            <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+              <Shield className="w-8 h-8 text-white" />
+            </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Choose Your Plan</h2>
-              <p className="text-gray-600">Unlock the full potential of Shield AI</p>
+              <h2 className="text-2xl font-bold text-gray-900">Choose Your Shield AI Plan</h2>
+              <p className="text-gray-600">Unlock the full potential of AI-powered apologetics</p>
             </div>
           </div>
           <button
@@ -175,41 +187,49 @@ export default function SubscriptionModal({
 
         {/* Plans */}
         <div className="p-6">
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-8">
             {plans.map((plan) => (
               <div
                 key={plan.id}
-                className={`relative p-6 rounded-xl border-2 transition-all ${
+                className={`relative p-8 rounded-xl border-2 transition-all hover:shadow-lg ${
                   plan.name === 'premium'
-                    ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-blue-50'
+                    : 'border-blue-300 hover:border-blue-400'
                 }`}
               >
                 {plan.name === 'premium' && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                      Most Popular
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-full text-sm font-semibold flex items-center space-x-2">
+                      <Crown className="w-4 h-4" />
+                      <span>Most Popular</span>
                     </div>
                   </div>
                 )}
 
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                <div className="text-center mb-8">
+                  <div className="flex justify-center mb-4">
+                    <div className={`p-3 bg-gradient-to-r ${getPlanColor(plan.name)} rounded-full`}>
+                      {getPlanIcon(plan.name)}
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
                     {plan.display_name}
                   </h3>
-                  <p className="text-gray-600 mb-4">{plan.description}</p>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold text-gray-900">
+                  <p className="text-gray-600 mb-6">{plan.description}</p>
+                  <div className="mb-6">
+                    <span className="text-5xl font-bold text-gray-900">
                       ${getPrice(plan)}
                     </span>
-                    <span className="text-gray-600 ml-2">{getBillingText()}</span>
+                    <span className="text-gray-600 ml-2 text-lg">{getBillingText()}</span>
                   </div>
                 </div>
 
-                <div className="space-y-3 mb-6">
+                <div className="space-y-4 mb-8">
                   {plan.features.map((feature, index) => (
                     <div key={index} className="flex items-center space-x-3">
-                      <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                      <div className="flex-shrink-0">
+                        <Check className="w-5 h-5 text-green-500" />
+                      </div>
                       <span className="text-gray-700">{feature}</span>
                     </div>
                   ))}
@@ -218,15 +238,15 @@ export default function SubscriptionModal({
                 <button
                   onClick={() => handleSubscribe(plan.name)}
                   disabled={loading}
-                  className={`w-full py-3 px-6 rounded-lg font-semibold transition-all ${
+                  className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all ${
                     plan.name === 'premium'
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
-                      : 'bg-gray-900 text-white hover:bg-gray-800'
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-lg'
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {loading ? (
                     <div className="flex items-center justify-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       <span>Processing...</span>
                     </div>
                   ) : (
@@ -241,6 +261,10 @@ export default function SubscriptionModal({
         {/* Footer */}
         <div className="p-6 bg-gray-50 border-t border-gray-200">
           <div className="text-center text-sm text-gray-600">
+            <div className="flex items-center justify-center space-x-2 mb-2">
+              <Shield className="w-4 h-4 text-blue-600" />
+              <span className="font-medium">Shield AI Subscription</span>
+            </div>
             <p>All plans include a 7-day free trial. Cancel anytime.</p>
             <p className="mt-1">
               Need help? Contact our support team at{' '}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Calendar, AlertTriangle, CheckCircle, XCircle, Settings } from 'lucide-react';
+import { CreditCard, Calendar, AlertTriangle, CheckCircle, XCircle, Settings, Shield, Crown } from 'lucide-react';
 
 interface SubscriptionStatusProps {
   subscription?: any;
@@ -81,6 +81,11 @@ export default function SubscriptionStatus({
     return 'Inactive';
   };
 
+  const getPlanIcon = (planName?: string) => {
+    if (planName === 'premium') return <Crown className="w-5 h-5 text-purple-600" />;
+    return <Shield className="w-5 h-5 text-blue-600" />;
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -94,8 +99,10 @@ export default function SubscriptionStatus({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
-          <CreditCard className="w-6 h-6 text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Subscription Status</h3>
+          <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+            <CreditCard className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Shield AI Subscription</h3>
         </div>
         <div className={`flex items-center space-x-2 ${getStatusColor()}`}>
           {getStatusIcon()}
@@ -105,7 +112,7 @@ export default function SubscriptionStatus({
 
       {/* Trial Banner */}
       {isInTrial && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
           <div className="flex items-center space-x-3">
             <AlertTriangle className="w-5 h-5 text-blue-600" />
             <div>
@@ -117,7 +124,7 @@ export default function SubscriptionStatus({
           </div>
           <button
             onClick={onUpgrade}
-            className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="mt-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-700 hover:to-purple-700 transition-colors"
           >
             Upgrade Now
           </button>
@@ -130,9 +137,12 @@ export default function SubscriptionStatus({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-2">Current Plan</h4>
-              <p className="text-lg font-semibold text-gray-900">
-                {subscription.subscription_plans?.display_name || 'Unknown Plan'}
-              </p>
+              <div className="flex items-center space-x-2">
+                {getPlanIcon(subscription.subscription_plans?.name)}
+                <p className="text-lg font-semibold text-gray-900">
+                  {subscription.subscription_plans?.display_name || 'Unknown Plan'}
+                </p>
+              </div>
             </div>
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-2">Billing Cycle</h4>
@@ -186,7 +196,7 @@ export default function SubscriptionStatus({
             )}
             <button
               onClick={onUpgrade}
-              className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors"
+              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-colors"
             >
               {hasActiveSubscription ? 'Change Plan' : 'Upgrade'}
             </button>
@@ -197,14 +207,16 @@ export default function SubscriptionStatus({
       {/* No Subscription */}
       {!subscription && !isInTrial && (
         <div className="text-center py-8">
-          <XCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-white" />
+          </div>
           <h4 className="text-lg font-semibold text-gray-900 mb-2">No Active Subscription</h4>
           <p className="text-gray-600 mb-4">
             Subscribe to unlock all features and continue using Shield AI.
           </p>
           <button
             onClick={onUpgrade}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-colors"
           >
             Subscribe Now
           </button>

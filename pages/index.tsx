@@ -5,9 +5,11 @@ import Header from '../components/Header';
 import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
 import MessageActions from '../components/MessageActions';
+import SubscriptionModal from '../components/SubscriptionModal';
 import { useAuth } from '../lib/auth-context';
 import { ClientService } from '../lib/client-service';
 import { supabase } from '../lib/supabase';
+import { Shield, Crown, AlertTriangle } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -16,12 +18,22 @@ interface Message {
   mode?: string;
 }
 
+interface SubscriptionStatus {
+  isInTrial: boolean;
+  hasActiveSubscription: boolean;
+  messageLimit: number;
+  remainingMessages: number;
+}
+
 export default function Home() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [sessionId] = useState(() => {
     // Use a stable session ID based on user ID or create a persistent one
     if (typeof window !== 'undefined') {
@@ -48,6 +60,7 @@ export default function Home() {
       localStorage.setItem('shieldai_session_id', userSessionId);
       // Force reload of chat history with new session ID
       loadChatHistory();
+      loadSubscriptionStatus();
     }
   }, [user]);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>();
@@ -71,6 +84,30 @@ export default function Home() {
     window.addEventListener('conversation-updated', handleConversationUpdate);
     return () => window.removeEventListener('conversation-updated', handleConversationUpdate);
   }, [user]);
+
+  const loadSubscriptionStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch('/api/subscriptions/status', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSubscriptionStatus({
+          isInTrial: data.isInTrial,
+          hasActiveSubscription: data.hasActiveSubscription,
+          messageLimit: data.subscription?.messageLimit || 0,
+          remainingMessages: data.subscription?.remainingMessages || 0,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading subscription status:', error);
+    }
+  };
 
   const loadChatHistory = async () => {
     try {
@@ -101,56 +138,50 @@ export default function Home() {
               role: msg.role,
               content: msg.content,
               timestamp: msg.created_at,
-              mode: msg.mode
+              mode: msg.mode,
             }));
             setMessages(formattedMessages);
-            console.log('Loaded current conversation:', currentConversationId, 'with', messages.length, 'messages');
             return;
-          } else {
-            console.log('Current conversation has no messages, falling back to most recent');
           }
         } catch (error) {
-          console.error('Error loading current conversation:', error);
+          console.error('Error loading messages for current conversation:', error);
         }
       }
 
-      // Load the most recent conversation
-      const mostRecent = conversations[0];
-      console.log('Loading most recent conversation:', mostRecent.id, mostRecent.title);
-      
-      const messages = await ClientService.getMessages(mostRecent.id);
-      if (messages.length > 0) {
-        const formattedMessages = messages.map((msg: any) => ({
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.created_at,
-          mode: msg.mode
-        }));
-        setMessages(formattedMessages);
-        setCurrentConversationId(mostRecent.id);
-        console.log('Loaded most recent conversation:', mostRecent.title, 'with', messages.length, 'messages');
-      } else {
-        console.log('Most recent conversation has no messages');
-        setMessages([]);
-        setCurrentConversationId(mostRecent.id);
+      // If no current conversation or no messages, load the most recent conversation
+      const mostRecentConversation = conversations[0];
+      if (mostRecentConversation) {
+        try {
+          const messages = await ClientService.getMessages(mostRecentConversation.id);
+          const formattedMessages = messages.map((msg: any) => ({
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.created_at,
+            mode: msg.mode,
+          }));
+          setMessages(formattedMessages);
+          setCurrentConversationId(mostRecentConversation.id);
+        } catch (error) {
+          console.error('Error loading messages for most recent conversation:', error);
+        }
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
-      setMessages([]);
     }
   };
 
   const handleSelectConversation = async (conversationId: string) => {
     try {
       const messages = await ClientService.getMessages(conversationId);
-      setMessages(messages.map((msg: any) => ({
+      const formattedMessages = messages.map((msg: any) => ({
         role: msg.role,
         content: msg.content,
         timestamp: msg.created_at,
-        mode: msg.mode
-      })));
+        mode: msg.mode,
+      }));
+      setMessages(formattedMessages);
       setCurrentConversationId(conversationId);
-      setShowSidebar(false);
+      setShowSidebar(false); // Close sidebar on mobile
     } catch (error) {
       console.error('Error loading conversation:', error);
     }
@@ -159,154 +190,140 @@ export default function Home() {
   const handleNewConversation = () => {
     setMessages([]);
     setCurrentConversationId(undefined);
-    setShowSidebar(false);
-    console.log('New conversation started, sidebar closed');
-    // Clear any existing session data
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('shieldai_session_id');
-    }
+    setShowSidebar(false); // Close sidebar on mobile
   };
 
   const handleRegenerate = async (messageIndex: number) => {
-    // Find the user message that preceded this AI response
-    const userMessageIndex = messageIndex - 1;
-    if (userMessageIndex >= 0 && messages[userMessageIndex].role === 'user') {
-      const userMessage = messages[userMessageIndex].content;
-      
-      // Remove the current AI response
-      setMessages(prev => prev.filter((_, index) => index !== messageIndex));
-      
-      // Regenerate the response
-      await handleSubmit(userMessage);
+    if (messageIndex > 0) {
+      const userMessage = messages[messageIndex - 1];
+      const newMessages = messages.slice(0, messageIndex - 1);
+      setMessages(newMessages);
+      await handleSubmit(userMessage.content);
     }
   };
 
   const handleCopyMessage = (content: string) => {
-    console.log('Message copied to clipboard');
+    navigator.clipboard.writeText(content);
   };
 
   const handleShareMessage = (conversationId?: string) => {
-    console.log('Share link copied to clipboard');
+    const url = conversationId 
+      ? `${window.location.origin}/chat/${conversationId}`
+      : window.location.href;
+    navigator.clipboard.writeText(url);
   };
 
   const handleFeedback = async (messageIndex: number, type: 'positive' | 'negative') => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const sessionToken = session?.access_token;
-
-      const response = await fetch('/api/feedback', {
+      await fetch('/api/feedback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
         },
         body: JSON.stringify({
-          messageId: `msg_${messageIndex}`,
-          feedback: type,
+          messageIndex,
+          type,
+          sessionId,
           conversationId: currentConversationId,
-          objectionType: 'general' // This could be enhanced to detect objection type
         }),
       });
-
-      if (response.ok) {
-        console.log(`Feedback sent: ${type} for message ${messageIndex}`);
-      } else {
-        console.error('Failed to send feedback');
-      }
     } catch (error) {
-      console.error('Error sending feedback:', error);
+      console.error('Error submitting feedback:', error);
     }
   };
 
   const handleSubmit = async (message: string) => {
-    // Add user message
-    const userMessage: Message = { 
-      role: 'user', 
+    if (!message.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      role: 'user',
       content: message,
       timestamp: new Date().toISOString(),
-      mode: currentMode
+      mode: currentMode,
     };
+
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
     try {
-      // Get session token for authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      const sessionToken = session?.access_token;
-
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
+          'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`,
         },
         body: JSON.stringify({
           message,
           mode: currentMode,
-          sessionId: sessionId,
-          conversationId: currentConversationId
+          sessionId,
+          conversationId: currentConversationId,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response from AI');
+        const errorData = await response.json();
+        
+        // Handle subscription-related errors
+        if (errorData.requiresUpgrade) {
+          setShowUpgradePrompt(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        throw new Error(errorData.error || 'Failed to send message');
       }
 
       const data = await response.json();
       
-      const aiMessage: Message = {
+      // Update subscription status from response
+      if (data.subscription) {
+        setSubscriptionStatus({
+          isInTrial: data.subscription.isInTrial,
+          hasActiveSubscription: data.subscription.hasActiveSubscription,
+          messageLimit: data.subscription.messageLimit,
+          remainingMessages: data.subscription.remainingMessages,
+        });
+      }
+
+      const assistantMessage: Message = {
         role: 'assistant',
         content: data.response,
         timestamp: data.timestamp,
-        mode: data.mode
+        mode: data.mode,
       };
 
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages(prev => [...prev, assistantMessage]);
 
-      // Handle new conversation creation and redirection
-      if (user && data.isNewConversation && data.conversationId) {
-        try {
-          console.log('New conversation created:', data.conversationId);
-          
-          // Set the current conversation ID
-          setCurrentConversationId(data.conversationId);
-          
-          // Trigger conversation history refresh
-          window.dispatchEvent(new CustomEvent('conversation-updated'));
-          
-          // Redirect to the conversation page
-          console.log('Redirecting to conversation:', data.conversationId);
-          router.push(`/chat/${data.conversationId}`);
-        } catch (error) {
-          console.error('Error handling new conversation:', error);
-        }
-      } else if (user && data.conversationId) {
-        // Update current conversation ID if it was provided
+      // Update conversation ID if this is a new conversation
+      if (data.isNewConversation && data.conversationId) {
         setCurrentConversationId(data.conversationId);
-        
-        // Trigger conversation history refresh
-        window.dispatchEvent(new CustomEvent('conversation-updated'));
-        
-        console.log('Updated conversation ID:', data.conversationId);
-      } else if (user) {
-        // If no conversation ID was returned, trigger a refresh to load the most recent conversation
-        console.log('No conversation ID returned, triggering refresh');
-        setTimeout(() => {
-          loadChatHistory();
-        }, 1000); // Small delay to ensure the API has processed the message
+        // Trigger conversation list update
+        window.dispatchEvent(new Event('conversation-updated'));
       }
     } catch (error) {
-      console.error('Error calling AI API:', error);
+      console.error('Error sending message:', error);
+      // Add error message to chat
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'I apologize, but I encountered an error processing your request. Please try again or check your API configuration.',
-        timestamp: new Date().toISOString()
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date().toISOString(),
+        mode: currentMode,
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleUpgradeClick = () => {
+    setShowSubscriptionModal(true);
+    setShowUpgradePrompt(false);
+  };
+
+  // Show upgrade prompt if user is not subscribed
+  const shouldShowUpgradePrompt = subscriptionStatus ? 
+    (!subscriptionStatus.isInTrial && !subscriptionStatus.hasActiveSubscription) : 
+    false;
 
   const hasMessages = messages.length > 0;
 
@@ -334,14 +351,17 @@ export default function Home() {
 
       <div className="min-h-screen bg-shield-black flex flex-col">
         {/* Header */}
-        <Header />
+        <Header 
+          onMenuClick={() => setShowSidebar(!showSidebar)}
+          showSidebar={showSidebar}
+        />
 
         {/* Main content */}
         <main className="flex-1 flex">
           {/* Sidebar backdrop for mobile */}
           {user && showSidebar && (
             <div 
-              className="fixed inset-0 bg-black/50 z-20"
+              className="fixed inset-0 bg-black/50 z-20 md:hidden"
               onClick={() => setShowSidebar(false)}
             />
           )}
@@ -350,7 +370,7 @@ export default function Home() {
           {user && (
             <div className={`fixed inset-y-0 left-0 z-30 w-80 bg-shield-gray/50 border-r border-gray-700/50 transition-transform duration-300 ${
               showSidebar ? 'translate-x-0' : '-translate-x-full'
-            }`}>
+            } md:relative md:translate-x-0 md:block ${showSidebar ? 'md:block' : 'md:hidden'}`}>
               <ConversationHistory
                 onSelectConversation={handleSelectConversation}
                 currentConversationId={currentConversationId}
@@ -362,11 +382,8 @@ export default function Home() {
           {/* Sidebar toggle button */}
           {user && (
             <button
-              onClick={() => {
-                console.log('Sidebar toggle clicked, current state:', showSidebar);
-                setShowSidebar(!showSidebar);
-              }}
-              className="fixed top-1/2 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors transform -translate-y-1/2"
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="fixed top-1/2 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors transform -translate-y-1/2 md:left-4"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showSidebar ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} />
@@ -375,137 +392,176 @@ export default function Home() {
           )}
 
           {/* Main content */}
-          <div className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6 transition-all duration-300 ${user && showSidebar ? 'ml-80' : 'ml-0'}`}>
-          {/* Shield AI Logo and Branding - Only show when no messages */}
-          {!hasMessages && (
-            <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="flex flex-col sm:flex-row items-center justify-center mb-6 sm:mb-8">
-                <img src="/logo.png" alt="Shield AI Logo" className="w-32 h-32 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mb-4 sm:mb-0 sm:mr-6 drop-shadow-lg" />
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-shield-white drop-shadow-lg">Shield AI</h1>
-              </div>
-              <p className="text-gray-300 text-base sm:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
-                Your AI-powered apologetics companion. Ask me anything about theology, philosophy, or defending the Christian worldview.
-              </p>
-              {user && (
-                <div className="text-center">
-                  <p className="text-shield-blue text-sm font-medium">
-                    Signed in as {user.email}
-                  </p>
-                  <p className="text-gray-400 text-xs mt-1">
-                    Your conversations will be saved automatically
-                  </p>
+          <div className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6 transition-all duration-300 ${user && showSidebar ? 'md:ml-80' : 'ml-0'}`}>
+            {/* Shield AI Logo and Branding - Only show when no messages */}
+            {!hasMessages && (
+              <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col sm:flex-row items-center justify-center mb-6 sm:mb-8">
+                  <img src="/logo.png" alt="Shield AI Logo" className="w-32 h-32 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mb-4 sm:mb-0 sm:mr-6 drop-shadow-lg" />
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-shield-white drop-shadow-lg">Shield AI</h1>
                 </div>
-              )}
-            </div>
-          )}
+                <p className="text-gray-300 text-base sm:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4">
+                  Your AI-powered apologetics companion. Ask me anything about theology, philosophy, or defending the Christian worldview.
+                </p>
+                {user && (
+                  <div className="text-center">
+                    <p className="text-shield-blue text-sm font-medium">
+                      Signed in as {user.email}
+                    </p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      Your conversations will be saved automatically
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
-          {/* Messages Display */}
-          {hasMessages && (
-            <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 mb-6 sm:mb-8 px-2 sm:px-0">
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
-                >
+            {/* Messages Display */}
+            {hasMessages && (
+              <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 mb-6 sm:mb-8 px-2 sm:px-0">
+                {messages.map((message, index) => (
                   <div
-                    className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg ${
-                      message.role === 'user' 
-                        ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white' 
-                        : 'bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50 text-shield-white'
-                    }`}
+                    key={index}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                   >
-                    <div className="flex items-start space-x-2 sm:space-x-3">
-                      {message.role === 'assistant' && (
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
-                          <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
-                        </div>
-                      )}
-                      {message.role === 'user' && (
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue/20 border border-shield-blue/30 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
-                          {user?.user_metadata?.avatar_url ? (
-                            <img 
-                              src={user.user_metadata.avatar_url} 
-                              alt="User" 
-                              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-shield-blue font-bold text-xs sm:text-sm">
-                              {user?.email?.charAt(0).toUpperCase() || 'U'}
-                            </span>
+                    <div
+                      className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg ${
+                        message.role === 'user' 
+                          ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white' 
+                          : 'bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50 text-shield-white'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-2 sm:space-x-3">
+                        {message.role === 'assistant' && (
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                            <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
+                          </div>
+                        )}
+                        {message.role === 'user' && (
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue/20 border border-shield-blue/30 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                            {user?.user_metadata?.avatar_url ? (
+                              <img 
+                                src={user.user_metadata.avatar_url} 
+                                alt="User" 
+                                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-shield-blue font-bold text-xs sm:text-sm">
+                                {user?.email?.charAt(0).toUpperCase() || 'U'}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-shield-white leading-relaxed text-sm sm:text-base">{message.content}</p>
+                          {message.timestamp && (
+                            <p className="text-gray-400 text-xs mt-2 opacity-60">
+                              {new Date(message.timestamp).toLocaleTimeString()}
+                            </p>
                           )}
                         </div>
+                      </div>
+                      
+                      {/* Message Actions for AI responses */}
+                      {message.role === 'assistant' && (
+                        <MessageActions
+                          messageId={`msg_${index}`}
+                          content={message.content}
+                          conversationId={currentConversationId}
+                          onRegenerate={() => handleRegenerate(index)}
+                          onCopy={() => handleCopyMessage(message.content)}
+                          onShare={() => handleShareMessage(currentConversationId)}
+                          onFeedback={(type) => handleFeedback(index, type)}
+                        />
                       )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-shield-white leading-relaxed text-sm sm:text-base">{message.content}</p>
-                        {message.timestamp && (
-                          <p className="text-gray-400 text-xs mt-2 opacity-60">
-                            {new Date(message.timestamp).toLocaleTimeString()}
-                          </p>
-                        )}
-                      </div>
                     </div>
-                    
-                    {/* Message Actions for AI responses */}
-                    {message.role === 'assistant' && (
-                      <MessageActions
-                        messageId={`msg_${index}`}
-                        content={message.content}
-                        conversationId={currentConversationId}
-                        onRegenerate={() => handleRegenerate(index)}
-                        onCopy={() => handleCopyMessage(message.content)}
-                        onShare={() => handleShareMessage(currentConversationId)}
-                        onFeedback={(type) => handleFeedback(index, type)}
-                      />
-                    )}
                   </div>
-                </div>
-              ))}
-              
-              {/* Loading indicator */}
-              {isLoading && (
-                <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="max-w-2xl px-6 py-4 rounded-2xl shadow-lg bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
-                        <span className="text-shield-white font-bold text-sm">S</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                          <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                ))}
+                
+                {/* Loading indicator */}
+                {isLoading && (
+                  <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="max-w-2xl px-6 py-4 rounded-2xl shadow-lg bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-8 h-8 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                          <span className="text-shield-white font-bold text-sm">S</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
 
-          {/* Input Bar - Positioned differently based on message state */}
-          <div className={`w-full max-w-4xl mx-auto px-2 sm:px-0 ${hasMessages ? 'mt-auto' : 'mb-6 sm:mb-8'}`}>
-            <InputBar 
-              onSubmit={handleSubmit} 
-              mode={currentMode}
-              onModeChange={setCurrentMode}
-              isLoading={isLoading}
-            />
-          </div>
-
-          {/* Footer text - Only show when no messages */}
-          {!hasMessages && (
-            <div className="text-center mt-6 sm:mt-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-              <p className="text-gray-400 text-xs sm:text-sm px-4">
-                By messaging Shield AI, you agree to our{' '}
-                <a href="#" className="text-shield-blue hover:underline transition-colors">Terms</a>
-                {' '}and{' '}
-                <a href="#" className="text-shield-blue hover:underline transition-colors">Privacy Policy</a>
-              </p>
+            {/* Input Bar - Positioned differently based on message state */}
+            <div className={`w-full max-w-4xl mx-auto px-2 sm:px-0 ${hasMessages ? 'mt-auto' : 'mb-6 sm:mb-8'}`}>
+              <InputBar 
+                onSubmit={handleSubmit} 
+                mode={currentMode}
+                onModeChange={setCurrentMode}
+                isLoading={isLoading}
+                disabled={shouldShowUpgradePrompt}
+              />
             </div>
-          )}
+
+            {/* Footer text - Only show when no messages */}
+            {!hasMessages && (
+              <div className="text-center mt-6 sm:mt-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+                <p className="text-gray-400 text-xs sm:text-sm px-4">
+                  By messaging Shield AI, you agree to our{' '}
+                  <a href="#" className="text-shield-blue hover:underline transition-colors">Terms</a>
+                  {' '}and{' '}
+                  <a href="#" className="text-shield-blue hover:underline transition-colors">Privacy Policy</a>
+                </p>
+              </div>
+            )}
           </div>
         </main>
+
+        {/* Upgrade Prompt Modal */}
+        {showUpgradePrompt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowUpgradePrompt(false)} />
+            <div className="relative bg-white rounded-lg p-6 max-w-md mx-4 text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Upgrade Required</h3>
+              <p className="text-gray-600 mb-6">
+                Your free trial has ended. Upgrade to continue using Shield AI and unlock all features.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowUpgradePrompt(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Maybe Later
+                </button>
+                <button
+                  onClick={handleUpgradeClick}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-colors"
+                >
+                  Upgrade Now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Subscription Modal */}
+        <SubscriptionModal
+          isOpen={showSubscriptionModal}
+          onClose={() => setShowSubscriptionModal(false)}
+          currentSubscription={null}
+          isInTrial={subscriptionStatus?.isInTrial}
+        />
       </div>
     </>
   );
