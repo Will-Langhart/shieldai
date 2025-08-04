@@ -1,4 +1,5 @@
 import { Pinecone } from '@pinecone-database/pinecone';
+import { EmbeddingService } from './embeddings';
 
 // Initialize Pinecone client (server-side only)
 let pc: Pinecone | null = null;
@@ -46,10 +47,13 @@ export class PineconeService {
   ): Promise<void> {
     try {
       const { index } = initializePinecone();
+      // Convert embedding to 1024 dimensions for Pinecone compatibility
+      const convertedEmbedding = EmbeddingService.convertTo1024Dimensions(embedding);
+      
       await index.upsert([
         {
           id: messageId,
-          values: embedding,
+          values: convertedEmbedding,
           metadata: {
             content,
             role,
@@ -76,13 +80,16 @@ export class PineconeService {
   ): Promise<SearchResult[]> {
     try {
       const { index } = initializePinecone();
+      // Convert query embedding to 1024 dimensions for Pinecone compatibility
+      const convertedQueryEmbedding = EmbeddingService.convertTo1024Dimensions(queryEmbedding);
+      
       const filter: any = { userId };
       if (conversationId) {
         filter.conversationId = conversationId;
       }
 
       const searchResponse = await index.query({
-        vector: queryEmbedding,
+        vector: convertedQueryEmbedding,
         topK,
         filter,
         includeMetadata: true,
@@ -111,7 +118,7 @@ export class PineconeService {
     try {
       const { index } = initializePinecone();
       const searchResponse = await index.query({
-        vector: new Array(1536).fill(0), // Dummy vector for metadata-only search
+        vector: new Array(1024).fill(0), // Dummy vector for metadata-only search (1024 dimensions)
         topK,
         filter: {
           conversationId,

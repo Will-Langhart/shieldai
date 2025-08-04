@@ -9,7 +9,7 @@ export class EmbeddingService {
   static async generateEmbedding(text: string): Promise<number[]> {
     try {
       const response = await openai.embeddings.create({
-        model: 'text-embedding-ada-002',
+        model: 'text-embedding-ada-002', // Keep using ada-002 for 1536 dimensions
         input: text,
       });
 
@@ -24,7 +24,7 @@ export class EmbeddingService {
   static async generateEmbeddings(texts: string[]): Promise<number[][]> {
     try {
       const response = await openai.embeddings.create({
-        model: 'text-embedding-ada-002',
+        model: 'text-embedding-ada-002', // Keep using ada-002 for 1536 dimensions
         input: texts,
       });
 
@@ -46,5 +46,20 @@ export class EmbeddingService {
     const magnitude2 = Math.sqrt(embedding2.reduce((sum, val) => sum + val * val, 0));
 
     return dotProduct / (magnitude1 * magnitude2);
+  }
+
+  // Convert 1536-dimensional embedding to 1024-dimensional for Pinecone compatibility
+  static convertTo1024Dimensions(embedding: number[]): number[] {
+    if (embedding.length === 1024) {
+      return embedding;
+    }
+    
+    if (embedding.length === 1536) {
+      // Simple truncation to 1024 dimensions
+      // In production, you might want to use a more sophisticated dimensionality reduction
+      return embedding.slice(0, 1024);
+    }
+    
+    throw new Error(`Unsupported embedding dimension: ${embedding.length}`);
   }
 } 
