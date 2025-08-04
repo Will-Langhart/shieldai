@@ -84,7 +84,7 @@ export default function Home() {
           {!hasMessages && (
             <div className="text-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center justify-center mb-8">
-                <img src="/logo.png" alt="Shield AI Logo" className="w-28 h-28 mr-6 drop-shadow-lg" />
+                <img src="/logo.png" alt="Shield AI Logo" className="w-56 h-56 mr-6 drop-shadow-lg" />
                 <h1 className="text-6xl font-bold text-shield-white drop-shadow-lg">Shield AI</h1>
               </div>
               <p className="text-gray-300 text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
