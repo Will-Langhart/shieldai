@@ -37,18 +37,42 @@ export default function Home() {
     if (user) {
       loadChatHistory();
     }
-  }, [user]);
+  }, [user, sessionId]);
 
   const loadChatHistory = async () => {
     try {
+      console.log('Loading chat history for sessionId:', sessionId);
       const savedMessages = await ChatService.loadConversationState(sessionId);
+      console.log('Loaded messages:', savedMessages.length);
+      
       if (savedMessages.length > 0) {
-        setMessages(savedMessages.map(msg => ({
+        const formattedMessages = savedMessages.map(msg => ({
           role: msg.role,
           content: msg.content,
           timestamp: msg.created_at,
           mode: msg.mode
-        })));
+        }));
+        setMessages(formattedMessages);
+        console.log('Messages loaded successfully:', formattedMessages.length);
+      } else {
+        console.log('No saved messages found for this session, trying to load most recent conversation');
+        // Try to load the most recent conversation as a fallback
+        const conversations = await ChatService.getConversations();
+        if (conversations.length > 0) {
+          const mostRecent = conversations[0];
+          const messages = await ChatService.getMessages(mostRecent.id);
+          if (messages.length > 0) {
+            const formattedMessages = messages.map(msg => ({
+              role: msg.role,
+              content: msg.content,
+              timestamp: msg.created_at,
+              mode: msg.mode
+            }));
+            setMessages(formattedMessages);
+            setCurrentConversationId(mostRecent.id);
+            console.log('Loaded most recent conversation:', mostRecent.title, 'with', messages.length, 'messages');
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
@@ -141,6 +165,11 @@ export default function Home() {
             // This will trigger the ConversationHistory component to refresh
             window.dispatchEvent(new CustomEvent('conversation-updated'));
           }, 500);
+          
+          // Also trigger a reload of the current conversation
+          setTimeout(() => {
+            loadChatHistory();
+          }, 1000);
           
           console.log('Messages saved successfully:', {
             conversationId: conversation.id,

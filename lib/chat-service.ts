@@ -148,8 +148,13 @@ export class ChatService {
   // Load conversation state
   static async loadConversationState(sessionId: string): Promise<Message[]> {
     try {
+      console.log('Loading conversation state for sessionId:', sessionId);
       const conversation = await this.getOrCreateConversation(sessionId);
-      return await this.getMessages(conversation.id);
+      console.log('Found conversation:', conversation.id, conversation.title);
+      
+      const messages = await this.getMessages(conversation.id);
+      console.log('Retrieved messages for conversation:', messages.length);
+      return messages;
     } catch (error) {
       console.error('Error loading conversation state:', error);
       return [];
