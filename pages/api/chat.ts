@@ -39,44 +39,72 @@ export default async function handler(
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      serverSupabase = createServerSupabaseClient(token);
-      const { data: { user: authUser }, error: authError } = await serverSupabase.auth.getUser();
-      if (!authError && authUser) {
-        user = authUser;
-        console.log('Authenticated user:', user.id, user.email);
-      } else {
-        console.error('Auth error:', authError);
+      console.log('Received token:', token.substring(0, 20) + '...');
+      
+      try {
+        serverSupabase = createServerSupabaseClient(token);
+        const { data: { user: authUser }, error: authError } = await serverSupabase.auth.getUser();
+        
+        if (authError) {
+          console.error('Auth error:', authError);
+          return res.status(401).json({ error: 'Invalid authentication token' });
+        }
+        
+        if (authUser) {
+          user = authUser;
+          console.log('Authenticated user:', user.id, user.email);
+        } else {
+          console.error('No user found in token');
+          return res.status(401).json({ error: 'No user found in token' });
+        }
+      } catch (error) {
+        console.error('Error creating Supabase client:', error);
+        return res.status(401).json({ error: 'Authentication failed' });
       }
+    } else {
+      console.error('No authorization header or invalid format');
+      return res.status(401).json({ error: 'Authorization header required' });
     }
     
     if (!user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Check subscription access
-    const subscriptionCheck = await SubscriptionMiddleware.checkAccess(user.id);
-    if (!subscriptionCheck.hasAccess) {
-      return res.status(403).json({ 
-        error: 'Subscription required',
-        message: subscriptionCheck.message,
-        requiresUpgrade: true
-      });
-    }
+    // Developer bypass for langhartcw@gmail.com
+    const isDeveloper = user.email === 'langhartcw@gmail.com';
+    const developerMode = req.body.developerMode === true;
 
-    // Check message limits
-    const messageLimitCheck = await SubscriptionMiddleware.checkMessageLimit(user.id);
-    if (!messageLimitCheck.canSend) {
-      return res.status(429).json({ 
-        error: 'Message limit reached',
-        message: messageLimitCheck.message,
-        limit: messageLimitCheck.limit,
-        remaining: messageLimitCheck.remaining,
-        requiresUpgrade: true
-      });
-    }
+    // Check subscription access (skip for developer)
+    let subscriptionCheck: any = { hasAccess: true, isInTrial: true, hasActiveSubscription: true, message: undefined };
+    let messageLimitCheck: any = { canSend: true, limit: 999999, remaining: 999999, message: undefined };
+    
+    if (!isDeveloper) {
+      subscriptionCheck = await SubscriptionMiddleware.checkAccess(user.id);
+      if (!subscriptionCheck.hasAccess) {
+        return res.status(403).json({ 
+          error: 'Subscription required',
+          message: subscriptionCheck.message,
+          requiresUpgrade: true
+        });
+      }
 
-    // Track usage
-    await SubscriptionMiddleware.trackUsage(user.id, 'messages', 1);
+      // Check message limits
+      messageLimitCheck = await SubscriptionMiddleware.checkMessageLimit(user.id);
+      if (!messageLimitCheck.canSend) {
+        return res.status(429).json({ 
+          error: 'Message limit reached',
+          message: messageLimitCheck.message,
+          limit: messageLimitCheck.limit,
+          remaining: messageLimitCheck.remaining,
+          requiresUpgrade: true
+        });
+      }
+
+      // Track usage
+      await SubscriptionMiddleware.trackUsage(user.id, 'messages', 1);
+    } else {
+      console.log('Developer mode enabled for:', user.email);
+    }
 
     // Get conversation history for this session
     let conversationHistory = conversationStore.get(sessionId) || [];

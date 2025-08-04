@@ -88,10 +88,25 @@ export default function Home() {
   const loadSubscriptionStatus = async () => {
     if (!user) return;
     
+    // Developer bypass for langhartcw@gmail.com
+    const isDeveloper = user.email === 'langhartcw@gmail.com';
+    if (isDeveloper) {
+      setSubscriptionStatus({
+        isInTrial: true,
+        hasActiveSubscription: true,
+        messageLimit: 999999,
+        remainingMessages: 999999,
+      });
+      return;
+    }
+    
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const sessionToken = session?.access_token;
+
       const response = await fetch('/api/subscriptions/status', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`,
+          ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
         },
       });
 
@@ -246,25 +261,35 @@ export default function Home() {
     setIsLoading(true);
 
     try {
+      // Get session token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      const sessionToken = session?.access_token;
+
+      // Developer bypass for langhartcw@gmail.com
+      const isDeveloper = user?.email === 'langhartcw@gmail.com';
+      const requestBody = {
+        message,
+        mode: currentMode,
+        sessionId,
+        conversationId: currentConversationId,
+        ...(isDeveloper && { developerMode: true })
+      };
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`,
+          ...(sessionToken && { 'Authorization': `Bearer ${sessionToken}` }),
         },
-        body: JSON.stringify({
-          message,
-          mode: currentMode,
-          sessionId,
-          conversationId: currentConversationId,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('API Error:', errorData);
         
-        // Handle subscription-related errors
-        if (errorData.requiresUpgrade) {
+        // Handle subscription-related errors (but not for developer)
+        if (errorData.requiresUpgrade && !isDeveloper) {
           setShowUpgradePrompt(true);
           setIsLoading(false);
           return;
@@ -275,8 +300,8 @@ export default function Home() {
 
       const data = await response.json();
       
-      // Update subscription status from response
-      if (data.subscription) {
+      // Update subscription status from response (but not for developer)
+      if (data.subscription && !isDeveloper) {
         setSubscriptionStatus({
           isInTrial: data.subscription.isInTrial,
           hasActiveSubscription: data.subscription.hasActiveSubscription,
@@ -320,9 +345,9 @@ export default function Home() {
     setShowUpgradePrompt(false);
   };
 
-  // Show upgrade prompt if user is not subscribed
+  // Show upgrade prompt if user is not subscribed (but not for developer)
   const shouldShowUpgradePrompt = subscriptionStatus ? 
-    (!subscriptionStatus.isInTrial && !subscriptionStatus.hasActiveSubscription) : 
+    (!subscriptionStatus.isInTrial && !subscriptionStatus.hasActiveSubscription && user?.email !== 'langhartcw@gmail.com') : 
     false;
 
   const hasMessages = messages.length > 0;
@@ -418,85 +443,87 @@ export default function Home() {
 
             {/* Messages Display */}
             {hasMessages && (
-              <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 mb-6 sm:mb-8 px-2 sm:px-0">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
-                  >
+              <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 mb-6 sm:mb-8 px-2 sm:px-0 overflow-y-auto flex-1">
+                <div className="space-y-4 sm:space-y-6">
+                  {messages.map((message, index) => (
                     <div
-                      className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg ${
-                        message.role === 'user' 
-                          ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white' 
-                          : 'bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50 text-shield-white'
-                      }`}
+                      key={index}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                     >
-                      <div className="flex items-start space-x-2 sm:space-x-3">
-                        {message.role === 'assistant' && (
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
-                            <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
-                          </div>
-                        )}
-                        {message.role === 'user' && (
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue/20 border border-shield-blue/30 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
-                            {user?.user_metadata?.avatar_url ? (
-                              <img 
-                                src={user.user_metadata.avatar_url} 
-                                alt="User" 
-                                className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-shield-blue font-bold text-xs sm:text-sm">
-                                {user?.email?.charAt(0).toUpperCase() || 'U'}
-                              </span>
+                      <div
+                        className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg ${
+                          message.role === 'user' 
+                            ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white' 
+                            : 'bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50 text-shield-white'
+                        }`}
+                      >
+                        <div className="flex items-start space-x-2 sm:space-x-3">
+                          {message.role === 'assistant' && (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                              <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
+                            </div>
+                          )}
+                          {message.role === 'user' && (
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue/20 border border-shield-blue/30 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                              {user?.user_metadata?.avatar_url ? (
+                                <img 
+                                  src={user.user_metadata.avatar_url} 
+                                  alt="User" 
+                                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-shield-blue font-bold text-xs sm:text-sm">
+                                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-shield-white leading-relaxed text-sm sm:text-base break-words">{message.content}</p>
+                            {message.timestamp && (
+                              <p className="text-gray-400 text-xs mt-2 opacity-60">
+                                {new Date(message.timestamp).toLocaleTimeString()}
+                              </p>
                             )}
                           </div>
+                        </div>
+                        
+                        {/* Message Actions for AI responses */}
+                        {message.role === 'assistant' && (
+                          <MessageActions
+                            messageId={`msg_${index}`}
+                            content={message.content}
+                            conversationId={currentConversationId}
+                            onRegenerate={() => handleRegenerate(index)}
+                            onCopy={() => handleCopyMessage(message.content)}
+                            onShare={() => handleShareMessage(currentConversationId)}
+                            onFeedback={(type) => handleFeedback(index, type)}
+                          />
                         )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-shield-white leading-relaxed text-sm sm:text-base">{message.content}</p>
-                          {message.timestamp && (
-                            <p className="text-gray-400 text-xs mt-2 opacity-60">
-                              {new Date(message.timestamp).toLocaleTimeString()}
-                            </p>
-                          )}
-                        </div>
                       </div>
-                      
-                      {/* Message Actions for AI responses */}
-                      {message.role === 'assistant' && (
-                        <MessageActions
-                          messageId={`msg_${index}`}
-                          content={message.content}
-                          conversationId={currentConversationId}
-                          onRegenerate={() => handleRegenerate(index)}
-                          onCopy={() => handleCopyMessage(message.content)}
-                          onShare={() => handleShareMessage(currentConversationId)}
-                          onFeedback={(type) => handleFeedback(index, type)}
-                        />
-                      )}
                     </div>
-                  </div>
-                ))}
-                
-                {/* Loading indicator */}
-                {isLoading && (
-                  <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="max-w-2xl px-6 py-4 rounded-2xl shadow-lg bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
-                          <span className="text-shield-white font-bold text-sm">S</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                            <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  ))}
+                  
+                  {/* Loading indicator */}
+                  {isLoading && (
+                    <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="max-w-2xl px-6 py-4 rounded-2xl shadow-lg bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-8 h-8 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
+                            <span className="text-shield-white font-bold text-sm">S</span>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex space-x-1">
+                              <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce"></div>
+                              <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                              <div className="w-2 h-2 bg-shield-blue rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
