@@ -1,12 +1,23 @@
 import React, { useState } from 'react';
-import { Search, Filter, Settings, User, LogOut } from 'lucide-react';
+import { Search, Filter, Settings, User, LogOut, MessageSquare } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import AuthModal from './AuthModal';
+import UserSettings from './UserSettings';
+import FilterModal, { FilterOptions } from './FilterModal';
 
 const Header: React.FC = () => {
   const { user, signOut } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [currentFilters, setCurrentFilters] = useState<FilterOptions>({
+    dateRange: 'all',
+    topic: '',
+    responseMode: 'all',
+    sortBy: 'date',
+    sortOrder: 'desc'
+  });
 
   const handleSignIn = () => {
     setAuthMode('signin');
@@ -22,6 +33,12 @@ const Header: React.FC = () => {
     await signOut();
   };
 
+  const handleApplyFilters = (filters: FilterOptions) => {
+    setCurrentFilters(filters);
+    // TODO: Apply filters to conversation list
+    console.log('Applied filters:', filters);
+  };
+
   return (
     <>
       <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-800/50 backdrop-blur-sm bg-shield-black/50">
@@ -34,15 +51,25 @@ const Header: React.FC = () => {
       {/* Right side - Navigation and buttons */}
       <div className="flex items-center space-x-2 sm:space-x-4">
         {/* Icons */}
-        <button className="p-2 text-shield-white hover:bg-shield-light-gray/50 rounded-xl transition-all duration-200 group">
+        <button className="p-2 text-shield-white hover:bg-shield-light-gray/50 rounded-xl transition-all duration-200 group" title="Search">
           <Search size={20} className="group-hover:scale-110 transition-transform" />
         </button>
-        <button className="p-2 text-shield-white hover:bg-shield-light-gray/50 rounded-xl transition-all duration-200 group">
+        <button 
+          onClick={() => setFilterModalOpen(true)}
+          className="p-2 text-shield-white hover:bg-shield-light-gray/50 rounded-xl transition-all duration-200 group" 
+          title="Filter conversations"
+        >
           <Filter size={20} className="group-hover:scale-110 transition-transform" />
         </button>
-        <button className="p-2 text-shield-white hover:bg-shield-light-gray/50 rounded-xl transition-all duration-200 group">
-          <Settings size={20} className="group-hover:scale-110 transition-transform" />
-        </button>
+        {user && (
+          <button 
+            onClick={() => setSettingsModalOpen(true)}
+            className="p-2 text-shield-white hover:bg-shield-light-gray/50 rounded-xl transition-all duration-200 group" 
+            title="User settings"
+          >
+            <Settings size={20} className="group-hover:scale-110 transition-transform" />
+          </button>
+        )}
 
         {/* Buttons */}
         {user ? (
@@ -87,6 +114,20 @@ const Header: React.FC = () => {
       isOpen={authModalOpen}
       onClose={() => setAuthModalOpen(false)}
       mode={authMode}
+    />
+
+    {/* User Settings Modal */}
+    <UserSettings
+      isOpen={settingsModalOpen}
+      onClose={() => setSettingsModalOpen(false)}
+    />
+
+    {/* Filter Modal */}
+    <FilterModal
+      isOpen={filterModalOpen}
+      onClose={() => setFilterModalOpen(false)}
+      onApplyFilters={handleApplyFilters}
+      currentFilters={currentFilters}
     />
   </>
 );

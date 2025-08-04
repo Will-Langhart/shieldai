@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Header from '../components/Header';
 import InputBar from '../components/InputBar';
+import ConversationHistory from '../components/ConversationHistory';
 import { useAuth } from '../lib/auth-context';
 import { ChatService } from '../lib/chat-service';
 
@@ -18,6 +19,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [currentConversationId, setCurrentConversationId] = useState<string | undefined>();
+  const [showSidebar, setShowSidebar] = useState(false);
 
   // Load chat history when user is authenticated
   useEffect(() => {
@@ -40,6 +43,28 @@ export default function Home() {
     } catch (error) {
       console.error('Error loading chat history:', error);
     }
+  };
+
+  const handleSelectConversation = async (conversationId: string) => {
+    try {
+      const messages = await ChatService.getMessages(conversationId);
+      setMessages(messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.created_at,
+        mode: msg.mode
+      })));
+      setCurrentConversationId(conversationId);
+      setShowSidebar(false);
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+    }
+  };
+
+  const handleNewConversation = () => {
+    setMessages([]);
+    setCurrentConversationId(undefined);
+    setShowSidebar(false);
   };
 
   const handleSubmit = async (message: string) => {
@@ -138,7 +163,34 @@ export default function Home() {
         <Header />
 
         {/* Main content */}
-        <main className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6`}>
+        <main className="flex-1 flex">
+          {/* Sidebar */}
+          {user && (
+            <div className={`w-80 bg-shield-gray/50 border-r border-gray-700/50 transition-transform duration-300 ${
+              showSidebar ? 'translate-x-0' : '-translate-x-full'
+            } lg:translate-x-0 lg:static lg:block`}>
+              <ConversationHistory
+                onSelectConversation={handleSelectConversation}
+                currentConversationId={currentConversationId}
+                onNewConversation={handleNewConversation}
+              />
+            </div>
+          )}
+
+          {/* Mobile sidebar toggle */}
+          {user && (
+            <button
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="lg:hidden fixed top-20 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          )}
+
+          {/* Main content */}
+          <div className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6`}>
           {/* Shield AI Logo and Branding - Only show when no messages */}
           {!hasMessages && (
             <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
