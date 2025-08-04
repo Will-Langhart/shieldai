@@ -1,7 +1,7 @@
 # Shield AI - Application Architecture
 
 ## Overview
-Shield AI is an AI-powered apologetics companion designed to help believers, seekers, and faith leaders explore and defend the Christian worldview. Built with Next.js, React, and TypeScript, it features a modern, Grok-inspired interface with real-time chat capabilities, vector search, and conversation management.
+Shield AI is an AI-powered apologetics companion designed to help believers, seekers, and faith leaders explore and defend the Christian worldview. Built with Next.js, React, and TypeScript, it features a modern, Grok-inspired interface with real-time chat capabilities, vector search, conversation management, and a subscription-based payment system.
 
 ## Technology Stack
 
@@ -21,6 +21,35 @@ Shield AI is an AI-powered apologetics companion designed to help believers, see
 - **AI Integration**: OpenAI API (GPT-3.5-turbo, GPT-4-turbo-preview)
 - **Vector Database**: Pinecone
 - **Embeddings**: OpenAI Text Embeddings
+- **Payment Processing**: Stripe
+
+## Subscription System Architecture
+
+### Subscription Tiers
+- **Free Trial**: 1 week free access for new users
+- **Basic Plan**: $4.99/week - Full access to AI chat and basic features
+- **Premium Plan**: $9.99/week - Enhanced features including advanced AI models, priority support, and unlimited conversations
+
+### Stripe Integration
+- **Webhook Handling**: Real-time subscription status updates
+- **Customer Management**: Stripe customer profiles linked to user accounts
+- **Subscription Management**: Automatic billing and subscription lifecycle
+- **Payment Methods**: Secure card storage and management
+- **Invoice Management**: Automatic invoice generation and delivery
+
+### Database Schema Extensions
+- **subscriptions**: User subscription data and status
+- **payments**: Payment history and transaction records
+- **subscription_plans**: Available subscription tiers and pricing
+- **usage_metrics**: User usage tracking for billing
+
+### Payment Flow
+1. **User Registration**: Free trial activation
+2. **Trial Expiration**: Graceful upgrade prompts
+3. **Subscription Selection**: Plan comparison and selection
+4. **Payment Processing**: Secure Stripe checkout
+5. **Access Management**: Feature access based on subscription status
+6. **Billing Management**: Automatic renewals and payment handling
 
 ## Project Structure
 

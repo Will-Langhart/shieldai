@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, User, Mail, Shield, Palette, Bell, Download, Trash2, Save, Upload, Camera } from 'lucide-react';
+import { X, User, Mail, Shield, Palette, Bell, Download, Trash2, Save, Upload, Camera, CreditCard } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { supabase } from '../lib/supabase';
+import SubscriptionStatus from './SubscriptionStatus';
+import SubscriptionModal from './SubscriptionModal';
 
 interface UserSettingsProps {
   isOpen: boolean;
@@ -16,6 +18,10 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [subscription, setSubscription] = useState<any>(null);
+  const [isInTrial, setIsInTrial] = useState(false);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [preferences, setPreferences] = useState({
     theme: 'dark',
     notifications: true,
@@ -27,6 +33,7 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
   useEffect(() => {
     if (user && isOpen) {
       loadUserData();
+      loadSubscriptionData();
     }
   }, [user, isOpen]);
 
@@ -46,6 +53,25 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+    }
+  };
+
+  const loadSubscriptionData = async () => {
+    try {
+      const response = await fetch('/api/subscriptions/status', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSubscription(data.subscription);
+        setIsInTrial(data.isInTrial);
+        setHasActiveSubscription(data.hasActiveSubscription);
+      }
+    } catch (error) {
+      console.error('Error loading subscription data:', error);
     }
   };
 
@@ -173,254 +199,284 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
     }
   };
 
+  const handleUpgradeSubscription = () => {
+    setShowSubscriptionModal(true);
+  };
+
   if (!isOpen) return null;
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'subscription', label: 'Subscription', icon: CreditCard },
     { id: 'preferences', label: 'Preferences', icon: Palette },
     { id: 'data', label: 'Data & Privacy', icon: Shield }
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-shield-gray/95 backdrop-blur-sm border border-gray-700/50 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700/50">
-          <h2 className="text-2xl font-bold text-shield-white">User Settings</h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-shield-white transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex h-[calc(90vh-120px)]">
-          {/* Sidebar */}
-          <div className="w-64 border-r border-gray-700/50 bg-shield-light-gray/20">
-            <nav className="p-4">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-shield-blue text-shield-white'
-                        : 'text-gray-300 hover:bg-shield-light-gray/30'
-                    }`}
-                  >
-                    <Icon size={18} />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
+    <>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-shield-gray/95 backdrop-blur-sm border border-gray-700/50 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-700/50">
+            <h2 className="text-2xl font-bold text-shield-white">User Settings</h2>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-shield-white transition-colors"
+            >
+              <X size={20} />
+            </button>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1 p-6 overflow-y-auto">
-            {activeTab === 'profile' && (
-              <div className="space-y-6">
-                <h3 className="text-xl font-semibold text-shield-white mb-4">Profile Settings</h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
-                    <input
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white placeholder-gray-400 focus:outline-none focus:border-shield-blue/50 transition-colors"
-                      placeholder="Enter your full name"
-                    />
-                  </div>
+          {/* Content */}
+          <div className="flex h-[calc(90vh-120px)]">
+            {/* Sidebar */}
+            <div className="w-64 border-r border-gray-700/50 bg-shield-light-gray/20">
+              <nav className="p-4">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
+                        activeTab === tab.id
+                          ? 'bg-shield-blue text-shield-white'
+                          : 'text-gray-300 hover:bg-shield-light-gray/30'
+                      }`}
+                    >
+                      <Icon size={18} />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white placeholder-gray-400 focus:outline-none focus:border-shield-blue/50 transition-colors"
-                      placeholder="Enter your email"
-                    />
-                  </div>
+            {/* Main Content */}
+            <div className="flex-1 p-6 overflow-y-auto">
+              {activeTab === 'profile' && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-shield-white mb-4">Profile Settings</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white placeholder-gray-400 focus:outline-none focus:border-shield-blue/50 transition-colors"
+                        placeholder="Enter your full name"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Profile Picture</label>
-                    <div className="flex items-center space-x-4">
-                      <div className="w-16 h-16 bg-shield-blue/20 border border-shield-blue/30 rounded-full flex items-center justify-center overflow-hidden">
-                        {avatarUrl ? (
-                          <img 
-                            src={avatarUrl} 
-                            alt="Profile" 
-                            className="w-full h-full object-cover"
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white placeholder-gray-400 focus:outline-none focus:border-shield-blue/50 transition-colors"
+                        placeholder="Enter your email"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Profile Picture</label>
+                      <div className="flex items-center space-x-4">
+                        <div className="w-16 h-16 bg-shield-blue/20 border border-shield-blue/30 rounded-full flex items-center justify-center overflow-hidden">
+                          {avatarUrl ? (
+                            <img 
+                              src={avatarUrl} 
+                              alt="Profile" 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-shield-blue font-bold text-xl">
+                              {user?.email?.charAt(0).toUpperCase() || 'U'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <button
+                            onClick={handleUploadClick}
+                            disabled={uploading}
+                            className="flex items-center space-x-2 px-4 py-2 bg-shield-blue text-shield-white rounded-lg hover:bg-shield-blue/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Camera size={16} />
+                            <span>{uploading ? 'Uploading...' : 'Upload Photo'}</span>
+                          </button>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileUpload}
+                            className="hidden"
                           />
-                        ) : (
-                          <span className="text-shield-blue font-bold text-xl">
-                            {user?.email?.charAt(0).toUpperCase() || 'U'}
-                          </span>
-                        )}
+                          <p className="text-xs text-gray-400 mt-1">
+                            JPG, PNG, GIF, or WebP up to 5MB
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <button
-                          onClick={handleUploadClick}
-                          disabled={uploading}
-                          className="flex items-center space-x-2 px-4 py-2 bg-shield-blue text-shield-white rounded-lg hover:bg-shield-blue/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Camera size={16} />
-                          <span>{uploading ? 'Uploading...' : 'Upload Photo'}</span>
-                        </button>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                        />
-                        <p className="text-xs text-gray-400 mt-1">
-                          JPG, PNG, GIF, or WebP up to 5MB
-                        </p>
-                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Avatar URL (Alternative)</label>
+                      <input
+                        type="url"
+                        value={avatarUrl}
+                        onChange={(e) => setAvatarUrl(e.target.value)}
+                        className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white placeholder-gray-400 focus:outline-none focus:border-shield-blue/50 transition-colors"
+                        placeholder="Enter avatar URL (optional)"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Or enter a direct URL to an image
+                      </p>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Avatar URL (Alternative)</label>
-                    <input
-                      type="url"
-                      value={avatarUrl}
-                      onChange={(e) => setAvatarUrl(e.target.value)}
-                      className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white placeholder-gray-400 focus:outline-none focus:border-shield-blue/50 transition-colors"
-                      placeholder="Enter avatar URL (optional)"
+                  <button
+                    onClick={handleSaveProfile}
+                    disabled={loading}
+                    className="w-full py-3 bg-shield-blue text-shield-white rounded-lg font-medium hover:bg-shield-blue/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  >
+                    <Save size={18} />
+                    <span>{loading ? 'Saving...' : 'Save Changes'}</span>
+                  </button>
+                </div>
+              )}
+
+              {activeTab === 'subscription' && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-shield-white mb-4">Subscription Management</h3>
+                  
+                  <div className="bg-shield-light-gray/20 rounded-lg p-6">
+                    <SubscriptionStatus
+                      subscription={subscription}
+                      isInTrial={isInTrial}
+                      hasActiveSubscription={hasActiveSubscription}
+                      onUpgrade={handleUpgradeSubscription}
                     />
-                    <p className="text-xs text-gray-400 mt-1">
-                      Or enter a direct URL to an image
-                    </p>
                   </div>
                 </div>
+              )}
 
-                <button
-                  onClick={handleSaveProfile}
-                  disabled={loading}
-                  className="w-full py-3 bg-shield-blue text-shield-white rounded-lg font-medium hover:bg-shield-blue/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  <Save size={18} />
-                  <span>{loading ? 'Saving...' : 'Save Changes'}</span>
-                </button>
-              </div>
-            )}
-
-            {activeTab === 'preferences' && (
-              <div className="space-y-6">
-                <h3 className="text-xl font-semibold text-shield-white mb-4">Preferences</h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Theme</label>
-                    <select
-                      value={preferences.theme}
-                      onChange={(e) => setPreferences({ ...preferences, theme: e.target.value })}
-                      className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white focus:outline-none focus:border-shield-blue/50 transition-colors"
-                    >
-                      <option value="dark">Dark</option>
-                      <option value="light">Light</option>
-                      <option value="auto">Auto</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Default Response Mode</label>
-                    <select
-                      value={preferences.defaultMode}
-                      onChange={(e) => setPreferences({ ...preferences, defaultMode: e.target.value })}
-                      className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white focus:outline-none focus:border-shield-blue/50 transition-colors"
-                    >
-                      <option value="fast">Fast</option>
-                      <option value="accurate">Accurate</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <label className="text-sm font-medium text-gray-300">Notifications</label>
-                        <p className="text-xs text-gray-400">Receive email notifications</p>
-                      </div>
-                      <button
-                        onClick={() => setPreferences({ ...preferences, notifications: !preferences.notifications })}
-                        className={`w-12 h-6 rounded-full transition-colors ${
-                          preferences.notifications ? 'bg-shield-blue' : 'bg-gray-600'
-                        }`}
+              {activeTab === 'preferences' && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-shield-white mb-4">Preferences</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Theme</label>
+                      <select
+                        value={preferences.theme}
+                        onChange={(e) => setPreferences({ ...preferences, theme: e.target.value })}
+                        className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white focus:outline-none focus:border-shield-blue/50 transition-colors"
                       >
-                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
-                          preferences.notifications ? 'translate-x-6' : 'translate-x-1'
-                        }`} />
-                      </button>
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                        <option value="auto">Auto</option>
+                      </select>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <label className="text-sm font-medium text-gray-300">Auto-save conversations</label>
-                        <p className="text-xs text-gray-400">Automatically save chat history</p>
-                      </div>
-                      <button
-                        onClick={() => setPreferences({ ...preferences, autoSave: !preferences.autoSave })}
-                        className={`w-12 h-6 rounded-full transition-colors ${
-                          preferences.autoSave ? 'bg-shield-blue' : 'bg-gray-600'
-                        }`}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Default Response Mode</label>
+                      <select
+                        value={preferences.defaultMode}
+                        onChange={(e) => setPreferences({ ...preferences, defaultMode: e.target.value })}
+                        className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white focus:outline-none focus:border-shield-blue/50 transition-colors"
                       >
-                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
-                          preferences.autoSave ? 'translate-x-6' : 'translate-x-1'
-                        }`} />
-                      </button>
+                        <option value="fast">Fast</option>
+                        <option value="accurate">Accurate</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="text-sm font-medium text-gray-300">Notifications</label>
+                          <p className="text-xs text-gray-400">Receive email notifications</p>
+                        </div>
+                        <button
+                          onClick={() => setPreferences({ ...preferences, notifications: !preferences.notifications })}
+                          className={`w-12 h-6 rounded-full transition-colors ${
+                            preferences.notifications ? 'bg-shield-blue' : 'bg-gray-600'
+                          }`}
+                        >
+                          <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
+                            preferences.notifications ? 'translate-x-6' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="text-sm font-medium text-gray-300">Auto-save conversations</label>
+                          <p className="text-xs text-gray-400">Automatically save chat history</p>
+                        </div>
+                        <button
+                          onClick={() => setPreferences({ ...preferences, autoSave: !preferences.autoSave })}
+                          className={`w-12 h-6 rounded-full transition-colors ${
+                            preferences.autoSave ? 'bg-shield-blue' : 'bg-gray-600'
+                          }`}
+                        >
+                          <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
+                            preferences.autoSave ? 'translate-x-6' : 'translate-x-1'
+                          }`} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {activeTab === 'data' && (
-              <div className="space-y-6">
-                <h3 className="text-xl font-semibold text-shield-white mb-4">Data & Privacy</h3>
-                
-                <div className="space-y-4">
-                  <div className="p-4 bg-shield-light-gray/20 rounded-lg">
-                    <h4 className="text-shield-white font-medium mb-2">Export Your Data</h4>
-                    <p className="text-gray-400 text-sm mb-3">
-                      Download all your conversations and settings as a JSON file.
-                    </p>
-                    <button
-                      onClick={handleExportData}
-                      className="flex items-center space-x-2 px-4 py-2 bg-shield-blue text-shield-white rounded-lg hover:bg-shield-blue/90 transition-colors"
-                    >
-                      <Download size={16} />
-                      <span>Export Data</span>
-                    </button>
-                  </div>
+              {activeTab === 'data' && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-shield-white mb-4">Data & Privacy</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="p-4 bg-shield-light-gray/20 rounded-lg">
+                      <h4 className="text-shield-white font-medium mb-2">Export Your Data</h4>
+                      <p className="text-gray-400 text-sm mb-3">
+                        Download all your conversations and settings as a JSON file.
+                      </p>
+                      <button
+                        onClick={handleExportData}
+                        className="flex items-center space-x-2 px-4 py-2 bg-shield-blue text-shield-white rounded-lg hover:bg-shield-blue/90 transition-colors"
+                      >
+                        <Download size={16} />
+                        <span>Export Data</span>
+                      </button>
+                    </div>
 
-                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                    <h4 className="text-red-400 font-medium mb-2">Delete Account</h4>
-                    <p className="text-gray-400 text-sm mb-3">
-                      Permanently delete your account and all associated data. This action cannot be undone.
-                    </p>
-                    <button
-                      onClick={handleDeleteAccount}
-                      className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                      <span>Delete Account</span>
-                    </button>
+                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                      <h4 className="text-red-400 font-medium mb-2">Delete Account</h4>
+                      <p className="text-gray-400 text-sm mb-3">
+                        Permanently delete your account and all associated data. This action cannot be undone.
+                      </p>
+                      <button
+                        onClick={handleDeleteAccount}
+                        className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                        <span>Delete Account</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        isOpen={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+        currentSubscription={subscription}
+        isInTrial={isInTrial}
+      />
+    </>
   );
 } 

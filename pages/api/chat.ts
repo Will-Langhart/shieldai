@@ -7,6 +7,7 @@ import { searchApologeticsContent, enhanceResponseWithContent } from '../../lib/
 import { AnalyticsService } from '../../lib/analytics-service';
 import { ChatService } from '../../lib/chat-service';
 import { createServerSupabaseClient } from '../../lib/supabase';
+import { SubscriptionMiddleware } from '../../lib/subscription-middleware';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -49,9 +50,33 @@ export default async function handler(
     }
     
     if (!user) {
-      console.log('No authenticated user found');
-      // Continue without authentication for now
+      return res.status(401).json({ error: 'Authentication required' });
     }
+
+    // Check subscription access
+    const subscriptionCheck = await SubscriptionMiddleware.checkAccess(user.id);
+    if (!subscriptionCheck.hasAccess) {
+      return res.status(403).json({ 
+        error: 'Subscription required',
+        message: subscriptionCheck.message,
+        requiresUpgrade: true
+      });
+    }
+
+    // Check message limits
+    const messageLimitCheck = await SubscriptionMiddleware.checkMessageLimit(user.id);
+    if (!messageLimitCheck.canSend) {
+      return res.status(429).json({ 
+        error: 'Message limit reached',
+        message: messageLimitCheck.message,
+        limit: messageLimitCheck.limit,
+        remaining: messageLimitCheck.remaining,
+        requiresUpgrade: true
+      });
+    }
+
+    // Track usage
+    await SubscriptionMiddleware.trackUsage(user.id, 'messages', 1);
 
     // Get conversation history for this session
     let conversationHistory = conversationStore.get(sessionId) || [];
@@ -121,10 +146,19 @@ export default async function handler(
       systemPrompt += `\n\n${culturalPrompt.systemPrompt}`;
     }
 
-    // Use different models and settings based on mode
-    const model = mode === 'fast' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
-    const maxTokens = mode === 'fast' ? 800 : 1500;
-    const temperature = mode === 'fast' ? 0.7 : 0.8;
+    // Use different models and settings based on mode and subscription
+    let model = mode === 'fast' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
+    let maxTokens = mode === 'fast' ? 800 : 1500;
+    let temperature = mode === 'fast' ? 0.7 : 0.8;
+
+    // Check if user has access to advanced models
+    const advancedModelAccess = await SubscriptionMiddleware.checkFeatureAccess(user.id, 'advanced_ai_models');
+    if (!advancedModelAccess.hasAccess && mode === 'accurate') {
+      // Fallback to basic model for users without premium
+      model = 'gpt-3.5-turbo';
+      maxTokens = 800;
+      temperature = 0.7;
+    }
 
     // Build messages array with conversation history and similar messages
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
@@ -222,7 +256,13 @@ ${content.content.substring(0, 200)}...
       timestamp: new Date().toISOString(),
       sessionId: sessionId,
       conversationId: currentConvId,
-      isNewConversation: isNewConversation
+      isNewConversation: isNewConversation,
+      subscription: {
+        isInTrial: subscriptionCheck.isInTrial,
+        hasActiveSubscription: subscriptionCheck.hasActiveSubscription,
+        messageLimit: messageLimitCheck.limit,
+        remainingMessages: messageLimitCheck.remaining
+      }
     });
 
   } catch (error) {
