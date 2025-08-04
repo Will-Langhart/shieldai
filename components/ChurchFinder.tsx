@@ -12,8 +12,19 @@ import {
   Calendar,
   Heart,
   Cross,
-  BookOpen
+  BookOpen,
+  Loader
 } from 'lucide-react';
+import { ChurchFinderService, ChurchLocation } from '../lib/church-finder-service';
+
+interface ChurchEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  type: 'bible_study' | 'youth_group' | 'outreach' | 'worship' | 'prayer';
+}
 
 interface Church {
   id: string;
@@ -42,15 +53,6 @@ interface Church {
   accessibility: string[];
 }
 
-interface ChurchEvent {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  type: 'bible_study' | 'youth_group' | 'outreach' | 'worship' | 'prayer';
-}
-
 interface ChurchFinderProps {
   isOpen: boolean;
   onClose: () => void;
@@ -69,114 +71,9 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
   const [selectedDistance, setSelectedDistance] = useState<number>(10);
   const [selectedChurch, setSelectedChurch] = useState<Church | null>(null);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
-
-  // Mock church data
-  const churches: Church[] = [
-    {
-      id: '1',
-      name: 'First Baptist Church',
-      denomination: 'Baptist',
-      address: '123 Main Street',
-      city: 'Austin',
-      state: 'TX',
-      zip: '78701',
-      phone: '(512) 555-0123',
-      website: 'https://firstbaptistaustin.org',
-      email: 'info@firstbaptistaustin.org',
-      pastor: 'Dr. John Smith',
-      service_times: ['Sunday 9:00 AM', 'Sunday 11:00 AM', 'Wednesday 7:00 PM'],
-      events: [
-        {
-          id: '1',
-          title: 'Youth Bible Study',
-          description: 'Weekly Bible study for high school students',
-          date: '2024-01-15',
-          time: '6:00 PM',
-          type: 'youth_group'
-        },
-        {
-          id: '2',
-          title: 'Community Outreach',
-          description: 'Serving meals to the homeless',
-          date: '2024-01-20',
-          time: '5:00 PM',
-          type: 'outreach'
-        }
-      ],
-      description: 'A welcoming community focused on spreading God\'s love through service and worship.',
-      rating: 4.8,
-      review_count: 127,
-      distance: 2.3,
-      coordinates: { lat: 30.2672, lng: -97.7431 },
-      features: ['Childcare', 'Youth Ministry', 'Music Ministry', 'Bible Study'],
-      languages: ['English', 'Spanish'],
-      accessibility: ['Wheelchair Access', 'Hearing Assistance', 'Large Print Materials']
-    },
-    {
-      id: '2',
-      name: 'Grace Community Church',
-      denomination: 'Non-denominational',
-      address: '456 Oak Avenue',
-      city: 'Austin',
-      state: 'TX',
-      zip: '78702',
-      phone: '(512) 555-0456',
-      website: 'https://graceaustin.org',
-      email: 'hello@graceaustin.org',
-      pastor: 'Pastor Sarah Johnson',
-      service_times: ['Sunday 10:00 AM', 'Sunday 6:00 PM'],
-      events: [
-        {
-          id: '3',
-          title: 'Prayer Meeting',
-          description: 'Weekly prayer gathering',
-          date: '2024-01-17',
-          time: '7:00 PM',
-          type: 'prayer'
-        }
-      ],
-      description: 'A modern church community passionate about authentic relationships and spiritual growth.',
-      rating: 4.6,
-      review_count: 89,
-      distance: 4.1,
-      coordinates: { lat: 30.2672, lng: -97.7431 },
-      features: ['Contemporary Worship', 'Small Groups', 'Missions'],
-      languages: ['English'],
-      accessibility: ['Wheelchair Access']
-    },
-    {
-      id: '3',
-      name: 'St. Mary\'s Catholic Church',
-      denomination: 'Catholic',
-      address: '789 Church Street',
-      city: 'Austin',
-      state: 'TX',
-      zip: '78703',
-      phone: '(512) 555-0789',
-      website: 'https://stmarysaustin.org',
-      email: 'office@stmarysaustin.org',
-      pastor: 'Father Michael Rodriguez',
-      service_times: ['Saturday 5:00 PM', 'Sunday 8:00 AM', 'Sunday 10:30 AM', 'Sunday 5:00 PM'],
-      events: [
-        {
-          id: '4',
-          title: 'Catholic Bible Study',
-          description: 'In-depth study of Scripture from Catholic perspective',
-          date: '2024-01-16',
-          time: '7:00 PM',
-          type: 'bible_study'
-        }
-      ],
-      description: 'A historic Catholic parish serving the Austin community for over 100 years.',
-      rating: 4.7,
-      review_count: 156,
-      distance: 1.8,
-      coordinates: { lat: 30.2672, lng: -97.7431 },
-      features: ['Traditional Mass', 'Confession', 'Religious Education', 'Social Justice'],
-      languages: ['English', 'Spanish', 'Latin'],
-      accessibility: ['Wheelchair Access', 'Hearing Assistance', 'Large Print Materials']
-    }
-  ];
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [churches, setChurches] = useState<ChurchLocation[]>([]);
 
   const denominations = [
     { id: 'all', name: 'All Denominations' },
@@ -191,36 +88,72 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
   const distances = [5, 10, 25, 50, 100];
 
   useEffect(() => {
-    // Get user location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
+    const initialize = async () => {
+      setLoading(true);
+      try {
+        const location = await ChurchFinderService.getUserLocation();
+        setUserLocation(location);
+        
+        if (location) {
+          const nearbyChurches = await ChurchFinderService.findChurchesNearby({
+            latitude: location.lat,
+            longitude: location.lng,
+            radius: selectedDistance * 1609.34 // Convert miles to meters
           });
-        },
-        (error) => {
-          console.log('Error getting location:', error);
+          setChurches(nearbyChurches);
         }
-      );
+      } catch (err) {
+        setError('Failed to get your location. Please enable location services.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isOpen) {
+      initialize();
     }
-  }, []);
+  }, [isOpen, selectedDistance]);
 
   const filteredChurches = churches.filter(church => {
     const matchesSearch = church.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         church.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         church.denomination.toLowerCase().includes(searchTerm.toLowerCase());
+                         church.city.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesDenomination = selectedDenomination === 'all' || church.denomination === selectedDenomination;
+    const matchesDenomination = selectedDenomination === 'all' || 
+      church.name.toLowerCase().includes(selectedDenomination.toLowerCase());
     
     const matchesDistance = !church.distance || church.distance <= selectedDistance;
     
     return matchesSearch && matchesDenomination && matchesDistance;
   });
 
-  const handleChurchSelect = (church: Church) => {
-    setSelectedChurch(church);
+  const handleChurchSelect = (church: ChurchLocation) => {
+    // Convert ChurchLocation to Church format
+    const churchData: Church = {
+      id: church.id,
+      name: church.name,
+      denomination: church.types.includes('church') ? 'Christian' : 'Unknown',
+      address: church.address,
+      city: church.city,
+      state: church.state,
+      zip: church.zip,
+      phone: church.phone || '',
+      website: church.website || '',
+      email: '',
+      pastor: '',
+      service_times: ['Sunday 10:00 AM'], // Default service time
+      events: [],
+      description: `${church.name} in ${church.city}, ${church.state}`,
+      rating: church.rating || 0,
+      review_count: church.review_count || 0,
+      distance: church.distance,
+      coordinates: church.coordinates,
+      features: [],
+      languages: ['English'],
+      accessibility: []
+    };
+    
+    setSelectedChurch(churchData);
   };
 
   const handleBackToList = () => {
@@ -340,88 +273,102 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
             <div className="flex-1 overflow-y-auto">
               <div className="p-6">
                 <div className="space-y-4">
-                  {filteredChurches.map((church) => (
-                    <div
-                      key={church.id}
-                      onClick={() => handleChurchSelect(church)}
-                      className={`p-6 rounded-lg border-2 cursor-pointer transition-all duration-300 hover:scale-105 ${
-                        theme === 'dark'
-                          ? 'border-gray-600 bg-gray-800 hover:border-gray-500'
-                          : 'border-gray-200 bg-white hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h3 className={`text-lg font-semibold ${
-                              theme === 'dark' ? 'text-white' : 'text-gray-900'
-                            }`}>
-                              {church.name}
-                            </h3>
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
-                            }`}>
-                              {church.denomination}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center space-x-4 mb-3">
-                            <div className="flex items-center space-x-1">
-                              <MapPin className="w-4 h-4 text-gray-400" />
-                              <span className={`text-sm ${
-                                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  {loading ? (
+                    <div className="flex justify-center items-center h-32">
+                      <Loader className="w-8 h-8 text-blue-500 animate-spin" />
+                    </div>
+                  ) : error ? (
+                    <div className="text-center text-red-500 p-4">{error}</div>
+                  ) : filteredChurches.length === 0 ? (
+                    <div className="text-center text-gray-500 p-4">No churches found in your area.</div>
+                  ) : (
+                    filteredChurches.map((church) => (
+                      <div
+                        key={church.id}
+                        onClick={() => handleChurchSelect(church)}
+                        className={`p-6 rounded-lg border-2 cursor-pointer transition-all duration-300 hover:scale-105 ${
+                          theme === 'dark'
+                            ? 'border-gray-600 bg-gray-800 hover:border-gray-500'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <h3 className={`text-lg font-semibold ${
+                                theme === 'dark' ? 'text-white' : 'text-gray-900'
                               }`}>
-                                {church.city}, {church.state}
-                              </span>
-                            </div>
-                            {church.distance && (
-                              <div className="flex items-center space-x-1">
-                                <Navigation className="w-4 h-4 text-gray-400" />
-                                <span className={`text-sm ${
-                                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                                }`}>
-                                  {church.distance} miles away
-                                </span>
-                              </div>
-                            )}
-                          </div>
-
-                          <p className={`text-sm mb-3 ${
-                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                          }`}>
-                            {church.description}
-                          </p>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <div className="flex items-center space-x-1">
-                                <Star className="w-4 h-4 text-yellow-500" />
-                                <span className={`text-sm ${
-                                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                                }`}>
-                                  {church.rating}
-                                </span>
-                              </div>
-                              <span className={`text-sm ${
-                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                                {church.name}
+                              </h3>
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
                               }`}>
-                                ({church.review_count} reviews)
+                                Church
                               </span>
                             </div>
                             
-                            <div className="flex items-center space-x-2">
-                              <Clock className="w-4 h-4 text-gray-400" />
-                              <span className={`text-sm ${
-                                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                              }`}>
-                                {church.service_times[0]}
-                              </span>
+                            <div className="flex items-center space-x-4 mb-3">
+                              <div className="flex items-center space-x-1">
+                                <MapPin className="w-4 h-4 text-gray-400" />
+                                <span className={`text-sm ${
+                                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                                }`}>
+                                  {church.city}, {church.state}
+                                </span>
+                              </div>
+                              {church.distance && (
+                                <div className="flex items-center space-x-1">
+                                  <Navigation className="w-4 h-4 text-gray-400" />
+                                  <span className={`text-sm ${
+                                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                                  }`}>
+                                    {church.distance.toFixed(1)} miles away
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            <p className={`text-sm mb-3 ${
+                              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                            }`}>
+                              {church.address}
+                            </p>
+
+                            <div className="flex items-center justify-between">
+                              {church.rating && (
+                                <div className="flex items-center space-x-2">
+                                  <div className="flex items-center space-x-1">
+                                    <Star className="w-4 h-4 text-yellow-500" />
+                                    <span className={`text-sm ${
+                                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                                    }`}>
+                                      {church.rating}
+                                    </span>
+                                  </div>
+                                  {church.review_count && (
+                                    <span className={`text-sm ${
+                                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                                    }`}>
+                                      ({church.review_count} reviews)
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              
+                              <div className="flex items-center space-x-2">
+                                <Clock className="w-4 h-4 text-gray-400" />
+                                <span className={`text-sm ${
+                                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                                }`}>
+                                  Sunday Service
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -458,14 +405,16 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
                         }`}>
                           {selectedChurch.denomination}
                         </span>
-                        <div className="flex items-center space-x-1">
-                          <Star className="w-4 h-4 text-yellow-500" />
-                          <span className={`text-sm ${
-                            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                          }`}>
-                            {selectedChurch.rating} ({selectedChurch.review_count} reviews)
-                          </span>
-                        </div>
+                        {selectedChurch.rating && (
+                          <div className="flex items-center space-x-1">
+                            <Star className="w-4 h-4 text-yellow-500" />
+                            <span className={`text-sm ${
+                              theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                            }`}>
+                              {selectedChurch.rating} ({selectedChurch.review_count} reviews)
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -495,27 +444,31 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
                         {selectedChurch.address}, {selectedChurch.city}, {selectedChurch.state} {selectedChurch.zip}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      <span className={`text-sm ${
-                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
-                        {selectedChurch.phone}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Globe className="w-4 h-4 text-gray-400" />
-                      <a 
-                        href={selectedChurch.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className={`text-sm text-blue-500 hover:underline ${
-                          theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-                        }`}
-                      >
-                        {selectedChurch.website}
-                      </a>
-                    </div>
+                    {selectedChurch.phone && (
+                      <div className="flex items-center space-x-2">
+                        <Phone className="w-4 h-4 text-gray-400" />
+                        <span className={`text-sm ${
+                          theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                        }`}>
+                          {selectedChurch.phone}
+                        </span>
+                      </div>
+                    )}
+                    {selectedChurch.website && (
+                      <div className="flex items-center space-x-2">
+                        <Globe className="w-4 h-4 text-gray-400" />
+                        <a 
+                          href={selectedChurch.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className={`text-sm text-blue-500 hover:underline ${
+                            theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
+                          }`}
+                        >
+                          {selectedChurch.website}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -536,72 +489,6 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
                           {time}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Events */}
-                {selectedChurch.events.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className={`text-lg font-semibold mb-3 ${
-                      theme === 'dark' ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      Upcoming Events
-                    </h3>
-                    <div className="space-y-3">
-                      {selectedChurch.events.map((event) => (
-                        <div key={event.id} className={`p-3 rounded-lg border ${
-                          theme === 'dark' ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-white'
-                        }`}>
-                          <div className="flex items-start space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                              {getEventIcon(event.type)}
-                            </div>
-                            <div className="flex-1">
-                              <h4 className={`font-medium ${
-                                theme === 'dark' ? 'text-white' : 'text-gray-900'
-                              }`}>
-                                {event.title}
-                              </h4>
-                              <p className={`text-sm mt-1 ${
-                                theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                              }`}>
-                                {event.description}
-                              </p>
-                              <div className="flex items-center space-x-4 mt-2">
-                                <span className={`text-xs ${
-                                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                                }`}>
-                                  {new Date(event.date).toLocaleDateString()}
-                                </span>
-                                <span className={`text-xs ${
-                                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                                }`}>
-                                  {event.time}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Features */}
-                <div className="mb-6">
-                  <h3 className={`text-lg font-semibold mb-3 ${
-                    theme === 'dark' ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    Features & Ministries
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedChurch.features.map((feature, index) => (
-                      <span key={index} className={`px-3 py-1 rounded-full text-sm ${
-                        theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {feature}
-                      </span>
                     ))}
                   </div>
                 </div>
