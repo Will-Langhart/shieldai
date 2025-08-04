@@ -11,6 +11,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Server-side Supabase client for API routes
+export const createServerSupabaseClient = (accessToken?: string) => {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    },
+    global: {
+      headers: accessToken ? {
+        Authorization: `Bearer ${accessToken}`
+      } : {}
+    }
+  });
+};
+
 // Database types for TypeScript
 export interface Database {
   public: {

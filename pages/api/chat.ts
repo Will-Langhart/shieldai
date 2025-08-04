@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
 import { analyzeQuestion, generateSpecializedPrompt } from '../../lib/prompt-engineering';
 import { ChatService } from '../../lib/chat-service';
-import { supabase } from '../../lib/supabase';
+import { createServerSupabaseClient } from '../../lib/supabase';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -30,12 +30,17 @@ export default async function handler(
     // Get authenticated user from Authorization header
     const authHeader = req.headers.authorization;
     let user = null;
+    let serverSupabase: any = undefined;
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+      serverSupabase = createServerSupabaseClient(token);
+      const { data: { user: authUser }, error: authError } = await serverSupabase.auth.getUser();
       if (!authError && authUser) {
         user = authUser;
+        console.log('Authenticated user:', user.id, user.email);
+      } else {
+        console.error('Auth error:', authError);
       }
     }
     
@@ -56,7 +61,7 @@ export default async function handler(
     let similarMessages: Array<{ content: string; role: string; score: number }> = [];
     if (user && conversationId && typeof conversationId === 'string') {
       try {
-        similarMessages = await ChatService.searchSimilarMessages(message, user.id, conversationId, 3);
+        similarMessages = await ChatService.searchSimilarMessages(message, user.id, conversationId, 3, serverSupabase);
         console.log('Found similar messages:', similarMessages.length);
       } catch (error) {
         console.error('Error searching similar messages:', error);
@@ -106,19 +111,19 @@ export default async function handler(
         // If no conversation ID, create a new conversation
         if (!currentConvId) {
           const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
-          const conversation = await ChatService.createConversation(title);
+          const conversation = await ChatService.createConversation(title, serverSupabase);
           currentConvId = conversation.id;
           isNewConversation = true;
           console.log('Created new conversation:', currentConvId, conversation.title);
         }
 
         // Save user message to database and Pinecone
-        await ChatService.addMessage(currentConvId, message, 'user', mode);
+        await ChatService.addMessage(currentConvId, message, 'user', mode, serverSupabase);
         console.log('Saved user message to database and Pinecone');
         
         // Save AI response to database and Pinecone
         if (aiResponse) {
-          await ChatService.addMessage(currentConvId, aiResponse, 'assistant', mode);
+          await ChatService.addMessage(currentConvId, aiResponse, 'assistant', mode, serverSupabase);
           console.log('Saved AI response to database and Pinecone');
         }
         

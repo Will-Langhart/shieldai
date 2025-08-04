@@ -1,7 +1,9 @@
 import { supabase } from './supabase';
+import { createServerSupabaseClient } from './supabase';
 import { Database } from './supabase';
 import { PineconeService } from './pinecone';
 import { EmbeddingService } from './embeddings';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 type Conversation = Database['public']['Tables']['conversations']['Row'];
 type Message = Database['public']['Tables']['messages']['Row'];
@@ -10,15 +12,16 @@ type NewMessage = Database['public']['Tables']['messages']['Insert'];
 
 export class ChatService {
   // Get all conversations for the current user
-  static async getConversations(): Promise<Conversation[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+  static async getConversations(supabaseClient?: SupabaseClient): Promise<Conversation[]> {
+    const client = supabaseClient || supabase;
+    const { data: { user } } = await client.auth.getUser();
     
     if (!user) {
       console.log('No authenticated user found');
       return [];
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('conversations')
       .select('*')
       .eq('user_id', user.id)
@@ -34,8 +37,9 @@ export class ChatService {
   }
 
   // Get messages for a specific conversation
-  static async getMessages(conversationId: string): Promise<Message[]> {
-    const { data, error } = await supabase
+  static async getMessages(conversationId: string, supabaseClient?: SupabaseClient): Promise<Message[]> {
+    const client = supabaseClient || supabase;
+    const { data, error } = await client
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
@@ -46,8 +50,9 @@ export class ChatService {
   }
 
   // Create a new conversation
-  static async createConversation(title: string): Promise<Conversation> {
-    const { data: { user } } = await supabase.auth.getUser();
+  static async createConversation(title: string, supabaseClient?: SupabaseClient): Promise<Conversation> {
+    const client = supabaseClient || supabase;
+    const { data: { user } } = await client.auth.getUser();
     
     if (!user) {
       throw new Error('No authenticated user found');
@@ -55,7 +60,7 @@ export class ChatService {
 
     console.log('Creating conversation for user:', user.id, 'with title:', title);
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('conversations')
       .insert({ 
         title,
@@ -78,11 +83,13 @@ export class ChatService {
     conversationId: string,
     content: string,
     role: 'user' | 'assistant',
-    mode?: 'fast' | 'accurate'
+    mode?: 'fast' | 'accurate',
+    supabaseClient?: SupabaseClient
   ): Promise<Message> {
+    const client = supabaseClient || supabase;
     console.log('Adding message to conversation:', conversationId, 'role:', role, 'content length:', content.length);
     
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('messages')
       .insert({
         conversation_id: conversationId,
@@ -101,14 +108,14 @@ export class ChatService {
     console.log('Successfully added message:', data.id);
 
     // Update conversation's last_message and updated_at
-    await supabase
+    await client
       .from('conversations')
       .update({ last_message: content })
       .eq('id', conversationId);
 
     // Store embedding in Pinecone
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await client.auth.getUser();
       if (user) {
         const embedding = await EmbeddingService.generateEmbedding(content);
         await PineconeService.storeMessage(
@@ -133,9 +140,11 @@ export class ChatService {
   // Update conversation title
   static async updateConversationTitle(
     conversationId: string,
-    title: string
+    title: string,
+    supabaseClient?: SupabaseClient
   ): Promise<void> {
-    const { error } = await supabase
+    const client = supabaseClient || supabase;
+    const { error } = await client
       .from('conversations')
       .update({ title })
       .eq('id', conversationId);
@@ -146,9 +155,11 @@ export class ChatService {
   // Update conversation's last message
   static async updateConversationLastMessage(
     conversationId: string,
-    lastMessage: string
+    lastMessage: string,
+    supabaseClient?: SupabaseClient
   ): Promise<void> {
-    const { error } = await supabase
+    const client = supabaseClient || supabase;
+    const { error } = await client
       .from('conversations')
       .update({ last_message: lastMessage })
       .eq('id', conversationId);
@@ -157,8 +168,9 @@ export class ChatService {
   }
 
   // Get a specific conversation
-  static async getConversation(conversationId: string): Promise<Conversation | null> {
-    const { data, error } = await supabase
+  static async getConversation(conversationId: string, supabaseClient?: SupabaseClient): Promise<Conversation | null> {
+    const client = supabaseClient || supabase;
+    const { data, error } = await client
       .from('conversations')
       .select('*')
       .eq('id', conversationId)
@@ -172,8 +184,9 @@ export class ChatService {
   }
 
   // Delete a conversation and all its messages
-  static async deleteConversation(conversationId: string): Promise<void> {
-    const { error } = await supabase
+  static async deleteConversation(conversationId: string, supabaseClient?: SupabaseClient): Promise<void> {
+    const client = supabaseClient || supabase;
+    const { error } = await client
       .from('conversations')
       .delete()
       .eq('id', conversationId);
@@ -182,15 +195,16 @@ export class ChatService {
   }
 
   // Get or create a conversation for the current session
-  static async getOrCreateConversation(sessionId: string): Promise<Conversation> {
-    const { data: { user } } = await supabase.auth.getUser();
+  static async getOrCreateConversation(sessionId: string, supabaseClient?: SupabaseClient): Promise<Conversation> {
+    const client = supabaseClient || supabase;
+    const { data: { user } } = await client.auth.getUser();
     
     if (!user) {
       throw new Error('No authenticated user found');
     }
 
     // Try to find existing conversation for this session and user
-    const { data: existing } = await supabase
+    const { data: existing } = await client
       .from('conversations')
       .select('*')
       .eq('title', `Session ${sessionId}`)
@@ -202,17 +216,18 @@ export class ChatService {
     }
 
     // Create new conversation
-    return await this.createConversation(`Session ${sessionId}`);
+    return await this.createConversation(`Session ${sessionId}`, client);
   }
 
   // Save the current conversation state
   static async saveConversationState(
     sessionId: string,
-    messages: Array<{ role: 'user' | 'assistant'; content: string; mode?: 'fast' | 'accurate' }>
+    messages: Array<{ role: 'user' | 'assistant'; content: string; mode?: 'fast' | 'accurate' }>,
+    supabaseClient?: SupabaseClient
   ): Promise<void> {
     try {
       // Get or create conversation
-      const conversation = await this.getOrCreateConversation(sessionId);
+      const conversation = await this.getOrCreateConversation(sessionId, supabaseClient);
 
       // Clear existing messages for this conversation
       await supabase
@@ -226,7 +241,8 @@ export class ChatService {
           conversation.id,
           message.content,
           message.role,
-          message.mode
+          message.mode,
+          supabaseClient
         );
       }
     } catch (error) {
@@ -235,13 +251,13 @@ export class ChatService {
   }
 
   // Load conversation state
-  static async loadConversationState(sessionId: string): Promise<Message[]> {
+  static async loadConversationState(sessionId: string, supabaseClient?: SupabaseClient): Promise<Message[]> {
     try {
       console.log('Loading conversation state for sessionId:', sessionId);
-      const conversation = await this.getOrCreateConversation(sessionId);
+      const conversation = await this.getOrCreateConversation(sessionId, supabaseClient);
       console.log('Found conversation:', conversation.id, conversation.title);
       
-      const messages = await this.getMessages(conversation.id);
+      const messages = await this.getMessages(conversation.id, supabaseClient);
       console.log('Retrieved messages for conversation:', messages.length);
       return messages;
     } catch (error) {
@@ -255,9 +271,11 @@ export class ChatService {
     query: string,
     userId: string,
     conversationId?: string,
-    topK: number = 5
+    topK: number = 5,
+    supabaseClient?: SupabaseClient
   ): Promise<Array<{ content: string; role: string; score: number }>> {
     try {
+      const client = supabaseClient || supabase;
       const embedding = await EmbeddingService.generateEmbedding(query);
       const results = await PineconeService.searchSimilarMessages(
         embedding,
@@ -281,9 +299,11 @@ export class ChatService {
   static async getConversationContext(
     conversationId: string,
     userId: string,
-    topK: number = 10
+    topK: number = 10,
+    supabaseClient?: SupabaseClient
   ): Promise<Array<{ content: string; role: string; score: number }>> {
     try {
+      const client = supabaseClient || supabase;
       const results = await PineconeService.getConversationContext(
         conversationId,
         userId,

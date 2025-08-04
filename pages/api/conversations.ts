@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { ChatService } from '../../lib/chat-service';
-import { supabase } from '../../lib/supabase';
+import { createServerSupabaseClient } from '../../lib/supabase';
 
 export default async function handler(
   req: NextApiRequest,
@@ -9,12 +9,17 @@ export default async function handler(
   // Get authenticated user from Authorization header
   const authHeader = req.headers.authorization;
   let user = null;
+  let serverSupabase: any = undefined;
   
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
+    serverSupabase = createServerSupabaseClient(token);
+    const { data: { user: authUser }, error: authError } = await serverSupabase.auth.getUser();
     if (!authError && authUser) {
       user = authUser;
+      console.log('Authenticated user for conversations:', user.id, user.email);
+    } else {
+      console.error('Auth error:', authError);
     }
   }
 
@@ -24,7 +29,7 @@ export default async function handler(
 
   if (req.method === 'GET') {
     try {
-      const conversations = await ChatService.getConversations();
+      const conversations = await ChatService.getConversations(serverSupabase);
       res.status(200).json(conversations);
     } catch (error) {
       console.error('Error getting conversations:', error);
@@ -36,7 +41,7 @@ export default async function handler(
       if (!title) {
         return res.status(400).json({ error: 'Title is required' });
       }
-      const conversation = await ChatService.createConversation(title);
+      const conversation = await ChatService.createConversation(title, serverSupabase);
       res.status(201).json(conversation);
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -48,7 +53,7 @@ export default async function handler(
       if (!conversationId || !title) {
         return res.status(400).json({ error: 'Conversation ID and title are required' });
       }
-      await ChatService.updateConversationTitle(conversationId, title);
+      await ChatService.updateConversationTitle(conversationId, title, serverSupabase);
       res.status(200).json({ success: true });
     } catch (error) {
       console.error('Error updating conversation:', error);
@@ -60,7 +65,7 @@ export default async function handler(
       if (!conversationId || typeof conversationId !== 'string') {
         return res.status(400).json({ error: 'Conversation ID is required' });
       }
-      await ChatService.deleteConversation(conversationId);
+      await ChatService.deleteConversation(conversationId, serverSupabase);
       res.status(200).json({ success: true });
     } catch (error) {
       console.error('Error deleting conversation:', error);
