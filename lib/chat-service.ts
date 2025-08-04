@@ -14,7 +14,12 @@ export class ChatService {
       .select('*')
       .order('updated_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error getting conversations:', error);
+      throw error;
+    }
+    
+    console.log('Retrieved conversations:', data?.length || 0);
     return data || [];
   }
 
@@ -101,7 +106,7 @@ export class ChatService {
       .from('conversations')
       .select('*')
       .eq('title', `Session ${sessionId}`)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       return existing;

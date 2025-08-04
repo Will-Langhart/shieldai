@@ -18,7 +18,17 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
-  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [sessionId] = useState(() => {
+    // Use a stable session ID based on user ID or create a persistent one
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('shieldai_session_id');
+      if (stored) return stored;
+      const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('shieldai_session_id', newId);
+      return newId;
+    }
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  });
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>();
   const [showSidebar, setShowSidebar] = useState(false); // Start with sidebar closed
 
@@ -130,12 +140,13 @@ export default function Home() {
           setTimeout(() => {
             // This will trigger the ConversationHistory component to refresh
             window.dispatchEvent(new CustomEvent('conversation-updated'));
-          }, 100);
+          }, 500);
           
           console.log('Messages saved successfully:', {
             conversationId: conversation.id,
             userMessage: userMessage.content,
-            aiMessage: aiMessage.content
+            aiMessage: aiMessage.content,
+            sessionId: sessionId
           });
         } catch (error) {
           console.error('Error saving conversation state:', error);

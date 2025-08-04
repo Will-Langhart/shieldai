@@ -38,10 +38,11 @@ export default function ConversationHistory({
   // Refresh conversations when a new one is created
   useEffect(() => {
     if (user) {
-      const interval = setInterval(loadConversations, 2000); // Refresh every 2 seconds
+      const interval = setInterval(loadConversations, 1000); // Refresh every 1 second
       
       // Listen for conversation updates
       const handleConversationUpdate = () => {
+        console.log('Conversation updated event received');
         loadConversations();
       };
       
