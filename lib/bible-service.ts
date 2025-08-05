@@ -277,7 +277,7 @@ class BibleService {
               text: stripHtml((passage.content || passage.text || '').toString()),
               reference: passage.reference,
               verseNumber: parseInt(passage.reference.split(':')[1]) || 0,
-              chapterNumber: parseInt(passage.reference.split(':')[0].split(' ').pop()) || 0,
+              chapterNumber: parseInt(passage.reference.split(':')[0].split(' ').pop() || '0') || 0,
               bookName: passage.reference.split(' ')[0] || ''
             }],
             version: {
