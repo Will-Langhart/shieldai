@@ -124,14 +124,7 @@ class NotificationService {
           icon: '/logo.png',
           badge: '/logo.png',
           tag: 'daily-verse',
-          requireInteraction: false,
-          actions: [
-            {
-              action: 'read',
-              title: 'Read More',
-              icon: '/logo.png'
-            }
-          ]
+          requireInteraction: false
         });
       }
     } catch (error) {
