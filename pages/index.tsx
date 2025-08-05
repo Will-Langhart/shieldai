@@ -152,22 +152,46 @@ export default function Home() {
 
   // Handle verse selection from mood system
   const handleVerseSelect = (verse: string) => {
+    // Start a new conversation
+    setMessages([]);
+    setCurrentConversationId(undefined);
+    
+    // Create a prompt with the selected verse
+    const prompt = `Can you help me understand this Bible verse: ${verse}`;
+    
     // Add the verse to the input field
     const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
     if (inputElement) {
-      inputElement.value = `Can you help me understand this verse: ${verse}`;
+      inputElement.value = prompt;
       inputElement.focus();
     }
+    
+    // Automatically send the message to start the conversation
+    setTimeout(() => {
+      handleSubmit(prompt);
+    }, 100);
   };
 
   // Handle church selection
   const handleChurchSelect = (church: any) => {
+    // Start a new conversation
+    setMessages([]);
+    setCurrentConversationId(undefined);
+    
+    // Create a prompt about the selected church
     const message = `Tell me about ${church.name} in ${church.city}. What are their main ministries and how can I get involved?`;
+    
+    // Add the message to the input field
     const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
     if (inputElement) {
       inputElement.value = message;
       inputElement.focus();
     }
+    
+    // Automatically send the message to start the conversation
+    setTimeout(() => {
+      handleSubmit(message);
+    }, 100);
   };
 
   // Mock user progress data - will be replaced with real data from GamificationService
