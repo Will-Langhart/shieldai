@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, User, Mail, Shield, Palette, Bell, Download, Trash2, Save, Upload, Camera, CreditCard, BookOpen, Heart, History, Settings } from 'lucide-react';
+import { X, User, Mail, Shield, Palette, Bell, Download, Trash2, Save, Upload, Camera, CreditCard, BookOpen, Heart, History, Settings, Edit } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { supabase } from '../lib/supabase';
 import SubscriptionStatus from './SubscriptionStatus';
@@ -529,12 +529,18 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
 
               {activeTab === 'bible' && (
                 <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-shield-white mb-4">Bible Settings</h3>
+                  <div className="flex items-center space-x-3 mb-6">
+                    <BookOpen className="w-6 h-6 text-shield-blue" />
+                    <h3 className="text-xl font-semibold text-shield-white">Bible Study Settings</h3>
+                  </div>
                   
                   <div className="space-y-6">
                     {/* Bible Preferences */}
                     <div className="space-y-4">
-                      <h4 className="text-lg font-medium text-shield-white">Preferences</h4>
+                      <div className="flex items-center space-x-2 mb-4">
+                        <Settings className="w-5 h-5 text-shield-blue" />
+                        <h4 className="text-lg font-medium text-shield-white">Study Preferences</h4>
+                      </div>
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Default Bible Version</label>
@@ -649,40 +655,60 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
 
                     {/* Bible Study Notes */}
                     <div className="space-y-4">
-                      <h4 className="text-lg font-medium text-shield-white">Study Notes</h4>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Edit className="w-5 h-5 text-shield-blue" />
+                          <h4 className="text-lg font-medium text-shield-white">Study Notes</h4>
+                        </div>
+                        <span className="text-sm text-gray-400">{bibleNotes.length} note{bibleNotes.length !== 1 ? 's' : ''}</span>
+                      </div>
                       
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {bibleNotes.length > 0 ? (
-                          bibleNotes.map((note, index) => (
-                            <div key={index} className="p-3 bg-shield-light-gray/20 rounded-lg">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-shield-white">{note.reference}</p>
-                                  <p className="text-sm text-gray-300 mt-1">{note.note}</p>
-                                  {note.tags.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mt-2">
-                                      {note.tags.map((tag, tagIndex) => (
-                                        <span key={tagIndex} className="text-xs bg-shield-blue/20 text-shield-blue px-2 py-1 rounded">
-                                          {tag}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                  <p className="text-xs text-gray-500 mt-2">{new Date(note.created_at).toLocaleDateString()}</p>
+                      <div className="bg-shield-light-gray/10 border border-shield-light-gray/20 rounded-lg p-4">
+                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                          {bibleNotes.length > 0 ? (
+                            bibleNotes.map((note, index) => (
+                              <div key={index} className="p-4 bg-shield-light-gray/20 rounded-lg border border-shield-light-gray/30">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs font-medium text-shield-blue bg-shield-blue/20 px-2 py-1 rounded">
+                                      {note.reference}
+                                    </span>
+                                    <span className="text-xs text-gray-400">
+                                      {new Date(note.created_at).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={() => handleDeleteBibleNote(note.id)}
+                                    className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                                    title="Delete note"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
                                 </div>
-                                <button
-                                  onClick={() => handleDeleteBibleNote(note.id)}
-                                  className="ml-2 p-1 text-red-400 hover:text-red-300 transition-colors"
-                                  title="Delete note"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
+                                
+                                <p className="text-sm text-gray-300 mb-3 leading-relaxed">
+                                  {note.note}
+                                </p>
+                                
+                                {note.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {note.tags.map((tag, tagIndex) => (
+                                      <span key={tagIndex} className="text-xs bg-shield-blue/20 text-shield-blue px-2 py-1 rounded-full">
+                                        #{tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-8 text-gray-400">
+                              <Edit className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                              <p className="text-sm">No study notes yet</p>
+                              <p className="text-xs mt-1">Create notes in the Bible Study Suite</p>
                             </div>
-                          ))
-                        ) : (
-                          <p className="text-gray-400 text-sm">No study notes yet</p>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

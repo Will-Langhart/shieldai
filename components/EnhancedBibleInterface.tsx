@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Search, Settings, Copy, Share2, Heart, ExternalLink, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { BookOpen, Search, Settings, Copy, Share2, Heart, ExternalLink, ChevronDown, ChevronUp, X, Edit } from 'lucide-react';
 import BibleSearch from './BibleSearch';
 import AdvancedBibleSearch from './AdvancedBibleSearch';
 import VerseComparison from './VerseComparison';
@@ -251,10 +251,62 @@ export default function EnhancedBibleInterface({ onVerseSelect, onAddNote, class
         )}
 
         {activeMode === 'study' && !selectedVerse && (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Select a verse to use study tools</p>
-            <p className="text-sm mt-1">Enter a verse reference above</p>
+          <div className="space-y-6">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>Select a verse to use study tools</p>
+              <p className="text-sm mt-1">Enter a verse reference above</p>
+            </div>
+            
+            {/* Quick Access to Study Notes */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <Edit className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">Quick Study Notes</h3>
+              </div>
+              <p className="text-sm text-blue-600 dark:text-blue-300 mb-4">
+                Enter any verse reference to start creating study notes, or use the Bible search to find verses.
+              </p>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={selectedVerse}
+                  onChange={(e) => setSelectedVerse(e.target.value)}
+                  placeholder="e.g., John 3:16, Psalm 23:1, Matthew 6:9"
+                  className="w-full px-4 py-3 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      if (selectedVerse.trim()) {
+                        // This will trigger the BibleStudyTools component
+                      }
+                    }}
+                    disabled={!selectedVerse.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Open Study Tools</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveMode('search')}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    Search Bible
+                  </button>
+                </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-800">
+                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">💡 Study Notes Features:</h4>
+                <ul className="text-xs text-blue-600 dark:text-blue-300 space-y-1">
+                  <li>• Auto-save notes as you type</li>
+                  <li>• Add tags to organize your notes</li>
+                  <li>• View all notes in User Settings</li>
+                  <li>• Access concordance and cross-references</li>
+                </ul>
+              </div>
+            </div>
           </div>
         )}
       </div>
