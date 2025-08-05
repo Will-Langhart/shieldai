@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, BookOpen, HandsClapping, Smile, Frown, Meh, Zap, Sparkles } from 'lucide-react';
+import { Heart, BookOpen, Smile, Frown, Meh, Zap, Sparkles } from 'lucide-react';
 
 interface MoodVerse {
   mood: string;
@@ -253,7 +253,7 @@ const MoodVerseSystem: React.FC<MoodVerseSystemProps> = ({
             }`}>
               {[
                 { id: 'verses', name: 'Bible Verses', icon: <BookOpen className="w-4 h-4" /> },
-                { id: 'prayers', name: 'Prayers', icon: <HandsClapping className="w-4 h-4" /> },
+                { id: 'prayers', name: 'Prayers', icon: <Heart className="w-4 h-4" /> },
                 { id: 'encouragement', name: 'Encouragement', icon: <Sparkles className="w-4 h-4" /> }
               ].map((tab) => (
                 <button
@@ -324,7 +324,7 @@ const MoodVerseSystem: React.FC<MoodVerseSystemProps> = ({
                     >
                       <div className="flex items-start space-x-3">
                         <div className="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                          <HandsClapping className="w-4 h-4 text-white" />
+                          <Heart className="w-4 h-4 text-white" />
                         </div>
                         <div className="flex-1">
                           <p className={`leading-relaxed italic ${
