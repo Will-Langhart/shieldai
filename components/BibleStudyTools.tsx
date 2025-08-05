@@ -312,63 +312,110 @@ export default function BibleStudyTools({ reference, onVerseSelect, className = 
             {/* Study Notes Tab */}
             {activeTab === 'notes' && (
               <div>
-                <div className="mb-4">
-                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    Add Study Note
-                  </h5>
-                  <div className="space-y-3">
-                    <textarea
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      placeholder="Add your study note here..."
-                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                      rows={3}
-                    />
-                    <input
-                      type="text"
-                      value={noteTags}
-                      onChange={(e) => setNoteTags(e.target.value)}
-                      placeholder="Tags (comma-separated): salvation, faith, grace"
-                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                    <button
-                      onClick={addStudyNote}
-                      disabled={!newNote.trim()}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      Add Note
-                    </button>
+                <div className="mb-6">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Edit className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <h5 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Study Notes for {reference}
+                    </h5>
+                  </div>
+                  
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                    <h6 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+                      ✨ Quick Note Creation
+                    </h6>
+                    <p className="text-xs text-blue-600 dark:text-blue-300 mb-3">
+                      Add your insights, questions, or reflections about this verse. Notes auto-save as you type!
+                    </p>
+                    <div className="space-y-3">
+                      <textarea
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                        placeholder="Write your thoughts, insights, or questions about this verse..."
+                        className="w-full p-3 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-blue-500"
+                        rows={4}
+                      />
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={noteTags}
+                          onChange={(e) => setNoteTags(e.target.value)}
+                          placeholder="Tags: salvation, faith, grace (optional)"
+                          className="flex-1 p-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        />
+                        <button
+                          onClick={addStudyNote}
+                          disabled={!newNote.trim()}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                          <span>Save Note</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 <div>
-                  <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    Your Notes
-                  </h5>
-                  <div className="space-y-3">
-                    {studyNotes.map((note) => (
-                      <div key={note.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(note.timestamp).toLocaleDateString()}
-                          </span>
-                          <div className="flex space-x-1">
-                            {note.tags.map((tag, tagIndex) => (
-                              <span
-                                key={tagIndex}
-                                className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          {note.note}
-                        </p>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between mb-4">
+                    <h5 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Your Study Notes
+                    </h5>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {studyNotes.length} note{studyNotes.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
+                  
+                  {studyNotes.length > 0 ? (
+                    <div className="space-y-4">
+                      {studyNotes.map((note) => (
+                        <div key={note.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 shadow-sm">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                                {new Date(note.timestamp).toLocaleDateString()}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {new Date(note.timestamp).toLocaleTimeString()}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                // TODO: Add edit functionality
+                                console.log('Edit note:', note.id);
+                              }}
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                          
+                          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed">
+                            {note.note}
+                          </p>
+                          
+                          {note.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {note.tags.map((tag, tagIndex) => (
+                                <span
+                                  key={tagIndex}
+                                  className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <Edit className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p className="text-sm">No study notes yet</p>
+                      <p className="text-xs mt-1">Add your first note above!</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
