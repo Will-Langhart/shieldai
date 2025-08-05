@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Settings, User, LogOut, MessageSquare, Menu, Heart, MapPin } from 'lucide-react';
+import { Search, Filter, Settings, User, LogOut, MessageSquare, Menu, Heart, MapPin, BookOpen } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import AuthModal from './AuthModal';
 import UserSettings from './UserSettings';
@@ -14,6 +14,7 @@ interface HeaderProps {
   onAchievementClick?: () => void;
   onMoodVerseClick?: () => void;
   onChurchFinderClick?: () => void;
+  onBibleSearchClick?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -24,7 +25,8 @@ const Header: React.FC<HeaderProps> = ({
   themeIcon, 
   onAchievementClick,
   onMoodVerseClick,
-  onChurchFinderClick
+  onChurchFinderClick,
+  onBibleSearchClick
 }) => {
   const { user, signOut } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -129,6 +131,19 @@ const Header: React.FC<HeaderProps> = ({
           >
             <MapPin className="w-5 h-5 group-hover:scale-110 transition-transform" />
           </button>
+
+                      {/* Enhanced Bible Study Suite */}
+            <button
+              onClick={onBibleSearchClick}
+              className={`p-2 rounded-xl transition-all duration-200 group ${
+                theme === 'dark'
+                  ? 'text-shield-white hover:bg-shield-light-gray/50'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              title="Bible Study Suite - Search, Compare, Study"
+            >
+              <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            </button>
 
           {/* Icons - Hide search on mobile for space */}
           <button className={`p-2 rounded-xl transition-all duration-200 group hidden sm:block ${

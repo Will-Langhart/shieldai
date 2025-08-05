@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, User, Mail, Shield, Palette, Bell, Download, Trash2, Save, Upload, Camera, CreditCard } from 'lucide-react';
+import { X, User, Mail, Shield, Palette, Bell, Download, Trash2, Save, Upload, Camera, CreditCard, BookOpen, Heart, History, Settings } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { supabase } from '../lib/supabase';
 import SubscriptionStatus from './SubscriptionStatus';
@@ -26,14 +26,21 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
     theme: 'dark',
     notifications: true,
     autoSave: true,
-    defaultMode: 'fast'
+    defaultMode: 'fast',
+    bibleDefaultVersion: 'de4e12af7f28f599-02', // NIV
+    bibleSearchHistory: true,
+    bibleAutoSaveNotes: true
   });
+  const [bibleFavorites, setBibleFavorites] = useState<Array<{ reference: string; text: string; version: string; created_at: string }>>([]);
+  const [bibleHistory, setBibleHistory] = useState<Array<{ query: string; created_at: string }>>([]);
+  const [bibleNotes, setBibleNotes] = useState<Array<{ id: string; reference: string; note: string; tags: string[]; created_at: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user && isOpen) {
       loadUserData();
       loadSubscriptionData();
+      loadBibleData();
     }
   }, [user, isOpen]);
 
@@ -72,6 +79,48 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
       }
     } catch (error) {
       console.error('Error loading subscription data:', error);
+    }
+  };
+
+  const loadBibleData = async () => {
+    if (!user) return;
+    
+    try {
+      // Load Bible favorites
+      const { data: favorites } = await supabase
+        .from('bible_favorites')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (favorites) {
+        setBibleFavorites(favorites);
+      }
+
+      // Load Bible search history
+      const { data: history } = await supabase
+        .from('bible_search_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (history) {
+        setBibleHistory(history);
+      }
+
+      // Load Bible notes
+      const { data: notes } = await supabase
+        .from('bible_notes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (notes) {
+        setBibleNotes(notes);
+      }
+    } catch (error) {
+      console.error('Error loading Bible data:', error);
     }
   };
 
@@ -203,12 +252,60 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
     setShowSubscriptionModal(true);
   };
 
+  const handleRemoveBibleFavorite = async (reference: string) => {
+    if (!user) return;
+    
+    try {
+      await supabase
+        .from('bible_favorites')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('reference', reference);
+      
+      setBibleFavorites(prev => prev.filter(fav => fav.reference !== reference));
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+    }
+  };
+
+  const handleClearBibleHistory = async () => {
+    if (!user) return;
+    
+    try {
+      await supabase
+        .from('bible_search_history')
+        .delete()
+        .eq('user_id', user.id);
+      
+      setBibleHistory([]);
+    } catch (error) {
+      console.error('Error clearing history:', error);
+    }
+  };
+
+  const handleDeleteBibleNote = async (noteId: string) => {
+    if (!user) return;
+    
+    try {
+      await supabase
+        .from('bible_notes')
+        .delete()
+        .eq('id', noteId)
+        .eq('user_id', user.id);
+      
+      setBibleNotes(prev => prev.filter(note => note.id !== noteId));
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
+  };
+
   if (!isOpen) return null;
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'subscription', label: 'Subscription', icon: CreditCard },
     { id: 'preferences', label: 'Preferences', icon: Palette },
+    { id: 'bible', label: 'Bible Settings', icon: BookOpen },
     { id: 'data', label: 'Data & Privacy', icon: Shield }
   ];
 
@@ -424,6 +521,168 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
                             preferences.autoSave ? 'translate-x-6' : 'translate-x-1'
                           }`} />
                         </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'bible' && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-shield-white mb-4">Bible Settings</h3>
+                  
+                  <div className="space-y-6">
+                    {/* Bible Preferences */}
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-medium text-shield-white">Preferences</h4>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Default Bible Version</label>
+                        <select
+                          value={preferences.bibleDefaultVersion}
+                          onChange={(e) => setPreferences({ ...preferences, bibleDefaultVersion: e.target.value })}
+                          className="w-full px-4 py-3 bg-shield-light-gray/50 border border-gray-600/50 rounded-lg text-shield-white focus:outline-none focus:border-shield-blue/50 transition-colors"
+                        >
+                          <option value="de4e12af7f28f599-02">NIV - New International Version</option>
+                          <option value="65eec8e0b60e656b-01">KJV - King James Version</option>
+                          <option value="f421fe261da7624f-01">ESV - English Standard Version</option>
+                          <option value="9879dbb7cfe39e4d-01">NLT - New Living Translation</option>
+                          <option value="c315fa9f71d94af9-01">NKJV - New King James Version</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="text-sm font-medium text-gray-300">Save search history</label>
+                            <p className="text-xs text-gray-400">Remember your Bible searches</p>
+                          </div>
+                          <button
+                            onClick={() => setPreferences({ ...preferences, bibleSearchHistory: !preferences.bibleSearchHistory })}
+                            className={`w-12 h-6 rounded-full transition-colors ${
+                              preferences.bibleSearchHistory ? 'bg-shield-blue' : 'bg-gray-600'
+                            }`}
+                          >
+                            <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
+                              preferences.bibleSearchHistory ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <label className="text-sm font-medium text-gray-300">Auto-save study notes</label>
+                            <p className="text-xs text-gray-400">Automatically save your Bible study notes</p>
+                          </div>
+                          <button
+                            onClick={() => setPreferences({ ...preferences, bibleAutoSaveNotes: !preferences.bibleAutoSaveNotes })}
+                            className={`w-12 h-6 rounded-full transition-colors ${
+                              preferences.bibleAutoSaveNotes ? 'bg-shield-blue' : 'bg-gray-600'
+                            }`}
+                          >
+                            <div className={`w-4 h-4 bg-white rounded-full transition-transform ${
+                              preferences.bibleAutoSaveNotes ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bible Favorites */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-lg font-medium text-shield-white">Favorite Verses</h4>
+                        <span className="text-sm text-gray-400">{bibleFavorites.length} verses</span>
+                      </div>
+                      
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {bibleFavorites.length > 0 ? (
+                          bibleFavorites.map((favorite, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-shield-light-gray/20 rounded-lg">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-shield-white truncate">{favorite.reference}</p>
+                                <p className="text-xs text-gray-400 truncate">{favorite.text.substring(0, 60)}...</p>
+                                <p className="text-xs text-gray-500">{favorite.version} • {new Date(favorite.created_at).toLocaleDateString()}</p>
+                              </div>
+                              <button
+                                onClick={() => handleRemoveBibleFavorite(favorite.reference)}
+                                className="ml-2 p-1 text-red-400 hover:text-red-300 transition-colors"
+                                title="Remove from favorites"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-400 text-sm">No favorite verses yet</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bible Search History */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-lg font-medium text-shield-white">Search History</h4>
+                        <button
+                          onClick={handleClearBibleHistory}
+                          className="text-sm text-red-400 hover:text-red-300 transition-colors"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {bibleHistory.length > 0 ? (
+                          bibleHistory.map((item, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-shield-light-gray/20 rounded-lg">
+                              <div className="flex-1">
+                                <p className="text-sm text-shield-white">{item.query}</p>
+                                <p className="text-xs text-gray-500">{new Date(item.created_at).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-400 text-sm">No search history</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bible Study Notes */}
+                    <div className="space-y-4">
+                      <h4 className="text-lg font-medium text-shield-white">Study Notes</h4>
+                      
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {bibleNotes.length > 0 ? (
+                          bibleNotes.map((note, index) => (
+                            <div key={index} className="p-3 bg-shield-light-gray/20 rounded-lg">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-shield-white">{note.reference}</p>
+                                  <p className="text-sm text-gray-300 mt-1">{note.note}</p>
+                                  {note.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-2">
+                                      {note.tags.map((tag, tagIndex) => (
+                                        <span key={tagIndex} className="text-xs bg-shield-blue/20 text-shield-blue px-2 py-1 rounded">
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <p className="text-xs text-gray-500 mt-2">{new Date(note.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteBibleNote(note.id)}
+                                  className="ml-2 p-1 text-red-400 hover:text-red-300 transition-colors"
+                                  title="Delete note"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-400 text-sm">No study notes yet</p>
+                        )}
                       </div>
                     </div>
                   </div>

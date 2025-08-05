@@ -9,11 +9,14 @@ import SubscriptionModal from '../components/SubscriptionModal';
 import AchievementSystem from '../components/AchievementSystem';
 import MoodVerseSystem from '../components/MoodVerseSystem';
 import ChurchFinder from '../components/ChurchFinder';
+import BibleSearch from '../components/BibleSearch';
+import EnhancedBibleInterface from '../components/EnhancedBibleInterface';
+import NoteCreationModal from '../components/NoteCreationModal';
 import { useAuth } from '../lib/auth-context';
 import { ClientService } from '../lib/client-service';
 import { supabase } from '../lib/supabase';
 import { GamificationService } from '../lib/gamification-service';
-import { Shield, Crown, AlertTriangle, Sun, Moon, Monitor, Heart, MapPin } from 'lucide-react';
+import { Shield, Crown, AlertTriangle, Sun, Moon, Monitor, Heart, MapPin, BookOpen, X } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -43,6 +46,9 @@ export default function Home() {
   const [showAchievementSystem, setShowAchievementSystem] = useState(false);
   const [showMoodVerseSystem, setShowMoodVerseSystem] = useState(false);
   const [showChurchFinder, setShowChurchFinder] = useState(false);
+  const [showBibleSearch, setShowBibleSearch] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [selectedVerseForNote, setSelectedVerseForNote] = useState<{ reference: string; text: string } | null>(null);
   const [theme, setTheme] = useState<Theme>('auto');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
   const [userProgress, setUserProgress] = useState<any>(null);
@@ -509,9 +515,10 @@ export default function Home() {
           theme={resolvedTheme}
           onThemeToggle={toggleTheme}
           themeIcon={getThemeIcon()}
-          onAchievementClick={() => setShowAchievementSystem(true)}
-          onMoodVerseClick={() => setShowMoodVerseSystem(true)}
-          onChurchFinderClick={() => setShowChurchFinder(true)}
+                        onAchievementClick={() => setShowAchievementSystem(true)}
+              onMoodVerseClick={() => setShowMoodVerseSystem(true)}
+              onChurchFinderClick={() => setShowChurchFinder(true)}
+              onBibleSearchClick={() => setShowBibleSearch(true)}
         />
 
         {/* Main content */}
@@ -800,7 +807,50 @@ export default function Home() {
           onChurchSelect={handleChurchSelect}
           theme={resolvedTheme}
         />
+
+        {/* Enhanced Bible Interface */}
+        <div className={`fixed inset-0 z-50 flex items-center justify-center ${showBibleSearch ? 'block' : 'hidden'}`}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowBibleSearch(false)} />
+          <div className="relative w-full max-w-6xl mx-4 max-h-[95vh] overflow-hidden">
+            <EnhancedBibleInterface
+              onVerseSelect={(reference, text, version) => {
+                // Add the selected verse to the chat with version info
+                const verseMessage = `${reference} (${version || 'KJV'}): "${text}"`;
+                handleSubmit(verseMessage);
+                setShowBibleSearch(false);
+              }}
+              onAddNote={(reference, text) => {
+                setSelectedVerseForNote({ reference, text });
+                setShowNoteModal(true);
+              }}
+              className="w-full h-full"
+            />
+            <button
+              onClick={() => setShowBibleSearch(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors z-10"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Note Creation Modal */}
+      {selectedVerseForNote && (
+        <NoteCreationModal
+          isOpen={showNoteModal}
+          onClose={() => {
+            setShowNoteModal(false);
+            setSelectedVerseForNote(null);
+          }}
+          reference={selectedVerseForNote.reference}
+          text={selectedVerseForNote.text}
+          onNoteCreated={(note) => {
+            console.log('Note created:', note);
+            // Could add a success message or update UI
+          }}
+        />
+      )}
     </>
   );
 } 
