@@ -29,9 +29,9 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-2 sm:px-4">
-      <form onSubmit={handleSubmit} className="relative">
-        <div className={`flex items-center backdrop-blur-sm rounded-2xl p-3 sm:p-4 border shadow-lg transition-colors duration-300 ${
+    <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 min-w-0 mobile-input-bar">
+      <form onSubmit={handleSubmit} className="relative min-w-0">
+        <div className={`flex items-center backdrop-blur-sm rounded-2xl p-3 sm:p-4 border shadow-lg transition-colors duration-300 touch-button ${
           disabled 
             ? theme === 'dark' ? 'bg-gray-600/50 border-gray-500/50' : 'bg-gray-200 border-gray-300'
             : theme === 'dark'
@@ -90,7 +90,7 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
             onChange={(e) => setInputValue(e.target.value)}
             placeholder={disabled ? "Upgrade required to continue..." : "Ask me anything about apologetics, theology, or philosophy..."}
             disabled={isLoading || disabled}
-            className={`flex-1 bg-transparent outline-none text-base sm:text-lg font-medium min-w-0 transition-colors duration-300 ${
+            className={`flex-1 bg-transparent outline-none text-base sm:text-lg font-medium min-w-0 w-full transition-colors duration-300 ${
               disabled 
                 ? theme === 'dark' ? 'text-gray-400 placeholder-gray-500' : 'text-gray-400 placeholder-gray-400'
                 : theme === 'dark' ? 'text-shield-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'

@@ -12,6 +12,7 @@ import ChurchFinder from '../components/ChurchFinder';
 import BibleSearch from '../components/BibleSearch';
 import EnhancedBibleInterface from '../components/EnhancedBibleInterface';
 import NoteCreationModal from '../components/NoteCreationModal';
+import MobileNavigation from '../components/MobileNavigation';
 import { useAuth } from '../lib/auth-context';
 import { ClientService } from '../lib/client-service';
 import { supabase } from '../lib/supabase';
@@ -52,6 +53,7 @@ export default function Home() {
   const [theme, setTheme] = useState<Theme>('auto');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
   const [userProgress, setUserProgress] = useState<any>(null);
+  const [currentMobileSection, setCurrentMobileSection] = useState<'chat' | 'bible' | 'church' | 'mood' | 'settings'>('chat');
   const [sessionId] = useState(() => {
     // Use a stable session ID based on user ID or create a persistent one
     if (typeof window !== 'undefined') {
@@ -503,7 +505,7 @@ export default function Home() {
         <link rel="icon" href="/logo.png" />
       </Head>
 
-      <div className={`min-h-screen flex flex-col transition-colors duration-300 ${
+      <div className={`h-screen flex flex-col transition-colors duration-300 overflow-hidden ${
         resolvedTheme === 'dark' 
           ? 'bg-shield-black text-shield-white' 
           : 'bg-gray-50 text-gray-900'
@@ -522,7 +524,7 @@ export default function Home() {
         />
 
         {/* Main content */}
-        <main className="flex-1 flex">
+        <main className="flex-1 flex relative overflow-hidden">
           {/* Sidebar backdrop for mobile */}
           {user && showSidebar && (
             <div 
@@ -533,19 +535,21 @@ export default function Home() {
 
           {/* Sidebar */}
           {user && (
-            <div className={`fixed inset-y-0 left-0 z-30 w-80 border-r transition-transform duration-300 ${
+            <div className={`fixed inset-y-0 left-0 z-30 w-80 border-r transition-transform duration-300 mobile-sidebar ${
               showSidebar ? 'translate-x-0' : '-translate-x-full'
             } md:relative md:translate-x-0 md:block ${showSidebar ? 'md:block' : 'md:hidden'} ${
               resolvedTheme === 'dark' 
                 ? 'bg-shield-gray/50 border-gray-700/50' 
                 : 'bg-white border-gray-200'
             }`}>
-              <ConversationHistory
-                onSelectConversation={handleSelectConversation}
-                currentConversationId={currentConversationId}
-                onNewConversation={handleNewConversation}
-                theme={resolvedTheme}
-              />
+              <div className="h-full overflow-y-auto">
+                <ConversationHistory
+                  onSelectConversation={handleSelectConversation}
+                  currentConversationId={currentConversationId}
+                  onNewConversation={handleNewConversation}
+                  theme={resolvedTheme}
+                />
+              </div>
             </div>
           )}
 
@@ -566,184 +570,209 @@ export default function Home() {
           )}
 
           {/* Main content */}
-          <div className={`flex-1 flex flex-col ${hasMessages ? 'justify-start' : 'justify-center'} px-4 sm:px-6 py-4 sm:py-6 transition-all duration-300 ${user && showSidebar ? 'md:ml-80' : 'ml-0'}`}>
-            {/* Shield AI Logo and Branding - Only show when no messages */}
-            {!hasMessages && (
-              <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex flex-col sm:flex-row items-center justify-center mb-6 sm:mb-8">
-                  <img src="/logo.png" alt="Shield AI Logo" className="w-32 h-32 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mb-4 sm:mb-0 sm:mr-6 drop-shadow-lg" />
-                  <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold drop-shadow-lg ${
-                    resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
-                  }`}>Shield AI</h1>
-                </div>
-                <p className={`text-base sm:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4 ${
-                  resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                }`}>
-                  Your AI-powered apologetics companion. Ask me anything about theology, philosophy, or defending the Christian worldview.
-                </p>
-                {user && (
-                  <div className="text-center">
-                    <p className={`text-sm font-medium ${
-                      resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
-                    }`}>
-                      Signed in as {user.email}
-                    </p>
-                    <p className={`text-xs mt-1 ${
-                      resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                    }`}>
-                      Your conversations will be saved automatically
-                    </p>
+          <div className={`flex-1 flex flex-col transition-all duration-300 ${user && showSidebar ? 'md:ml-80' : 'ml-0'}`}>
+            {/* Conversation Area - Scrollable with fixed height */}
+            <div className={`flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 sm:py-6 ${hasMessages ? 'justify-start' : 'justify-center flex items-center'} swipe-area`}>
+              {/* Shield AI Logo and Branding - Only show when no messages */}
+              {!hasMessages && (
+                <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex flex-col sm:flex-row items-center justify-center mb-6 sm:mb-8">
+                    <img src="/logo.png" alt="Shield AI Logo" className="w-32 h-32 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mb-4 sm:mb-0 sm:mr-6 drop-shadow-lg" />
+                    <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold drop-shadow-lg ${
+                      resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
+                    }`}>Shield AI</h1>
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Messages Display */}
-            {hasMessages && (
-              <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 mb-6 sm:mb-8 px-2 sm:px-0 overflow-y-auto flex-1">
-                <div className="space-y-4 sm:space-y-6">
-                  {messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
-                    >
-                      <div
-                        className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg ${
-                          message.role === 'user' 
-                            ? resolvedTheme === 'dark'
-                              ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white'
-                              : 'bg-blue-100 border border-blue-200 text-gray-900'
-                            : resolvedTheme === 'dark'
-                              ? 'bg-transparent border border-gray-700/30 text-shield-white'
-                              : 'bg-transparent border border-gray-200 text-gray-900'
-                        }`}
-                      >
-                        <div className="flex items-start space-x-2 sm:space-x-3">
-                          {message.role === 'assistant' && (
-                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
-                              resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                            }`}>
-                              <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
-                            </div>
-                          )}
-                          {message.role === 'user' && (
-                            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
-                              resolvedTheme === 'dark'
-                                ? 'bg-shield-blue/20 border border-shield-blue/30'
-                                : 'bg-blue-100 border border-blue-200'
-                            }`}>
-                              {user?.user_metadata?.avatar_url ? (
-                                <img 
-                                  src={user.user_metadata.avatar_url} 
-                                  alt="User" 
-                                  className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
-                                />
-                              ) : (
-                                <span className={`font-bold text-xs sm:text-sm ${
-                                  resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
-                                }`}>
-                                  {user?.email?.charAt(0).toUpperCase() || 'U'}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className={`leading-relaxed text-sm sm:text-base break-words ${
-                              resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
-                            }`}>{message.content}</p>
-                            <p className={`text-xs mt-2 opacity-60 ${
-                              resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                            }`}>
-                              {message.timestamp && new Date(message.timestamp).toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {/* Message Actions for AI responses */}
-                        {message.role === 'assistant' && (
-                          <MessageActions
-                            messageId={`msg_${index}`}
-                            content={message.content}
-                            conversationId={currentConversationId}
-                            onRegenerate={() => handleRegenerate(index)}
-                            onCopy={() => handleCopyMessage(message.content)}
-                            onShare={() => handleShareMessage(currentConversationId)}
-                            onFeedback={(type) => handleFeedback(index, type)}
-                            theme={resolvedTheme}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Loading indicator */}
-                  {isLoading && (
-                    <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      <div className={`max-w-2xl px-6 py-4 rounded-2xl shadow-lg backdrop-blur-sm border ${
-                        resolvedTheme === 'dark'
-                          ? 'bg-transparent border-gray-700/30'
-                          : 'bg-transparent border-gray-200'
+                  <p className={`text-base sm:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4 ${
+                    resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    Your AI-powered apologetics companion. Ask me anything about theology, philosophy, or defending the Christian worldview.
+                  </p>
+                  {user && (
+                    <div className="text-center">
+                      <p className={`text-sm font-medium ${
+                        resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
                       }`}>
-                        <div className="flex items-start space-x-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${
-                            resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                          }`}>
-                            <span className={`font-bold text-sm ${
-                              resolvedTheme === 'dark' ? 'text-shield-white' : 'text-white'
-                            }`}>S</span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex space-x-1">
-                              <div className={`w-2 h-2 rounded-full animate-bounce ${
-                                resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                              }`}></div>
-                              <div className={`w-2 h-2 rounded-full animate-bounce ${
-                                resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                              }`} style={{ animationDelay: '0.1s' }}></div>
-                              <div className={`w-2 h-2 rounded-full animate-bounce ${
-                                resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                              }`} style={{ animationDelay: '0.2s' }}></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                        Signed in as {user.email}
+                      </p>
+                      <p className={`text-xs mt-1 ${
+                        resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Your conversations will be saved automatically
+                      </p>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Input Bar - Positioned differently based on message state */}
-            <div className={`w-full max-w-4xl mx-auto px-2 sm:px-0 ${hasMessages ? 'mt-auto' : 'mb-6 sm:mb-8'}`}>
-              <InputBar 
-                onSubmit={handleSubmit} 
-                mode={currentMode}
-                onModeChange={setCurrentMode}
-                isLoading={isLoading}
-                disabled={shouldShowUpgradePrompt}
-                theme={resolvedTheme}
-              />
+              {/* Messages Display */}
+              {hasMessages && (
+                <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 pb-4 min-w-0">
+                  <div className="space-y-4 sm:space-y-6 min-w-0">
+                    {messages.map((message, index) => (
+                      <div
+                        key={index}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300 min-w-0`}
+                      >
+                        <div
+                          className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg min-w-0 message-bubble-mobile ${
+                            message.role === 'user' 
+                              ? resolvedTheme === 'dark'
+                                ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white'
+                                : 'bg-blue-100 border border-blue-200 text-gray-900'
+                              : resolvedTheme === 'dark'
+                                ? 'bg-transparent border border-gray-700/30 text-shield-white'
+                                : 'bg-transparent border border-gray-200 text-gray-900'
+                          }`}
+                        >
+                          <div className="flex items-start space-x-2 sm:space-x-3">
+                            {message.role === 'assistant' && (
+                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
+                                resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
+                              }`}>
+                                <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
+                              </div>
+                            )}
+                            {message.role === 'user' && (
+                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
+                                resolvedTheme === 'dark'
+                                  ? 'bg-shield-blue/20 border border-shield-blue/30'
+                                  : 'bg-blue-100 border border-blue-200'
+                              }`}>
+                                {user?.user_metadata?.avatar_url ? (
+                                  <img 
+                                    src={user.user_metadata.avatar_url} 
+                                    alt="User" 
+                                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <span className={`font-bold text-xs sm:text-sm ${
+                                    resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
+                                  }`}>
+                                    {user?.email?.charAt(0).toUpperCase() || 'U'}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className={`leading-relaxed text-sm sm:text-base break-words ${
+                                resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
+                              }`}>{message.content}</p>
+                              <p className={`text-xs mt-2 opacity-60 ${
+                                resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                {message.timestamp && new Date(message.timestamp).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Message Actions for AI responses */}
+                          {message.role === 'assistant' && (
+                            <MessageActions
+                              messageId={`msg_${index}`}
+                              content={message.content}
+                              conversationId={currentConversationId}
+                              onRegenerate={() => handleRegenerate(index)}
+                              onCopy={() => handleCopyMessage(message.content)}
+                              onShare={() => handleShareMessage(currentConversationId)}
+                              onFeedback={(type) => handleFeedback(index, type)}
+                              theme={resolvedTheme}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Loading indicator */}
+                    {isLoading && (
+                      <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className={`max-w-2xl px-6 py-4 rounded-2xl shadow-lg backdrop-blur-sm border ${
+                          resolvedTheme === 'dark'
+                            ? 'bg-transparent border-gray-700/30'
+                            : 'bg-transparent border-gray-200'
+                        }`}>
+                          <div className="flex items-start space-x-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${
+                              resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
+                            }`}>
+                              <span className={`font-bold text-sm ${
+                                resolvedTheme === 'dark' ? 'text-shield-white' : 'text-white'
+                              }`}>S</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex space-x-1">
+                                <div className={`w-2 h-2 rounded-full animate-bounce ${
+                                  resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
+                                }`}></div>
+                                <div className={`w-2 h-2 rounded-full animate-bounce ${
+                                  resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
+                                }`} style={{ animationDelay: '0.1s' }}></div>
+                                <div className={`w-2 h-2 rounded-full animate-bounce ${
+                                  resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
+                                }`} style={{ animationDelay: '0.2s' }}></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer text - Only show when no messages */}
+              {!hasMessages && (
+                <div className="text-center mt-6 sm:mt-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+                  <p className={`text-xs sm:text-sm px-4 ${
+                    resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    By messaging Shield AI, you agree to our{' '}
+                    <a href="#" className={`hover:underline transition-colors ${
+                      resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
+                    }`}>Terms</a>
+                    {' '}and{' '}
+                    <a href="#" className={`hover:underline transition-colors ${
+                      resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
+                    }`}>Privacy Policy</a>
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Footer text - Only show when no messages */}
-            {!hasMessages && (
-              <div className="text-center mt-6 sm:mt-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-                <p className={`text-xs sm:text-sm px-4 ${
-                  resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                }`}>
-                  By messaging Shield AI, you agree to our{' '}
-                  <a href="#" className={`hover:underline transition-colors ${
-                    resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
-                  }`}>Terms</a>
-                  {' '}and{' '}
-                  <a href="#" className={`hover:underline transition-colors ${
-                    resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
-                  }`}>Privacy Policy</a>
-                </p>
+            {/* Input Bar - Fixed at bottom */}
+            <div className={`w-full px-4 sm:px-6 py-4 border-t ${
+              resolvedTheme === 'dark' 
+                ? 'border-gray-700/50 bg-shield-black' 
+                : 'border-gray-200 bg-white'
+            } min-w-0 flex-shrink-0`}>
+              <div className="w-full max-w-4xl mx-auto min-w-0">
+                <InputBar 
+                  onSubmit={handleSubmit} 
+                  mode={currentMode}
+                  onModeChange={setCurrentMode}
+                  isLoading={isLoading}
+                  disabled={shouldShowUpgradePrompt}
+                  theme={resolvedTheme}
+                />
               </div>
-            )}
+            </div>
           </div>
         </main>
+
+        {/* Mobile Navigation - Only show on mobile */}
+        {user && (
+          <div className="md:hidden">
+            <MobileNavigation
+              currentSection={currentMobileSection}
+              onSectionChange={setCurrentMobileSection}
+              theme={resolvedTheme}
+              onNewConversation={handleNewConversation}
+              onBibleSearchClick={() => setShowBibleSearch(true)}
+              onChurchFinderClick={() => setShowChurchFinder(true)}
+              onMoodVerseClick={() => setShowMoodVerseSystem(true)}
+              onSettingsClick={() => {/* TODO: Add settings modal */}}
+            />
+          </div>
+        )}
 
         {/* Upgrade Prompt Modal */}
         {showUpgradePrompt && (

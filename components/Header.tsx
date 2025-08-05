@@ -63,7 +63,7 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className={`flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b backdrop-blur-sm transition-colors duration-300 ${
+      <header className={`flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b backdrop-blur-sm transition-colors duration-300 mobile-header ${
         theme === 'dark' 
           ? 'border-gray-800/50 bg-shield-black/50' 
           : 'border-gray-200 bg-white/50'
@@ -77,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right side - Navigation and buttons */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
           {/* Theme Toggle */}
           <button
             onClick={onThemeToggle}
@@ -146,7 +146,7 @@ const Header: React.FC<HeaderProps> = ({
             </button>
 
           {/* Icons - Hide search on mobile for space */}
-          <button className={`p-2 rounded-xl transition-all duration-200 group hidden sm:block ${
+          <button className={`p-2 rounded-xl transition-all duration-200 group hidden md:block ${
             theme === 'dark' 
               ? 'text-shield-white hover:bg-shield-light-gray/50' 
               : 'text-gray-700 hover:bg-gray-100'
@@ -180,8 +180,8 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* Buttons */}
           {user ? (
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <div className="hidden sm:flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
+              <div className="hidden md:flex items-center space-x-2">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                   theme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
                 }`}>
@@ -209,7 +209,7 @@ const Header: React.FC<HeaderProps> = ({
             <>
               <button
                 onClick={handleSignIn}
-                className={`hidden sm:block px-4 py-2 border rounded-full transition-all duration-200 ${
+                className={`hidden md:block px-4 py-2 border rounded-full transition-all duration-200 ${
                   theme === 'dark'
                     ? 'text-shield-white border-gray-600/50 hover:bg-shield-light-gray/50'
                     : 'text-gray-700 border-gray-300 hover:bg-gray-50'

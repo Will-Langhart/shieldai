@@ -1,6 +1,52 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { ChurchFinderService } from '../../../lib/church-finder-service';
 
+// Helper function to get fallback churches
+function getFallbackChurches(latitude: number, longitude: number) {
+  return [
+    {
+      id: 'fallback-1',
+      name: 'First Baptist Church',
+      address: '123 Main Street',
+      city: 'Austin',
+      state: 'TX',
+      zip: '78701',
+      phone: '(512) 555-0123',
+      website: 'https://example.com',
+      rating: 4.5,
+      review_count: 127,
+      photos: [],
+      types: ['church', 'place_of_worship'],
+      coordinates: {
+        lat: latitude + 0.01,
+        lng: longitude + 0.01
+      },
+      distance: 2.3,
+      place_id: 'fallback-1'
+    },
+    {
+      id: 'fallback-2',
+      name: 'Grace Community Church',
+      address: '456 Oak Avenue',
+      city: 'Austin',
+      state: 'TX',
+      zip: '78702',
+      phone: '(512) 555-0456',
+      website: 'https://example.com',
+      rating: 4.2,
+      review_count: 89,
+      photos: [],
+      types: ['church', 'place_of_worship'],
+      coordinates: {
+        lat: latitude - 0.01,
+        lng: longitude - 0.01
+      },
+      distance: 4.1,
+      place_id: 'fallback-2'
+    }
+  ];
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -16,6 +62,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Use Google Places API directly on the server side
     const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
     const GOOGLE_PLACES_BASE_URL = 'https://maps.googleapis.com/maps/api/place';
+
+    // Check if API key is properly configured
+    if (!GOOGLE_PLACES_API_KEY) {
+      console.error('Google Places API key not configured');
+      return res.status(500).json({ 
+        error: 'Google Places API key not configured',
+        churches: getFallbackChurches(latitude, longitude)
+      });
+    }
 
     // Search for ALL places of worship and religious institutions
     const searchQueries = [
@@ -72,6 +127,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           console.error('Google Places API error for query:', data.status, data.error_message || 'No error message', searchUrl);
           if (data.status === 'REQUEST_DENIED') {
             console.error('API key may be invalid or missing required permissions');
+            console.error('Error details:', data.error_message);
+            // If it's a referer restriction, provide specific guidance
+            if (data.error_message?.includes('referer restrictions')) {
+              console.error('API key has referer restrictions. Please configure the key to allow server-side usage.');
+            }
           }
         }
       } catch (error) {
