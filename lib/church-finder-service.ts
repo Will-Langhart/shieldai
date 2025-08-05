@@ -33,31 +33,26 @@ export class ChurchFinderService {
 
   static async findChurchesNearby(params: ChurchSearchParams): Promise<ChurchLocation[]> {
     try {
-      // First, search for churches using Google Places API
-      const searchUrl = `${this.GOOGLE_PLACES_BASE_URL}/nearbysearch/json?` +
-        `location=${params.latitude},${params.longitude}&` +
-        `radius=${params.radius}&` +
-        `type=church&` +
-        `keyword=${encodeURIComponent(params.keyword || 'church')}&` +
-        `key=${this.GOOGLE_PLACES_API_KEY}`;
+      // Use our API endpoint instead of direct Google Places API call
+      const response = await fetch('/api/churches/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          latitude: params.latitude,
+          longitude: params.longitude,
+          radius: params.radius,
+          denomination: params.denomination
+        })
+      });
 
-      const response = await fetch(searchUrl);
-      const data = await response.json();
-
-      if (data.status !== 'OK') {
-        console.error('Google Places API error:', data.status);
-        return this.getFallbackChurches(params);
+      if (!response.ok) {
+        throw new Error('Failed to fetch churches');
       }
 
-      // Get detailed information for each church
-      const churchesWithDetails = await Promise.all(
-        data.results.map(async (place: any) => {
-          const details = await this.getChurchDetails(place.place_id);
-          return this.formatChurchData(place, details, params);
-        })
-      );
-
-      return churchesWithDetails;
+      const data = await response.json();
+      return data.churches || this.getFallbackChurches(params);
     } catch (error) {
       console.error('Error finding churches:', error);
       return this.getFallbackChurches(params);

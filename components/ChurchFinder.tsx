@@ -16,6 +16,7 @@ import {
   Loader
 } from 'lucide-react';
 import { ChurchFinderService, ChurchLocation } from '../lib/church-finder-service';
+import LocationServicesTrigger from './LocationServicesTrigger';
 
 interface ChurchEvent {
   id: string;
@@ -74,6 +75,7 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [churches, setChurches] = useState<ChurchLocation[]>([]);
+  const [showLocationTrigger, setShowLocationTrigger] = useState(false);
 
   const denominations = [
     { id: 'all', name: 'All Denominations' },
@@ -90,21 +92,45 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
   useEffect(() => {
     const initialize = async () => {
       setLoading(true);
+      setError(null);
       try {
+        // Development bypass - comment out for production
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Development mode: Using mock location');
+          const mockLocation = { lat: 40.7128, lng: -74.0060 }; // New York coordinates
+          setUserLocation(mockLocation);
+          const nearbyChurches = await ChurchFinderService.findChurchesNearby({
+            latitude: mockLocation.lat,
+            longitude: mockLocation.lng,
+            radius: selectedDistance * 1609.34,
+            denomination: selectedDenomination !== 'all' ? selectedDenomination : undefined
+          });
+          setChurches(nearbyChurches);
+          setLoading(false);
+          return;
+        }
+
         const location = await ChurchFinderService.getUserLocation();
         setUserLocation(location);
         
         if (location) {
+          console.log('User location:', location);
           const nearbyChurches = await ChurchFinderService.findChurchesNearby({
             latitude: location.lat,
             longitude: location.lng,
-            radius: selectedDistance * 1609.34 // Convert miles to meters
+            radius: selectedDistance * 1609.34, // Convert miles to meters
+            denomination: selectedDenomination !== 'all' ? selectedDenomination : undefined
           });
+          console.log('Found churches:', nearbyChurches);
           setChurches(nearbyChurches);
+        } else {
+          // Show location trigger instead of error
+          setShowLocationTrigger(true);
         }
       } catch (err) {
-        setError('Failed to get your location. Please enable location services.');
-        console.error(err);
+        console.error('Error initializing church finder:', err);
+        // Show location trigger instead of error
+        setShowLocationTrigger(true);
       } finally {
         setLoading(false);
       }
@@ -113,14 +139,54 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
     if (isOpen) {
       initialize();
     }
-  }, [isOpen, selectedDistance]);
+  }, [isOpen, selectedDistance, selectedDenomination]);
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const location = await ChurchFinderService.getUserLocation();
+      if (location) {
+        const nearbyChurches = await ChurchFinderService.findChurchesNearby({
+          latitude: location.lat,
+          longitude: location.lng,
+          radius: selectedDistance * 1609.34,
+          denomination: selectedDenomination !== 'all' ? selectedDenomination : undefined
+        });
+        setChurches(nearbyChurches);
+      } else {
+        setShowLocationTrigger(true);
+      }
+    } catch (err) {
+      console.error('Error refreshing churches:', err);
+      setShowLocationTrigger(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredChurches = churches.filter(church => {
-    const matchesSearch = church.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         church.city.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = searchTerm === '' || 
+      church.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      church.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      church.address.toLowerCase().includes(searchTerm.toLowerCase());
     
+    // More intelligent denomination matching
     const matchesDenomination = selectedDenomination === 'all' || 
-      church.name.toLowerCase().includes(selectedDenomination.toLowerCase());
+      (() => {
+        const churchName = church.name.toLowerCase();
+        const denominationKeywords = {
+          'Baptist': ['baptist', 'baptist church', 'first baptist', 'second baptist'],
+          'Catholic': ['catholic', 'st.', 'saint', 'cathedral', 'basilica'],
+          'Lutheran': ['lutheran', 'lutheran church', 'elca', 'lcms'],
+          'Methodist': ['methodist', 'umc', 'united methodist'],
+          'Presbyterian': ['presbyterian', 'pca', 'pcusa'],
+          'Non-denominational': ['community', 'non-denominational', 'christian', 'fellowship']
+        };
+        
+        const keywords = denominationKeywords[selectedDenomination as keyof typeof denominationKeywords] || [];
+        return keywords.some(keyword => churchName.includes(keyword));
+      })();
     
     const matchesDistance = !church.distance || church.distance <= selectedDistance;
     
@@ -158,6 +224,28 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
 
   const handleBackToList = () => {
     setSelectedChurch(null);
+  };
+
+  const handleLocationEnabled = async () => {
+    setShowLocationTrigger(false);
+    setLoading(true);
+    try {
+      const location = await ChurchFinderService.getUserLocation();
+      if (location) {
+        setUserLocation(location);
+        const nearbyChurches = await ChurchFinderService.findChurchesNearby({
+          latitude: location.lat,
+          longitude: location.lng,
+          radius: selectedDistance * 1609.34,
+          denomination: selectedDenomination !== 'all' ? selectedDenomination : undefined
+        });
+        setChurches(nearbyChurches);
+      }
+    } catch (err) {
+      console.error('Error getting location after enabling:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getEventIcon = (type: string) => {
@@ -262,8 +350,38 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
                   <option key={distance} value={distance}>{distance} miles</option>
                 ))}
               </select>
+
+              <button
+                onClick={handleRefresh}
+                disabled={loading}
+                className={`px-4 py-3 rounded-lg border transition-colors ${
+                  loading
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:bg-gray-50'
+                } ${
+                  theme === 'dark'
+                    ? 'bg-gray-800 border-gray-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-900'
+                }`}
+              >
+                {loading ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Refresh'
+                )}
+              </button>
             </div>
           </div>
+
+          {/* Search Status */}
+          {userLocation && (
+            <div className={`mt-3 text-sm ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              Searching for churches within {selectedDistance} miles of your location
+              {selectedDenomination !== 'all' && ` (${selectedDenomination})`}
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -510,8 +628,16 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
           )}
         </div>
       </div>
+
+      {/* Location Services Trigger */}
+      <LocationServicesTrigger
+        isOpen={showLocationTrigger}
+        onClose={() => setShowLocationTrigger(false)}
+        onLocationEnabled={handleLocationEnabled}
+        theme={theme}
+      />
     </div>
   );
 };
 
-export default ChurchFinder; 
+export default ChurchFinder;
