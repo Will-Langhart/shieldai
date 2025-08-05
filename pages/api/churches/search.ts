@@ -17,20 +17,71 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
     const GOOGLE_PLACES_BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 
-    // Search for churches using Google Places API
-    const searchUrl = `${GOOGLE_PLACES_BASE_URL}/nearbysearch/json?` +
+    // Search for ALL places of worship and religious institutions
+    const searchQueries = [
+      // Primary church search
+      `${GOOGLE_PLACES_BASE_URL}/nearbysearch/json?` +
       `location=${latitude},${longitude}&` +
       `radius=${radius || 25000}&` +
       `type=church&` +
-      `keyword=${encodeURIComponent(denomination || 'church')}&` +
-      `key=${GOOGLE_PLACES_API_KEY}`;
+      `key=${GOOGLE_PLACES_API_KEY}`,
+      
+      // Search for all places of worship
+      `${GOOGLE_PLACES_BASE_URL}/nearbysearch/json?` +
+      `location=${latitude},${longitude}&` +
+      `radius=${radius || 25000}&` +
+      `type=place_of_worship&` +
+      `key=${GOOGLE_PLACES_API_KEY}`,
+      
+      // Search for religious organizations
+      `${GOOGLE_PLACES_BASE_URL}/textsearch/json?` +
+      `query=church OR chapel OR cathedral OR temple OR synagogue OR mosque OR religious center&` +
+      `location=${latitude},${longitude}&` +
+      `radius=${radius || 25000}&` +
+      `key=${GOOGLE_PLACES_API_KEY}`,
+      
+      // Search for specific denominations if provided
+      ...(denomination && denomination !== 'all' ? [
+        `${GOOGLE_PLACES_BASE_URL}/textsearch/json?` +
+        `query=${encodeURIComponent(denomination)} church&` +
+        `location=${latitude},${longitude}&` +
+        `radius=${radius || 25000}&` +
+        `key=${GOOGLE_PLACES_API_KEY}`
+      ] : [])
+    ];
 
-    const response = await fetch(searchUrl);
-    const data = await response.json();
+    // Execute all search queries and combine results
+    const allResults = [];
+    const seenPlaceIds = new Set();
 
-    if (data.status !== 'OK') {
-      console.error('Google Places API error:', data.status);
-      // Return fallback data
+    for (const searchUrl of searchQueries) {
+      try {
+        const response = await fetch(searchUrl);
+        const data = await response.json();
+
+        if (data.status === 'OK' && data.results) {
+          console.log(`Query successful: Found ${data.results.length} results`);
+          // Add unique results to our collection
+          for (const place of data.results) {
+            if (!seenPlaceIds.has(place.place_id)) {
+              seenPlaceIds.add(place.place_id);
+              allResults.push(place);
+            }
+          }
+        } else {
+          console.error('Google Places API error for query:', data.status, data.error_message || 'No error message', searchUrl);
+          if (data.status === 'REQUEST_DENIED') {
+            console.error('API key may be invalid or missing required permissions');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching from Google Places API:', error);
+      }
+    }
+
+    // If no results found, return fallback data
+    if (allResults.length === 0) {
+      console.log('No churches found, returning fallback data');
       const fallbackChurches = [
         {
           id: 'fallback-1',
@@ -74,11 +125,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       ];
       return res.status(200).json({ churches: fallbackChurches });
+    } else {
+      console.log(`Found ${allResults.length} churches/places of worship`);
     }
 
     // Get detailed information for each church
     const churchesWithDetails = await Promise.all(
-      data.results.map(async (place: any) => {
+      allResults.map(async (place: any) => {
         try {
           // Get additional details for each church
           const detailsUrl = `${GOOGLE_PLACES_BASE_URL}/details/json?` +
@@ -137,8 +190,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Filter out any null results and sort by distance
     const validChurches = churchesWithDetails
-      .filter(church => church !== null)
-      .sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      .filter((church: any) => church !== null)
+      .sort((a: any, b: any) => (a.distance || 0) - (b.distance || 0));
 
     res.status(200).json({ churches: validChurches });
   } catch (error) {
