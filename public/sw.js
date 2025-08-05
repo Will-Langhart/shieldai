@@ -54,19 +54,7 @@ self.addEventListener('push', (event) => {
     data: {
       dateOfArrival: Date.now(),
       primaryKey: 1
-    },
-    actions: [
-      {
-        action: 'explore',
-        title: 'Read Verse',
-        icon: '/logo.png'
-      },
-      {
-        action: 'close',
-        title: 'Close',
-        icon: '/logo.png'
-      }
-    ]
+    }
   };
 
   event.waitUntil(
