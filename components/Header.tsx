@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Settings, User, LogOut, MessageSquare, Menu, Heart, MapPin, BookOpen } from 'lucide-react';
+import { Search, Filter, Settings, User, LogOut, MessageSquare, Menu, Heart, MapPin, BookOpen, Shield } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import AuthModal from './AuthModal';
 import UserSettings from './UserSettings';
@@ -157,7 +157,7 @@ const Header: React.FC<HeaderProps> = ({
               }`}
               title="Apologetics Bible Study - Curated verses for defending the faith"
             >
-              <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
 
           {/* Icons - Hide search on mobile for space */}
