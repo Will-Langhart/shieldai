@@ -1,4 +1,4 @@
-# 🛡️ Shield AI - Automated Deployment Test
+# 🛡️ Shield AI
 
 An AI-powered apologetics companion designed to help believers, seekers, and faith leaders explore and defend the Christian worldview. Built with a sleek and minimalist interface inspired by Grok, Shield AI provides conversational, context-rich answers to challenging theological, philosophical, and cultural questions.
 
@@ -247,19 +247,25 @@ shieldai/
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### Vercel Git Integration (Automated)
 
-1. **Connect to GitHub:**
+This project uses **Vercel's native Git integration** for automatic deployments:
+
+1. **Push to main branch:**
    ```bash
    git push origin main
    ```
 
-2. **Deploy to Vercel:**
-   - Connect repository to Vercel
-   - Configure environment variables
-   - Deploy automatically
+2. **Automatic deployment:**
+   - Vercel automatically detects changes
+   - Builds and deploys your application
+   - Updates your production URL
 
-3. **Set up custom domain** (optional)
+3. **Preview deployments:**
+   - Pull requests get automatic preview deployments
+   - Test changes before merging
+
+**Note:** GitHub Actions CI/CD has been removed to simplify the deployment process and avoid conflicts.
 
 ### Environment Variables for Production
 
