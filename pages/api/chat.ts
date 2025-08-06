@@ -75,34 +75,21 @@ export default async function handler(
     const isDeveloper = user.email === 'langhartcw@gmail.com';
     const developerMode = req.body.developerMode === true;
 
-    // Check subscription access (skip for developer)
-    let subscriptionCheck: any = { hasAccess: true, isInTrial: true, hasActiveSubscription: true, message: undefined };
-    let messageLimitCheck: any = { canSend: true, limit: 999999, remaining: 999999, message: undefined };
-    
+    // Check subscription access for AI conversations (skip for developer)
     if (!isDeveloper) {
-      subscriptionCheck = await SubscriptionMiddleware.checkAccess(user.id);
-      if (!subscriptionCheck.hasAccess) {
+      const featureAccess = await SubscriptionMiddleware.checkChatAccess(user.id, mode);
+      
+      if (!featureAccess.allowed) {
         return res.status(403).json({ 
-          error: 'Subscription required',
-          message: subscriptionCheck.message,
-          requiresUpgrade: true
+          error: 'Feature not available',
+          message: `${mode === 'accurate' ? 'GPT-4 Accurate mode' : 'AI conversations'} not available on your current plan`,
+          upgrade_required: featureAccess.upgrade_required,
+          current_tier: featureAccess.current_tier,
+          required_tier: featureAccess.required_tier,
+          remaining: featureAccess.remaining,
+          limit: featureAccess.limit
         });
       }
-
-      // Check message limits
-      messageLimitCheck = await SubscriptionMiddleware.checkMessageLimit(user.id);
-      if (!messageLimitCheck.canSend) {
-        return res.status(429).json({ 
-          error: 'Message limit reached',
-          message: messageLimitCheck.message,
-          limit: messageLimitCheck.limit,
-          remaining: messageLimitCheck.remaining,
-          requiresUpgrade: true
-        });
-      }
-
-      // Track usage
-      await SubscriptionMiddleware.trackUsage(user.id, 'messages', 1);
     } else {
       console.log('Developer mode enabled for:', user.email);
     }

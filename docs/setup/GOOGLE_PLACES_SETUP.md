@@ -170,4 +170,4 @@ If you encounter issues:
 
 ---
 
-**Note**: The church finder will fall back to sample data if the Google Places API is not properly configured, ensuring the app continues to work for testing purposes. 
+**Note**: The church finder will fall back to sample data if the Google Places API is not properly configured, ensuring the app continues to work for testing purposes.

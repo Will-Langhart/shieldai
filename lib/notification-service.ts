@@ -130,9 +130,9 @@ class NotificationService {
     }
   }
 
-  private urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+  private urlBase64ToUint8Array(base64String: string): Uint8Array {
     if (!base64String) {
-      return new ArrayBuffer(0);
+      return new Uint8Array(0);
     }
     
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -146,7 +146,7 @@ class NotificationService {
     for (let i = 0; i < rawData.length; ++i) {
       outputArray[i] = rawData.charCodeAt(i);
     }
-    return outputArray.buffer;
+    return outputArray;
   }
 
   async isSupported(): Promise<boolean> {

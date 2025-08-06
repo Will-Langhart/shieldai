@@ -32,8 +32,11 @@ build/
 .DS_Store
 Thumbs.db
 
-# Logs
-logs
+# Logs - keep directory structure but ignore log files
+logs/**/*.log
+logs/**/*.txt
+logs/**/*.out
+logs/**/*.err
 *.log
 
 # Runtime data

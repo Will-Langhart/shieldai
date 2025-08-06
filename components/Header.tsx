@@ -16,6 +16,7 @@ interface HeaderProps {
   onChurchFinderClick?: () => void;
   onBibleSearchClick?: () => void;
   onApologeticsBibleClick?: () => void;
+  onNotesManagerClick?: () => void;
   currentLanguage?: string;
   onLanguageChange?: (language: string) => void;
 }
@@ -30,6 +31,7 @@ const Header: React.FC<HeaderProps> = ({
   onChurchFinderClick,
   onBibleSearchClick,
   onApologeticsBibleClick,
+  onNotesManagerClick,
   currentLanguage = 'en',
   onLanguageChange
 }) => {
@@ -179,6 +181,19 @@ const Header: React.FC<HeaderProps> = ({
           >
             <Filter size={20} className="group-hover:scale-110 transition-transform" />
           </button>
+          {user && onNotesManagerClick && (
+            <button 
+              onClick={onNotesManagerClick}
+              className={`p-2 rounded-xl transition-all duration-200 group ${
+                theme === 'dark' 
+                  ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`} 
+              title="Bible Study Notes - Manage your study notes and insights"
+            >
+              <BookOpen size={20} className="group-hover:scale-110 transition-transform" />
+            </button>
+          )}
           {user && (
             <button 
               onClick={() => setSettingsModalOpen(true)}

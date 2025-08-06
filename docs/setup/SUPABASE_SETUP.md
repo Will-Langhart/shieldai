@@ -155,4 +155,4 @@ Keep your Supabase project updated:
 - Regularly check for security updates
 - Monitor usage and limits
 - Backup important data
-- Test authentication flows after updates 
+- Test authentication flows after updates
