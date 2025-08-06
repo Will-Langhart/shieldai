@@ -1,0 +1,44 @@
+# Code Owners for Shield AI
+
+# Global owners - These users will be requested for review when anyone opens a pull request
+* @Will-Langhart
+
+# Frontend components
+/components/ @Will-Langhart
+/pages/ @Will-Langhart
+/styles/ @Will-Langhart
+
+# API and backend logic
+/pages/api/ @Will-Langhart
+/lib/ @Will-Langhart
+
+# Database and infrastructure
+/database/ @Will-Langhart
+*.sql @Will-Langhart
+
+# CI/CD and deployment
+/.github/ @Will-Langhart
+/vercel.json @Will-Langhart
+/next.config.js @Will-Langhart
+
+# Configuration files
+*.json @Will-Langhart
+*.yml @Will-Langhart
+*.yaml @Will-Langhart
+*.config.* @Will-Langhart
+
+# Documentation
+*.md @Will-Langhart
+/docs/ @Will-Langhart
+
+# Security sensitive files
+/.env* @Will-Langhart
+/utils/env.ts @Will-Langhart
+
+# Package management
+/package.json @Will-Langhart
+/package-lock.json @Will-Langhart
+
+# TypeScript configuration
+/tsconfig.json @Will-Langhart
+*.d.ts @Will-Langhart

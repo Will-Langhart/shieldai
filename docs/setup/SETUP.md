@@ -155,4 +155,4 @@ After setup, you can:
 
 ---
 
-**Need help?** Check the console for detailed error messages or refer to the API documentation for each service. 
+**Need help?** Check the console for detailed error messages or refer to the API documentation for each service.
