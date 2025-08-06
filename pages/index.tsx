@@ -546,7 +546,7 @@ export default function Home() {
               {!hasMessages && (
                 <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex flex-col sm:flex-row items-center justify-center mb-6 sm:mb-8">
-                    <img src="/logo.png" alt="Shield AI Logo" className="w-32 h-32 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mb-4 sm:mb-0 sm:mr-6 drop-shadow-lg" />
+                    <img src="/logo.png" alt="Shield AI Logo" className="w-32 h-32 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mb-4 sm:mb-0 sm:mr-3 drop-shadow-lg" />
                     <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold drop-shadow-lg ${
                       resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
                     }`}>Shield AI</h1>
