@@ -75,9 +75,11 @@ export default async function handler(
     const isDeveloper = user.email === 'langhartcw@gmail.com';
     const developerMode = req.body.developerMode === true;
 
-    // Check subscription access for AI conversations (skip for developer)
+    // Check subscription access for AI conversations
+    const featureAccess = await SubscriptionMiddleware.checkChatAccess(user.id, mode);
+
+    // Apply restrictions for non-developers
     if (!isDeveloper) {
-      const featureAccess = await SubscriptionMiddleware.checkChatAccess(user.id, mode);
       
       if (!featureAccess.allowed) {
         return res.status(403).json({ 
@@ -178,8 +180,8 @@ export default async function handler(
     let temperature = mode === 'fast' ? 0.7 : 0.8;
 
     // Check if user has access to advanced models
-    const advancedModelAccess = await SubscriptionMiddleware.checkFeatureAccess(user.id, 'advanced_ai_models');
-    if (!advancedModelAccess.hasAccess && mode === 'accurate') {
+    const advancedModelAccess = await SubscriptionMiddleware.checkApiFeatureAccess(user.id, 'advanced_ai_models');
+    if (!advancedModelAccess.allowed && mode === 'accurate') {
       // Fallback to basic model for users without premium
       model = 'gpt-3.5-turbo';
       maxTokens = 800;
@@ -290,10 +292,10 @@ ${content.content.substring(0, 200)}...
       conversationId: currentConvId,
       isNewConversation: isNewConversation,
       subscription: {
-        isInTrial: subscriptionCheck.isInTrial,
-        hasActiveSubscription: subscriptionCheck.hasActiveSubscription,
-        messageLimit: messageLimitCheck.limit,
-        remainingMessages: messageLimitCheck.remaining
+        isInTrial: false, // TODO: Add trial status to FeatureCheckResult
+        hasActiveSubscription: featureAccess?.allowed || false,
+        messageLimit: featureAccess?.limit || 0,
+        remainingMessages: featureAccess?.remaining || 0
       }
     });
 
