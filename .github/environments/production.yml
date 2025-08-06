@@ -6,7 +6,7 @@ description: Production environment for Shield AI
 environment:
   NODE_ENV: production
   NEXT_PUBLIC_ENVIRONMENT: production
-  NEXT_PUBLIC_APP_URL: https://shieldai.vercel.app
+  NEXT_PUBLIC_APP_URL: https://shieldai-bice.vercel.app
   
 # Deployment settings
 deployment:
@@ -53,7 +53,7 @@ protection:
 
 # Monitoring
 monitoring:
-  health_check_url: https://shieldai.vercel.app/api/health
+  health_check_url: https://shieldai-bice.vercel.app/api/health
   uptime_checks: true
   performance_monitoring: true
   error_tracking: true
