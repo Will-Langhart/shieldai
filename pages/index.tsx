@@ -551,11 +551,25 @@ export default function Home() {
                       resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
                     }`}>Shield AI</h1>
                   </div>
-                  <p className={`text-base sm:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 leading-relaxed px-4 ${
+                  <p className={`text-base sm:text-lg max-w-2xl mx-auto mb-4 sm:mb-6 leading-relaxed px-4 ${
                     resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                   }`}>
                     Your AI-powered apologetics companion. Ask me anything about theology, philosophy, or defending the Christian worldview.
                   </p>
+                  <div className="text-center mb-6 sm:mb-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+                    <p className={`text-xs sm:text-sm px-4 ${
+                      resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      By messaging Shield AI, you agree to our{' '}
+                      <a href="#" className={`hover:underline transition-colors ${
+                        resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
+                      }`}>Terms</a>
+                      {' '}and{' '}
+                      <a href="#" className={`hover:underline transition-colors ${
+                        resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
+                      }`}>Privacy Policy</a>
+                    </p>
+                  </div>
                   {user && (
                     <div className="text-center">
                       <p className={`text-sm font-medium ${
@@ -735,23 +749,7 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Footer text - Only show when no messages */}
-              {!hasMessages && (
-                <div className="text-center mt-6 sm:mt-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-                  <p className={`text-xs sm:text-sm px-4 ${
-                    resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                  }`}>
-                    By messaging Shield AI, you agree to our{' '}
-                    <a href="#" className={`hover:underline transition-colors ${
-                      resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
-                    }`}>Terms</a>
-                    {' '}and{' '}
-                    <a href="#" className={`hover:underline transition-colors ${
-                      resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
-                    }`}>Privacy Policy</a>
-                  </p>
-                </div>
-              )}
+
             </div>
 
             {/* Input Bar - Fixed at bottom */}
@@ -769,6 +767,14 @@ export default function Home() {
                   disabled={shouldShowUpgradePrompt}
                   theme={resolvedTheme}
                 />
+                {/* Copyright text */}
+                <div className="text-center mt-3">
+                  <p className={`text-xs ${
+                    resolvedTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                  }`}>
+                    2025 Shield AI All Rights Reserved
+                  </p>
+                </div>
               </div>
             </div>
           </div>
