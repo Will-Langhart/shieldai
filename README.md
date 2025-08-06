@@ -1,4 +1,4 @@
-# 🛡️ Shield AI
+# 🛡️ Shield AI - Automated Deployment Test
 
 An AI-powered apologetics companion designed to help believers, seekers, and faith leaders explore and defend the Christian worldview. Built with a sleek and minimalist interface inspired by Grok, Shield AI provides conversational, context-rich answers to challenging theological, philosophical, and cultural questions.
 
