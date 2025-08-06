@@ -73,7 +73,7 @@ export class SubscriptionMiddleware {
   // Clear cache for a specific user
   static clearUserCache(userId: string): void {
     const keysToDelete: string[] = [];
-    for (const key of this.cache.keys()) {
+    for (const key of Array.from(this.cache.keys())) {
       if (key.startsWith(`${userId}:`)) {
         keysToDelete.push(key);
       }

@@ -2,6 +2,7 @@ export interface BibleVerse {
   reference: string;
   text: string;
   version: string;
+  language: string;
 }
 
 export interface NoteData {

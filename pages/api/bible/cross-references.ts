@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 async function getCrossReferencesForVerse(reference: string): Promise<string[]> {
   try {
     // Use our Bible service to get cross-references
-    const crossRefs = await bibleService.getCrossReferences(reference);
+    const crossRefs = await bibleService.getCrossReferences(reference, 'KJV');
     return crossRefs || [];
   } catch (error) {
     console.error('Error getting cross-references from Bible service:', error);

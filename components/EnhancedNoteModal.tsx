@@ -7,25 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { BibleVerse, BibleSearchResult } from '../lib/bible-fallback-service';
-
-interface NoteData {
-  id?: string;
-  reference: string;
-  text: string;
-  note: string;
-  tags: string[];
-  category: string;
-  visibility: 'private' | 'public' | 'shared';
-  dateCreated: string;
-  lastModified: string;
-  userId: string;
-  color?: string;
-  isFavorite?: boolean;
-  crossReferences?: string[];
-  relatedVerses?: BibleVerse[];
-  audioNoteUrl?: string;
-  attachments?: string[];
-}
+import { NoteData, CreateNoteData } from '../types/notes';
 
 interface EnhancedNoteModalProps {
   isOpen: boolean;
@@ -183,7 +165,7 @@ export default function EnhancedNoteModal({
 
     setIsSaving(true);
     try {
-      const noteData: NoteData = {
+      const noteData: CreateNoteData = {
         ...(existingNote?.id && { id: existingNote.id }),
         reference,
         text,
@@ -194,10 +176,7 @@ export default function EnhancedNoteModal({
         color,
         isFavorite,
         crossReferences,
-        relatedVerses,
-        dateCreated: existingNote?.dateCreated || new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-        userId: user.id
+        relatedVerses
       };
 
       const response = await fetch('/api/bible/notes', {
