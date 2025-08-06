@@ -54,7 +54,7 @@ export default function Home() {
   const [selectedVerseForNote, setSelectedVerseForNote] = useState<{ reference: string; text: string } | null>(null);
   const [theme, setTheme] = useState<Theme>('auto');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
-
+  const [currentLanguage, setCurrentLanguage] = useState<string>('en');
   const [currentMobileSection, setCurrentMobileSection] = useState<'chat' | 'bible' | 'church' | 'mood' | 'settings'>('chat');
   const [sessionId] = useState(() => {
     // Use a stable session ID based on user ID or create a persistent one
@@ -74,10 +74,12 @@ export default function Home() {
     return newId;
   });
 
-  // Theme management
+  // Theme and Language management
   useEffect(() => {
     const savedTheme = localStorage.getItem('shieldai-theme') as Theme || 'auto';
+    const savedLanguage = localStorage.getItem('shieldai-language') || 'en';
     setTheme(savedTheme);
+    setCurrentLanguage(savedLanguage);
   }, []);
 
   useEffect(() => {
@@ -124,7 +126,10 @@ export default function Home() {
     }
   };
 
-
+  const handleLanguageChange = (languageCode: string) => {
+    setCurrentLanguage(languageCode);
+    localStorage.setItem('shieldai-language', languageCode);
+  };
 
   // Handle verse selection from mood system
   const handleVerseSelect = (verse: string) => {
@@ -473,11 +478,12 @@ export default function Home() {
           theme={resolvedTheme}
           onThemeToggle={toggleTheme}
           themeIcon={getThemeIcon()}
-
-              onMoodVerseClick={() => setShowMoodVerseSystem(true)}
-              onChurchFinderClick={() => setShowChurchFinder(true)}
-              onBibleSearchClick={() => setShowBibleSearch(true)}
-              onApologeticsBibleClick={() => setShowApologeticsBible(true)}
+          onMoodVerseClick={() => setShowMoodVerseSystem(true)}
+          onChurchFinderClick={() => setShowChurchFinder(true)}
+          onBibleSearchClick={() => setShowBibleSearch(true)}
+          onApologeticsBibleClick={() => setShowApologeticsBible(true)}
+          currentLanguage={currentLanguage}
+          onLanguageChange={handleLanguageChange}
         />
 
         {/* Main content */}

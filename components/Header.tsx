@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Filter, Settings, User, LogOut, MessageSquare, Menu, Heart, MapPin, BookOpen, Shield } from 'lucide-react';
+import { Search, Filter, Settings, User, LogOut, MessageSquare, Menu, Heart, MapPin, BookOpen, Shield, Globe } from 'lucide-react';
+import LanguageSelector from './LanguageSelector';
 import { useAuth } from '../lib/auth-context';
 import AuthModal from './AuthModal';
 import UserSettings from './UserSettings';
@@ -11,11 +12,12 @@ interface HeaderProps {
   theme?: 'light' | 'dark';
   onThemeToggle?: () => void;
   themeIcon?: React.ReactNode;
-
   onMoodVerseClick?: () => void;
   onChurchFinderClick?: () => void;
   onBibleSearchClick?: () => void;
   onApologeticsBibleClick?: () => void;
+  currentLanguage?: string;
+  onLanguageChange?: (language: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -24,11 +26,12 @@ const Header: React.FC<HeaderProps> = ({
   theme = 'dark', 
   onThemeToggle, 
   themeIcon, 
-
   onMoodVerseClick,
   onChurchFinderClick,
   onBibleSearchClick,
-  onApologeticsBibleClick
+  onApologeticsBibleClick,
+  currentLanguage = 'en',
+  onLanguageChange
 }) => {
   const { user, signOut } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -146,6 +149,16 @@ const Header: React.FC<HeaderProps> = ({
             >
               <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
+
+          {/* Language Selector */}
+          {onLanguageChange && (
+            <LanguageSelector
+              currentLanguage={currentLanguage}
+              onLanguageChange={onLanguageChange}
+              theme={theme}
+              compact={true}
+            />
+          )}
 
           {/* Icons - Hide search on mobile for space */}
           <button className={`p-2 rounded-xl transition-all duration-200 group hidden md:block ${

@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, User, Mail, Shield, Palette, Bell, Download, Trash2, Save, Upload, Camera, CreditCard, BookOpen, Heart, History, Settings, Edit } from 'lucide-react';
+import { X, User, Mail, Shield, Palette, Bell, Download, Trash2, Save, Upload, Camera, CreditCard, BookOpen, Heart, History, Settings, Edit, Globe, BarChart3 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { supabase } from '../lib/supabase';
 import SubscriptionStatus from './SubscriptionStatus';
 import SubscriptionModal from './SubscriptionModal';
+import LanguageSelector from './LanguageSelector';
+import AnalyticsDashboard from './AnalyticsDashboard';
+import AdminPanel from './AdminPanel';
 
 interface UserSettingsProps {
   isOpen: boolean;
@@ -27,6 +30,7 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
     notifications: true,
     autoSave: true,
     defaultMode: 'fast',
+    language: 'en',
     bibleDefaultVersion: 'de4e12af7f28f599-02', // NIV
     bibleSearchHistory: true,
     bibleAutoSaveNotes: true
@@ -34,6 +38,8 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
   const [bibleFavorites, setBibleFavorites] = useState<Array<{ reference: string; text: string; version: string; created_at: string }>>([]);
   const [bibleHistory, setBibleHistory] = useState<Array<{ query: string; created_at: string }>>([]);
   const [bibleNotes, setBibleNotes] = useState<Array<{ id: string; reference: string; note: string; tags: string[]; created_at: string }>>([]);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -301,12 +307,16 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
 
   if (!isOpen) return null;
 
+  // Check if user is admin
+  const isAdmin = user?.email === 'langhartcw@gmail.com' || user?.role === 'admin';
+
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'subscription', label: 'Subscription', icon: CreditCard },
     { id: 'preferences', label: 'Preferences', icon: Palette },
     { id: 'bible', label: 'Bible Settings', icon: BookOpen },
-    { id: 'data', label: 'Data & Privacy', icon: Shield }
+    { id: 'data', label: 'Data & Privacy', icon: Shield },
+    ...(isAdmin ? [{ id: 'admin', label: 'Admin Panel', icon: BarChart3 }] : [])
   ];
 
   return (
@@ -486,6 +496,15 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
                         <option value="fast">Fast</option>
                         <option value="accurate">Accurate</option>
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Language</label>
+                      <LanguageSelector
+                        currentLanguage={preferences.language}
+                        onLanguageChange={(lang) => setPreferences({ ...preferences, language: lang })}
+                        theme="dark"
+                      />
                     </div>
 
                     <div className="space-y-3">
@@ -750,6 +769,67 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
                   </div>
                 </div>
               )}
+
+              {activeTab === 'admin' && isAdmin && (
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <BarChart3 className="w-6 h-6 text-red-400" />
+                    <h3 className="text-xl font-semibold text-shield-white">Admin Panel</h3>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="p-4 bg-shield-light-gray/20 rounded-lg">
+                      <h4 className="text-shield-white font-medium mb-2">Analytics Dashboard</h4>
+                      <p className="text-gray-400 text-sm mb-3">
+                        View detailed analytics and user engagement metrics.
+                      </p>
+                      <button
+                        onClick={() => setShowAnalytics(true)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <BarChart3 size={16} />
+                        <span>Open Analytics</span>
+                      </button>
+                    </div>
+
+                    <div className="p-4 bg-shield-light-gray/20 rounded-lg">
+                      <h4 className="text-shield-white font-medium mb-2">System Administration</h4>
+                      <p className="text-gray-400 text-sm mb-3">
+                        Access admin panel for system configuration and user management.
+                      </p>
+                      <button
+                        onClick={() => setShowAdminPanel(true)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      >
+                        <Settings size={16} />
+                        <span>Open Admin Panel</span>
+                      </button>
+                    </div>
+
+                    <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                      <h4 className="text-yellow-400 font-medium mb-2">Quick Stats</h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-400">Total Users</p>
+                          <p className="text-shield-white font-bold">1,247</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">Active Today</p>
+                          <p className="text-shield-white font-bold">892</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">Conversations</p>
+                          <p className="text-shield-white font-bold">3,456</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">Response Time</p>
+                          <p className="text-shield-white font-bold">245ms</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -762,6 +842,25 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
         currentSubscription={subscription}
         isInTrial={isInTrial}
       />
+
+      {/* Analytics Dashboard Modal */}
+      {showAnalytics && (
+        <AnalyticsDashboard
+          isOpen={showAnalytics}
+          onClose={() => setShowAnalytics(false)}
+          theme="dark"
+        />
+      )}
+
+      {/* Admin Panel Modal */}
+      {showAdminPanel && (
+        <AdminPanel
+          isOpen={showAdminPanel}
+          onClose={() => setShowAdminPanel(false)}
+          theme="dark"
+          user={user}
+        />
+      )}
     </>
   );
 } 
