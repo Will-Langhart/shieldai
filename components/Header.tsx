@@ -15,6 +15,7 @@ interface HeaderProps {
   onMoodVerseClick?: () => void;
   onChurchFinderClick?: () => void;
   onBibleSearchClick?: () => void;
+  onApologeticsBibleClick?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -26,7 +27,8 @@ const Header: React.FC<HeaderProps> = ({
   onAchievementClick,
   onMoodVerseClick,
   onChurchFinderClick,
-  onBibleSearchClick
+  onBibleSearchClick,
+  onApologeticsBibleClick
 }) => {
   const { user, signOut } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -141,6 +143,19 @@ const Header: React.FC<HeaderProps> = ({
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
               title="Bible Study Suite - Search, Compare, Study"
+            >
+              <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            </button>
+
+            {/* Apologetics Bible Study */}
+            <button
+              onClick={onApologeticsBibleClick}
+              className={`p-2 rounded-xl transition-all duration-200 group ${
+                theme === 'dark'
+                  ? 'text-shield-white hover:bg-shield-light-gray/50'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              title="Apologetics Bible Study - Curated verses for defending the faith"
             >
               <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>

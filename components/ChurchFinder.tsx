@@ -264,7 +264,7 @@ const ChurchFinder: React.FC<ChurchFinderProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative w-full max-w-6xl mx-4 rounded-2xl shadow-2xl overflow-hidden ${
+      <div className={`relative w-full max-w-6xl mx-4 rounded-2xl shadow-2xl overflow-y-auto max-h-[95vh] ${
         theme === 'dark' ? 'bg-gray-900' : 'bg-white'
       }`}>
         {/* Header */}

@@ -112,15 +112,13 @@ class NotificationService {
     }
 
     try {
-      // Fetch a random Bible verse
-      const response = await fetch('/api/bible/popular');
+      // Fetch daily verse from our API
+      const response = await fetch('/api/bible/daily-verse');
       const data = await response.json();
       
-      if (data.verses && data.verses.length > 0) {
-        const randomVerse = data.verses[Math.floor(Math.random() * data.verses.length)];
-        
+      if (data.verse) {
         await this.registration.showNotification('Daily Bible Verse', {
-          body: `${randomVerse.reference}: "${randomVerse.text}"`,
+          body: `${data.verse.reference}: "${data.verse.text}"`,
           icon: '/logo.png',
           badge: '/logo.png',
           tag: 'daily-verse',
