@@ -5,19 +5,22 @@ import Header from '../components/Header';
 import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
 import MessageActions from '../components/MessageActions';
+import MessageRenderer from '../components/MessageRenderer';
 import SubscriptionModal from '../components/SubscriptionModal';
-import AchievementSystem from '../components/AchievementSystem';
+
 import MoodVerseSystem from '../components/MoodVerseSystem';
 import ChurchFinder from '../components/ChurchFinder';
 import BibleSearch from '../components/BibleSearch';
 import EnhancedBibleInterface from '../components/EnhancedBibleInterface';
 import ApologeticsBible from '../components/ApologeticsBible';
 import NoteCreationModal from '../components/NoteCreationModal';
+import EnhancedNoteModal from '../components/EnhancedNoteModal';
+import NotesManager from '../components/NotesManager';
 import MobileNavigation from '../components/MobileNavigation';
 import { useAuth } from '../lib/auth-context';
 import { ClientService } from '../lib/client-service';
 import { supabase } from '../lib/supabase';
-import { GamificationService } from '../lib/gamification-service';
+
 import { Shield, Crown, AlertTriangle, Sun, Moon, Monitor, Heart, MapPin, BookOpen, X } from 'lucide-react';
 
 interface Message {
@@ -45,16 +48,18 @@ export default function Home() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
-  const [showAchievementSystem, setShowAchievementSystem] = useState(false);
+
   const [showMoodVerseSystem, setShowMoodVerseSystem] = useState(false);
   const [showChurchFinder, setShowChurchFinder] = useState(false);
   const [showBibleSearch, setShowBibleSearch] = useState(false);
   const [showApologeticsBible, setShowApologeticsBible] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showEnhancedNoteModal, setShowEnhancedNoteModal] = useState(false);
+  const [showNotesManager, setShowNotesManager] = useState(false);
   const [selectedVerseForNote, setSelectedVerseForNote] = useState<{ reference: string; text: string } | null>(null);
   const [theme, setTheme] = useState<Theme>('auto');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
-  const [userProgress, setUserProgress] = useState<any>(null);
+  const [currentLanguage, setCurrentLanguage] = useState<string>('en');
   const [currentMobileSection, setCurrentMobileSection] = useState<'chat' | 'bible' | 'church' | 'mood' | 'settings'>('chat');
   const [sessionId] = useState(() => {
     // Use a stable session ID based on user ID or create a persistent one
@@ -74,10 +79,12 @@ export default function Home() {
     return newId;
   });
 
-  // Theme management
+  // Theme and Language management
   useEffect(() => {
     const savedTheme = localStorage.getItem('shieldai-theme') as Theme || 'auto';
+    const savedLanguage = localStorage.getItem('shieldai-language') || 'en';
     setTheme(savedTheme);
+    setCurrentLanguage(savedLanguage);
   }, []);
 
   useEffect(() => {
@@ -124,40 +131,9 @@ export default function Home() {
     }
   };
 
-  // Load user progress
-  useEffect(() => {
-    if (user) {
-      loadUserProgress();
-    }
-  }, [user]);
-
-  const loadUserProgress = async () => {
-    if (!user) return;
-    
-    try {
-      const progress = await GamificationService.getUserProgress(user.id);
-      setUserProgress(progress || mockUserProgress);
-    } catch (error) {
-      console.error('Error loading user progress:', error);
-      setUserProgress(mockUserProgress);
-    }
-  };
-
-  // Handle XP tracking for conversations
-  const handleConversationComplete = async () => {
-    if (!user) return;
-    
-    try {
-      await GamificationService.addXP(
-        user.id, 
-        'conversation', 
-        15, 
-        'Completed apologetics conversation'
-      );
-      await loadUserProgress(); // Refresh progress
-    } catch (error) {
-      console.error('Error adding XP:', error);
-    }
+  const handleLanguageChange = (languageCode: string) => {
+    setCurrentLanguage(languageCode);
+    localStorage.setItem('shieldai-language', languageCode);
   };
 
   // Handle verse selection from mood system
@@ -204,18 +180,7 @@ export default function Home() {
     }, 100);
   };
 
-  // Mock user progress data - will be replaced with real data from GamificationService
-  const mockUserProgress = {
-    level: 10,
-    currentXP: 1890,
-    xpToNextLevel: 2100,
-    totalXP: 1890,
-    achievementsUnlocked: 3,
-    totalAchievements: 6,
-    streakDays: 5,
-    conversationsCompleted: 35,
-    versesReferenced: 67
-  };
+
 
   // Update session ID when user changes
   useEffect(() => {
@@ -463,8 +428,7 @@ export default function Home() {
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Track XP for conversation completion
-      await handleConversationComplete();
+
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -519,11 +483,13 @@ export default function Home() {
           theme={resolvedTheme}
           onThemeToggle={toggleTheme}
           themeIcon={getThemeIcon()}
-                        onAchievementClick={() => setShowAchievementSystem(true)}
-              onMoodVerseClick={() => setShowMoodVerseSystem(true)}
-              onChurchFinderClick={() => setShowChurchFinder(true)}
-              onBibleSearchClick={() => setShowBibleSearch(true)}
-              onApologeticsBibleClick={() => setShowApologeticsBible(true)}
+          onMoodVerseClick={() => setShowMoodVerseSystem(true)}
+          onChurchFinderClick={() => setShowChurchFinder(true)}
+          onBibleSearchClick={() => setShowBibleSearch(true)}
+          onApologeticsBibleClick={() => setShowApologeticsBible(true)}
+          onNotesManagerClick={() => setShowNotesManager(true)}
+          currentLanguage={currentLanguage}
+          onLanguageChange={handleLanguageChange}
         />
 
         {/* Main content */}
@@ -617,14 +583,14 @@ export default function Home() {
                         className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300 min-w-0`}
                       >
                         <div
-                          className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg min-w-0 message-bubble-mobile ${
+                          className={`max-w-xs sm:max-w-md lg:max-w-3xl px-5 sm:px-6 py-4 sm:py-5 rounded-2xl shadow-lg min-w-0 message-bubble-mobile transition-all duration-200 hover:shadow-xl ${
                             message.role === 'user' 
                               ? resolvedTheme === 'dark'
-                                ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white'
-                                : 'bg-blue-100 border border-blue-200 text-gray-900'
+                                ? 'bg-gradient-to-r from-shield-blue/10 to-shield-blue/20 border border-shield-blue/30 text-shield-white backdrop-blur-sm'
+                                : 'bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 text-gray-900'
                               : resolvedTheme === 'dark'
-                                ? 'bg-transparent border border-gray-700/30 text-shield-white'
-                                : 'bg-transparent border border-gray-200 text-gray-900'
+                                ? 'bg-gradient-to-r from-gray-800/40 to-gray-900/40 border border-gray-700/50 text-shield-white backdrop-blur-sm'
+                                : 'bg-gradient-to-r from-gray-50 to-white border border-gray-200 text-gray-900'
                           }`}
                         >
                           <div className="flex items-start space-x-2 sm:space-x-3">
@@ -657,13 +623,29 @@ export default function Home() {
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className={`leading-relaxed text-sm sm:text-base break-words ${
+                              <div className={`text-sm sm:text-base ${
                                 resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
-                              }`}>{message.content}</p>
+                              }`}>
+                                <MessageRenderer
+                                  content={message.content}
+                                  theme={resolvedTheme}
+                                  animated={index === messages.length - 1 && message.role === 'assistant'}
+                                  className="message-scrollbar"
+                                  onCopy={(text) => {
+                                    navigator.clipboard.writeText(text);
+                                    // You can add a toast notification here
+                                  }}
+                                />
+                              </div>
                               <p className={`text-xs mt-2 opacity-60 ${
                                 resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                               }`}>
                                 {message.timestamp && new Date(message.timestamp).toLocaleTimeString()}
+                                {message.mode && (
+                                  <span className="ml-2">
+                                    • {message.mode === 'fast' ? '⚡' : '🎯'} {message.mode}
+                                  </span>
+                                )}
                               </p>
                             </div>
                           </div>
@@ -678,14 +660,31 @@ export default function Home() {
                               onCopy={() => handleCopyMessage(message.content)}
                               onShare={() => handleShareMessage(currentConversationId)}
                               onFeedback={(type) => handleFeedback(index, type)}
+                              onEdit={() => {
+                                // Implement edit functionality
+                                console.log('Edit message:', index);
+                              }}
+                              onQuote={() => {
+                                // Implement quote functionality
+                                const quotedText = `> ${message.content}\n\n`;
+                                // You can add this to a new message input
+                                console.log('Quote message:', quotedText);
+                              }}
+                              onSpeech={() => {
+                                console.log('Text-to-speech for message:', index);
+                              }}
+                              onExport={() => {
+                                console.log('Export message:', index);
+                              }}
                               theme={resolvedTheme}
+                              showExtendedActions={true}
                             />
                           )}
                         </div>
                       </div>
                     ))}
                     
-                    {/* Loading indicator */}
+                    {/* Enhanced Loading indicator */}
                     {isLoading && (
                       <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <div className={`max-w-2xl px-6 py-4 rounded-2xl shadow-lg backdrop-blur-sm border ${
@@ -697,22 +696,36 @@ export default function Home() {
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${
                               resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
                             }`}>
-                              <span className={`font-bold text-sm ${
-                                resolvedTheme === 'dark' ? 'text-shield-white' : 'text-white'
-                              }`}>S</span>
+                              <img src="/logo.png" alt="Shield AI" className="w-6 h-6 rounded animate-pulse" />
                             </div>
-                            <div className="flex-1">
-                              <div className="flex space-x-1">
-                                <div className={`w-2 h-2 rounded-full animate-bounce ${
+                            <div className="flex-1 pt-1">
+                              <div className="flex items-center space-x-1 mb-3">
+                                <div className={`w-2 h-2 rounded-full loading-dot ${
                                   resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
                                 }`}></div>
-                                <div className={`w-2 h-2 rounded-full animate-bounce ${
+                                <div className={`w-2 h-2 rounded-full loading-dot ${
                                   resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                                }`} style={{ animationDelay: '0.1s' }}></div>
-                                <div className={`w-2 h-2 rounded-full animate-bounce ${
+                                }`}></div>
+                                <div className={`w-2 h-2 rounded-full loading-dot ${
                                   resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                                }`} style={{ animationDelay: '0.2s' }}></div>
+                                }`}></div>
                               </div>
+                              <div className="space-y-2">
+                                <div className={`h-2 rounded animate-pulse ${
+                                  resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
+                                }`} style={{ width: '75%' }}></div>
+                                <div className={`h-2 rounded animate-pulse ${
+                                  resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
+                                }`} style={{ width: '60%' }}></div>
+                                <div className={`h-2 rounded animate-pulse ${
+                                  resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
+                                }`} style={{ width: '45%' }}></div>
+                              </div>
+                              <p className={`text-xs mt-2 ${
+                                resolvedTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                              }`}>
+                                Shield AI is thinking...
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -816,13 +829,7 @@ export default function Home() {
           theme={resolvedTheme}
         />
 
-        {/* Achievement System */}
-        <AchievementSystem
-          isOpen={showAchievementSystem}
-          onClose={() => setShowAchievementSystem(false)}
-          theme={resolvedTheme}
-          userProgress={userProgress}
-        />
+
 
         {/* Mood Verse System */}
         <MoodVerseSystem
@@ -907,6 +914,31 @@ export default function Home() {
             console.log('Note created:', note);
             // Could add a success message or update UI
           }}
+        />
+      )}
+
+      {/* Enhanced Note Modal */}
+      {showEnhancedNoteModal && (
+        <EnhancedNoteModal
+          isOpen={showEnhancedNoteModal}
+          onClose={() => setShowEnhancedNoteModal(false)}
+          reference={selectedVerseForNote?.reference}
+          text={selectedVerseForNote?.text}
+          theme={resolvedTheme}
+          onNoteCreated={(note) => {
+            console.log('Enhanced note created:', note);
+            setShowEnhancedNoteModal(false);
+            setSelectedVerseForNote(null);
+          }}
+        />
+      )}
+
+      {/* Notes Manager */}
+      {showNotesManager && (
+        <NotesManager
+          isOpen={showNotesManager}
+          onClose={() => setShowNotesManager(false)}
+          theme={resolvedTheme}
         />
       )}
     </>

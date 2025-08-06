@@ -1,0 +1,144 @@
+name: ✨ Feature Request
+description: Suggest a new feature for Shield AI
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature for Shield AI! 🛡️
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I have searched existing issues to ensure this feature hasn't been requested before
+          required: true
+        - label: This feature aligns with Shield AI's mission of Christian apologetics and ministry
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve?
+      placeholder: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: What would you like to happen?
+      placeholder: A clear and concise description of what you want to happen.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: What category does this feature fall into?
+      options:
+        - Bible Study Tools
+        - Apologetics Resources
+        - Chat/AI Features
+        - User Interface
+        - Mobile Experience
+        - Analytics/Admin
+        - Church Finder
+        - User Management
+        - Performance
+        - Security
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would significantly improve experience
+        - High - Essential for my use case
+        - Critical - Blocking current functionality
+    validations:
+      required: true
+
+  - type: dropdown
+    id: user-type
+    attributes:
+      label: User Type
+      description: What type of user would benefit from this feature?
+      multiple: true
+      options:
+        - Pastors/Ministry Leaders
+        - Christian Students
+        - Apologetics Students
+        - Church Members
+        - Seekers/Non-believers
+        - Bible Study Groups
+        - Administrators
+        - All Users
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: What alternatives have you considered?
+      placeholder: A clear and concise description of any alternative solutions or features you've considered.
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use Cases
+      description: Describe specific scenarios where this feature would be useful
+      placeholder: |
+        1. As a [user type], I want to [action] so that [benefit]
+        2. When [scenario], this feature would help by [benefit]
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What would need to be true for this feature to be considered complete?
+      placeholder: |
+        - [ ] User can perform [action]
+        - [ ] Feature works on mobile devices
+        - [ ] Feature is accessible
+        - [ ] Performance meets requirements
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Estimated Complexity
+      description: How complex do you think this feature would be to implement?
+      options:
+        - Low - Simple change or addition
+        - Medium - Moderate development effort
+        - High - Significant development effort
+        - Very High - Major architectural changes
+        - Unknown
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups/Wireframes
+      description: If you have any mockups, wireframes, or visual examples, please share them here
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or examples about the feature request here
+
+  - type: textarea
+    id: biblical-context
+    attributes:
+      label: Biblical/Ministry Context
+      description: How does this feature support Christian ministry or apologetics?
+      placeholder: Explain how this feature would help in sharing the Gospel, defending the faith, or supporting Christian growth

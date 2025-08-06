@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Filter, Settings, User, LogOut, MessageSquare, Menu, Heart, MapPin, BookOpen } from 'lucide-react';
+import { Search, Filter, Settings, User, LogOut, MessageSquare, Menu, Heart, MapPin, BookOpen, Shield, Globe } from 'lucide-react';
+import LanguageSelector from './LanguageSelector';
 import { useAuth } from '../lib/auth-context';
 import AuthModal from './AuthModal';
 import UserSettings from './UserSettings';
@@ -11,11 +12,13 @@ interface HeaderProps {
   theme?: 'light' | 'dark';
   onThemeToggle?: () => void;
   themeIcon?: React.ReactNode;
-  onAchievementClick?: () => void;
   onMoodVerseClick?: () => void;
   onChurchFinderClick?: () => void;
   onBibleSearchClick?: () => void;
   onApologeticsBibleClick?: () => void;
+  onNotesManagerClick?: () => void;
+  currentLanguage?: string;
+  onLanguageChange?: (language: string) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -24,11 +27,13 @@ const Header: React.FC<HeaderProps> = ({
   theme = 'dark', 
   onThemeToggle, 
   themeIcon, 
-  onAchievementClick,
   onMoodVerseClick,
   onChurchFinderClick,
   onBibleSearchClick,
-  onApologeticsBibleClick
+  onApologeticsBibleClick,
+  onNotesManagerClick,
+  currentLanguage = 'en',
+  onLanguageChange
 }) => {
   const { user, signOut } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -93,20 +98,7 @@ const Header: React.FC<HeaderProps> = ({
             {themeIcon}
           </button>
 
-          {/* Achievement System */}
-          <button
-            onClick={onAchievementClick}
-            className={`p-2 rounded-xl transition-all duration-200 group ${
-              theme === 'dark' 
-                ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            title="Achievements & Progress"
-          >
-            <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-            </svg>
-          </button>
+
 
           {/* Mood Verse System */}
           <button
@@ -157,9 +149,18 @@ const Header: React.FC<HeaderProps> = ({
               }`}
               title="Apologetics Bible Study - Curated verses for defending the faith"
             >
-              <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
 
+          {/* Language Selector */}
+          {onLanguageChange && (
+            <LanguageSelector
+              currentLanguage={currentLanguage}
+              onLanguageChange={onLanguageChange}
+              theme={theme}
+              compact={true}
+            />
+          )}
           {/* Icons - Hide search on mobile for space */}
           <button className={`p-2 rounded-xl transition-all duration-200 group hidden md:block ${
             theme === 'dark' 
@@ -179,6 +180,19 @@ const Header: React.FC<HeaderProps> = ({
           >
             <Filter size={20} className="group-hover:scale-110 transition-transform" />
           </button>
+          {user && onNotesManagerClick && (
+            <button 
+              onClick={onNotesManagerClick}
+              className={`p-2 rounded-xl transition-all duration-200 group ${
+                theme === 'dark' 
+                  ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`} 
+              title="Bible Study Notes - Manage your study notes and insights"
+            >
+              <BookOpen size={20} className="group-hover:scale-110 transition-transform" />
+            </button>
+          )}
           {user && (
             <button 
               onClick={() => setSettingsModalOpen(true)}

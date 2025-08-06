@@ -62,4 +62,4 @@ If you encounter issues:
 1. **Check API Key**: Ensure your Pinecone API key is correct
 2. **Index Name**: Verify the index name matches your Pinecone index
 3. **Dimensions**: Make sure your index has 1536 dimensions
-4. **Environment Variables**: Confirm all variables are set in both local and Vercel environments 
+4. **Environment Variables**: Confirm all variables are set in both local and Vercel environments

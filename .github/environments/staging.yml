@@ -1,0 +1,63 @@
+# Staging Environment Configuration
+name: staging
+description: Staging environment for Shield AI - mirrors production
+
+# Environment variables for staging
+environment:
+  NODE_ENV: production
+  NEXT_PUBLIC_ENVIRONMENT: staging
+  NEXT_PUBLIC_APP_URL: https://staging-shieldai.vercel.app
+  
+# Deployment settings
+deployment:
+  # Auto-deploy on main branch pushes
+  auto_deploy: true
+  branch: main
+  
+  # Vercel settings
+  vercel:
+    alias: staging-shieldai
+    build_env:
+      - NEXT_PUBLIC_SUPABASE_URL
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+      - NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      - OPENAI_API_KEY
+      - STRIPE_SECRET_KEY
+      - STRIPE_WEBHOOK_SECRET
+    
+# Review settings
+review:
+  # Require approval for manual deployments
+  required_reviewers: 1
+  required_review_from_codeowners: true
+  
+# Protection rules
+protection:
+  # Require status checks to pass
+  required_status_checks:
+    - test
+    - security
+    - quality
+  enforce_admins: true
+  restrict_pushes: true
+
+# Monitoring
+monitoring:
+  health_check_url: https://staging-shieldai.vercel.app/api/health
+  uptime_checks: true
+  performance_monitoring: true
+  error_tracking: true
+
+# Features enabled in staging
+features:
+  debug_mode: false
+  analytics: true
+  error_reporting: true
+  feature_flags: true
+  
+# Testing configuration
+testing:
+  e2e_tests: true
+  performance_tests: true
+  security_scans: true
