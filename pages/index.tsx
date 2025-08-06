@@ -6,7 +6,7 @@ import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
 import MessageActions from '../components/MessageActions';
 import SubscriptionModal from '../components/SubscriptionModal';
-import AchievementSystem from '../components/AchievementSystem';
+
 import MoodVerseSystem from '../components/MoodVerseSystem';
 import ChurchFinder from '../components/ChurchFinder';
 import BibleSearch from '../components/BibleSearch';
@@ -17,7 +17,7 @@ import MobileNavigation from '../components/MobileNavigation';
 import { useAuth } from '../lib/auth-context';
 import { ClientService } from '../lib/client-service';
 import { supabase } from '../lib/supabase';
-import { GamificationService } from '../lib/gamification-service';
+
 import { Shield, Crown, AlertTriangle, Sun, Moon, Monitor, Heart, MapPin, BookOpen, X } from 'lucide-react';
 
 interface Message {
@@ -45,7 +45,7 @@ export default function Home() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
-  const [showAchievementSystem, setShowAchievementSystem] = useState(false);
+
   const [showMoodVerseSystem, setShowMoodVerseSystem] = useState(false);
   const [showChurchFinder, setShowChurchFinder] = useState(false);
   const [showBibleSearch, setShowBibleSearch] = useState(false);
@@ -54,7 +54,7 @@ export default function Home() {
   const [selectedVerseForNote, setSelectedVerseForNote] = useState<{ reference: string; text: string } | null>(null);
   const [theme, setTheme] = useState<Theme>('auto');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
-  const [userProgress, setUserProgress] = useState<any>(null);
+
   const [currentMobileSection, setCurrentMobileSection] = useState<'chat' | 'bible' | 'church' | 'mood' | 'settings'>('chat');
   const [sessionId] = useState(() => {
     // Use a stable session ID based on user ID or create a persistent one
@@ -124,41 +124,7 @@ export default function Home() {
     }
   };
 
-  // Load user progress
-  useEffect(() => {
-    if (user) {
-      loadUserProgress();
-    }
-  }, [user]);
 
-  const loadUserProgress = async () => {
-    if (!user) return;
-    
-    try {
-      const progress = await GamificationService.getUserProgress(user.id);
-      setUserProgress(progress || mockUserProgress);
-    } catch (error) {
-      console.error('Error loading user progress:', error);
-      setUserProgress(mockUserProgress);
-    }
-  };
-
-  // Handle XP tracking for conversations
-  const handleConversationComplete = async () => {
-    if (!user) return;
-    
-    try {
-      await GamificationService.addXP(
-        user.id, 
-        'conversation', 
-        15, 
-        'Completed apologetics conversation'
-      );
-      await loadUserProgress(); // Refresh progress
-    } catch (error) {
-      console.error('Error adding XP:', error);
-    }
-  };
 
   // Handle verse selection from mood system
   const handleVerseSelect = (verse: string) => {
@@ -204,18 +170,7 @@ export default function Home() {
     }, 100);
   };
 
-  // Mock user progress data - will be replaced with real data from GamificationService
-  const mockUserProgress = {
-    level: 10,
-    currentXP: 1890,
-    xpToNextLevel: 2100,
-    totalXP: 1890,
-    achievementsUnlocked: 3,
-    totalAchievements: 6,
-    streakDays: 5,
-    conversationsCompleted: 35,
-    versesReferenced: 67
-  };
+
 
   // Update session ID when user changes
   useEffect(() => {
@@ -463,8 +418,7 @@ export default function Home() {
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Track XP for conversation completion
-      await handleConversationComplete();
+
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -519,7 +473,7 @@ export default function Home() {
           theme={resolvedTheme}
           onThemeToggle={toggleTheme}
           themeIcon={getThemeIcon()}
-                        onAchievementClick={() => setShowAchievementSystem(true)}
+
               onMoodVerseClick={() => setShowMoodVerseSystem(true)}
               onChurchFinderClick={() => setShowChurchFinder(true)}
               onBibleSearchClick={() => setShowBibleSearch(true)}
@@ -816,13 +770,7 @@ export default function Home() {
           theme={resolvedTheme}
         />
 
-        {/* Achievement System */}
-        <AchievementSystem
-          isOpen={showAchievementSystem}
-          onClose={() => setShowAchievementSystem(false)}
-          theme={resolvedTheme}
-          userProgress={userProgress}
-        />
+
 
         {/* Mood Verse System */}
         <MoodVerseSystem
