@@ -8,6 +8,7 @@ import { AnalyticsService } from '../../lib/analytics-service';
 import { ChatService } from '../../lib/chat-service';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { SubscriptionMiddleware } from '../../lib/subscription-middleware';
+import { bibleService } from '../../lib/bible-service';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -150,6 +151,16 @@ export default async function handler(
     const relevantContent = searchApologeticsContent(message, objectionAnalysis.primaryType);
     console.log('Found relevant apologetics content:', relevantContent.length);
 
+    // Get Bible verse suggestions based on conversation context
+    let verseSuggestions: any[] = [];
+    try {
+      const suggestions = await bibleService.getVerseSuggestions(message, 'de4e12af7f28f599-02');
+      verseSuggestions = suggestions.slice(0, 3); // Limit to 3 suggestions
+      console.log('Found verse suggestions:', verseSuggestions.length);
+    } catch (error) {
+      console.error('Error getting verse suggestions:', error);
+    }
+
     // Generate specialized prompt based on context and objection type
     let systemPrompt = generateSpecializedPrompt(questionContext, mode);
     
@@ -195,10 +206,16 @@ export default async function handler(
       { role: 'user', content: message }
     ];
 
-    // Add similar messages as context if found
+        // Add similar messages as context if found
     if (similarMessages.length > 0) {
       const contextMessage = `Based on similar previous conversations, here are relevant examples:\n${similarMessages.map(msg => `${msg.role}: ${msg.content}`).join('\n')}\n\nPlease use this context to provide a more informed response.`;
       messages.splice(-1, 0, { role: 'system', content: contextMessage });
+    }
+
+    // Add Bible verse suggestions as context if found
+    if (verseSuggestions.length > 0) {
+      const verseContext = `\n\nRelevant Bible verses for this conversation:\n${verseSuggestions.map(verse => `${verse.reference}: "${verse.text}"`).join('\n')}\n\nPlease incorporate these relevant Bible verses naturally into your response when appropriate, providing context and explanation for how they relate to the user's question.`;
+      messages.splice(-1, 0, { role: 'system', content: verseContext });
     }
 
     const response = await openai.chat.completions.create({
