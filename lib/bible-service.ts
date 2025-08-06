@@ -193,7 +193,7 @@ class BibleService {
     }
   }
 
-  // Convert reference format (e.g., "John 3:16" to "JHN.3.16")
+  // Convert reference format (e.g., "John 3:16" to "JHN.3.16" or "Ephesians 2:8-9" to "EPH.2.8-EPH.2.9")
   private convertReferenceFormat(reference: string): string {
     const bookMappings: { [key: string]: string } = {
       'Genesis': 'GEN', 'Exodus': 'EXO', 'Leviticus': 'LEV', 'Numbers': 'NUM', 'Deuteronomy': 'DEU',
@@ -213,10 +213,20 @@ class BibleService {
       '1 John': '1JN', '2 John': '2JN', '3 John': '3JN', 'Jude': 'JUD', 'Revelation': 'REV'
     };
 
-    // Try to match the reference format
-    const match = reference.match(/^([1-3]?\s*[A-Za-z]+)\s+(\d+):(\d+)$/);
-    if (match) {
-      const [, bookName, chapter, verse] = match;
+    // Try to match verse range format (e.g., "Ephesians 2:8-9")
+    const rangeMatch = reference.match(/^([1-3]?\s*[A-Za-z\s]+)\s+(\d+):(\d+)-(\d+)$/);
+    if (rangeMatch) {
+      const [, bookName, chapter, startVerse, endVerse] = rangeMatch;
+      const bookCode = bookMappings[bookName.trim()];
+      if (bookCode) {
+        return `${bookCode}.${chapter}.${startVerse}-${bookCode}.${chapter}.${endVerse}`;
+      }
+    }
+
+    // Try to match single verse format (e.g., "John 3:16")
+    const singleMatch = reference.match(/^([1-3]?\s*[A-Za-z\s]+)\s+(\d+):(\d+)$/);
+    if (singleMatch) {
+      const [, bookName, chapter, verse] = singleMatch;
       const bookCode = bookMappings[bookName.trim()];
       if (bookCode) {
         return `${bookCode}.${chapter}.${verse}`;
