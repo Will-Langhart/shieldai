@@ -298,6 +298,256 @@ class BibleService {
     return passages;
   }
 
+  // Get apologetics-focused verse collections
+  async getApologeticsVerses(versionId: string, category: string): Promise<BiblePassage[]> {
+    const apologeticsCollections: { [key: string]: string[] } = {
+      'existence-of-god': [
+        'Romans 1:20',
+        'Psalm 19:1',
+        'Hebrews 11:3',
+        'Genesis 1:1',
+        'John 1:1-3'
+      ],
+      'problem-of-evil': [
+        'Romans 8:28',
+        'Genesis 50:20',
+        'James 1:2-4',
+        '1 Peter 1:6-7',
+        'Revelation 21:4'
+      ],
+      'resurrection': [
+        '1 Corinthians 15:3-4',
+        'John 20:27-29',
+        'Acts 1:3',
+        '1 Corinthians 15:14',
+        'Romans 10:9'
+      ],
+      'salvation': [
+        'John 3:16',
+        'Romans 3:23',
+        'Romans 6:23',
+        'Ephesians 2:8-9',
+        'Acts 4:12'
+      ],
+      'bible-reliability': [
+        '2 Timothy 3:16',
+        '2 Peter 1:20-21',
+        'Psalm 119:160',
+        'John 17:17',
+        'Matthew 5:18'
+      ],
+      'witnessing': [
+        '1 Peter 3:15',
+        'Matthew 28:19-20',
+        'Acts 1:8',
+        'Romans 10:14-15',
+        '2 Timothy 4:2'
+      ],
+      'faith-and-reason': [
+        'Hebrews 11:1',
+        'Isaiah 1:18',
+        '1 Peter 3:15',
+        'Romans 12:2',
+        '2 Corinthians 10:5'
+      ],
+      'creation': [
+        'Genesis 1:1',
+        'Psalm 139:13-14',
+        'Colossians 1:16',
+        'Hebrews 11:3',
+        'Romans 1:20'
+      ]
+    };
+
+    const references = apologeticsCollections[category] || [];
+    const passages: BiblePassage[] = [];
+
+    for (const reference of references) {
+      try {
+        const passage = await this.getVerseByReference(versionId, reference);
+        if (passage) {
+          const stripHtml = (html: string) => {
+            return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+          };
+
+          const transformedPassage: BiblePassage = {
+            id: passage.id,
+            reference: passage.reference,
+            text: stripHtml(passage.content || passage.text || ''),
+            verses: [{
+              id: passage.id,
+              text: stripHtml((passage.content || passage.text || '').toString()),
+              reference: passage.reference,
+              verseNumber: parseInt(passage.reference.split(':')[1]) || 0,
+              chapterNumber: parseInt(passage.reference.split(':')[0].split(' ').pop() || '0') || 0,
+              bookName: passage.reference.split(' ')[0] || ''
+            }],
+            version: {
+              id: versionId,
+              name: 'KJV',
+              description: 'King James Version',
+              language: { id: 'eng', name: 'English' },
+              type: 'text'
+            }
+          };
+          passages.push(transformedPassage);
+        }
+      } catch (error) {
+        console.error(`Error fetching ${reference}:`, error);
+      }
+    }
+
+    return passages;
+  }
+
+  // Get verse suggestions based on conversation context
+  async getVerseSuggestions(context: string, versionId: string): Promise<BiblePassage[]> {
+    // Extract key themes from conversation context
+    const themes = this.extractThemes(context);
+    const suggestions: BiblePassage[] = [];
+
+    for (const theme of themes) {
+      try {
+        const results = await this.getVersesByTopic(versionId, theme);
+        if (results.passages && results.passages.length > 0) {
+          suggestions.push(...results.passages.slice(0, 2)); // Limit to 2 verses per theme
+        }
+      } catch (error) {
+        console.error(`Error getting suggestions for theme ${theme}:`, error);
+      }
+    }
+
+    // Remove duplicates and limit total results
+    const uniqueSuggestions = suggestions.filter((passage, index, self) => 
+      index === self.findIndex(p => p.id === passage.id)
+    );
+
+    return uniqueSuggestions.slice(0, 5);
+  }
+
+  // Extract themes from conversation context
+  private extractThemes(context: string): string[] {
+    const themeKeywords: { [key: string]: string[] } = {
+      'salvation': ['salvation', 'saved', 'redeem', 'redemption', 'born again', 'eternal life'],
+      'faith': ['faith', 'believe', 'trust', 'doubt', 'unbelief'],
+      'love': ['love', 'charity', 'agape', 'compassion', 'mercy'],
+      'forgiveness': ['forgive', 'forgiveness', 'pardon', 'sin', 'repentance'],
+      'hope': ['hope', 'hope in', 'hope for', 'despair', 'discouragement'],
+      'wisdom': ['wisdom', 'wise', 'understanding', 'knowledge', 'foolish'],
+      'prayer': ['pray', 'prayer', 'supplication', 'intercession'],
+      'witness': ['witness', 'testimony', 'testify', 'evangelism', 'sharing'],
+      'grace': ['grace', 'gracious', 'mercy', 'favor'],
+      'creation': ['creation', 'created', 'design', 'intelligent design', 'evolution'],
+      'resurrection': ['resurrection', 'raised', 'risen', 'tomb', 'empty'],
+      'bible': ['bible', 'scripture', 'word of god', 'inspired', 'authority'],
+      'god': ['god', 'lord', 'jesus', 'christ', 'holy spirit', 'trinity'],
+      'sin': ['sin', 'sinful', 'transgression', 'iniquity', 'wickedness'],
+      'heaven': ['heaven', 'eternal', 'paradise', 'kingdom of god'],
+      'hell': ['hell', 'eternal punishment', 'damnation', 'lake of fire']
+    };
+
+    const contextLower = context.toLowerCase();
+    const foundThemes: string[] = [];
+
+    for (const [theme, keywords] of Object.entries(themeKeywords)) {
+      for (const keyword of keywords) {
+        if (contextLower.includes(keyword)) {
+          foundThemes.push(theme);
+          break; // Found one keyword for this theme, move to next
+        }
+      }
+    }
+
+    return foundThemes.slice(0, 3); // Limit to top 3 themes
+  }
+
+  // Get daily verse for notifications
+  async getDailyVerse(versionId: string): Promise<BiblePassage | null> {
+    const dailyVerses = [
+      'Psalm 119:105',
+      'Proverbs 3:5-6',
+      'Philippians 4:13',
+      'Jeremiah 29:11',
+      'Romans 8:28',
+      'Isaiah 40:31',
+      'Matthew 11:28',
+      'John 14:27',
+      'Galatians 5:22-23',
+      'Colossians 3:23'
+    ];
+
+    // Use date to select a verse (changes daily)
+    const today = new Date();
+    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+    const selectedVerse = dailyVerses[dayOfYear % dailyVerses.length];
+
+    try {
+      const passage = await this.getVerseByReference(versionId, selectedVerse);
+      if (passage) {
+        const stripHtml = (html: string) => {
+          return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+        };
+
+        return {
+          id: passage.id,
+          reference: passage.reference,
+          text: stripHtml(passage.content || passage.text || ''),
+          verses: [{
+            id: passage.id,
+            text: stripHtml((passage.content || passage.text || '').toString()),
+            reference: passage.reference,
+            verseNumber: parseInt(passage.reference.split(':')[1]) || 0,
+            chapterNumber: parseInt(passage.reference.split(':')[0].split(' ').pop() || '0') || 0,
+            bookName: passage.reference.split(' ')[0] || ''
+          }],
+          version: {
+            id: versionId,
+            name: 'KJV',
+            description: 'King James Version',
+            language: { id: 'eng', name: 'English' },
+            type: 'text'
+          }
+        };
+      }
+    } catch (error) {
+      console.error(`Error fetching daily verse ${selectedVerse}:`, error);
+    }
+
+    return null;
+  }
+
+  // Get verse context for AI responses
+  async getVerseContext(reference: string, versionId: string): Promise<{
+    verse: BiblePassage;
+    context: string;
+    relatedVerses: BiblePassage[];
+  } | null> {
+    try {
+      const verse = await this.getVerseByReference(versionId, reference);
+      if (!verse) return null;
+
+      // Get surrounding verses for context
+      const [book, chapterVerse] = reference.split(' ');
+      const [chapter, verseNum] = chapterVerse.split(':');
+      
+      // Get chapter context
+      const chapterRef = `${book} ${chapter}`;
+      const chapterPassage = await this.getVerseByReference(versionId, chapterRef);
+      
+      // Get related verses
+      const relatedVerses = await this.getVersesByTopic(versionId, 'faith');
+
+      return {
+        verse: verse,
+        context: chapterPassage ? (chapterPassage.content || chapterPassage.text || '').toString() : '',
+        relatedVerses: relatedVerses.passages.slice(0, 3)
+      };
+    } catch (error) {
+      console.error('Error getting verse context:', error);
+      return null;
+    }
+  }
+
   // Get verses related to a specific topic
   async getVersesByTopic(versionId: string, topic: string): Promise<BibleSearchResult> {
     const topicKeywords: { [key: string]: string[] } = {
