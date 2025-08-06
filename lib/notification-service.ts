@@ -52,7 +52,7 @@ class NotificationService {
 
       const subscription = await this.registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(vapidKey)
+        applicationServerKey: this.urlBase64ToUint8Array(vapidKey) as BufferSource
       });
 
       console.log('Push subscription:', subscription);

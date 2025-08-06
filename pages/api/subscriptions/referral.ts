@@ -36,10 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const result = await EnhancedStripeService.processReferral(code, user.id);
       
-      res.status(200).json({
-        success: result.success,
-        ...result
-      });
+      res.status(200).json(result);
     } else {
       return res.status(405).json({ error: 'Method not allowed' });
     }
