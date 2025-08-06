@@ -1,0 +1,18 @@
+name: production
+environment:
+  name: production
+  url: https://shieldai-bice.vercel.app
+protection_rules:
+  required_reviewers: 0
+  wait_timer: 0
+deployment_branch_policy:
+  protected_branches: true
+  custom_branch_policies: false
+variables:
+  ENVIRONMENT: production
+  NEXT_PUBLIC_APP_URL: https://shieldai-bice.vercel.app
+secrets:
+  # Managed in GitHub Settings > Secrets and variables > Actions
+  # - VERCEL_TOKEN
+  # - VERCEL_ORG_ID  
+  # - VERCEL_PROJECT_ID
