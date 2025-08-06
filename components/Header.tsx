@@ -161,9 +161,7 @@ const Header: React.FC<HeaderProps> = ({
               compact={true}
             />
           )}
-          
-          {/* DEBUG: UI Enhancement Test Marker */}
-          <div data-testid="ui-enhancement-marker" style={{display: 'none'}}>v2.1.0-enhanced</div>
+
           {/* Icons - Hide search on mobile for space */}
           <button className={`p-2 rounded-xl transition-all duration-200 group hidden md:block ${
             theme === 'dark' 
