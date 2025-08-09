@@ -7,6 +7,11 @@ interface BibleVerseProps {
   version?: string;
   onSelect?: (reference: string, text: string) => void;
   onAddNote?: (reference: string, text: string) => void;
+  onCopy?: () => void;
+  onShare?: () => void;
+  onFavorite?: () => void;
+  isFavorite?: boolean;
+  theme?: 'light' | 'dark';
   showActions?: boolean;
   className?: string;
 }
@@ -17,6 +22,11 @@ export default function BibleVerse({
   version = 'NIV',
   onSelect,
   onAddNote,
+  onCopy,
+  onShare,
+  onFavorite,
+  isFavorite,
+  theme,
   showActions = true,
   className = '',
 }: BibleVerseProps) {
@@ -49,8 +59,11 @@ export default function BibleVerse({
   };
 
   const handleLike = () => {
+    if (onFavorite) {
+      onFavorite();
+      return;
+    }
     setIsLiked(!isLiked);
-    // TODO: Implement like functionality with backend
   };
 
   const handleSelect = () => {
@@ -93,21 +106,21 @@ export default function BibleVerse({
             <button
               onClick={handleLike}
               className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                isLiked ? 'text-red-500' : 'text-gray-400'
+                (isFavorite ?? isLiked) ? 'text-red-500' : 'text-gray-400'
               }`}
               title="Like verse"
             >
-              <Heart className="w-4 h-4" fill={isLiked ? 'currentColor' : 'none'} />
+              <Heart className="w-4 h-4" fill={(isFavorite ?? isLiked) ? 'currentColor' : 'none'} />
             </button>
             <button
-              onClick={handleCopy}
+              onClick={onCopy ?? handleCopy}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               title={isCopied ? 'Copied!' : 'Copy verse'}
             >
               <Copy className="w-4 h-4" />
             </button>
             <button
-              onClick={handleShare}
+              onClick={onShare ?? handleShare}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               title="Share verse"
             >
