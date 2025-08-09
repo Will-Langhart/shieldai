@@ -12,7 +12,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Address is required' });
     }
 
-    const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
+    // Prefer server-only key; fall back to public key for legacy compatibility
+    const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
     
     if (!GOOGLE_PLACES_API_KEY) {
       return res.status(500).json({ error: 'Google Places API key not configured' });

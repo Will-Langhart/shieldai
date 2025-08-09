@@ -132,56 +132,235 @@ An AI-powered apologetics companion designed to help believers, seekers, and fai
 
 ```
 shieldai/
+├── architecture.txt
 ├── components/
-
-│   ├── AuthModal.tsx           # Authentication interface
-│   ├── BibleSearch.tsx         # Bible search component
-│   ├── BibleStudyTools.tsx     # Study tools and notes
-│   ├── BibleVerse.tsx          # Individual verse display
-│   ├── ChurchFinder.tsx        # Church search interface
-│   ├── EnhancedBibleInterface.tsx # Main Bible suite
-│   ├── Header.tsx              # Navigation and branding
-│   ├── InputBar.tsx            # Main input interface
-│   ├── MessageActions.tsx      # Message interaction buttons
-│   ├── MoodVerseSystem.tsx     # Mood-based verse system
-│   ├── NoteCreationModal.tsx   # Bible note creation
-│   ├── SubscriptionModal.tsx   # Subscription management
-│   ├── UserSettings.tsx        # User preferences and data
-│   └── VerseComparison.tsx     # Verse comparison tool
-├── lib/
-│   ├── ai-church-assistant.ts  # Church finder AI
-│   ├── ai-church-recommendations.ts # Church recommendations
-│   ├── analytics-service.ts    # User analytics
-│   ├── auth-context.tsx        # Authentication context
-│   ├── bible-service.ts        # Bible API integration
-│   ├── chat-service.ts         # Chat functionality
-│   ├── church-finder-service.ts # Church search service
-
-│   ├── prompt-engineering.ts   # AI prompt management
-│   ├── stripe.ts               # Payment processing
-│   └── supabase.ts             # Database connection
-├── pages/
-│   ├── api/                    # API routes
-│   │   ├── auth/              # Authentication endpoints
-│   │   ├── bible/             # Bible API endpoints
-│   │   ├── chat.ts            # Chat API
-│   │   ├── churches/          # Church finder API
-│   │   ├── subscriptions/     # Payment endpoints
-│   │   └── webhooks/          # Webhook handlers
-│   ├── _app.tsx               # App wrapper
-│   ├── _document.tsx          # HTML structure
-│   ├── chat/[conversationId].tsx # Individual chat sessions
-│   └── index.tsx              # Main page
+│   ├── AdminPanel.tsx
+│   ├── AdvancedBibleSearch.tsx
+│   ├── AnalyticsDashboard.tsx
+│   ├── ApologeticsBible.tsx
+│   ├── AuthModal.tsx
+│   ├── BibleSearch.tsx
+│   ├── BibleStudyTools.tsx
+│   ├── BibleVerse.tsx
+│   ├── ChurchFinder.tsx
+│   ├── ConversationHistory.tsx
+│   ├── EnhancedBibleInterface.tsx
+│   ├── EnhancedBibleSearch.tsx
+│   ├── EnhancedChurchFinder.tsx
+│   ├── EnhancedNoteModal.tsx
+│   ├── EnhancedSubscriptionModal.tsx
+│   ├── FilterModal.tsx
+│   ├── Header.tsx
+│   ├── InputBar.tsx
+│   ├── LanguageSelector.tsx
+│   ├── LocationServicesTrigger.tsx
+│   ├── MemoryInsights.tsx
+│   ├── MessageActions.tsx
+│   ├── MessageRenderer.tsx
+│   ├── MobileMessage.tsx
+│   ├── MobileNavigation.tsx
+│   ├── MoodVerseSystem.tsx
+│   ├── NoteCreationModal.tsx
+│   ├── NotesManager.tsx
+│   ├── SubscriptionModal.tsx
+│   ├── SubscriptionStatus.tsx
+│   ├── SubscriptionUsageDashboard.tsx
+│   ├── UpgradePrompt.tsx
+│   ├── UserSettings.tsx
+│   └── VerseComparison.tsx
 ├── database/
-│   ├── schema.sql             # Database schema
-│   └── bible-notes.sql        # Bible study tables
-├── styles/
-│   └── globals.css            # Global styles
-├── public/                    # Static assets
-├── package.json
-├── tailwind.config.js
+│   ├── bible-notes.sql
+│   ├── enhanced-bible-notes.sql
+│   ├── enhanced-subscription-schema.sql
+│   ├── fix-enum-additions.sql
+│   └── schema.sql
+├── docs/
+│   ├── api/
+│   │   ├── API_INTEGRATION_GUIDE.md
+│   │   ├── API_INTEGRATION_STATUS.md
+│   │   ├── FRONTEND_INTEGRATION_SUMMARY.md
+│   │   ├── GOOGLE_PLACES_API_KEY_FIX.md
+│   │   ├── GOOGLE_PLACES_SETUP.md
+│   │   └── README.md
+│   ├── architecture/
+│   │   ├── README.md
+│   │   └── SHIELD_AI_PROJECT_OVERVIEW.md
+│   ├── deployment/
+│   │   ├── DEPLOYMENT.md
+│   │   ├── DEPLOYMENT_GUIDE.md
+│   │   ├── README.md
+│   │   └── VERCEL_DEPLOYMENT.md
+│   ├── DOCUMENTATION_INDEX.md
+│   ├── features/
+│   │   ├── BIBLE_API_INTEGRATION.md
+│   │   ├── BIBLE_FEATURE_ENHANCEMENT.md
+│   │   ├── BIBLE_NOTES_ENHANCEMENT_SUMMARY.md
+│   │   ├── BIBLE_UI_INTEGRATION_SUMMARY.md
+│   │   ├── ENHANCED_BIBLE_NOTES_FEATURES.md
+│   │   ├── ENHANCED_NOTES_SUMMARY.md
+│   │   ├── GAMIFICATION_FEATURES.md
+│   │   ├── MEMORY_SYSTEM.md
+│   │   ├── README.md
+│   │   └── SETTINGS_ENHANCEMENT_SUMMARY.md
+│   ├── README.md
+│   └── setup/
+│       ├── CHURCH_FINDER_SETUP.md
+│       ├── ENHANCED_BIBLE_NOTES_FIXES.md
+│       ├── ENHANCED_BIBLE_NOTES_IMMUTABLE_FIX.md
+│       ├── ENHANCED_SUBSCRIPTION_ENUM_FIX.md
+│       ├── ENHANCED_SUBSCRIPTION_SETUP.md
+│       ├── GOOGLE_PLACES_SETUP.md
+│       ├── PINECONE_SETUP.md
+│       ├── README.md
+│       ├── SETUP.md
+│       ├── STRIPE_SETUP.md
+│       └── SUPABASE_SETUP.md
+├── env.example
+├── lib/
+│   ├── advanced-prompts.ts
+│   ├── ai-church-assistant.ts
+│   ├── ai-church-recommendations.ts
+│   ├── analytics-service.ts
+│   ├── api-integration-hooks.ts
+│   ├── apologetics-knowledge.ts
+│   ├── auth-context.tsx
+│   ├── auth.ts
+│   ├── bible-fallback-service.ts
+│   ├── bible-service.ts
+│   ├── chat-service.ts
+│   ├── church-finder-service.ts
+│   ├── client-service.ts
+│   ├── embeddings.ts
+│   ├── enhanced-stripe-service.ts
+│   ├── gesture-service.ts
+│   ├── memory-service.ts
+│   ├── multilingual-service.ts
+│   ├── multilingual-service.ts.backup
+│   ├── notification-service.ts
+│   ├── objection-classifier.ts
+│   ├── pinecone.ts
+│   ├── prompt-engineering.ts
+│   ├── stripe.ts
+│   ├── subscription-middleware.tsx
+│   └── supabase.ts
+├── logs/
+│   ├── README.md
+│   ├── api-integration-results.json
+│   ├── debug/
+│   ├── npm/
+│   ├── server/
+│   └── vercel/
+├── next-env.d.ts
 ├── next.config.js
-└── README.md
+├── package-lock.json
+├── package.json
+├── pages/
+│   ├── _app.tsx
+│   ├── _document.tsx
+│   ├── api/
+│   │   ├── analytics.ts
+│   │   ├── auth/
+│   │   │   ├── signin.ts
+│   │   │   └── signup.ts
+│   │   ├── bible/
+│   │   │   ├── advanced-search.ts
+│   │   │   ├── apologetics.ts
+│   │   │   ├── concordance.ts
+│   │   │   ├── context.ts
+│   │   │   ├── cross-references.ts
+│   │   │   ├── crossrefs.ts
+│   │   │   ├── daily-verse.ts
+│   │   │   ├── notes/
+│   │   │   │   ├── [noteId].ts
+│   │   │   │   ├── history.ts
+│   │   │   │   └── search.ts
+│   │   │   ├── notes.ts
+│   │   │   ├── passage.ts
+│   │   │   ├── popular.ts
+│   │   │   ├── preferences.ts
+│   │   │   ├── search.ts
+│   │   │   ├── suggestions.ts
+│   │   │   └── versions.ts
+│   │   ├── chat.ts
+│   │   ├── churches/
+│   │   │   └── search.ts
+│   │   ├── conversations.ts
+│   │   ├── feedback.ts
+│   │   ├── geocode/
+│   │   │   └── autocomplete.ts
+│   │   ├── geocode.ts
+│   │   ├── health.ts
+│   │   ├── memory/
+│   │   │   ├── search.ts
+│   │   │   └── stats.ts
+│   │   ├── messages.ts
+│   │   ├── pinecone/
+│   │   │   ├── env.ts
+│   │   │   ├── indexes.ts
+│   │   │   ├── seed.ts
+│   │   │   ├── stats.ts
+│   │   │   └── test-key.ts
+│   │   ├── subscriptions/
+│   │   │   ├── cancel.ts
+│   │   │   ├── check-feature.ts
+│   │   │   ├── create.ts
+│   │   │   ├── payments.ts
+│   │   │   ├── plans.ts
+│   │   │   ├── promo-code.ts
+│   │   │   ├── reactivate.ts
+│   │   │   ├── referral.ts
+│   │   │   ├── status.ts
+│   │   │   ├── tiers.ts
+│   │   │   └── usage.ts
+│   │   ├── test-api-integration.ts
+│   │   ├── test-db.ts
+│   │   ├── test-pinecone.ts
+│   │   └── webhooks/
+│   │       └── stripe.ts
+│   ├── chat/
+│   │   └── [conversationId].tsx
+│   ├── index.tsx
+│   ├── test-bible-api.tsx
+│   ├── test-bible-enhancements.tsx
+│   ├── test-bible-notes.tsx
+│   ├── test-church-api.tsx
+│   ├── test-church-finder.tsx
+│   ├── test-memory.tsx
+│   ├── test-notes-button.tsx
+│   └── test.tsx
+├── postcss.config.js
+├── public/
+│   ├── favicon.ico
+│   ├── logo.png
+│   ├── logo.svg
+│   ├── manifest.json
+│   ├── robots.txt
+│   └── sw.js
+├── README.md
+├── scripts/
+│   ├── check-pinecone-env.js
+│   ├── create-index-simple.js
+│   ├── setup-api-verification.sh
+│   ├── setup-pinecone-index.js
+│   ├── test-create-index.js
+│   ├── update-env.js
+│   ├── update-personal-pinecone.js
+│   ├── verify-api-integration.js
+│   └── verify-pinecone.js
+├── setup-bible-api.sh
+├── setup-bible-enhancements.sh
+├── setup-database.sql
+├── setup-github.sh
+├── setup-storage.sql
+├── styles/
+│   └── globals.css
+├── tailwind.config.js
+├── tsconfig.json
+├── types/
+│   └── notes.ts
+├── utils/
+│   └── env.ts
+└── vercel.json
 ```
 
 ## 🎨 Design System
@@ -288,6 +467,106 @@ Ensure all environment variables are set in Vercel:
 3. **Test authentication** flow
 4. **Verify payment processing**
 
+## 📱 Mobile (iOS) App and Monorepo Plan
+
+We are expanding Shield AI to a native iOS app built with Expo (React Native), while keeping the existing Next.js web app. The goal is to share TypeScript services and types across web and mobile and keep all secrets server-side.
+
+### Monorepo layout (planned)
+
+```text
+shieldai/
+├── apps/
+│   ├── web/            # Existing Next.js app (current repo content will be moved here)
+│   └── mobile/         # New Expo (React Native) app
+└── packages/
+    ├── services/       # Isomorphic client services (fetch-only)
+    ├── types/          # Shared TypeScript types / API contracts
+    ├── ui/             # Optional: shared UI primitives (react-native + react-native-web)
+    └── config/         # Shared tsconfig/eslint/babel
+```
+
+Root workspaces (planned):
+
+```json
+{
+  "name": "shieldai",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"]
+}
+```
+
+Key principles:
+- Mobile uses Supabase for auth; sends `Authorization: Bearer <supabaseAccessToken>` to server APIs.
+- Mobile never ships secrets (OpenAI, Stripe secret, Pinecone). All sensitive work stays in `apps/web/pages/api/**`.
+- Shared client-safe services (Bible, Chat, Church Finder helpers, etc.) live in `packages/services` and call our APIs.
+
+### Mobile screens (scope)
+
+- **Chat**
+  - Conversation list, chat detail, composer with Fast/Accurate toggle
+  - Endpoints: `POST /api/chat`, Supabase tables for conversations/messages via server services
+  - Gating: Accurate mode and daily limits checked via `/api/subscriptions/usage` and feature checks
+
+- **Bible**
+  - Versions, search, passage reader, context/cross-references, daily verse
+  - Endpoints: `/api/bible/versions`, `/api/bible/popular`, `/api/bible/daily-verse`, `/api/bible/passage`, `/api/bible/search`, `/api/bible/concordance`, `/api/bible/cross-references`, `/api/bible/context`, `/api/bible/crossrefs`
+
+- **Notes**
+  - Notes list, editor (linked to verses), tags, history, search
+  - Endpoints: `/api/bible/notes` (CRUD), `/api/bible/notes/history`, `/api/bible/notes/search`
+
+- **Church Finder**
+  - Location/radius/denomination search, list/map view, church details
+  - Endpoints: `POST /api/churches/search`, `POST /api/geocode`, `GET /api/geocode/autocomplete`
+
+- **Settings**
+  - Profile, preferences (language/theme/version), notifications, subscription, data export
+  - Endpoints: `/api/subscriptions/plans`, `/api/subscriptions/status`, `/api/subscriptions/create`, `/api/subscriptions/cancel`, `/api/subscriptions/reactivate`, `/api/subscriptions/payments`, `/api/subscriptions/usage`, `/api/subscriptions/tiers`
+
+### Push notifications (Expo)
+
+- Categories: daily prayer/verse, biblical motivation, chat reminders/summaries, church reminders, subscription usage/status
+- Device registration: mobile obtains Expo push token → `POST /api/notifications/register { expoPushToken, deviceInfo }` (to be added)
+- Scheduling: Vercel cron jobs trigger server tasks to send via Expo Push API per user preferences
+- Preferences: stored in Supabase (per-user settings) and managed in Settings → Notifications
+- Content sources: daily verse (`/api/bible/daily-verse`), curated prompts or AI-assisted devotionals, chat summaries (server-side only)
+
+### API usage from mobile (summary)
+
+- Auth: Supabase in-app auth. Use Supabase access token as Bearer across APIs
+- Chat: `POST /api/chat` with `{ message, mode, sessionId?, conversationId? }`
+- Bible: versions/popular/daily-verse/passage/search/context/cross-refs endpoints as listed above
+- Notes: `/api/bible/notes*` endpoints
+- Church Finder: `/api/churches/search`, geocode endpoints
+- Memory: `/api/memory/search`, `/api/memory/stats`
+- Subscriptions: `/api/subscriptions/plans|create|status|usage|payments|tiers|cancel|reactivate`
+
+### Environment (mobile + server)
+
+- App (public; set in Expo):
+  - `EXPO_PUBLIC_API_BASE_URL` (e.g., your Vercel deployment URL)
+  - `EXPO_PUBLIC_SUPABASE_URL`
+  - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- Server-only (Vercel):
+  - Continue existing secrets (OpenAI/Stripe/Pinecone/Bible)
+  - Add `GOOGLE_PLACES_SERVER_API_KEY` and update server endpoints to use this instead of `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY` when running on the server
+
+### Branching and PR plan
+
+1. Create integration branch from `prod`: `feat/monorepo-mobile-from-prod`
+2. PR 1: Restructure to monorepo (move current app to `apps/web`, add workspaces and base tsconfig)
+3. PR 2: Scaffold `apps/mobile` (Expo), metro config for monorepo, health-check screen calling `/api/health`
+4. PR 3: Extract client-safe services from `lib/` to `packages/services`, add `packages/types`
+5. PR 4+: Implement screens incrementally (Chat, Bible, Notes, Church Finder, Subscriptions)
+
+### Build and run (after monorepo migration)
+
+- Install deps from repo root: `npm install`
+- Web: `npm run --workspace apps/web dev`
+- Mobile: `npm run --workspace apps/mobile start` (Expo), or `cd apps/mobile && npx expo start`
+- iOS build (EAS): `eas build -p ios --profile production`
+
+
 ## 🤝 Contributing
 
 ### Development Workflow
@@ -365,3 +644,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Shield AI** - Empowering believers with AI-powered apologetics insights and comprehensive Bible study tools.
 
 *Built with ❤️ for the Christian community*
+
+---
+
+## 📱 iOS Build Blueprint (Expo + Monorepo)
+
+See `docs/deployment/IOS_BUILD_BLUEPRINT.md` for the full mobile plan, API contracts, screens, notifications, env setup, and branching strategy.

@@ -60,7 +60,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Use Google Places API directly on the server side
-    const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
+    // Prefer server-only key; fall back to public key for legacy compatibility
+    const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
     const GOOGLE_PLACES_BASE_URL = 'https://maps.googleapis.com/maps/api/place';
 
     // Check if API key is properly configured
