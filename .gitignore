@@ -110,3 +110,6 @@ temp/
 # Local Netlify folder
 .netlify
 .env*.local
+
+# Local env backups
+.env.local.bak
