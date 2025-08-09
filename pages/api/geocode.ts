@@ -71,8 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       'wichita': { lat: 37.6872, lng: -97.3301, name: 'Wichita, KS' },
       'arlington': { lat: 32.7357, lng: -97.1081, name: 'Arlington, TX' },
       'new orleans': { lat: 29.9511, lng: -90.0715, name: 'New Orleans, LA' },
-      'bakersfield': { lat: 35.3733, lng: -119.0187, name: 'Bakersfield, CA' },
-      'tampa': { lat: 27.9506, lng: -82.4572, name: 'Tampa, FL' }
+      'bakersfield': { lat: 35.3733, lng: -119.0187, name: 'Bakersfield, CA' }
     };
 
     // First try Google Geocoding API
