@@ -6,6 +6,7 @@ import { advancedPrompts, responseEnhancers } from '../../lib/advanced-prompts';
 import { searchApologeticsContent, enhanceResponseWithContent } from '../../lib/apologetics-knowledge';
 import { AnalyticsService } from '../../lib/analytics-service';
 import { ChatService } from '../../lib/chat-service';
+import { MemoryService } from '../../lib/memory-service';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { SubscriptionMiddleware } from '../../lib/subscription-middleware';
 import { bibleService } from '../../lib/bible-service';
@@ -125,14 +126,42 @@ export default async function handler(
       );
     }
 
-    // Search for similar messages using vector similarity if user is authenticated
+    // Get enhanced conversation context with long-term memory
+    let memoryContext = null;
     let similarMessages: Array<{ content: string; role: string; score: number }> = [];
+    
     if (user && conversationId && typeof conversationId === 'string') {
       try {
-        similarMessages = await ChatService.searchSimilarMessages(message, user.id, conversationId, 3, serverSupabase);
-        console.log('Found similar messages:', similarMessages.length);
+        // Get enhanced memory context
+        memoryContext = await MemoryService.getEnhancedConversationContext(
+          conversationId,
+          user.id,
+          message,
+          10 // Get top 10 relevant memories
+        );
+        
+        // Extract similar messages from memory context
+        similarMessages = memoryContext.messages
+          .filter(msg => msg.relevance > 0.7) // Only include highly relevant memories
+          .map(msg => ({
+            content: msg.content,
+            role: msg.role,
+            score: msg.relevance,
+          }));
+        
+        console.log('Found enhanced memory context with', memoryContext.messages.length, 'messages');
+        console.log('Key topics detected:', memoryContext.keyTopics);
+        console.log('Emotional tone:', memoryContext.emotionalTone);
       } catch (error) {
-        console.error('Error searching similar messages:', error);
+        console.error('Error getting enhanced memory context:', error);
+        
+        // Fallback to basic similarity search
+        try {
+          similarMessages = await ChatService.searchSimilarMessages(message, user.id, conversationId, 3, serverSupabase);
+          console.log('Fallback: Found similar messages:', similarMessages.length);
+        } catch (fallbackError) {
+          console.error('Error in fallback similarity search:', fallbackError);
+        }
       }
     }
 
@@ -152,6 +181,19 @@ export default async function handler(
 
     // Generate specialized prompt based on context and objection type
     let systemPrompt = generateSpecializedPrompt(questionContext, mode);
+    
+    // Add memory context to system prompt if available
+    if (memoryContext && memoryContext.messages.length > 0) {
+      const memoryContextPrompt = `
+IMPORTANT MEMORY CONTEXT:
+Based on our previous conversations, I remember discussing these topics: ${memoryContext.keyTopics.join(', ')}.
+The emotional tone of our previous interactions has been: ${memoryContext.emotionalTone}.
+User preferences: ${memoryContext.userPreferences?.communicationStyle || 'standard'} communication style, interested in: ${memoryContext.userPreferences?.preferredTopics?.join(', ') || 'general topics'}.
+
+Please reference relevant previous discussions when appropriate and maintain consistency with our conversation history.`;
+      
+      systemPrompt += memoryContextPrompt;
+    }
     
     // Add advanced objection-specific guidance
     if (objectionAnalysis.primaryType === 'logical' && objectionAnalysis.keyThemes.includes('problem of evil')) {
@@ -268,7 +310,31 @@ ${content.content.substring(0, 200)}...
           console.log('Saved AI response to database and Pinecone');
         }
         
-        console.log('All messages saved to database and Pinecone successfully');
+        // Store conversation memory with enhanced metadata
+        try {
+          const messages = await ChatService.getMessages(currentConvId, serverSupabase);
+          await MemoryService.storeConversationMemory(
+            currentConvId,
+            user.id,
+            messages.map(msg => ({
+              content: msg.content,
+              role: msg.role,
+              timestamp: msg.created_at,
+            })),
+            {
+              mode,
+              objectionType: objectionAnalysis.primaryType,
+              emotionalTone: objectionAnalysis.intensity,
+              keyThemes: objectionAnalysis.keyThemes,
+            }
+          );
+          console.log('Stored conversation memory with enhanced metadata');
+        } catch (memoryError) {
+          console.error('Error storing conversation memory:', memoryError);
+          // Don't fail the main flow if memory storage fails
+        }
+        
+        console.log('All messages saved to database, Pinecone, and memory successfully');
       } catch (error) {
         console.error('Error saving messages to database:', error);
         // Continue even if database save fails

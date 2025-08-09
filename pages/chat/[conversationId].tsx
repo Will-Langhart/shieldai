@@ -5,6 +5,7 @@ import Header from '../../components/Header';
 import InputBar from '../../components/InputBar';
 import ConversationHistory from '../../components/ConversationHistory';
 import MessageActions from '../../components/MessageActions';
+import MemoryInsights from '../../components/MemoryInsights';
 import { useAuth } from '../../lib/auth-context';
 import { ClientService } from '../../lib/client-service';
 import { supabase } from '../../lib/supabase';
@@ -222,11 +223,22 @@ export default function ConversationPage() {
           <div className={`fixed inset-y-0 left-0 z-30 w-80 bg-shield-gray/50 border-r border-gray-700/50 transition-transform duration-300 ${
             showSidebar ? 'translate-x-0' : '-translate-x-full'
           }`}>
-            <ConversationHistory
-              onSelectConversation={handleSelectConversation}
-              currentConversationId={conversationId as string}
-              onNewConversation={handleNewConversation}
-            />
+            <div className="h-full flex flex-col">
+              <ConversationHistory
+                onSelectConversation={handleSelectConversation}
+                currentConversationId={conversationId as string}
+                onNewConversation={handleNewConversation}
+              />
+              <div className="border-t border-gray-700/50 p-4">
+                <MemoryInsights
+                  conversationId={conversationId as string}
+                  onMemorySelect={(memory) => {
+                    console.log('Selected memory:', memory);
+                    // You could implement functionality to reference this memory in the conversation
+                  }}
+                />
+              </div>
+            </div>
           </div>
         )}
 

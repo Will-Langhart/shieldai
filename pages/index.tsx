@@ -6,11 +6,11 @@ import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
 import MessageActions from '../components/MessageActions';
 import MessageRenderer from '../components/MessageRenderer';
-import SubscriptionModal from '../components/SubscriptionModal';
+import EnhancedSubscriptionModal from '../components/EnhancedSubscriptionModal';
 
 import MoodVerseSystem from '../components/MoodVerseSystem';
-import ChurchFinder from '../components/ChurchFinder';
-import BibleSearch from '../components/BibleSearch';
+import EnhancedChurchFinder from '../components/EnhancedChurchFinder';
+import EnhancedBibleSearch from '../components/EnhancedBibleSearch';
 import EnhancedBibleInterface from '../components/EnhancedBibleInterface';
 import ApologeticsBible from '../components/ApologeticsBible';
 import NoteCreationModal from '../components/NoteCreationModal';
@@ -487,7 +487,10 @@ export default function Home() {
           onChurchFinderClick={() => setShowChurchFinder(true)}
           onBibleSearchClick={() => setShowBibleSearch(true)}
           onApologeticsBibleClick={() => setShowApologeticsBible(true)}
-          onNotesManagerClick={() => setShowNotesManager(true)}
+          onNotesManagerClick={() => {
+            console.log('Notes manager button clicked!');
+            setShowNotesManager(true);
+          }}
           currentLanguage={currentLanguage}
           onLanguageChange={handleLanguageChange}
         />
@@ -827,12 +830,14 @@ export default function Home() {
         )}
 
         {/* Subscription Modal */}
-        <SubscriptionModal
+        <EnhancedSubscriptionModal
           isOpen={showSubscriptionModal}
           onClose={() => setShowSubscriptionModal(false)}
-          currentSubscription={null}
-          isInTrial={subscriptionStatus?.isInTrial}
           theme={resolvedTheme}
+          onSubscriptionChange={() => {
+            loadSubscriptionStatus();
+            setShowSubscriptionModal(false);
+          }}
         />
 
 
@@ -846,7 +851,7 @@ export default function Home() {
         />
 
         {/* Church Finder */}
-        <ChurchFinder
+        <EnhancedChurchFinder
           isOpen={showChurchFinder}
           onClose={() => setShowChurchFinder(false)}
           onChurchSelect={handleChurchSelect}
@@ -941,11 +946,32 @@ export default function Home() {
 
       {/* Notes Manager */}
       {showNotesManager && (
-        <NotesManager
-          isOpen={showNotesManager}
-          onClose={() => setShowNotesManager(false)}
-          theme={resolvedTheme}
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowNotesManager(false)} />
+          <div className="relative w-full max-w-7xl mx-4 max-h-[95vh] overflow-y-auto">
+            <NotesManager
+              className="w-full min-h-full"
+              onNoteSelect={(note) => {
+                console.log('Note selected:', note);
+                // Could open note in modal for editing
+              }}
+              onNoteEdit={(note) => {
+                console.log('Note edit:', note);
+                // Could open note in modal for editing
+              }}
+              onNoteDelete={(noteId) => {
+                console.log('Note deleted:', noteId);
+                // Could show confirmation or update UI
+              }}
+            />
+            <button
+              onClick={() => setShowNotesManager(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors z-10"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+        </div>
       )}
     </>
   );

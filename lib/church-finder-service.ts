@@ -33,7 +33,7 @@ export class ChurchFinderService {
 
   static async findChurchesNearby(params: ChurchSearchParams): Promise<ChurchLocation[]> {
     try {
-      // Use our API endpoint instead of direct Google Places API call
+      // First try our server-side API endpoint
       const response = await fetch('/api/churches/search', {
         method: 'POST',
         headers: {
@@ -52,9 +52,111 @@ export class ChurchFinderService {
       }
 
       const data = await response.json();
-      return data.churches || this.getFallbackChurches(params);
+      
+      // Check if we got real results (not fallback data)
+      if (data.churches && data.churches.length > 0 && !data.churches[0].id.startsWith('fallback')) {
+        console.log('Using server-side API results');
+        return data.churches;
+      }
+      
+      // If we got fallback data, try client-side approach
+      console.log('Server returned fallback data, trying client-side API');
+      return await this.findChurchesClientSide(params);
+      
     } catch (error) {
-      console.error('Error finding churches:', error);
+      console.error('Error with server-side API, trying client-side:', error);
+      return await this.findChurchesClientSide(params);
+    }
+  }
+
+  static async findChurchesClientSide(params: ChurchSearchParams): Promise<ChurchLocation[]> {
+    try {
+      const searchQueries = [
+        // Search for churches
+        `https://maps.googleapis.com/maps/api/place/nearbysearch/json?` +
+        `location=${params.latitude},${params.longitude}&` +
+        `radius=${params.radius}&` +
+        `type=church&` +
+        `key=${this.GOOGLE_PLACES_API_KEY}`,
+        
+        // Search for places of worship
+        `https://maps.googleapis.com/maps/api/place/nearbysearch/json?` +
+        `location=${params.latitude},${params.longitude}&` +
+        `radius=${params.radius}&` +
+        `type=place_of_worship&` +
+        `key=${this.GOOGLE_PLACES_API_KEY}`,
+        
+        // Text search for religious places
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?` +
+        `query=church OR chapel OR cathedral&` +
+        `location=${params.latitude},${params.longitude}&` +
+        `radius=${params.radius}&` +
+        `key=${this.GOOGLE_PLACES_API_KEY}`
+      ];
+
+      const allResults = [];
+      const seenPlaceIds = new Set();
+
+      for (const searchUrl of searchQueries) {
+        try {
+          const response = await fetch(searchUrl);
+          const data = await response.json();
+
+          if (data.status === 'OK' && data.results) {
+            console.log(`Client-side query successful: Found ${data.results.length} results`);
+            for (const place of data.results) {
+              if (!seenPlaceIds.has(place.place_id)) {
+                seenPlaceIds.add(place.place_id);
+                allResults.push(place);
+              }
+            }
+          } else {
+            console.error('Client-side Google Places API error:', data.status, data.error_message);
+          }
+        } catch (error) {
+          console.error('Error with client-side query:', error);
+        }
+      }
+
+      // Process results
+      const churches = allResults.map((place: any) => {
+        const addressComponents = place.vicinity.split(', ');
+        const cityState = addressComponents[addressComponents.length - 1] || '';
+        const [city, state] = cityState.split(' ');
+
+        return {
+          id: place.place_id,
+          name: place.name,
+          address: place.vicinity,
+          city: city || '',
+          state: state || '',
+          zip: '',
+          phone: '',
+          website: '',
+          rating: place.rating,
+          review_count: place.user_ratings_total,
+          photos: place.photos?.map((photo: any) => 
+            `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photo.photo_reference}&key=${this.GOOGLE_PLACES_API_KEY}`
+          ) || [],
+          types: place.types,
+          coordinates: {
+            lat: place.geometry.location.lat,
+            lng: place.geometry.location.lng
+          },
+          distance: this.calculateDistance(
+            params.latitude,
+            params.longitude,
+            place.geometry.location.lat,
+            place.geometry.location.lng
+          ),
+          place_id: place.place_id
+        };
+      });
+
+      return churches.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      
+    } catch (error) {
+      console.error('Error with client-side church search:', error);
       return this.getFallbackChurches(params);
     }
   }

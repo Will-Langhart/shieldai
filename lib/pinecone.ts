@@ -7,11 +7,17 @@ let index: any = null;
 
 function initializePinecone() {
   if (!pc) {
-    pc = new Pinecone({
-      apiKey: process.env.PINECONE_API_KEY || '',
-      environment: process.env.PINECONE_ENVIRONMENT || 'nvidia',
-    });
-    index = pc.index(process.env.PINECONE_INDEX_NAME || 'shieldai');
+    const apiKey = process.env.PINECONE_API_KEY;
+    const environment = process.env.PINECONE_ENVIRONMENT || 'us-east-1';
+    const indexName = process.env.PINECONE_INDEX_NAME || 'shieldai';
+
+    if (!apiKey) {
+      throw new Error('Missing Pinecone configuration. Ensure PINECONE_API_KEY is set.');
+    }
+
+    // For serverless Pinecone, use us-east-1 environment
+    pc = new Pinecone({ apiKey, environment });
+    index = pc.index(indexName);
   }
   return { pc, index };
 }
@@ -67,7 +73,8 @@ export class PineconeService {
       console.log('Stored message embedding in Pinecone:', messageId);
     } catch (error) {
       console.error('Error storing message in Pinecone:', error);
-      throw error;
+      // Don't throw error to avoid breaking the main flow
+      // The message will still be stored in the database
     }
   }
 
@@ -153,7 +160,7 @@ export class PineconeService {
       console.log('Deleted conversation messages from Pinecone:', conversationId);
     } catch (error) {
       console.error('Error deleting conversation messages:', error);
-      throw error;
+      // Don't throw error to avoid breaking the main flow
     }
   }
 
@@ -169,7 +176,7 @@ export class PineconeService {
       console.log('Deleted user messages from Pinecone:', userId);
     } catch (error) {
       console.error('Error deleting user messages:', error);
-      throw error;
+      // Don't throw error to avoid breaking the main flow
     }
   }
 } 

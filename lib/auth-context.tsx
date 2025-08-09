@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Listen for auth changes
-    let authSubscription;
+    let authSubscription: any;
     try {
       const {
         data: { subscription },

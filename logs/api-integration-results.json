@@ -1,0 +1,104 @@
+{
+  "timestamp": "2025-08-08T16:51:44.768Z",
+  "services": {
+    "environment": {
+      "status": "error",
+      "present": [
+        "PINECONE_API_KEY"
+      ],
+      "missing": [
+        "OPENAI_API_KEY",
+        "PINECONE_ENVIRONMENT",
+        "PINECONE_INDEX_NAME",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "STRIPE_SECRET_KEY",
+        "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+        "BIBLE_API_KEY",
+        "NEXT_PUBLIC_GOOGLE_PLACES_API_KEY"
+      ]
+    },
+    "health": {
+      "status": "healthy",
+      "data": {
+        "status": "ok",
+        "message": "Shield AI API is working",
+        "timestamp": "2025-08-08T16:51:44.801Z"
+      }
+    },
+    "apiIntegration": {
+      "status": "healthy",
+      "data": {
+        "timestamp": "2025-08-08T16:51:44.822Z",
+        "environment": "development",
+        "services": {
+          "environment": {
+            "status": "missing_variables",
+            "missing": [
+              "SUPABASE_SERVICE_ROLE_KEY",
+              "STRIPE_SECRET_KEY",
+              "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"
+            ],
+            "present": [
+              "OPENAI_API_KEY",
+              "PINECONE_API_KEY",
+              "PINECONE_ENVIRONMENT",
+              "PINECONE_INDEX_NAME",
+              "NEXT_PUBLIC_SUPABASE_URL",
+              "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+              "BIBLE_API_KEY",
+              "NEXT_PUBLIC_GOOGLE_PLACES_API_KEY"
+            ]
+          },
+          "supabase": {
+            "status": "healthy",
+            "connected": true
+          },
+          "pinecone": {
+            "status": "error",
+            "error": "Pinecone index not available"
+          },
+          "bible": {
+            "status": "healthy",
+            "versionsCount": 285,
+            "sampleVersion": "The New Testament in Ahirani language"
+          },
+          "embeddings": {
+            "status": "healthy",
+            "embeddingLength": 1536,
+            "dimension": 1536
+          },
+          "stripe": {
+            "status": "error",
+            "error": "relation \"public.subscription_limits\" does not exist"
+          },
+          "churchFinder": {
+            "status": "healthy",
+            "churchesFound": 2,
+            "sampleChurch": "First Baptist Church"
+          },
+          "chat": {
+            "status": "healthy",
+            "message": "Chat service available (requires authentication for full test)"
+          }
+        },
+        "overall": {
+          "status": "degraded",
+          "healthyServices": 5,
+          "totalServices": 8,
+          "healthPercentage": 63
+        }
+      }
+    },
+    "database": {
+      "status": "unknown",
+      "message": "Requires app to be running"
+    }
+  },
+  "overall": {
+    "healthy": 2,
+    "total": 4,
+    "percentage": 50
+  }
+}

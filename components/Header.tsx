@@ -36,6 +36,8 @@ const Header: React.FC<HeaderProps> = ({
   onLanguageChange
 }) => {
   const { user, signOut } = useAuth();
+  // Debug logging
+  console.log('Header render - user:', user?.email, 'onNotesManagerClick:', !!onNotesManagerClick);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -183,7 +185,10 @@ const Header: React.FC<HeaderProps> = ({
           </button>
           {user && onNotesManagerClick && (
             <button 
-              onClick={onNotesManagerClick}
+              onClick={() => {
+                console.log('Notes button clicked in Header component');
+                onNotesManagerClick();
+              }}
               className={`p-2 rounded-xl transition-all duration-200 group ${
                 theme === 'dark' 
                   ? 'text-shield-white hover:bg-shield-light-gray/50' 
@@ -191,7 +196,7 @@ const Header: React.FC<HeaderProps> = ({
               }`} 
               title="Bible Study Notes - Manage your study notes and insights"
             >
-              <BookOpen size={20} className="group-hover:scale-110 transition-transform" />
+              <MessageSquare size={20} className="group-hover:scale-110 transition-transform" />
             </button>
           )}
           {user && (

@@ -14,6 +14,7 @@ interface LocationServicesTriggerProps {
   isOpen: boolean;
   onClose: () => void;
   onLocationEnabled: () => void;
+  onLocationCancelled?: () => void;
   theme?: 'light' | 'dark';
 }
 
@@ -21,6 +22,7 @@ const LocationServicesTrigger: React.FC<LocationServicesTriggerProps> = ({
   isOpen,
   onClose,
   onLocationEnabled,
+  onLocationCancelled,
   theme = 'dark'
 }) => {
   const [status, setStatus] = useState<'idle' | 'requesting' | 'success' | 'error'>('idle');
@@ -139,7 +141,10 @@ const LocationServicesTrigger: React.FC<LocationServicesTriggerProps> = ({
 
               <div className="flex space-x-3">
                 <button
-                  onClick={onClose}
+                  onClick={() => {
+                    onClose();
+                    onLocationCancelled?.();
+                  }}
                   className={`flex-1 px-4 py-3 rounded-lg border transition-colors ${
                     theme === 'dark'
                       ? 'border-gray-600 text-gray-300 hover:bg-gray-800'
@@ -227,7 +232,8 @@ const LocationServicesTrigger: React.FC<LocationServicesTriggerProps> = ({
                     }`}>
                       <li>• Click the location icon in your browser's address bar</li>
                       <li>• Select "Allow" when prompted</li>
-                      <li>• Refresh the page and try again</li>
+                      <li>• Or click "Try Again" below</li>
+                      <li>• You can also use manual search options</li>
                     </ul>
                   </div>
                 </div>
@@ -235,7 +241,10 @@ const LocationServicesTrigger: React.FC<LocationServicesTriggerProps> = ({
 
               <div className="flex space-x-3">
                 <button
-                  onClick={onClose}
+                  onClick={() => {
+                    onClose();
+                    onLocationCancelled?.();
+                  }}
                   className={`flex-1 px-4 py-3 rounded-lg border transition-colors ${
                     theme === 'dark'
                       ? 'border-gray-600 text-gray-300 hover:bg-gray-800'

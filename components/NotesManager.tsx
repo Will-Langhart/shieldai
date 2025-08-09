@@ -1,149 +1,213 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  BookOpen, Search, Filter, Star, Calendar, Tag, Eye, EyeOff,
-  Plus, Edit, Trash2, Download, Upload, Share2, Grid, List,
-  SortAsc, SortDesc, ChevronDown, X, RefreshCw
+  Search, Filter, SortAsc, SortDesc, Plus, Edit, Trash2, Star, 
+  Eye, EyeOff, Share2, Download, Calendar, Tag, BookOpen,
+  ChevronDown, ChevronRight, Save, RefreshCw, Grid, List
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
-import EnhancedNoteModal from './EnhancedNoteModal';
 import { NoteData } from '../types/notes';
 
 interface NotesManagerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  theme?: 'light' | 'dark';
+  className?: string;
+  onNoteSelect?: (note: NoteData) => void;
+  onNoteEdit?: (note: NoteData) => void;
+  onNoteDelete?: (noteId: string) => void;
 }
 
-type ViewMode = 'grid' | 'list';
-type SortField = 'lastModified' | 'dateCreated' | 'reference' | 'category';
-type SortOrder = 'asc' | 'desc';
+interface NotesFilter {
+  query: string;
+  category: string;
+  tags: string[];
+  visibility: string;
+  isFavorite: boolean;
+  startDate: string;
+  endDate: string;
+}
 
-const NOTE_CATEGORIES = [
-  'All Categories',
-  'Personal Study',
-  'Sermon Notes',
-  'Prayer Requests',
-  'Devotional',
-  'Apologetics',
-  'Theology',
-  'Life Application',
-  'Questions',
-  'Insights',
-  'Cross References'
-];
+interface SortOption {
+  field: 'lastModified' | 'dateCreated' | 'reference' | 'category';
+  direction: 'asc' | 'desc';
+}
 
-export default function NotesManager({
-  isOpen,
-  onClose,
-  theme = 'dark'
+export default function NotesManager({ 
+  className = '', 
+  onNoteSelect, 
+  onNoteEdit, 
+  onNoteDelete 
 }: NotesManagerProps) {
   const { user } = useAuth();
   const [notes, setNotes] = useState<NoteData[]>([]);
   const [filteredNotes, setFilteredNotes] = useState<NoteData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All Categories');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [sortField, setSortField] = useState<SortField>('lastModified');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Filter and search state
+  const [filters, setFilters] = useState<NotesFilter>({
+    query: '',
+    category: '',
+    tags: [],
+    visibility: '',
+    isFavorite: false,
+    startDate: '',
+    endDate: ''
+  });
+  
+  // Sort and view state
+  const [sortOption, setSortOption] = useState<SortOption>({
+    field: 'lastModified',
+    direction: 'desc'
+  });
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [showFilters, setShowFilters] = useState(false);
   
-  // Modal states
-  const [showNoteModal, setShowNoteModal] = useState(false);
-  const [selectedNote, setSelectedNote] = useState<NoteData | undefined>();
-  
-  // Stats
-  const [noteStats, setNoteStats] = useState({
-    total: 0,
-    favorites: 0,
-    categories: {} as Record<string, number>,
-    recentlyModified: 0
-  });
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalNotes, setTotalNotes] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const notesPerPage = 20;
+
+  // Categories and tags
+  const [categories, setCategories] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
 
   useEffect(() => {
-    if (isOpen && user?.id) {
+    if (user?.id) {
       loadNotes();
+      loadCategoriesAndTags();
     }
-  }, [isOpen, user?.id]);
+  }, [user?.id, currentPage]);
 
   useEffect(() => {
-    applyFiltersAndSort();
-  }, [notes, searchQuery, selectedCategory, selectedTags, showFavoritesOnly, sortField, sortOrder]);
+    applyFilters();
+  }, [notes, filters, sortOption]);
 
   const loadNotes = async () => {
     if (!user?.id) return;
-    
-    setLoading(true);
+
+    setIsLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch(`/api/bible/notes?userId=${user.id}&limit=1000`);
+      const params = new URLSearchParams({
+        userId: user.id,
+        limit: notesPerPage.toString(),
+        offset: ((currentPage - 1) * notesPerPage).toString()
+      });
+
+      // Add filters to params
+      if (filters.query) params.append('query', filters.query);
+      if (filters.category) params.append('category', filters.category);
+      if (filters.visibility) params.append('visibility', filters.visibility);
+      if (filters.isFavorite) params.append('isFavorite', 'true');
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.tags.length > 0) params.append('tags', filters.tags.join(','));
+
+      const response = await fetch(`/api/bible/notes/search?${params}`);
+      
       if (response.ok) {
         const data = await response.json();
-        setNotes(data);
-        calculateStats(data);
+        setNotes(data.notes || []);
+        setTotalNotes(data.total || 0);
+        setHasMore(data.pagination?.hasMore || false);
+      } else {
+        throw new Error('Failed to load notes');
       }
     } catch (error) {
       console.error('Error loading notes:', error);
+      setError('Failed to load notes');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const calculateStats = (notesData: NoteData[]) => {
-    const stats = {
-      total: notesData.length,
-      favorites: notesData.filter(note => note.isFavorite).length,
-      categories: {} as Record<string, number>,
-      recentlyModified: notesData.filter(note => {
-        const lastModified = new Date(note.lastModified);
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        return lastModified > weekAgo;
-      }).length
-    };
+  const loadCategoriesAndTags = async () => {
+    if (!user?.id) return;
 
-    notesData.forEach(note => {
-      stats.categories[note.category] = (stats.categories[note.category] || 0) + 1;
-    });
-
-    setNoteStats(stats);
+    try {
+      const response = await fetch(`/api/bible/notes?userId=${user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const allNotes = data.notes || [];
+        
+        // Extract unique categories
+        const categories: string[] = [];
+        allNotes.forEach((note: NoteData) => {
+          if (note.category && !categories.includes(note.category)) {
+            categories.push(note.category);
+          }
+        });
+        setCategories(categories);
+        
+        // Extract unique tags
+        const allTags: string[] = [];
+        allNotes.forEach((note: NoteData) => {
+          note.tags?.forEach(tag => {
+            if (!allTags.includes(tag)) {
+              allTags.push(tag);
+            }
+          });
+        });
+        setAllTags(allTags);
+      }
+    } catch (error) {
+      console.error('Error loading categories and tags:', error);
+    }
   };
 
-  const applyFiltersAndSort = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...notes];
 
-    // Apply search filter
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(note =>
-        note.note.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    // Apply text search
+    if (filters.query) {
+      const query = filters.query.toLowerCase();
+      filtered = filtered.filter(note => 
+        note.note.toLowerCase().includes(query) ||
+        note.reference.toLowerCase().includes(query) ||
+        note.tags?.some(tag => tag.toLowerCase().includes(query))
       );
     }
 
     // Apply category filter
-    if (selectedCategory !== 'All Categories') {
-      filtered = filtered.filter(note => note.category === selectedCategory);
+    if (filters.category) {
+      filtered = filtered.filter(note => note.category === filters.category);
+    }
+
+    // Apply visibility filter
+    if (filters.visibility) {
+      filtered = filtered.filter(note => note.visibility === filters.visibility);
+    }
+
+    // Apply favorite filter
+    if (filters.isFavorite) {
+      filtered = filtered.filter(note => note.isFavorite);
     }
 
     // Apply tag filter
-    if (selectedTags.length > 0) {
-      filtered = filtered.filter(note =>
-        selectedTags.some(tag => note.tags.includes(tag))
+    if (filters.tags.length > 0) {
+      filtered = filtered.filter(note => 
+        note.tags?.some(tag => filters.tags.includes(tag))
       );
     }
 
-    // Apply favorites filter
-    if (showFavoritesOnly) {
-      filtered = filtered.filter(note => note.isFavorite);
+    // Apply date filters
+    if (filters.startDate) {
+      filtered = filtered.filter(note => 
+        new Date(note.dateCreated) >= new Date(filters.startDate)
+      );
+    }
+
+    if (filters.endDate) {
+      filtered = filtered.filter(note => 
+        new Date(note.dateCreated) <= new Date(filters.endDate)
+      );
     }
 
     // Apply sorting
     filtered.sort((a, b) => {
       let aValue: any, bValue: any;
       
-      switch (sortField) {
+      switch (sortOption.field) {
         case 'lastModified':
           aValue = new Date(a.lastModified);
           bValue = new Date(b.lastModified);
@@ -153,78 +217,63 @@ export default function NotesManager({
           bValue = new Date(b.dateCreated);
           break;
         case 'reference':
-          aValue = a.reference.toLowerCase();
-          bValue = b.reference.toLowerCase();
+          aValue = a.reference;
+          bValue = b.reference;
           break;
         case 'category':
-          aValue = a.category.toLowerCase();
-          bValue = b.category.toLowerCase();
+          aValue = a.category;
+          bValue = b.category;
           break;
         default:
           return 0;
       }
 
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
+      if (sortOption.direction === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
     });
 
     setFilteredNotes(filtered);
+  }, [notes, filters, sortOption]);
+
+  const handleFilterChange = (key: keyof NotesFilter, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
-  const getAllTags = () => {
-    const allTags = new Set<string>();
-    notes.forEach(note => {
-      note.tags.forEach(tag => allTags.add(tag));
-    });
-    return Array.from(allTags).sort();
+  const handleSortChange = (field: SortOption['field']) => {
+    setSortOption(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'desc' ? 'asc' : 'desc'
+    }));
   };
 
-  const handleEditNote = (note: NoteData) => {
-    setSelectedNote(note);
-    setShowNoteModal(true);
-  };
-
-  const handleDeleteNote = async (noteId: string) => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
+  const handleNoteDelete = async (noteId: string) => {
+    if (!user?.id || !confirm('Are you sure you want to delete this note?')) return;
 
     try {
-      const response = await fetch(`/api/bible/notes/${noteId}?userId=${user?.id}`, {
+      const response = await fetch(`/api/bible/notes?noteId=${noteId}&userId=${user.id}`, {
         method: 'DELETE'
       });
 
       if (response.ok) {
-        setNotes(notes.filter(note => note.id !== noteId));
+        setNotes(prev => prev.filter(note => note.id !== noteId));
+        onNoteDelete?.(noteId);
       }
     } catch (error) {
       console.error('Error deleting note:', error);
-    }
-  };
-
-  const handleToggleFavorite = async (note: NoteData) => {
-    try {
-      const updatedNote = { ...note, isFavorite: !note.isFavorite };
-      
-      const response = await fetch('/api/bible/notes', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedNote)
-      });
-
-      if (response.ok) {
-        const savedNote = await response.json();
-        setNotes(notes.map(n => n.id === note.id ? savedNote : n));
-      }
-    } catch (error) {
-      console.error('Error updating favorite status:', error);
+      setError('Failed to delete note');
     }
   };
 
   const exportNotes = () => {
     const exportData = {
+      notes: filteredNotes,
       exportDate: new Date().toISOString(),
-      totalNotes: filteredNotes.length,
-      notes: filteredNotes
+      filters,
+      totalNotes: filteredNotes.length
     };
 
     const dataStr = JSON.stringify(exportData, null, 2);
@@ -237,539 +286,301 @@ export default function NotesManager({
     URL.revokeObjectURL(url);
   };
 
-  const toggleTag = (tag: string) => {
-    if (selectedTags.includes(tag)) {
-      setSelectedTags(selectedTags.filter(t => t !== tag));
-    } else {
-      setSelectedTags([...selectedTags, tag]);
-    }
-  };
-
   const clearFilters = () => {
-    setSearchQuery('');
-    setSelectedCategory('All Categories');
-    setSelectedTags([]);
-    setShowFavoritesOnly(false);
+    setFilters({
+      query: '',
+      category: '',
+      tags: [],
+      visibility: '',
+      isFavorite: false,
+      startDate: '',
+      endDate: ''
+    });
+    setCurrentPage(1);
   };
-
-  if (!isOpen) return null;
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className={`w-full max-w-7xl mx-4 rounded-2xl shadow-2xl overflow-hidden ${
-          theme === 'dark' 
-            ? 'bg-gray-900 border border-gray-700' 
-            : 'bg-white border border-gray-200'
-        }`} style={{ maxHeight: '95vh' }}>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${className}`}>
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Bible Notes Manager
+            </h3>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              ({totalNotes} notes)
+            </span>
+          </div>
           
-          {/* Header */}
-          <div className={`p-6 border-b flex items-center justify-between ${
-            theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'
-          }`}>
-            <div className="flex items-center space-x-4">
-              <BookOpen className={`w-6 h-6 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`} />
-              <div>
-                <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  Bible Study Notes
-                </h2>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Manage your biblical insights and reflections
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setShowNoteModal(true)}
-                className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
-                  theme === 'dark'
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                <Plus className="w-4 h-4" />
-                <span>New Note</span>
-              </button>
-              <button
-                onClick={onClose}
-                className={`p-2 rounded-lg transition-colors ${
-                  theme === 'dark'
-                    ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            >
+              {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
+            </button>
+            
+            <button
+              onClick={exportNotes}
+              className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+            
+            <button
+              onClick={loadNotes}
+              className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="space-y-3">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search notes by content, reference, or tags..."
+              value={filters.query}
+              onChange={(e) => handleFilterChange('query', e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
-          {/* Stats Bar */}
-          <div className={`px-6 py-4 border-b grid grid-cols-2 md:grid-cols-4 gap-4 ${
-            theme === 'dark' ? 'border-gray-700 bg-gray-850' : 'border-gray-200 bg-gray-25'
-          }`}>
-            <div className="text-center">
-              <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
-                {noteStats.total}
-              </p>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Total Notes
-              </p>
-            </div>
-            <div className="text-center">
-              <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-yellow-400' : 'text-yellow-600'}`}>
-                {noteStats.favorites}
-              </p>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Favorites
-              </p>
-            </div>
-            <div className="text-center">
-              <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-green-400' : 'text-green-600'}`}>
-                {Object.keys(noteStats.categories).length}
-              </p>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Categories
-              </p>
-            </div>
-            <div className="text-center">
-              <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}>
-                {noteStats.recentlyModified}
-              </p>
-              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                Recent
-              </p>
-            </div>
+          {/* Filter Toggle */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            >
+              <Filter className="w-4 h-4" />
+              <span>Filters</span>
+              {showFilters ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+
+            {(filters.category || filters.visibility || filters.isFavorite || filters.tags.length > 0 || filters.startDate || filters.endDate) && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
 
-          {/* Filters and Search */}
-          <div className={`p-6 border-b space-y-4 ${
-            theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
-          }`}>
-            {/* Search and View Controls */}
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                }`} />
+          {/* Filter Panel */}
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              {/* Category Filter */}
+              <select
+                value={filters.category}
+                onChange={(e) => handleFilterChange('category', e.target.value)}
+                className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+              >
+                <option value="">All Categories</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+
+              {/* Visibility Filter */}
+              <select
+                value={filters.visibility}
+                onChange={(e) => handleFilterChange('visibility', e.target.value)}
+                className="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+              >
+                <option value="">All Visibility</option>
+                <option value="private">Private</option>
+                <option value="shared">Shared</option>
+                <option value="public">Public</option>
+              </select>
+
+              {/* Favorite Filter */}
+              <label className="flex items-center space-x-2 text-sm">
                 <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search notes, references, or tags..."
-                  className={`w-full pl-10 pr-4 py-2 rounded-lg border transition-colors ${
-                    theme === 'dark'
-                      ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400'
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                  type="checkbox"
+                  checked={filters.isFavorite}
+                  onChange={(e) => handleFilterChange('isFavorite', e.target.checked)}
+                  className="rounded border-gray-300 dark:border-gray-600"
+                />
+                <span className="text-gray-700 dark:text-gray-300">Favorites Only</span>
+              </label>
+
+              {/* Date Range */}
+              <div className="flex space-x-2">
+                <input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                  className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  placeholder="Start Date"
+                />
+                <input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                  className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                  placeholder="End Date"
                 />
               </div>
-              
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
-                    showFilters
-                      ? theme === 'dark'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-blue-600 text-white'
-                      : theme === 'dark'
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <Filter className="w-4 h-4" />
-                  <span>Filters</span>
-                </button>
-
-                <div className="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 transition-colors ${
-                      viewMode === 'grid'
-                        ? theme === 'dark'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-600 text-white'
-                        : theme === 'dark'
-                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Grid className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 transition-colors ${
-                      viewMode === 'list'
-                        ? theme === 'dark'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-600 text-white'
-                        : theme === 'dark'
-                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <button
-                  onClick={exportNotes}
-                  className={`p-2 rounded-lg transition-colors ${
-                    theme === 'dark'
-                      ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                  }`}
-                  title="Export notes"
-                >
-                  <Download className="w-4 h-4" />
-                </button>
-
-                <button
-                  onClick={loadNotes}
-                  disabled={loading}
-                  className={`p-2 rounded-lg transition-colors ${
-                    theme === 'dark'
-                      ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700 disabled:opacity-50'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50'
-                  }`}
-                  title="Refresh notes"
-                >
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
             </div>
-
-            {/* Advanced Filters */}
-            {showFilters && (
-              <div className={`p-4 rounded-lg border ${
-                theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
-              }`}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Category Filter */}
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${
-                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      Category
-                    </label>
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className={`w-full px-3 py-2 rounded-lg border transition-colors ${
-                        theme === 'dark'
-                          ? 'bg-gray-700 border-gray-600 text-white'
-                          : 'bg-white border-gray-300 text-gray-900'
-                      }`}
-                    >
-                      {NOTE_CATEGORIES.map(category => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Sort Options */}
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${
-                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      Sort By
-                    </label>
-                    <div className="flex space-x-2">
-                      <select
-                        value={sortField}
-                        onChange={(e) => setSortField(e.target.value as SortField)}
-                        className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${
-                          theme === 'dark'
-                            ? 'bg-gray-700 border-gray-600 text-white'
-                            : 'bg-white border-gray-300 text-gray-900'
-                        }`}
-                      >
-                        <option value="lastModified">Last Modified</option>
-                        <option value="dateCreated">Date Created</option>
-                        <option value="reference">Reference</option>
-                        <option value="category">Category</option>
-                      </select>
-                      <button
-                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                        className={`px-3 py-2 rounded-lg border transition-colors ${
-                          theme === 'dark'
-                            ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Quick Filters */}
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${
-                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      Quick Filters
-                    </label>
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                        className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg border transition-colors ${
-                          showFavoritesOnly
-                            ? theme === 'dark'
-                              ? 'bg-yellow-600/20 border-yellow-500 text-yellow-300'
-                              : 'bg-yellow-50 border-yellow-300 text-yellow-700'
-                            : theme === 'dark'
-                              ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
-                              : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        <Star className="w-4 h-4" fill={showFavoritesOnly ? 'currentColor' : 'none'} />
-                        <span>Favorites Only</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tags Filter */}
-                {getAllTags().length > 0 && (
-                  <div className="mt-4">
-                    <label className={`block text-sm font-medium mb-2 ${
-                      theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
-                      Filter by Tags
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {getAllTags().map(tag => (
-                        <button
-                          key={tag}
-                          onClick={() => toggleTag(tag)}
-                          className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                            selectedTags.includes(tag)
-                              ? theme === 'dark'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-blue-600 text-white'
-                              : theme === 'dark'
-                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
-                        >
-                          {tag}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Clear Filters */}
-                <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={clearFilters}
-                    className={`px-4 py-2 text-sm rounded-lg transition-colors ${
-                      theme === 'dark'
-                        ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                    }`}
-                  >
-                    Clear All Filters
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Notes Display */}
-          <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(95vh - 400px)' }}>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-                <span className={`ml-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Loading notes...
-                </span>
-              </div>
-            ) : filteredNotes.length === 0 ? (
-              <div className="text-center py-12">
-                <BookOpen className={`w-16 h-16 mx-auto mb-4 ${
-                  theme === 'dark' ? 'text-gray-600' : 'text-gray-400'
-                }`} />
-                <h3 className={`text-xl font-semibold mb-2 ${
-                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                }`}>
-                  {notes.length === 0 ? 'No notes yet' : 'No notes match your filters'}
-                </h3>
-                <p className={`text-sm mb-4 ${
-                  theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
-                }`}>
-                  {notes.length === 0 
-                    ? 'Start creating study notes to track your biblical insights'
-                    : 'Try adjusting your search or filter criteria'
-                  }
-                </p>
-                {notes.length === 0 && (
-                  <button
-                    onClick={() => setShowNoteModal(true)}
-                    className={`px-6 py-3 rounded-lg transition-colors ${
-                      theme === 'dark'
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                  >
-                    Create Your First Note
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className={`${
-                viewMode === 'grid' 
-                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
-                  : 'space-y-4'
-              }`}>
-                {filteredNotes.map(note => (
-                  <div
-                    key={note.id}
-                    className={`rounded-lg border transition-all duration-200 hover:shadow-lg ${
-                      theme === 'dark'
-                        ? 'bg-gray-800 border-gray-700 hover:border-gray-600'
-                        : 'bg-white border-gray-200 hover:border-gray-300'
-                    } ${viewMode === 'list' ? 'flex items-start space-x-4 p-4' : 'p-5'}`}
-                  >
-                    {/* Color Indicator */}
-                    <div 
-                      className={`w-1 h-full absolute left-0 top-0 rounded-l-lg ${
-                        viewMode === 'grid' ? 'relative w-full h-1 rounded-t-lg' : ''
-                      }`}
-                      style={{ backgroundColor: note.color }}
-                    />
-
-                    <div className={`${viewMode === 'list' ? 'flex-1' : ''}`}>
-                      {/* Note Header */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className={`font-semibold ${
-                            theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-                          }`}>
-                            {note.reference}
-                          </h3>
-                          <p className={`text-sm ${
-                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                          }`}>
-                            {note.category}
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <button
-                            onClick={() => handleToggleFavorite(note)}
-                            className={`p-1 rounded transition-colors ${
-                              note.isFavorite 
-                                ? 'text-yellow-500' 
-                                : theme === 'dark'
-                                  ? 'text-gray-600 hover:text-yellow-500'
-                                  : 'text-gray-400 hover:text-yellow-500'
-                            }`}
-                          >
-                            <Star className="w-4 h-4" fill={note.isFavorite ? 'currentColor' : 'none'} />
-                          </button>
-                          <button
-                            onClick={() => handleEditNote(note)}
-                            className={`p-1 rounded transition-colors ${
-                              theme === 'dark'
-                                ? 'text-gray-600 hover:text-gray-400'
-                                : 'text-gray-400 hover:text-gray-600'
-                            }`}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteNote(note.id)}
-                            className={`p-1 rounded transition-colors ${
-                              theme === 'dark'
-                                ? 'text-gray-600 hover:text-red-400'
-                                : 'text-gray-400 hover:text-red-500'
-                            }`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Note Content */}
-                      <p className={`text-sm mb-3 line-clamp-3 ${
-                        theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
-                        {note.note}
-                      </p>
-
-                      {/* Tags */}
-                      {note.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {note.tags.slice(0, 3).map(tag => (
-                            <span
-                              key={tag}
-                              className={`px-2 py-1 text-xs rounded-full ${
-                                theme === 'dark'
-                                  ? 'bg-blue-400/20 text-blue-300'
-                                  : 'bg-blue-100 text-blue-800'
-                              }`}
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {note.tags.length > 3 && (
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              theme === 'dark'
-                                ? 'bg-gray-700 text-gray-400'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}>
-                              +{note.tags.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Meta Info */}
-                      <div className={`flex items-center justify-between text-xs ${
-                        theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
-                      }`}>
-                        <span>
-                          {new Date(note.lastModified).toLocaleDateString()}
-                        </span>
-                        {note.crossReferences && note.crossReferences.length > 0 && (
-                          <span className="flex items-center space-x-1">
-                            <BookOpen className="w-3 h-3" />
-                            <span>{note.crossReferences.length} refs</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Enhanced Note Modal */}
-      {showNoteModal && (
-        <EnhancedNoteModal
-          isOpen={showNoteModal}
-          onClose={() => {
-            setShowNoteModal(false);
-            setSelectedNote(undefined);
-          }}
-          existingNote={selectedNote}
-          onNoteCreated={(note) => {
-            setNotes([...notes, note]);
-            setSelectedNote(undefined);
-          }}
-          onNoteUpdated={(note) => {
-            setNotes(notes.map(n => n.id === note.id ? note : n));
-            setSelectedNote(undefined);
-          }}
-          onNoteDeleted={(noteId) => {
-            setNotes(notes.filter(n => n.id !== noteId));
-          }}
-          theme={theme}
-        />
-      )}
-    </>
+      {/* Content */}
+      <div className="p-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-600 dark:text-red-400">
+            <p>{error}</p>
+            <button
+              onClick={loadNotes}
+              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
+        ) : filteredNotes.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>No notes found</p>
+            <p className="text-sm mt-1">Try adjusting your filters or create a new note</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Sort Controls */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Sort by:</span>
+                {(['lastModified', 'dateCreated', 'reference', 'category'] as const).map(field => (
+                  <button
+                    key={field}
+                    onClick={() => handleSortChange(field)}
+                    className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                      sortOption.field === field
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {field === 'lastModified' ? 'Modified' : 
+                     field === 'dateCreated' ? 'Created' : 
+                     field === 'reference' ? 'Reference' : 'Category'}
+                    {sortOption.field === field && (
+                      sortOption.direction === 'asc' ? <SortAsc className="w-3 h-3 ml-1" /> : <SortDesc className="w-3 h-3 ml-1" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {filteredNotes.length} of {totalNotes} notes
+              </span>
+            </div>
+
+            {/* Notes Grid/List */}
+            <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'}>
+              {filteredNotes.map((note) => (
+                <div
+                  key={note.id}
+                  className={`border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
+                    viewMode === 'grid' ? 'h-48 overflow-hidden' : ''
+                  }`}
+                  onClick={() => onNoteSelect?.(note)}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <span 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: note.color || '#3B82F6' }}
+                      />
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {note.reference}
+                      </span>
+                      {note.isFavorite && <Star className="w-4 h-4 text-yellow-600" />}
+                    </div>
+                    
+                    <div className="flex items-center space-x-1">
+                      {note.visibility === 'private' ? (
+                        <EyeOff className="w-4 h-4 text-gray-400" />
+                      ) : note.visibility === 'shared' ? (
+                        <Share2 className="w-4 h-4 text-blue-400" />
+                      ) : (
+                        <Eye className="w-4 h-4 text-green-400" />
+                      )}
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onNoteEdit?.(note);
+                        }}
+                        className="p-1 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNoteDelete(note.id);
+                        }}
+                        className="p-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <p className={`text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed ${
+                    viewMode === 'grid' ? 'line-clamp-4' : ''
+                  }`}>
+                    {note.note}
+                  </p>
+                  
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center space-x-2">
+                      {note.category && (
+                        <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                          {note.category}
+                        </span>
+                      )}
+                      <Calendar className="w-3 h-3" />
+                      <span>{new Date(note.lastModified).toLocaleDateString()}</span>
+                    </div>
+                    
+                    {note.tags && note.tags.length > 0 && (
+                      <div className="flex items-center space-x-1">
+                        <Tag className="w-3 h-3" />
+                        <span>{note.tags.length} tag{note.tags.length !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {hasMore && (
+              <div className="flex items-center justify-center pt-4">
+                <button
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Load More Notes
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

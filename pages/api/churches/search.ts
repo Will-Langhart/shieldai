@@ -72,7 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Search for ALL places of worship and religious institutions
+    // Search specifically for Christian churches and Christian places of worship
     const searchQueries = [
       // Primary church search
       `${GOOGLE_PLACES_BASE_URL}/nearbysearch/json?` +
@@ -81,16 +81,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       `type=church&` +
       `key=${GOOGLE_PLACES_API_KEY}`,
       
-      // Search for all places of worship
-      `${GOOGLE_PLACES_BASE_URL}/nearbysearch/json?` +
+      // Text search for Christian churches specifically
+      `${GOOGLE_PLACES_BASE_URL}/textsearch/json?` +
+      `query=Christian church OR Baptist church OR Catholic church OR Methodist church OR Presbyterian church OR Lutheran church OR Episcopal church OR Pentecostal church OR Assembly of God OR Church of Christ&` +
       `location=${latitude},${longitude}&` +
       `radius=${radius || 25000}&` +
-      `type=place_of_worship&` +
       `key=${GOOGLE_PLACES_API_KEY}`,
       
-      // Search for religious organizations
+      // Search for Christian denominations
       `${GOOGLE_PLACES_BASE_URL}/textsearch/json?` +
-      `query=church OR chapel OR cathedral OR temple OR synagogue OR mosque OR religious center&` +
+      `query=church chapel cathedral Christian worship center&` +
       `location=${latitude},${longitude}&` +
       `radius=${radius || 25000}&` +
       `key=${GOOGLE_PLACES_API_KEY}`,
@@ -196,7 +196,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // Get additional details for each church
           const detailsUrl = `${GOOGLE_PLACES_BASE_URL}/details/json?` +
             `place_id=${place.place_id}&` +
-            `fields=formatted_phone_number,website,rating,user_ratings_total,photos&` +
+            `fields=formatted_phone_number,website,rating,user_ratings_total,photos,formatted_address&` +
             `key=${GOOGLE_PLACES_API_KEY}`;
 
           const detailsResponse = await fetch(detailsUrl);
@@ -222,7 +222,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return {
             id: place.place_id,
             name: place.name,
-            address: place.vicinity,
+            address: details.formatted_address || place.vicinity,
             city: city || '',
             state: state || '',
             zip: '',
@@ -231,6 +231,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             rating: place.rating,
             review_count: details.user_ratings_total,
             photos: place.photos?.map((photo: any) => 
+              `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photo.photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
+            ) || details.photos?.map((photo: any) => 
               `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photo.photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
             ) || [],
             types: place.types,
@@ -248,11 +250,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     );
 
-    // Filter out any null results and sort by distance
+    // Filter out any null results and filter for Christian churches only
     const validChurches = churchesWithDetails
-      .filter((church: any) => church !== null)
+      .filter((church: any) => {
+        if (church === null) return false;
+        
+        // Filter for Christian churches only
+        const name = church.name.toLowerCase();
+        const types = church.types || [];
+        
+        // Include if it has church-related types or names
+        const isChurch = types.includes('church') || 
+                        types.includes('place_of_worship') ||
+                        name.includes('church') ||
+                        name.includes('chapel') ||
+                        name.includes('cathedral') ||
+                        name.includes('baptist') ||
+                        name.includes('catholic') ||
+                        name.includes('methodist') ||
+                        name.includes('presbyterian') ||
+                        name.includes('lutheran') ||
+                        name.includes('episcopal') ||
+                        name.includes('pentecostal') ||
+                        name.includes('assembly of god') ||
+                        name.includes('church of christ');
+        
+        // Exclude non-Christian religious institutions
+        const isNonChristian = name.includes('synagogue') ||
+                              name.includes('mosque') ||
+                              name.includes('temple') ||
+                              name.includes('buddhist') ||
+                              name.includes('hindu') ||
+                              name.includes('sikh') ||
+                              name.includes('jewish') ||
+                              name.includes('islamic');
+        
+        return isChurch && !isNonChristian;
+      })
       .sort((a: any, b: any) => (a.distance || 0) - (b.distance || 0));
 
+    console.log(`✅ Found ${validChurches.length} Christian churches after filtering`);
     res.status(200).json({ churches: validChurches });
   } catch (error) {
     console.error('Error searching churches:', error);
