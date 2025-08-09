@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "apps/mobile"
   ],
   "packageManager": "npm@10",
   "scripts": {
@@ -15,4 +16,3 @@
     "postinstall": "echo Monorepo bootstrap complete"
   }
 }
-
