@@ -64,7 +64,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       'colorado springs': { lat: 38.8339, lng: -104.8214, name: 'Colorado Springs, CO' },
       'raleigh': { lat: 35.7796, lng: -78.6382, name: 'Raleigh, NC' },
       'omaha': { lat: 41.2565, lng: -95.9345, name: 'Omaha, NE' },
-      'miami': { lat: 25.7617, lng: -80.1918, name: 'Miami, FL' },
       'oakland': { lat: 37.8044, lng: -122.2711, name: 'Oakland, CA' },
       'minneapolis': { lat: 44.9778, lng: -93.2650, name: 'Minneapolis, MN' },
       'tulsa': { lat: 36.1540, lng: -95.9928, name: 'Tulsa, OK' },
