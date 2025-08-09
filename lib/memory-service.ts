@@ -195,7 +195,12 @@ export class MemoryService {
     userId: string
   ): Promise<string> {
     try {
-      const messages = await ChatService.getMessages(conversationId);
+      const rawMessages = await ChatService.getMessages(conversationId);
+      const messages = rawMessages.map(msg => ({
+        content: msg.content,
+        role: msg.role,
+        timestamp: msg.created_at,
+      }));
       if (messages.length === 0) return '';
 
       const conversationText = messages
