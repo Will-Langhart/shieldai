@@ -28,7 +28,8 @@ export default async function handler(
   }
 
   try {
-    const { message, mode = 'fast', sessionId = 'default', conversationId } = req.body;
+    const { message, mode = 'fast', sessionId = 'default', conversationId, stream } = req.body || {};
+    const shouldStream = Boolean(stream) || req.query.stream === '1' || req.query.stream === 'true';
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -249,6 +250,114 @@ Please reference relevant previous discussions when appropriate and maintain con
       messages.splice(-1, 0, { role: 'system', content: verseContext });
     }
 
+    // If streaming requested, stream tokens as they arrive
+    if (shouldStream) {
+      // Prepare headers for chunked streaming
+      res.writeHead(200, {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no'
+      });
+
+      let fullText = '';
+
+      try {
+        const streamResp = await openai.chat.completions.create({
+          model: model,
+          max_tokens: maxTokens,
+          temperature: temperature,
+          messages: messages,
+          stream: true,
+        });
+
+        for await (const chunk of streamResp) {
+          const delta = (chunk as any)?.choices?.[0]?.delta?.content || '';
+          if (delta) {
+            fullText += delta;
+            res.write(delta);
+          }
+        }
+
+        // Analytics and persistence after completion
+        if (user) {
+          try {
+            AnalyticsService.trackResponse(
+              user.id,
+              fullText,
+              objectionAnalysis.responseStrategy,
+              objectionAnalysis.primaryType,
+              sessionId,
+              conversationId
+            );
+          } catch (e) {
+            console.error('Error tracking streamed response:', e);
+          }
+        }
+
+        let currentConvId = conversationId as string | undefined;
+        let isNewConversation = false;
+        if (user) {
+          try {
+            if (!currentConvId) {
+              const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
+              const conversation = await ChatService.createConversation(title, serverSupabase);
+              currentConvId = conversation.id;
+              isNewConversation = true;
+              console.log('Created new conversation (stream):', currentConvId, conversation.title);
+            }
+
+            await ChatService.addMessage(currentConvId!, message, 'user', mode, serverSupabase);
+            if (fullText) {
+              await ChatService.addMessage(currentConvId!, fullText, 'assistant', mode, serverSupabase);
+            }
+
+            try {
+              const messagesToStore = await ChatService.getMessages(currentConvId!, serverSupabase);
+              await MemoryService.storeConversationMemory(
+                currentConvId!,
+                user.id,
+                messagesToStore.map(msg => ({
+                  content: msg.content,
+                  role: msg.role as any,
+                  timestamp: msg.created_at,
+                })),
+                {
+                  mode,
+                  objectionType: objectionAnalysis.primaryType,
+                  emotionalTone: objectionAnalysis.intensity,
+                  keyThemes: objectionAnalysis.keyThemes,
+                }
+              );
+            } catch (memoryError) {
+              console.error('Error storing conversation memory (stream):', memoryError);
+            }
+          } catch (error) {
+            console.error('Error saving streamed messages to database:', error);
+          }
+        }
+
+        // Update in-memory conversation history
+        conversationHistory.push(
+          { role: 'user', content: message },
+          { role: 'assistant', content: fullText || 'No response generated' }
+        );
+        conversationStore.set(sessionId, conversationHistory);
+
+        res.end();
+        return; // Important: stop further JSON response handling
+      } catch (streamErr) {
+        console.error('Streaming error:', streamErr);
+        try {
+          res.write('\n');
+        } catch (_) {}
+        res.end();
+        return;
+      }
+    }
+
+    // Fallback: non-streaming response
     const response = await openai.chat.completions.create({
       model: model,
       max_tokens: maxTokens,

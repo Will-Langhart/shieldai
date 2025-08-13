@@ -134,7 +134,8 @@ export default function ConversationPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const sessionToken = session?.access_token;
 
-      const response = await fetch('/api/chat', {
+      // Streaming request
+      const response = await fetch('/api/chat?stream=1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,24 +145,44 @@ export default function ConversationPage() {
           message,
           mode: currentMode,
           conversationId: conversationId,
-          sessionId: conversationId
+          sessionId: conversationId,
+          stream: true,
         }),
       });
 
-      if (!response.ok) {
+      if (!response.ok || !response.body) {
         throw new Error('Failed to get response from AI');
       }
 
-      const data = await response.json();
-      
-      const aiMessage: Message = {
+      // Create a new assistant message and incrementally append
+      const newAssistantMessage: Message = {
         role: 'assistant',
-        content: data.response,
-        timestamp: data.timestamp,
-        mode: data.mode
+        content: '',
+        timestamp: new Date().toISOString(),
+        mode: currentMode,
       };
+      setMessages(prev => [...prev, newAssistantMessage]);
 
-      setMessages(prev => [...prev, aiMessage]);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let aggregated = '';
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          aggregated += chunk;
+          setMessages(prev => {
+            const updated = [...prev];
+            const lastIndex = updated.length - 1;
+            if (lastIndex >= 0 && updated[lastIndex].role === 'assistant') {
+              updated[lastIndex] = { ...updated[lastIndex], content: aggregated };
+            }
+            return updated;
+          });
+        }
+      }
 
       // Trigger conversation history refresh since messages are saved by the API
       if (user) {
@@ -294,12 +315,12 @@ export default function ConversationPage() {
                     className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg ${
                       message.role === 'user' 
                         ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white' 
-                        : 'bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50 text-shield-white'
+                        : 'bg-transparent border border-gray-700/50 text-shield-white'
                     }`}
                   >
                     <div className="flex items-start space-x-2 sm:space-x-3">
                       {message.role === 'assistant' && (
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
                           <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
                         </div>
                       )}
@@ -319,7 +340,7 @@ export default function ConversationPage() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-shield-white leading-relaxed text-sm sm:text-base">{message.content}</p>
+                         <p className="text-shield-white leading-relaxed text-sm sm:text-base">{message.content}</p>
                         {message.timestamp && (
                           <p className="text-gray-400 text-xs mt-2 opacity-60">
                             {new Date(message.timestamp).toLocaleTimeString()}

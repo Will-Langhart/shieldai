@@ -58,12 +58,12 @@ const MobileMessage: React.FC<MobileMessageProps> = ({
       <div
         className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg min-w-0 message-bubble-mobile ${
           message.role === 'user' 
-            ? theme === 'dark'
+            ? (theme === 'dark'
               ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white'
-              : 'bg-blue-100 border border-blue-200 text-gray-900'
-            : theme === 'dark'
+              : 'bg-blue-100 border border-blue-200 text-gray-900')
+            : (theme === 'dark'
               ? 'bg-transparent border border-gray-700/30 text-shield-white'
-              : 'bg-transparent border border-gray-200 text-gray-900'
+              : 'bg-transparent border border-gray-200 text-gray-900')
         }`}
       >
         <div className="flex items-start space-x-2 sm:space-x-3">

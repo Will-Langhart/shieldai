@@ -394,44 +394,61 @@ export default function Home() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/chat?stream=1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           message,
           conversationId: currentConversationId,
           mode: currentMode,
-          developerMode: user?.email === 'langhartcw@gmail.com'
+          developerMode: user?.email === 'langhartcw@gmail.com',
+          stream: true,
         })
       });
 
-      const data = await response.json();
-
-      if (data.error) {
-        if (data.requiresUpgrade) {
-          setShowUpgradePrompt(true);
-        } else {
-          console.error('Chat error:', data.error);
-        }
-        return;
+      if (!response.ok || !response.body) {
+        console.error('Chat response not OK');
+        throw new Error('Failed to stream response');
       }
 
-      const assistantMessage: Message = {
+      // Add an empty assistant message and stream into it
+      setMessages(prev => [...prev, {
         role: 'assistant',
-        content: data.response,
+        content: '',
         timestamp: new Date().toISOString(),
-        mode: currentMode
-      };
+        mode: currentMode,
+      }]);
 
-      setMessages(prev => [...prev, assistantMessage]);
-
-
-
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let aggregated = '';
+      let done = false;
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          aggregated += chunk;
+          setMessages(prev => {
+            const updated = [...prev];
+            const lastIndex = updated.length - 1;
+            if (lastIndex >= 0 && updated[lastIndex].role === 'assistant') {
+              updated[lastIndex] = { ...updated[lastIndex], content: aggregated };
+            }
+            return updated;
+          });
+        }
+      }
     } catch (error) {
       console.error('Error sending message:', error);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Sorry, I had trouble responding. Please try again.',
+        timestamp: new Date().toISOString(),
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -602,12 +619,12 @@ export default function Home() {
                         <div
                           className={`max-w-xs sm:max-w-md lg:max-w-3xl px-5 sm:px-6 py-4 sm:py-5 rounded-2xl shadow-lg min-w-0 message-bubble-mobile transition-all duration-200 hover:shadow-xl ${
                             message.role === 'user' 
-                              ? resolvedTheme === 'dark'
+                              ? (resolvedTheme === 'dark'
                                 ? 'bg-gradient-to-r from-shield-blue/10 to-shield-blue/20 border border-shield-blue/30 text-shield-white backdrop-blur-sm'
-                                : 'bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 text-gray-900'
-                              : resolvedTheme === 'dark'
-                                ? 'bg-gradient-to-r from-gray-800/40 to-gray-900/40 border border-gray-700/50 text-shield-white backdrop-blur-sm'
-                                : 'bg-gradient-to-r from-gray-50 to-white border border-gray-200 text-gray-900'
+                                : 'bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 text-gray-900')
+                              : (resolvedTheme === 'dark'
+                                ? 'bg-transparent border border-gray-700/50 text-shield-white'
+                                : 'bg-transparent border border-gray-200 text-gray-900')
                           }`}
                         >
                           <div className="flex items-start space-x-2 sm:space-x-3">
@@ -646,7 +663,7 @@ export default function Home() {
                                 <MessageRenderer
                                   content={message.content}
                                   theme={resolvedTheme}
-                                  animated={index === messages.length - 1 && message.role === 'assistant'}
+                                  animated={!(index === messages.length - 1 && isLoading && message.role === 'assistant')}
                                   className="message-scrollbar"
                                   onCopy={(text) => {
                                     navigator.clipboard.writeText(text);
