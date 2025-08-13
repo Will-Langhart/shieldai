@@ -564,46 +564,62 @@ export default function Home() {
             <div className={`flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 sm:py-6 ${hasMessages ? 'justify-start' : 'justify-center flex items-center'} swipe-area`}>
               {/* Shield AI Logo and Branding - Only show when no messages */}
               {!hasMessages && (
-                <div className="text-center mb-8 sm:mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="flex flex-col sm:flex-row items-center justify-center mb-6 sm:mb-8">
-                    <img src="/logo.png" alt="Shield AI Logo" className="w-32 h-32 sm:w-48 sm:h-48 lg:w-56 lg:h-56 mb-4 sm:mb-0 sm:mr-3 drop-shadow-lg" />
-                    <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold drop-shadow-lg ${
-                      resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
-                    }`}>Shield AI</h1>
-                  </div>
-                  <p className={`text-base sm:text-lg max-w-2xl mx-auto mb-4 sm:mb-6 leading-relaxed px-4 ${
-                    resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                  }`}>
-                    Your AI-powered apologetics companion. Ask me anything about theology, philosophy, or defending the Christian worldview.
-                  </p>
-                  <div className="text-center mb-6 sm:mb-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
-                    <p className={`text-xs sm:text-sm px-4 ${
-                      resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                <div className="text-center mb-10 sm:mb-14 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  {/* Hero banner matching BibleAI structure but with Shield AI brand */}
+                  <div className="relative rounded-2xl overflow-hidden">
+                    <div className={`px-6 sm:px-10 py-16 sm:py-24 rounded-2xl ${
+                      resolvedTheme === 'dark' ? 'bg-shield-black' : 'bg-white'
                     }`}>
-                      By messaging Shield AI, you agree to our{' '}
-                      <a href="#" className={`hover:underline transition-colors ${
-                        resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
-                      }`}>Terms</a>
-                      {' '}and{' '}
-                      <a href="#" className={`hover:underline transition-colors ${
-                        resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
-                      }`}>Privacy Policy</a>
-                    </p>
-                  </div>
-                  {user && (
-                    <div className="text-center">
-                      <p className={`text-sm font-medium ${
-                        resolvedTheme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
-                      }`}>
-                        Signed in as {user.email}
-                      </p>
-                      <p className={`text-xs mt-1 ${
-                        resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        Your conversations will be saved automatically
-                      </p>
+                      <div className="flex flex-col items-center">
+                        <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight ${
+                          resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
+                        }`}>
+                          Discover The Most Advanced Apologetics Assistant
+                        </h1>
+                        <p className={`mt-4 text-sm sm:text-base max-w-3xl ${
+                          resolvedTheme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
+                          Ask theology questions, explore scripture context, and get thoughtful, Bible-informed answers.
+                        </p>
+                        {/* Search bar style */}
+                        <div className="mt-8 w-full max-w-3xl">
+                          <div className={`flex items-center rounded-xl border shadow-inner ${
+                            resolvedTheme === 'dark' ? 'bg-[#1f1f1f] border-gray-700' : 'bg-white border-gray-200'
+                          }`}> 
+                            <input
+                              type="text"
+                              className={`flex-1 px-4 sm:px-5 py-3 sm:py-4 rounded-l-xl focus:outline-none ${
+                                resolvedTheme === 'dark' ? 'bg-transparent text-white placeholder-gray-400' : 'bg-transparent text-gray-900 placeholder-gray-500'
+                              }`}
+                              placeholder="Ask a question... e.g., Where was Jesus born?"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const val = (e.target as HTMLInputElement).value;
+                                  if (val) handleSubmit(val);
+                                }
+                              }}
+                            />
+                            <button
+                              onClick={() => {
+                                const el = document.querySelector('input[type="text"]') as HTMLInputElement;
+                                if (el && el.value) handleSubmit(el.value);
+                              }}
+                              className={`mx-2 my-2 px-4 py-2 rounded-lg text-sm font-medium ${
+                                resolvedTheme === 'dark' ? 'bg-shield-blue text-white hover:bg-blue-600' : 'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
+                            >
+                              Search
+                            </button>
+                          </div>
+                        </div>
+                        {user && (
+                          <p className={`mt-4 text-xs ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                            Signed in as {user.email}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
 
@@ -786,6 +802,7 @@ export default function Home() {
                   isLoading={isLoading}
                   disabled={shouldShowUpgradePrompt}
                   theme={resolvedTheme}
+                  onBibleSelectClick={() => setShowBibleSearch(true)}
                 />
                 {/* Copyright text */}
                 <div className="text-center mt-3">

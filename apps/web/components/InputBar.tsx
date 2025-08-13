@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mic, Zap, ChevronDown, Volume2, Send, Sparkles } from 'lucide-react';
+import { Mic, Zap, ChevronDown, Volume2, Send, Sparkles, BookOpen } from 'lucide-react';
 
 interface InputBarProps {
   onSubmit: (message: string) => void;
@@ -8,9 +8,10 @@ interface InputBarProps {
   isLoading?: boolean;
   disabled?: boolean;
   theme?: 'light' | 'dark';
+  onBibleSelectClick?: () => void;
 }
 
-const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false, theme = 'dark' }) => {
+const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false, theme = 'dark', onBibleSelectClick }) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -96,6 +97,23 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
                 : theme === 'dark' ? 'text-shield-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
             }`}
           />
+
+          {/* Bible select button */}
+          <button
+            type="button"
+            onClick={onBibleSelectClick}
+            disabled={disabled}
+            className={`p-2 sm:p-2.5 rounded-xl transition-all duration-200 ml-2 sm:ml-3 ${
+              disabled 
+                ? 'text-gray-400 cursor-not-allowed' 
+                : theme === 'dark'
+                  ? 'text-shield-white hover:bg-shield-blue/20'
+                  : 'text-blue-600 hover:bg-blue-50'
+            }`}
+            title="Select Bible Version"
+          >
+            <BookOpen size={18} className="sm:w-5 sm:h-5" />
+          </button>
 
           {/* Right side - Send button */}
           <button

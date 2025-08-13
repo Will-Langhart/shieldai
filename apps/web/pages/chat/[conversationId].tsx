@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import Header from '../../components/Header';
 import InputBar from '../../components/InputBar';
 import ConversationHistory from '../../components/ConversationHistory';
 import MessageActions from '../../components/MessageActions';
@@ -394,6 +393,12 @@ export default function ConversationPage() {
               isLoading={isLoading}
               mode={currentMode}
               onModeChange={setCurrentMode}
+              onBibleSelectClick={() => {
+                try {
+                  const evt = new CustomEvent('open-bible-search');
+                  window.dispatchEvent(evt);
+                } catch {}
+              }}
             />
           </div>
         </div>
