@@ -27,7 +27,7 @@ const MessageRenderer: React.FC<MessageRendererProps> = ({
   content,
   theme = 'dark',
   className = '',
-  animated = true,
+  animated = false, // Default to false to prevent unwanted animations
   onCopy
 }) => {
   const [displayedContent, setDisplayedContent] = useState('');

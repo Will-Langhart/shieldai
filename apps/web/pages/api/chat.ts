@@ -19,6 +19,11 @@ const openai = new OpenAI({
 // In-memory conversation store (for development/testing)
 const conversationStore = new Map<string, Array<{ role: 'system' | 'user' | 'assistant'; content: string }>>();
 
+// Memory service health check - disable if it fails consistently
+let memoryServiceDisabled = false;
+let memoryServiceFailureCount = 0;
+const MAX_MEMORY_FAILURES = 3;
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -219,7 +224,7 @@ Please reference relevant previous discussions when appropriate and maintain con
 
     // Use different models and settings based on mode and subscription
     let model = mode === 'fast' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
-    let maxTokens = mode === 'fast' ? 800 : 1500;
+    let maxTokens = mode === 'fast' ? 2000 : 4000; // Increased token limits
     let temperature = mode === 'fast' ? 0.7 : 0.8;
 
     // Check if user has access to advanced models
@@ -314,24 +319,36 @@ Please reference relevant previous discussions when appropriate and maintain con
             }
 
             try {
-              const messagesToStore = await ChatService.getMessages(currentConvId!, serverSupabase);
-              await MemoryService.storeConversationMemory(
-                currentConvId!,
-                user.id,
-                messagesToStore.map(msg => ({
-                  content: msg.content,
-                  role: msg.role as any,
-                  timestamp: msg.created_at,
-                })),
-                {
-                  mode,
-                  objectionType: objectionAnalysis.primaryType,
-                  emotionalTone: objectionAnalysis.intensity,
-                  keyThemes: objectionAnalysis.keyThemes,
-                }
-              );
+              // Add timeout protection for memory operations in streaming mode
+              const memoryPromise = (async () => {
+                const messagesToStore = await ChatService.getMessages(currentConvId!, serverSupabase);
+                await MemoryService.storeConversationMemory(
+                  currentConvId!,
+                  user.id,
+                  messagesToStore.map(msg => ({
+                    content: msg.content,
+                    role: msg.role as any,
+                    timestamp: msg.created_at,
+                  })),
+                  {
+                    mode,
+                    objectionType: objectionAnalysis.primaryType,
+                    emotionalTone: objectionAnalysis.intensity,
+                    keyThemes: objectionAnalysis.keyThemes,
+                  }
+                );
+                console.log('Stored conversation memory (stream) with enhanced metadata');
+              })();
+
+              // Set a 10-second timeout for memory operations
+              const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Memory operation timeout (stream)')), 10000);
+              });
+
+              await Promise.race([memoryPromise, timeoutPromise]);
             } catch (memoryError) {
               console.error('Error storing conversation memory (stream):', memoryError);
+              // Don't fail the main flow if memory storage fails
             }
           } catch (error) {
             console.error('Error saving streamed messages to database:', error);
@@ -419,28 +436,54 @@ ${content.content.substring(0, 200)}...
           console.log('Saved AI response to database and Pinecone');
         }
         
-        // Store conversation memory with enhanced metadata
-        try {
-          const messages = await ChatService.getMessages(currentConvId, serverSupabase);
-          await MemoryService.storeConversationMemory(
-            currentConvId,
-            user.id,
-            messages.map(msg => ({
-              content: msg.content,
-              role: msg.role,
-              timestamp: msg.created_at,
-            })),
-            {
-              mode,
-              objectionType: objectionAnalysis.primaryType,
-              emotionalTone: objectionAnalysis.intensity,
-              keyThemes: objectionAnalysis.keyThemes,
+        // Store conversation memory with enhanced metadata (only if service is healthy)
+        if (!memoryServiceDisabled) {
+          try {
+            // Add timeout protection for memory operations
+            const memoryPromise = (async () => {
+              const messages = await ChatService.getMessages(currentConvId, serverSupabase);
+              await MemoryService.storeConversationMemory(
+                currentConvId,
+                user.id,
+                messages.map(msg => ({
+                  content: msg.content,
+                  role: msg.role,
+                  timestamp: msg.created_at,
+                })),
+                {
+                  mode,
+                  objectionType: objectionAnalysis.primaryType,
+                  emotionalTone: objectionAnalysis.intensity,
+                  keyThemes: objectionAnalysis.keyThemes,
+                }
+              );
+              console.log('Stored conversation memory with enhanced metadata');
+              
+              // Reset failure count on success
+              memoryServiceFailureCount = 0;
+            })();
+
+            // Set a 10-second timeout for memory operations
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Memory operation timeout')), 10000);
+            });
+
+            await Promise.race([memoryPromise, timeoutPromise]);
+          } catch (memoryError) {
+            console.error('Error storing conversation memory:', memoryError);
+            memoryServiceFailureCount++;
+            
+            // Disable memory service if it fails too many times
+            if (memoryServiceFailureCount >= MAX_MEMORY_FAILURES) {
+              memoryServiceDisabled = true;
+              console.warn('Memory service disabled due to repeated failures');
             }
-          );
-          console.log('Stored conversation memory with enhanced metadata');
-        } catch (memoryError) {
-          console.error('Error storing conversation memory:', memoryError);
-          // Don't fail the main flow if memory storage fails
+            
+            // Don't fail the main flow if memory storage fails
+            // Continue with the response
+          }
+        } else {
+          console.log('Memory service is disabled due to previous failures');
         }
         
         console.log('All messages saved to database, Pinecone, and memory successfully');

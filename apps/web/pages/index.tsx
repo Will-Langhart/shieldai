@@ -24,10 +24,12 @@ import { supabase } from '../lib/supabase';
 import { Shield, Crown, AlertTriangle, Sun, Moon, Monitor, Heart, MapPin, BookOpen, X } from 'lucide-react';
 
 interface Message {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp?: string;
   mode?: string;
+  isStreaming?: boolean;
 }
 
 interface SubscriptionStatus {
@@ -280,11 +282,14 @@ export default function Home() {
           const messages = await ClientService.getMessages(currentConversationId);
           if (messages.length > 0) {
             const formattedMessages = messages.map((msg: any) => ({
+              id: msg.id || `loaded_${msg.created_at}_${Math.random().toString(36).substr(2, 9)}`,
               role: msg.role,
               content: msg.content,
               timestamp: msg.created_at,
               mode: msg.mode,
+              isStreaming: false, // Ensure loaded messages are not streaming
             }));
+            console.log('Loading messages with isStreaming=false:', formattedMessages.length);
             setMessages(formattedMessages);
             return;
           }
@@ -299,11 +304,14 @@ export default function Home() {
         try {
           const messages = await ClientService.getMessages(mostRecentConversation.id);
           const formattedMessages = messages.map((msg: any) => ({
+            id: msg.id || `loaded_${msg.created_at}_${Math.random().toString(36).substr(2, 9)}`,
             role: msg.role,
             content: msg.content,
             timestamp: msg.created_at,
             mode: msg.mode,
+            isStreaming: false, // Ensure loaded messages are not streaming
           }));
+          console.log('Loading most recent conversation with isStreaming=false:', formattedMessages.length);
           setMessages(formattedMessages);
           setCurrentConversationId(mostRecentConversation.id);
         } catch (error) {
@@ -319,11 +327,14 @@ export default function Home() {
     try {
       const messages = await ClientService.getMessages(conversationId);
       const formattedMessages = messages.map((msg: any) => ({
+        id: msg.id || `loaded_${msg.created_at}_${Math.random().toString(36).substr(2, 9)}`,
         role: msg.role,
         content: msg.content,
         timestamp: msg.created_at,
         mode: msg.mode,
+        isStreaming: false, // Ensure loaded messages are not streaming
       }));
+      console.log('Selecting conversation with isStreaming=false:', formattedMessages.length);
       setMessages(formattedMessages);
       setCurrentConversationId(conversationId);
       setShowSidebar(false); // Close sidebar on mobile
@@ -381,6 +392,7 @@ export default function Home() {
     if (!message.trim() || isLoading) return;
 
     const newMessage: Message = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       role: 'user',
       content: message,
       timestamp: new Date().toISOString(),
@@ -391,14 +403,31 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Debug authentication state
+      console.log('Current user:', user);
+      console.log('Auth loading:', authLoading);
+      
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error('Failed to get session');
+      }
+      
       const token = session?.access_token;
+      console.log('Session token exists:', !!token);
+      console.log('Token length:', token?.length || 0);
+      
+      if (!token) {
+        console.error('No session token available');
+        throw new Error('Authentication required - please sign in again');
+      }
 
       const response = await fetch('/api/chat?stream=1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           message,
@@ -410,43 +439,72 @@ export default function Home() {
       });
 
       if (!response.ok || !response.body) {
-        console.error('Chat response not OK');
-        throw new Error('Failed to stream response');
+        console.error('Chat response not OK:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response body:', errorText);
+        throw new Error(`Failed to stream response: ${response.status}`);
       }
 
       // Add an empty assistant message and stream into it
-      setMessages(prev => [...prev, {
-        role: 'assistant',
+      const assistantMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const newAssistantMessage = {
+        id: assistantMessageId,
+        role: 'assistant' as const,
         content: '',
         timestamp: new Date().toISOString(),
         mode: currentMode,
-      }]);
+        isStreaming: true,
+      };
+      
+      console.log('Creating new streaming message:', assistantMessageId);
+      setMessages(prev => [...prev, newAssistantMessage]);
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let aggregated = '';
       let done = false;
+      
       while (!done) {
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
         if (value) {
           const chunk = decoder.decode(value, { stream: true });
           aggregated += chunk;
-          setMessages(prev => {
-            const updated = [...prev];
-            const lastIndex = updated.length - 1;
-            if (lastIndex >= 0 && updated[lastIndex].role === 'assistant') {
-              updated[lastIndex] = { ...updated[lastIndex], content: aggregated };
-            }
-            return updated;
-          });
+          
+          // Update only the specific message being streamed
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId 
+              ? { ...msg, content: aggregated }
+              : msg
+          ));
         }
       }
+      
+      // Mark streaming as complete
+      setMessages(prev => prev.map(msg => 
+        msg.id === assistantMessageId 
+          ? { ...msg, isStreaming: false }
+          : msg
+      ));
     } catch (error) {
       console.error('Error sending message:', error);
+      
+      let errorMessage = 'Sorry, I had trouble responding. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Authentication required')) {
+          errorMessage = 'Please sign in to continue chatting.';
+        } else if (error.message.includes('Failed to stream response')) {
+          errorMessage = 'Connection error. Please check your internet and try again.';
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+      
       setMessages(prev => [...prev, {
+        id: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         role: 'assistant',
-        content: 'Sorry, I had trouble responding. Please try again.',
+        content: errorMessage,
         timestamp: new Date().toISOString(),
       }]);
     } finally {
@@ -679,13 +737,18 @@ export default function Home() {
                                 <MessageRenderer
                                   content={message.content}
                                   theme={resolvedTheme}
-                                  animated={!(index === messages.length - 1 && isLoading && message.role === 'assistant')}
+                                  animated={message.isStreaming || false}
                                   className="message-scrollbar"
                                   onCopy={(text) => {
                                     navigator.clipboard.writeText(text);
                                     // You can add a toast notification here
                                   }}
                                 />
+                                {message.isStreaming && (
+                                  <span className="inline-block ml-2 text-blue-400 animate-pulse">
+                                    ●
+                                  </span>
+                                )}
                               </div>
                               <p className={`text-xs mt-2 opacity-60 ${
                                 resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
