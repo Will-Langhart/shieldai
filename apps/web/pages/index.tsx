@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Header from '../components/Header';
@@ -63,6 +63,11 @@ export default function Home() {
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
   const [currentLanguage, setCurrentLanguage] = useState<string>('en');
   const [currentMobileSection, setCurrentMobileSection] = useState<'chat' | 'bible' | 'church' | 'mood' | 'settings'>('chat');
+  
+  // Add refs for auto-scroll functionality
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  
   const [sessionId] = useState(() => {
     // Use a stable session ID based on user ID or create a persistent one
     if (typeof window !== 'undefined') {
@@ -80,6 +85,74 @@ export default function Home() {
     console.log('Creating new session ID (server):', newId);
     return newId;
   });
+
+  // Auto-scroll function with smooth behavior
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior, 
+        block: 'end',
+        inline: 'nearest'
+      });
+    }
+  }, []);
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Use smooth scroll for new messages, instant for initial load
+      const isNewMessage = messages[messages.length - 1]?.isStreaming || false;
+      const isUserMessage = messages[messages.length - 1]?.role === 'user';
+      
+      // Always scroll smoothly for user messages and streaming assistant messages
+      if (isUserMessage || isNewMessage) {
+        scrollToBottom('smooth');
+      } else {
+        // For completed assistant messages, use instant scroll
+        scrollToBottom('auto');
+      }
+    }
+  }, [messages, scrollToBottom]);
+
+  // Auto-scroll when streaming status changes
+  useEffect(() => {
+    const hasStreamingMessage = messages.some(msg => msg.isStreaming);
+    if (hasStreamingMessage) {
+      // Smooth scroll during streaming with a small delay for better UX
+      const timeoutId = setTimeout(() => {
+        scrollToBottom('smooth');
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [messages.map(msg => msg.isStreaming), scrollToBottom]);
+
+  // Auto-scroll when loading state changes
+  useEffect(() => {
+    if (isLoading) {
+      // Smooth scroll when starting to load
+      scrollToBottom('smooth');
+    }
+  }, [isLoading, scrollToBottom]);
+
+  // Add scroll-to-bottom button functionality
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  // Check if user has scrolled up
+  useEffect(() => {
+    const handleScroll = () => {
+      if (messagesContainerRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+        const isScrolledUp = scrollTop + clientHeight < scrollHeight - 100; // 100px threshold
+        setShowScrollButton(isScrolledUp);
+      }
+    };
+
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
 
   // Theme and Language management
   useEffect(() => {
@@ -291,6 +364,8 @@ export default function Home() {
             }));
             console.log('Loading messages with isStreaming=false:', formattedMessages.length);
             setMessages(formattedMessages);
+            // Scroll to bottom after loading messages
+            setTimeout(() => scrollToBottom('auto'), 100);
             return;
           }
         } catch (error) {
@@ -314,6 +389,8 @@ export default function Home() {
           console.log('Loading most recent conversation with isStreaming=false:', formattedMessages.length);
           setMessages(formattedMessages);
           setCurrentConversationId(mostRecentConversation.id);
+          // Scroll to bottom after loading messages
+          setTimeout(() => scrollToBottom('auto'), 100);
         } catch (error) {
           console.error('Error loading messages for most recent conversation:', error);
         }
@@ -338,6 +415,8 @@ export default function Home() {
       setMessages(formattedMessages);
       setCurrentConversationId(conversationId);
       setShowSidebar(false); // Close sidebar on mobile
+      // Scroll to bottom after selecting conversation
+      setTimeout(() => scrollToBottom('auto'), 100);
     } catch (error) {
       console.error('Error loading conversation:', error);
     }
@@ -347,6 +426,12 @@ export default function Home() {
     setMessages([]);
     setCurrentConversationId(undefined);
     setShowSidebar(false); // Close sidebar on mobile
+    // Scroll to top for new conversation
+    setTimeout(() => {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = 0;
+      }
+    }, 100);
   };
 
   const handleRegenerate = async (messageIndex: number) => {
@@ -619,7 +704,26 @@ export default function Home() {
           {/* Main content */}
           <div className={`flex-1 flex flex-col transition-all duration-300 ${user && showSidebar ? 'md:ml-80' : 'ml-0'}`}>
             {/* Conversation Area - Scrollable with fixed height */}
-            <div className={`flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 sm:py-6 ${hasMessages ? 'justify-start' : 'justify-center flex items-center'} swipe-area`}>
+            <div 
+              ref={messagesContainerRef}
+              className={`flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 sm:py-6 ${hasMessages ? 'justify-start' : 'justify-center flex items-center'} swipe-area relative`}
+            >
+              {/* Scroll to bottom button */}
+              {showScrollButton && hasMessages && (
+                <button
+                  onClick={() => scrollToBottom('smooth')}
+                  className={`fixed bottom-24 right-6 z-40 p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 ${
+                    resolvedTheme === 'dark'
+                      ? 'bg-shield-blue text-white hover:bg-blue-600'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                  title="Scroll to latest message"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </button>
+              )}
               {/* Shield AI Logo and Branding - Only show when no messages */}
               {!hasMessages && (
                 <div className="text-center mb-10 sm:mb-14 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -844,6 +948,9 @@ export default function Home() {
                         </div>
                       </div>
                     )}
+                    
+                    {/* Invisible scroll target for auto-scroll */}
+                    <div ref={messagesEndRef} className="h-1" />
                   </div>
                 </div>
               )}
