@@ -449,7 +449,7 @@ export class MemoryService {
     const words2 = text2.toLowerCase().split(/\s+/);
     
     const intersection = words1.filter(word => words2.includes(word));
-    const union = [...new Set([...words1, ...words2])];
+    const union = Array.from(new Set([...words1, ...words2]));
     
     return intersection.length / union.length;
   }
