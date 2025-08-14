@@ -1,44 +1,6 @@
 import { EmbeddingService } from './embeddings';
 
-// Direct HTTP-based Pinecone service (bypasses client library issues)
-let apiKey: string | null = null;
-let indexHost: string | null = null;
-
-async function initializePinecone() {
-  if (!apiKey) {
-    apiKey = process.env.PINECONE_API_KEY || '';
-    if (!apiKey) {
-      throw new Error('Missing Pinecone configuration. Ensure PINECONE_API_KEY is set.');
-    }
-  }
-
-  if (!indexHost) {
-    // Get the index host from the API
-    const response = await fetch('https://api.pinecone.io/indexes', {
-      headers: {
-        'Api-Key': apiKey,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to get indexes: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const shieldaiIndex = data.indexes.find((idx: any) => idx.name === 'shieldai');
-    
-    if (!shieldaiIndex) {
-      throw new Error('shieldai index not found');
-    }
-
-    indexHost = shieldaiIndex.host;
-    console.log(`✅ Connected to Pinecone index: ${indexHost}`);
-  }
-
-  return { apiKey, indexHost };
-}
-
+// Direct HTTP-based Pinecone service
 export interface VectorMessage {
   id: string;
   content: string;
@@ -57,7 +19,43 @@ export interface SearchResult {
   metadata?: Record<string, any>;
 }
 
-export class PineconeService {
+export class PineconeDirectService {
+  private static apiKey: string;
+  private static indexHost: string;
+
+  private static async initialize() {
+    if (!this.apiKey) {
+      this.apiKey = process.env.PINECONE_API_KEY || '';
+      if (!this.apiKey) {
+        throw new Error('Missing PINECONE_API_KEY');
+      }
+    }
+
+    if (!this.indexHost) {
+      // Get the index host from the API
+      const response = await fetch('https://api.pinecone.io/indexes', {
+        headers: {
+          'Api-Key': this.apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get indexes: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const shieldaiIndex = data.indexes.find((idx: any) => idx.name === 'shieldai');
+      
+      if (!shieldaiIndex) {
+        throw new Error('shieldai index not found');
+      }
+
+      this.indexHost = shieldaiIndex.host;
+      console.log(`✅ Connected to Pinecone index: ${this.indexHost}`);
+    }
+  }
+
   // Store a message embedding in Pinecone
   static async storeMessage(
     messageId: string,
@@ -69,14 +67,15 @@ export class PineconeService {
     metadata?: Record<string, any>
   ): Promise<void> {
     try {
-      const { apiKey, indexHost } = await initializePinecone();
+      await this.initialize();
+      
       // Convert embedding to 1024 dimensions for Pinecone compatibility
       const convertedEmbedding = EmbeddingService.convertTo1024Dimensions(embedding);
       
-      const response = await fetch(`https://${indexHost}/vectors/upsert`, {
+      const response = await fetch(`https://${this.indexHost}/vectors/upsert`, {
         method: 'POST',
         headers: {
-          'Api-Key': apiKey,
+          'Api-Key': this.apiKey,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -103,7 +102,6 @@ export class PineconeService {
     } catch (error) {
       console.error('❌ Error storing message in Pinecone:', error);
       // Don't throw error to avoid breaking the main flow
-      // The message will still be stored in the database
     }
   }
 
@@ -115,7 +113,8 @@ export class PineconeService {
     topK: number = 5
   ): Promise<SearchResult[]> {
     try {
-      const { apiKey, indexHost } = await initializePinecone();
+      await this.initialize();
+      
       // Convert query embedding to 1024 dimensions for Pinecone compatibility
       const convertedQueryEmbedding = EmbeddingService.convertTo1024Dimensions(queryEmbedding);
       
@@ -124,10 +123,10 @@ export class PineconeService {
         filter.conversationId = conversationId;
       }
 
-      const response = await fetch(`https://${indexHost}/query`, {
+      const response = await fetch(`https://${this.indexHost}/query`, {
         method: 'POST',
         headers: {
-          'Api-Key': apiKey,
+          'Api-Key': this.apiKey,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -165,12 +164,12 @@ export class PineconeService {
     topK: number = 10
   ): Promise<SearchResult[]> {
     try {
-      const { apiKey, indexHost } = await initializePinecone();
+      await this.initialize();
       
-      const response = await fetch(`https://${indexHost}/query`, {
+      const response = await fetch(`https://${this.indexHost}/query`, {
         method: 'POST',
         headers: {
-          'Api-Key': apiKey,
+          'Api-Key': this.apiKey,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -204,73 +203,15 @@ export class PineconeService {
     }
   }
 
-  // Delete messages for a conversation
-  static async deleteConversationMessages(conversationId: string): Promise<void> {
-    try {
-      const { apiKey, indexHost } = await initializePinecone();
-      
-      const response = await fetch(`https://${indexHost}/vectors/delete`, {
-        method: 'POST',
-        headers: {
-          'Api-Key': apiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          filter: {
-            conversationId,
-          }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete messages: ${response.status}`);
-      }
-
-      console.log('✅ Deleted conversation messages from Pinecone:', conversationId);
-    } catch (error) {
-      console.error('❌ Error deleting conversation messages:', error);
-      // Don't throw error to avoid breaking the main flow
-    }
-  }
-
-  // Delete messages for a user
-  static async deleteUserMessages(userId: string): Promise<void> {
-    try {
-      const { apiKey, indexHost } = await initializePinecone();
-      
-      const response = await fetch(`https://${indexHost}/vectors/delete`, {
-        method: 'POST',
-        headers: {
-          'Api-Key': apiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          filter: {
-            userId,
-          }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete messages: ${response.status}`);
-      }
-
-      console.log('✅ Deleted user messages from Pinecone:', userId);
-    } catch (error) {
-      console.error('❌ Error deleting user messages:', error);
-      // Don't throw error to avoid breaking the main flow
-    }
-  }
-
   // Get index stats
   static async getIndexStats(): Promise<any> {
     try {
-      const { apiKey, indexHost } = await initializePinecone();
+      await this.initialize();
       
-      const response = await fetch(`https://${indexHost}/describe_index_stats`, {
+      const response = await fetch(`https://${this.indexHost}/describe_index_stats`, {
         method: 'POST',
         headers: {
-          'Api-Key': apiKey,
+          'Api-Key': this.apiKey,
           'Content-Type': 'application/json'
         }
       });
@@ -289,7 +230,7 @@ export class PineconeService {
   // Test connection
   static async testConnection(): Promise<boolean> {
     try {
-      await initializePinecone();
+      await this.initialize();
       const stats = await this.getIndexStats();
       console.log('✅ Pinecone connection successful:', stats);
       return true;
@@ -298,4 +239,4 @@ export class PineconeService {
       return false;
     }
   }
-} 
+}

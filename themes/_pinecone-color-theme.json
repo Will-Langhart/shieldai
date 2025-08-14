@@ -1,0 +1,23 @@
+{
+	"colors": {
+		"badge.background": "",
+		"editor.background": "$background",
+		"editor.foreground": "$foreground",
+		"widget.shadow": "$transparent"
+	},
+	"tokenColors": [
+		{
+			"scope": ["comment"],
+			"settings": {
+				"foreground": "$foreground",
+				"fontStyle": "italic"
+			}
+		},
+		{
+			"scope": "markup.italic.markdown",
+			"settings": {
+				"fontStyle": "italic"
+			}
+		}
+	]
+}

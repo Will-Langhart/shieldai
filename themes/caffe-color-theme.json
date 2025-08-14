@@ -1,0 +1,26 @@
+{
+	"name": "Caffè",
+	"type": "dark",
+	"colors": {
+		"editor.background": "#36261b",
+		"editor.foreground": "#d5bbaa",
+		"widget.shadow": "#0000"
+	},
+	"tokenColors": [
+		{
+			"scope": [
+				"comment"
+			],
+			"settings": {
+				"foreground": "#d5bbaa",
+				"fontStyle": "italic"
+			}
+		},
+		{
+			"scope": "markup.italic.markdown",
+			"settings": {
+				"fontStyle": "italic"
+			}
+		}
+	]
+}
