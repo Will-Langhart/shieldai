@@ -18,6 +18,7 @@ Quick start and configuration guides for all services:
 Detailed feature implementations and enhancements:
 
 - **[ENHANCED_NOTES_SUMMARY.md](docs/features/ENHANCED_NOTES_SUMMARY.md)** - Bible note-taking system
+- **[PINECONE_MEMORY_INTEGRATION.md](docs/features/PINECONE_MEMORY_INTEGRATION.md)** - Long-term memory system with Pinecone
 - **BIBLE_UI_INTEGRATION_SUMMARY.md** - Bible search and UI integration
 - **SETTINGS_ENHANCEMENT_SUMMARY.md** - User settings and customization  
 - **BIBLE_FEATURE_ENHANCEMENT.md** - Bible API and verse features

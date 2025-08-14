@@ -16,7 +16,12 @@ function initializePinecone() {
     }
 
     // For serverless Pinecone, use us-east-1 environment
-    pc = new Pinecone({ apiKey, environment });
+    // Remove any -aws suffix if present
+    const cleanEnvironment = environment.replace('-aws', '');
+    
+    console.log(`Initializing Pinecone with environment: ${cleanEnvironment}, index: ${indexName}`);
+    
+    pc = new Pinecone({ apiKey, environment: cleanEnvironment });
     index = pc.index(indexName);
   }
   return { pc, index };

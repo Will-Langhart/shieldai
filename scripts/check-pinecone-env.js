@@ -9,3 +9,5 @@ console.log('PINECONE_API_KEY:', process.env.PINECONE_API_KEY ?
   '(not set)');
 console.log('=====================================\n');
 
+
+

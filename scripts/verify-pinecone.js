@@ -47,3 +47,5 @@ async function testPinecone() {
 
 testPinecone().catch(console.error);
 
+
+

@@ -37,6 +37,8 @@ export class MemoryService {
     metadata?: Record<string, any>
   ): Promise<void> {
     try {
+      console.log(`Storing ${messages.length} messages in Pinecone memory for conversation ${conversationId}`);
+      
       // Generate embeddings for each message
       const messageEmbeddings = await Promise.all(
         messages.map(async (message) => {
@@ -67,19 +69,23 @@ export class MemoryService {
               conversationType: this.detectConversationType(messages),
               keyTopics: await this.extractKeyTopics(messages),
               emotionalTone: this.analyzeEmotionalTone(messages),
+              // Add semantic chunking for better retrieval
+              semanticChunk: this.createSemanticChunk(message.content),
+              // Add conversation flow markers
+              conversationFlow: this.analyzeConversationFlow(messages, index),
             }
           );
         })
       );
 
-      console.log(`Stored ${messages.length} messages in memory for conversation ${conversationId}`);
+      console.log(`Successfully stored ${messages.length} messages in Pinecone memory for conversation ${conversationId}`);
     } catch (error) {
       console.error('Error storing conversation memory:', error);
       throw error;
     }
   }
 
-  // Retrieve relevant memories for a given query
+  // Retrieve relevant memories for a given query with enhanced context
   static async retrieveRelevantMemories(
     query: string,
     userId: string,
@@ -88,25 +94,33 @@ export class MemoryService {
     minScore: number = 0.7
   ): Promise<MemorySearchResult[]> {
     try {
+      console.log(`Retrieving relevant memories for query: "${query.substring(0, 100)}..."`);
+      
       const queryEmbedding = await EmbeddingService.generateEmbedding(query);
       const results = await PineconeService.searchSimilarMessages(
         queryEmbedding,
         userId,
         conversationId,
-        topK
+        topK * 2 // Get more results initially for better filtering
       );
 
-      // Filter results by minimum similarity score
-      return results
+      // Enhanced filtering and scoring
+      const enhancedResults = results
         .filter(result => result.score >= minScore)
         .map(result => ({
           content: result.content,
           role: result.role,
           conversationId: result.conversationId,
-          score: result.score,
+          score: this.enhanceScore(result.score, result.metadata, query),
           timestamp: result.metadata?.timestamp || '',
           metadata: result.metadata,
-        }));
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, topK);
+
+      console.log(`Retrieved ${enhancedResults.length} relevant memories with scores ranging from ${enhancedResults[enhancedResults.length - 1]?.score || 0} to ${enhancedResults[0]?.score || 0}`);
+      
+      return enhancedResults;
     } catch (error) {
       console.error('Error retrieving memories:', error);
       return [];
@@ -121,6 +135,8 @@ export class MemoryService {
     topK: number = 15
   ): Promise<MemoryContext> {
     try {
+      console.log(`Getting enhanced conversation context for conversation ${conversationId}`);
+      
       // Get recent messages from the current conversation
       const recentMessages = await ChatService.getMessages(conversationId);
       
@@ -170,7 +186,7 @@ export class MemoryService {
         allMessages.map(msg => ({ content: msg.content, role: msg.role, timestamp: msg.timestamp }))
       );
 
-      return {
+      const context: MemoryContext = {
         conversationId,
         userId,
         messages: allMessages.slice(0, topK), // Limit to top K messages
@@ -178,6 +194,10 @@ export class MemoryService {
         emotionalTone,
         userPreferences: await this.extractUserPreferences(allMessages),
       };
+
+      console.log(`Enhanced context created with ${context.messages.length} messages and ${context.keyTopics.length} key topics`);
+      
+      return context;
     } catch (error) {
       console.error('Error getting enhanced conversation context:', error);
       return {
@@ -368,6 +388,70 @@ export class MemoryService {
         topTopics: [],
       };
     }
+  }
+
+  // Enhanced scoring that considers metadata and context
+  private static enhanceScore(baseScore: number, metadata: any, query: string): number {
+    let enhancedScore = baseScore;
+    
+    // Boost score for recent conversations
+    if (metadata?.timestamp) {
+      const daysAgo = (Date.now() - new Date(metadata.timestamp).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysAgo < 7) enhancedScore *= 1.1; // 10% boost for recent conversations
+      if (daysAgo < 1) enhancedScore *= 1.2; // 20% boost for today's conversations
+    }
+    
+    // Boost score for conversation flow markers
+    if (metadata?.conversationFlow === 'question' && query.includes('?')) {
+      enhancedScore *= 1.15; // 15% boost for question-answer patterns
+    }
+    
+    // Boost score for semantic chunk relevance
+    if (metadata?.semanticChunk && this.semanticSimilarity(query, metadata.semanticChunk) > 0.8) {
+      enhancedScore *= 1.1; // 10% boost for semantic relevance
+    }
+    
+    return Math.min(enhancedScore, 1.0); // Cap at 1.0
+  }
+
+  // Create semantic chunks for better retrieval
+  private static createSemanticChunk(content: string): string {
+    // Simple semantic chunking - in production, you might use more sophisticated NLP
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    if (sentences.length === 0) return content;
+    
+    // Return the most informative sentence (longest)
+    return sentences.reduce((longest, current) => 
+      current.length > longest.length ? current : longest
+    ).trim();
+  }
+
+  // Analyze conversation flow
+  private static analyzeConversationFlow(messages: Array<{ content: string; role: string }>, currentIndex: number): string {
+    if (currentIndex === 0) return 'start';
+    if (currentIndex === messages.length - 1) return 'end';
+    
+    const current = messages[currentIndex];
+    const previous = messages[currentIndex - 1];
+    
+    if (current.role === 'assistant' && previous.role === 'user') {
+      return 'answer';
+    } else if (current.role === 'user' && previous.role === 'assistant') {
+      return 'question';
+    }
+    
+    return 'continuation';
+  }
+
+  // Simple semantic similarity (in production, use proper NLP)
+  private static semanticSimilarity(text1: string, text2: string): number {
+    const words1 = text1.toLowerCase().split(/\s+/);
+    const words2 = text2.toLowerCase().split(/\s+/);
+    
+    const intersection = words1.filter(word => words2.includes(word));
+    const union = [...new Set([...words1, ...words2])];
+    
+    return intersection.length / union.length;
   }
 }
 

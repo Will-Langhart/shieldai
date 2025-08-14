@@ -76,3 +76,5 @@ if (args.length >= 2) {
   console.log('   PINECONE_INDEX_NAME=shieldai');
 }
 
+
+

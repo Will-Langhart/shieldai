@@ -9,7 +9,7 @@ export class EmbeddingService {
   static async generateEmbedding(text: string): Promise<number[]> {
     try {
       const response = await openai.embeddings.create({
-        model: 'text-embedding-ada-002', // Keep using ada-002 for 1536 dimensions
+        model: 'text-embedding-3-small', // Updated to use text-embedding-3-small for 1536 dimensions
         input: text,
       });
 
@@ -24,7 +24,7 @@ export class EmbeddingService {
   static async generateEmbeddings(texts: string[]): Promise<number[][]> {
     try {
       const response = await openai.embeddings.create({
-        model: 'text-embedding-ada-002', // Keep using ada-002 for 1536 dimensions
+        model: 'text-embedding-3-small', // Updated to use text-embedding-3-small for 1536 dimensions
         input: texts,
       });
 
@@ -49,15 +49,35 @@ export class EmbeddingService {
   }
 
   // Convert 1536-dimensional embedding to 1024-dimensional for Pinecone compatibility
+  // This is a more sophisticated approach than simple truncation
   static convertTo1024Dimensions(embedding: number[]): number[] {
     if (embedding.length === 1024) {
       return embedding;
     }
     
     if (embedding.length === 1536) {
-      // Simple truncation to 1024 dimensions
-      // In production, you might want to use a more sophisticated dimensionality reduction
-      return embedding.slice(0, 1024);
+      // Use weighted averaging to reduce dimensions while preserving information
+      const result = new Array(1024).fill(0);
+      const ratio = 1536 / 1024; // 1.5
+      
+      for (let i = 0; i < 1024; i++) {
+        const startIdx = Math.floor(i * ratio);
+        const endIdx = Math.floor((i + 1) * ratio);
+        
+        // Weighted average of the corresponding 1536 dimensions
+        let sum = 0;
+        let weight = 0;
+        
+        for (let j = startIdx; j < endIdx && j < 1536; j++) {
+          const w = 1 - (j - startIdx) / (endIdx - startIdx); // Higher weight for earlier dimensions
+          sum += embedding[j] * w;
+          weight += w;
+        }
+        
+        result[i] = weight > 0 ? sum / weight : 0;
+      }
+      
+      return result;
     }
     
     throw new Error(`Unsupported embedding dimension: ${embedding.length}`);
