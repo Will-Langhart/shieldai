@@ -8,20 +8,18 @@ let index: any = null;
 function initializePinecone() {
   if (!pc) {
     const apiKey = process.env.PINECONE_API_KEY;
-    const environment = process.env.PINECONE_ENVIRONMENT || 'us-east-1';
+    const environment = process.env.PINECONE_ENVIRONMENT || 'us-east-1-aws';
     const indexName = process.env.PINECONE_INDEX_NAME || 'shieldai';
 
     if (!apiKey) {
       throw new Error('Missing Pinecone configuration. Ensure PINECONE_API_KEY is set.');
     }
 
-    // For serverless Pinecone, use us-east-1 environment
-    // Remove any -aws suffix if present
-    const cleanEnvironment = environment.replace('-aws', '');
+    // For Pinecone v1.1.3, we need the environment parameter
+    // Based on your index host URL, use us-east-1-aws
+    console.log(`Initializing Pinecone with environment: ${environment}, index: ${indexName}`);
     
-    console.log(`Initializing Pinecone with environment: ${cleanEnvironment}, index: ${indexName}`);
-    
-    pc = new Pinecone({ apiKey, environment: cleanEnvironment });
+    pc = new Pinecone({ apiKey, environment });
     index = pc.index(indexName);
   }
   return { pc, index };
