@@ -82,4 +82,19 @@ export class EmbeddingService {
     
     throw new Error(`Unsupported embedding dimension: ${embedding.length}`);
   }
+
+  // Produce an embedding that matches the target index dimension (1024 or 1536)
+  // Defaults to 1024 when dimension cannot be determined
+  static async generateEmbeddingForIndex(text: string, targetDimension?: number): Promise<number[]> {
+    const raw = await this.generateEmbedding(text);
+    const dim = targetDimension || Number(process.env.PINECONE_DIMENSION || 1024);
+    if (dim === 1536) {
+      return raw;
+    }
+    if (dim === 1024) {
+      return this.convertTo1024Dimensions(raw);
+    }
+    // Fallback: best-effort down-project to 1024
+    return this.convertTo1024Dimensions(raw);
+  }
 } 
