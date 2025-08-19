@@ -1,0 +1,71 @@
+name: 🚀 Vercel Simple Deploy
+
+on:
+  push:
+    branches: [ ios-app, main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: 🚀 Deploy to Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build project
+        run: npm run build:web
+
+      - name: 📦 Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: 🚀 Deploy to Vercel
+        run: |
+          echo "🚀 Deploying to Vercel..."
+          vercel --prod --yes --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🔍 Wait for deployment
+        run: |
+          echo "⏳ Waiting for deployment to complete..."
+          sleep 30
+
+      - name: 🔗 Sync Domain
+        run: |
+          echo "🔄 Syncing domain to latest deployment..."
+          
+          if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+            echo "⚠️ VERCEL_TOKEN not set - skipping domain sync"
+            echo "💡 To enable domain sync, add VERCEL_TOKEN to GitHub Secrets"
+            exit 0
+          fi
+          
+          # Get the latest production deployment
+          LATEST_DEPLOYMENT=$(vercel ls --token=${{ secrets.VERCEL_TOKEN }} | grep "Production" | head -1 | awk '{print $3}')
+          
+          if [ -n "$LATEST_DEPLOYMENT" ]; then
+            echo "✅ Latest deployment: $LATEST_DEPLOYMENT"
+            echo "🔗 Syncing shieldai.cloud..."
+            vercel alias "$LATEST_DEPLOYMENT" shieldai.cloud --token=${{ secrets.VERCEL_TOKEN }}
+            echo "✅ Domain synced successfully"
+          else
+            echo "⚠️ Could not determine latest deployment"
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: 📢 Deployment Status
+        run: |
+          echo "🎉 Deployment completed!"
+          echo "🌐 Check your domain: https://shieldai.cloud"
+          echo "📊 Monitor at: https://vercel.com/dashboard"
