@@ -22,7 +22,7 @@ vercel domains ls
 
 echo ""
 echo "📊 Current deployment status:"
-vercel ls --limit=5
+vercel ls | head -10
 
 echo ""
 echo "🔄 Setting up automatic domain linking..."

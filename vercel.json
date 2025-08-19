@@ -2,11 +2,7 @@
   "buildCommand": "npm run build:web",
   "installCommand": "npm install",
   "outputDirectory": "apps/web/.next",
-  "functions": {
-    "apps/web/pages/api/**/*.ts": {
-      "maxDuration": 30
-    }
-  },
+
   "headers": [
     {
       "source": "/(.*)",

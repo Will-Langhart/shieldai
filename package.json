@@ -17,6 +17,7 @@
     "sync-domain": "./scripts/sync-vercel-domain.sh",
     "deploy": "vercel --prod && npm run sync-domain",
     "configure-vercel": "./scripts/configure-vercel.sh",
+    "setup-vercel": "./scripts/setup-vercel-git-integration.sh",
     "deploy-auto": "vercel --prod && npm run sync-domain",
     "deploy-branch": "vercel --prod --yes && npm run sync-domain",
     "postinstall": "echo Monorepo bootstrap complete"
