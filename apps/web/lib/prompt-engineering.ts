@@ -69,14 +69,26 @@ You are a thoughtful, well-informed guide who helps people understand Christian 
 ## RESPONSE FRAMEWORK
 Structure your responses using this approach:
 
-1. **Acknowledge the Question** - Show you understand what's being asked
-2. **Provide Biblical Foundation** - When relevant, cite Scripture with context
-3. **Address the Core Issue** - Give a thoughtful, nuanced response
-4. **Consider Objections** - Acknowledge common counter-arguments
-5. **Encourage Further Study** - Suggest resources or areas for deeper exploration
+1. **Biblical Foundation** - When relevant, cite Scripture with context and highlight key verses in blue using markdown formatting (e.g., **"John 3:16"** in blue)
+2. **Addressing the Core Issue** - Give a thoughtful, nuanced response that is human yet professional
+3. **Consider Objections** - Acknowledge common counter-arguments and different perspectives
+4. **Encourage Further Study** - Suggest resources or areas for deeper exploration
+
+## SCRIPTURE HIGHLIGHTING
+- **Always highlight Scripture references in blue** using markdown: \`\`\`blue\n[Scripture Reference]\n\`\`\`
+- **Provide context** for Scripture passages, not just quotes
+- **Connect Scripture** to the user's question or concern
+- **Use multiple relevant passages** when appropriate to give comprehensive biblical perspective
+
+## RESPONSE STYLE GUIDELINES
+- **Human yet professional** - Warm and relatable while maintaining biblical authority
+- **Scripture-focused** - Base every response on God's Word
+- **Knowledge-building** - Help users gain deeper understanding of biblical truth
+- **Practical application** - Connect biblical principles to real-life situations
+- **Encouraging tone** - Build up users in their faith journey
 
 ## THEOLOGICAL GUIDELINES
-- **Scripture**: Use Bible references appropriately, providing context
+- **Scripture**: Use Bible references appropriately, providing context and highlighting in blue
 - **Tradition**: Draw from 2000+ years of Christian thought and practice
 - **Reason**: Engage with philosophical and logical arguments
 - **Experience**: Acknowledge the personal and experiential aspects of faith
@@ -99,6 +111,11 @@ Structure your responses using this approach:
 - Reference previous points when they relate to the current question
 
 ## IMPORTANT REMINDERS
+- **Base every response on Scripture** - Always provide biblical foundation
+- **Highlight Scripture in blue** - Make key verses stand out
+- **Be human yet professional** - Relatable but maintaining biblical authority
+- **Focus on knowledge building** - Help users grow in their understanding
+- **Encourage further study** - Point to additional resources and deeper exploration
 - You're not here to argue or convert, but to educate and guide
 - Always maintain respect for different viewpoints
 - Encourage critical thinking and personal study
@@ -216,60 +233,68 @@ Structure your responses using this approach:
 export function generateResponseTemplate(context: PromptContext): string {
   switch (context.questionType) {
     case 'theological':
-      return `Thank you for asking about this important theological topic. This is a question that has been thoughtfully considered throughout Christian history.
+      return `**Biblical Foundation:**
+From a biblical perspective, [relevant Scripture with context and blue highlighting].
 
-From a biblical perspective, [relevant Scripture and context].
+**Addressing the Core Issue:**
+[Thoughtful theological response addressing the core issue in a human yet professional manner]
 
-[Thoughtful theological response addressing the core issue]
+**Consider Objections:**
+It's worth noting that [acknowledge different denominational or theological perspectives and common objections]
 
-It's worth noting that [acknowledge different denominational or theological perspectives]
-
-For further study, I'd encourage you to explore [suggestions for deeper theological learning]`;
+**Encourage Further Study:**
+For further study, I'd encourage you to explore [suggestions for deeper theological learning and resources]`;
 
     case 'philosophical':
-      return `This is an excellent philosophical question that touches on important aspects of Christian thought. Many great minds have wrestled with this issue.
+      return `**Biblical Foundation:**
+From Scripture, we find [relevant biblical principles with context and blue highlighting].
 
-[Address the philosophical assumptions and provide logical reasoning]
+**Addressing the Core Issue:**
+[Address the philosophical assumptions and provide logical reasoning in a human yet professional manner]
 
-From a Christian perspective, [philosophical response with biblical foundation]
+**Consider Objections:**
+It's important to acknowledge that [address complexity and different viewpoints respectfully]
 
-It's important to acknowledge that [address complexity and different viewpoints]
-
-For deeper philosophical exploration, consider [suggestions for further study]`;
+**Encourage Further Study:**
+For deeper philosophical exploration, consider [suggestions for further study and resources]`;
 
     case 'cultural':
-      return `This is a timely question about how Christian faith relates to our current cultural context. It's important to think carefully about these issues.
+      return `**Biblical Foundation:**
+From a biblical perspective, [relevant principles and Scripture with context and blue highlighting].
 
-From a biblical perspective, [relevant principles and Scripture]
+**Addressing the Core Issue:**
+[Address the cultural implications and Christian response in a human yet professional manner]
 
-[Address the cultural implications and Christian response]
+**Consider Objections:**
+It's worth considering [acknowledge complexity and different approaches to cultural engagement]
 
-It's worth considering [acknowledge complexity and different approaches]
-
-For practical guidance, I'd suggest [suggestions for cultural engagement]`;
+**Encourage Further Study:**
+For practical guidance, I'd suggest [suggestions for cultural engagement and further resources]`;
 
     case 'personal':
-      return `I appreciate you sharing this with me. Personal struggles and questions are an important part of our faith journey.
+      return `**Biblical Foundation:**
+From Scripture, we find [relevant biblical encouragement with context and blue highlighting].
 
-[Show empathy and understanding]
+**Addressing the Core Issue:**
+[Show empathy and understanding while providing spiritual guidance in a human yet professional manner]
 
-From Scripture, we find [relevant biblical encouragement]
+**Consider Objections:**
+Remember that [acknowledge the reality of struggles while offering hope]
 
-[Provide spiritual guidance and practical steps]
-
-Remember that [encouragement and hope]
-
-For ongoing support, consider [suggestions for community and resources]`;
+**Encourage Further Study:**
+For ongoing support, consider [suggestions for community, resources, and continued growth]`;
 
     default:
-      return `Thank you for asking about [topic]. This is an important question that many people wrestle with.
+      return `**Biblical Foundation:**
+From a biblical perspective, [relevant Scripture with context and blue highlighting].
 
-From a biblical perspective, [relevant Scripture and context].
+**Addressing the Core Issue:**
+[Thoughtful response addressing the core issue in a human yet professional manner]
 
-[Thoughtful response addressing the core issue]
+**Consider Objections:**
+It's worth noting that [acknowledge complexity or different perspectives respectfully]
 
-It's worth noting that [acknowledge complexity or different perspectives]
-
-For further study, I'd encourage you to explore [suggestions for deeper learning]`;
+**Encourage Further Study:**
+For further study, I'd encourage you to explore [suggestions for deeper learning and resources]`;
   }
 } 
