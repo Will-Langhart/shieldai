@@ -853,43 +853,43 @@ export default function Home() {
 
               {/* Messages Display */}
               {hasMessages && (
-                <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 pb-4 min-w-0">
+                <div className="w-full max-w-6xl mx-auto space-y-4 sm:space-y-6 pb-4 min-w-0">
                   <div className="space-y-4 sm:space-y-6 min-w-0">
                     {messages.map((message, index) => (
                       <div
                         key={index}
-                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300 min-w-0`}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} fade-in-up duration-300 min-w-0`}
                       >
                         <div
-                          className={`max-w-xs sm:max-w-md lg:max-w-3xl px-5 sm:px-6 py-4 sm:py-5 rounded-2xl shadow-lg min-w-0 message-bubble-mobile transition-all duration-200 hover:shadow-xl ${
+                          className={`max-w-xs sm:max-w-md lg:max-w-5xl px-5 sm:px-6 py-4 sm:py-5 min-w-0 message-bubble-mobile transition-all duration-200 ${
                             message.role === 'user' 
                               ? (resolvedTheme === 'dark'
-                                ? 'bg-gradient-to-r from-shield-blue/10 to-shield-blue/20 border border-shield-blue/30 text-shield-white backdrop-blur-sm'
-                                : 'bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 text-gray-900')
+                                ? 'bg-gradient-to-r from-shield-blue/10 to-shield-blue/20 text-shield-white'
+                                : 'bg-gradient-to-r from-blue-50 to-blue-100 text-gray-900')
                               : (resolvedTheme === 'dark'
-                                ? 'bg-transparent border border-gray-700/50 text-shield-white'
-                                : 'bg-transparent border border-gray-200 text-gray-900')
+                                ? 'bg-transparent text-shield-white'
+                                : 'bg-transparent text-gray-900')
                           }`}
                         >
                           <div className="flex items-start space-x-2 sm:space-x-3">
                             {message.role === 'assistant' && (
-                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
+                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${
                                 resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
                               }`}>
                                 <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
                               </div>
                             )}
                             {message.role === 'user' && (
-                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
+                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
                                 resolvedTheme === 'dark'
-                                  ? 'bg-shield-blue/20 border border-shield-blue/30'
-                                  : 'bg-blue-100 border border-blue-200'
+                                  ? 'bg-shield-blue/20'
+                                  : 'bg-blue-100'
                               }`}>
                                 {user?.user_metadata?.avatar_url ? (
                                   <img 
                                     src={user.user_metadata.avatar_url} 
                                     alt="User" 
-                                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
+                                    className="w-6 h-6 sm:w-8 sm:w-8 rounded-full object-cover"
                                   />
                                 ) : (
                                   <span className={`font-bold text-xs sm:text-sm ${
@@ -1033,7 +1033,7 @@ export default function Home() {
                 ? 'border-gray-700/50 bg-shield-black' 
                 : 'border-gray-200 bg-white'
             } min-w-0 flex-shrink-0`}>
-              <div className="w-full max-w-4xl mx-auto min-w-0">
+              <div className="w-full max-w-6xl mx-auto min-w-0">
                                   <InputBar
                     onSubmit={handleSubmit}
                     mode={currentMode}

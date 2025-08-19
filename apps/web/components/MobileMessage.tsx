@@ -53,32 +53,32 @@ const MobileMessage: React.FC<MobileMessageProps> = ({
   return (
     <div
       ref={messageRef}
-      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300 min-w-0`}
+      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} fade-in-up duration-300 min-w-0`}
     >
       <div
-        className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg min-w-0 message-bubble-mobile ${
+        className={`max-w-xs sm:max-w-md lg:max-w-4xl px-4 sm:px-6 py-3 sm:py-4 min-w-0 message-bubble-mobile ${
           message.role === 'user' 
             ? (theme === 'dark'
-              ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white'
-              : 'bg-blue-100 border border-blue-200 text-gray-900')
+              ? 'bg-shield-blue/20 text-shield-white'
+              : 'bg-blue-100 text-gray-900')
             : (theme === 'dark'
-              ? 'bg-transparent border border-gray-700/30 text-shield-white'
-              : 'bg-transparent border border-gray-200 text-gray-900')
+              ? 'bg-transparent text-shield-white'
+              : 'bg-transparent text-gray-900')
         }`}
       >
         <div className="flex items-start space-x-2 sm:space-x-3">
           {message.role === 'assistant' && (
-            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${
               theme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
             }`}>
               <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
             </div>
           )}
           {message.role === 'user' && (
-            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
               theme === 'dark'
-                ? 'bg-shield-blue/20 border border-shield-blue/30'
-                : 'bg-blue-100 border border-blue-200'
+                ? 'bg-shield-blue/20'
+                : 'bg-blue-100'
             }`}>
               {user?.user_metadata?.avatar_url ? (
                 <img 

@@ -35,14 +35,14 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 min-w-0 mobile-input-bar">
+    <div className="w-full mx-auto px-2 sm:px-4 min-w-0 mobile-input-bar">
       <form onSubmit={handleSubmit} className="relative min-w-0">
-        <div className={`flex items-center backdrop-blur-sm rounded-2xl p-3 sm:p-4 border shadow-lg transition-colors duration-300 touch-button ${
+        <div className={`flex items-center backdrop-blur-sm rounded-2xl p-3 sm:p-4 transition-colors duration-300 touch-button ${
           disabled 
-            ? theme === 'dark' ? 'bg-gray-600/50 border-gray-500/50' : 'bg-gray-200 border-gray-300'
+            ? theme === 'dark' ? 'bg-gray-600/50' : 'bg-gray-200'
             : theme === 'dark'
-              ? 'bg-shield-light-gray/50 border-gray-700/50'
-              : 'bg-white border-gray-200'
+              ? 'bg-shield-light-gray/50'
+              : 'bg-white'
         }`}>
           {/* Left side - Microphone */}
           <button
@@ -82,7 +82,7 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
                 disabled 
                   ? 'text-gray-400 cursor-not-allowed' 
                   : theme === 'dark'
-                    ? 'text-shield-white hover:bg-shield-gray/50'
+                    ? 'text-gray-400 hover:bg-shield-gray/50'
                     : 'text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -124,13 +124,12 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
                 ? 'text-gray-400 cursor-not-allowed' 
                 : selectedBibleVersion
                   ? theme === 'dark'
-                    ? 'bg-shield-blue/20 text-shield-blue border border-shield-blue/30'
-                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                    ? 'bg-shield-blue/20 text-shield-blue'
+                    : 'bg-blue-50 text-blue-700'
                   : theme === 'dark'
-                    ? 'text-shield-white hover:bg-shield-blue/20'
-                    : 'text-blue-600 hover:bg-blue-50'
+                    ? 'text-gray-400 hover:bg-shield-gray/50'
+                    : 'text-gray-600 hover:bg-gray-100'
             }`}
-            title={selectedBibleVersion ? `Current: ${selectedBibleVersion.name}` : "Select Bible Version"}
           >
             <BookOpen size={18} className="sm:w-5 sm:h-5" />
             {selectedBibleVersion && (

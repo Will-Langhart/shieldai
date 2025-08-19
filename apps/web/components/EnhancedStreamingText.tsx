@@ -99,7 +99,7 @@ const EnhancedStreamingText: React.FC<EnhancedStreamingTextProps> = ({
   const progress = (currentCharIndex / content.length) * 100;
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative w-full ${className}`}>
       {/* Streaming Progress Indicator */}
       {isStreaming && (
         <div className="mb-3">
@@ -135,12 +135,12 @@ const EnhancedStreamingText: React.FC<EnhancedStreamingTextProps> = ({
         </div>
       )}
 
-      {/* Content Display */}
+      {/* Content Display - No box outline, full width */}
       <div 
         ref={contentRef}
-        className={`text-sm sm:text-base leading-relaxed ${
+        className={`text-sm sm:text-base leading-relaxed w-full ${
           theme === 'dark' ? 'text-shield-white' : 'text-gray-900'
-        } ${isAnimating ? 'text-reveal' : ''}`}
+        } ${isAnimating ? 'fade-in-up' : ''}`}
       >
         {renderContent(displayedContent)}
         

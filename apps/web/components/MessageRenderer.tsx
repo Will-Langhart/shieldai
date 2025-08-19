@@ -452,9 +452,9 @@ const MessageRenderer: React.FC<MessageRendererProps> = ({
   return (
     <div
       ref={contentRef}
-      className={`message-content prose prose-sm max-w-none ${
+      className={`message-content prose prose-sm max-w-none w-full ${
         theme === 'dark' ? 'prose-invert' : ''
-      } ${className} ${animated ? 'message-fade-in' : ''}`}
+      } ${className} ${animated ? 'fade-in-up' : ''}`}
     >
       {parseContent(displayedContent)}
       {isAnimating && (

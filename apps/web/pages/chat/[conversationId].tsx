@@ -390,27 +390,27 @@ export default function ConversationPage() {
 
           {/* Messages Display */}
           {hasMessages && (
-            <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 mb-6 sm:mb-8 px-2 sm:px-0">
+            <div className="w-full max-w-6xl mx-auto space-y-4 sm:space-y-6 mb-6 sm:mb-8 px-2 sm:px-0">
               {messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} fade-in-up duration-300`}
                 >
                   <div
-                    className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg ${
+                    className={`max-w-xs sm:max-w-md lg:max-w-5xl px-4 sm:px-6 py-3 sm:py-4 ${
                       message.role === 'user' 
-                        ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white' 
-                        : 'bg-transparent border border-gray-700/50 text-shield-white'
+                        ? 'bg-shield-blue/20 text-shield-white' 
+                        : 'bg-transparent text-shield-white'
                     }`}
                   >
                     <div className="flex items-start space-x-2 sm:space-x-3">
                       {message.role === 'assistant' && (
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
                           <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
                         </div>
                       )}
                       {message.role === 'user' && (
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue/20 border border-shield-blue/30 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                           {user?.user_metadata?.avatar_url ? (
                             <img 
                               src={user.user_metadata.avatar_url} 
@@ -455,8 +455,8 @@ export default function ConversationPage() {
               
               {/* Loading indicator */}
               {isLoading && (
-                <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="max-w-2xl px-6 py-4 rounded-2xl shadow-lg bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50">
+                <div className="flex justify-start fade-in-up duration-300">
+                  <div className="w-full px-6 py-4 text-shield-white">
                     <div className="flex items-start space-x-3">
                       <div className="w-8 h-8 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
                         <span className="text-shield-white font-bold text-sm">S</span>
