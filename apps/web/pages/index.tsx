@@ -18,7 +18,9 @@ import NoteCreationModal from '../components/NoteCreationModal';
 import EnhancedNoteModal from '../components/EnhancedNoteModal';
 import NotesManager from '../components/NotesManager';
 import MobileNavigation from '../components/MobileNavigation';
+import BibleVersionSelector from '../components/BibleVersionSelector';
 import { useAuth } from '../lib/auth-context';
+import { useBible } from '../contexts/bible-context';
 import { ClientService } from '../lib/client-service';
 import { supabase } from '../lib/supabase';
 
@@ -45,6 +47,7 @@ type Theme = 'light' | 'dark' | 'auto';
 export default function Home() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { selectedVersion } = useBible();
   const [messages, setMessages] = useState<Message[]>([]);
   const [messagesPage, setMessagesPage] = useState(1);
   const [messagesPageSize] = useState(50);
@@ -64,6 +67,7 @@ export default function Home() {
   const [showNotesManager, setShowNotesManager] = useState(false);
   const [showStudyPlans, setShowStudyPlans] = useState(false);
   const [showPlanPicker, setShowPlanPicker] = useState(false);
+  const [showBibleVersionSelector, setShowBibleVersionSelector] = useState(false);
   const [pendingVerseForPlan, setPendingVerseForPlan] = useState<{ reference: string; text: string } | null>(null);
   const [pendingMessageForPlan, setPendingMessageForPlan] = useState<{ content: string } | null>(null);
   const [plans, setPlans] = useState<any[]>([]);
@@ -1061,15 +1065,16 @@ export default function Home() {
                 : 'border-gray-200 bg-white'
             } min-w-0 flex-shrink-0`}>
               <div className="w-full max-w-4xl mx-auto min-w-0">
-                <InputBar 
-                  onSubmit={handleSubmit} 
-                  mode={currentMode}
-                  onModeChange={setCurrentMode}
-                  isLoading={isLoading}
-                  disabled={shouldShowUpgradePrompt}
-                  theme={resolvedTheme}
-                  onBibleSelectClick={() => setShowBibleSearch(true)}
-                />
+                                  <InputBar
+                    onSubmit={handleSubmit}
+                    mode={currentMode}
+                    onModeChange={setCurrentMode}
+                    isLoading={isLoading}
+                    disabled={shouldShowUpgradePrompt}
+                    theme={resolvedTheme}
+                    onBibleSelectClick={() => setShowBibleVersionSelector(true)}
+                    selectedBibleVersion={selectedVersion}
+                  />
                 {/* Copyright text */}
                 <div className="text-center mt-3">
                   <p className={`text-xs ${
@@ -1376,6 +1381,18 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Bible Version Selector */}
+      <BibleVersionSelector
+        isOpen={showBibleVersionSelector}
+        onClose={() => setShowBibleVersionSelector(false)}
+        onVersionSelect={(version) => {
+          console.log('Bible version selected:', version);
+          // The version will be saved in the Bible context
+        }}
+        selectedVersion={selectedVersion || undefined}
+        theme={resolvedTheme}
+      />
     </>
   );
 } 

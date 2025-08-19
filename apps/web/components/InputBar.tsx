@@ -10,9 +10,13 @@ interface InputBarProps {
   theme?: 'light' | 'dark';
   onBibleSelectClick?: () => void;
   onMicClick?: () => void;
+  selectedBibleVersion?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
-const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false, theme = 'dark', onBibleSelectClick, onMicClick }) => {
+const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false, theme = 'dark', onBibleSelectClick, onMicClick, selectedBibleVersion }) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -105,16 +109,25 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
             type="button"
             onClick={onBibleSelectClick}
             disabled={disabled}
-            className={`p-2 sm:p-2.5 rounded-xl transition-all duration-200 ml-2 sm:ml-3 ${
+            className={`flex items-center space-x-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl transition-all duration-200 ml-2 sm:ml-3 ${
               disabled 
                 ? 'text-gray-400 cursor-not-allowed' 
-                : theme === 'dark'
-                  ? 'text-shield-white hover:bg-shield-blue/20'
-                  : 'text-blue-600 hover:bg-blue-50'
+                : selectedBibleVersion
+                  ? theme === 'dark'
+                    ? 'bg-shield-blue/20 text-shield-blue border border-shield-blue/30'
+                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                  : theme === 'dark'
+                    ? 'text-shield-white hover:bg-shield-blue/20'
+                    : 'text-blue-600 hover:bg-blue-50'
             }`}
-            title="Select Bible Version"
+            title={selectedBibleVersion ? `Current: ${selectedBibleVersion.name}` : "Select Bible Version"}
           >
             <BookOpen size={18} className="sm:w-5 sm:h-5" />
+            {selectedBibleVersion && (
+              <span className="text-xs font-medium hidden sm:block max-w-20 truncate">
+                {selectedBibleVersion.name}
+              </span>
+            )}
           </button>
 
           {/* Right side - Send button */}

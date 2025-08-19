@@ -37,7 +37,7 @@ export default async function handler(
   }
 
   try {
-    const { message, mode = 'fast', sessionId = 'default', conversationId, stream } = req.body || {};
+    const { message, mode = 'fast', sessionId = 'default', conversationId, stream, bibleVersion } = req.body || {};
     const shouldStream = Boolean(stream) || req.query.stream === '1' || req.query.stream === 'true';
 
     if (!message) {
@@ -190,6 +190,20 @@ export default async function handler(
 
     // Generate specialized prompt based on context and objection type
     let systemPrompt = generateSpecializedPrompt(questionContext, mode);
+    
+    // Add Bible version context if provided
+    if (bibleVersion && bibleVersion.id && bibleVersion.name) {
+      systemPrompt += `\n\nBIBLE VERSION CONTEXT:
+You are working with the ${bibleVersion.name} (${bibleVersion.id}) Bible translation. When referencing Scripture, please use this version and note that you're working from the ${bibleVersion.name}. If you need to quote specific verses, please indicate that you're referencing the ${bibleVersion.name} translation.
+
+This Bible version has the following characteristics:
+- Name: ${bibleVersion.name}
+- Type: ${bibleVersion.type}
+- Language: ${bibleVersion.language.name}
+- Description: ${bibleVersion.description}
+
+Please incorporate this Bible version context naturally into your responses when referencing Scripture.`;
+    }
     
     // Add memory context to system prompt if available
     if (memoryContext && memoryContext.messages.length > 0) {
