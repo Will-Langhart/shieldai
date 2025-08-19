@@ -21,6 +21,7 @@ import MobileNavigation from '../components/MobileNavigation';
 import BibleVersionSelector from '../components/BibleVersionSelector';
 import EnhancedLoadingIndicator from '../components/EnhancedLoadingIndicator';
 import EnhancedStreamingText from '../components/EnhancedStreamingText';
+import AnimatedPlaceholder from '../components/AnimatedPlaceholder';
 import { useAuth } from '../lib/auth-context';
 import { useBible } from '../contexts/bible-context';
 import { ClientService } from '../lib/client-service';
@@ -819,7 +820,7 @@ export default function Home() {
                               className={`flex-1 px-4 sm:px-5 py-3 sm:py-4 rounded-l-xl focus:outline-none ${
                                 resolvedTheme === 'dark' ? 'bg-transparent text-white placeholder-gray-400' : 'bg-transparent text-gray-900 placeholder-gray-500'
                               }`}
-                              placeholder="Ask a question... e.g., Where was Jesus born?"
+                              placeholder="Ask a question..."
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   const val = (e.target as HTMLInputElement).value;
@@ -838,6 +839,10 @@ export default function Home() {
                             >
                               Search
                             </button>
+                          </div>
+                          {/* Animated placeholder text below search bar */}
+                          <div className="mt-3 text-center">
+                            <AnimatedPlaceholder theme={resolvedTheme} />
                           </div>
                         </div>
                         {user && (
