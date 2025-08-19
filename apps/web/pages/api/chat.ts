@@ -10,6 +10,8 @@ import { MemoryService } from '../../lib/memory-service';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { SubscriptionMiddleware } from '../../lib/subscription-middleware';
 import { bibleService } from '../../lib/bible-service';
+import { BiblePineconeService } from '../../lib/bible-pinecone';
+import { EmbeddingService } from '../../lib/embeddings';
 import { logger, withCorrelationId } from '../../lib/logger';
 
 // Initialize OpenAI client
@@ -188,6 +190,26 @@ export default async function handler(
       logger.error('Verse suggestions failed', { cid }, error);
     }
 
+    // Get Bible content from Pinecone vector database for enhanced context
+    let bibleVectorResults: any[] = [];
+    try {
+      // Generate embedding for the user's message
+      const messageEmbedding = await EmbeddingService.generateEmbedding(message);
+      
+      // Search for relevant Bible content across all namespaces
+      const results = await BiblePineconeService.searchBibleContent(
+        messageEmbedding,
+        5, // Get top 5 most relevant verses
+        { type: 'bible_verse' }
+      );
+      
+      bibleVectorResults = results;
+      logger.debug('Bible vector search results', { cid, count: bibleVectorResults.length });
+    } catch (error) {
+      logger.error('Bible vector search failed', { cid }, error);
+      // Don't fail the entire request if vector search fails
+    }
+
     // Generate specialized prompt based on context and objection type
     let systemPrompt = generateSpecializedPrompt(questionContext, mode);
     
@@ -270,6 +292,18 @@ Please reference relevant previous discussions when appropriate and maintain con
     if (verseSuggestions.length > 0) {
       const verseContext = `\n\nRelevant Bible verses for this conversation:\n${verseSuggestions.map(verse => `${verse.reference}: "${verse.text}"`).join('\n')}\n\nPlease incorporate these relevant Bible verses naturally into your response when appropriate, providing context and explanation for how they relate to the user's question.`;
       messages.splice(-1, 0, { role: 'system', content: verseContext });
+    }
+
+    // Add Bible vector search results as enhanced Scripture context
+    if (bibleVectorResults.length > 0) {
+      const vectorContext = `\n\nENHANCED SCRIPTURE CONTEXT FROM VECTOR DATABASE:
+I have access to semantically relevant Bible content that directly relates to your question. Here are the most relevant Scripture passages:
+
+${bibleVectorResults.map(result => `${result.reference} (${result.book} ${result.chapter}:${result.verse}): "${result.text}"`).join('\n')}
+
+Please use these Scripture passages as your primary biblical foundation when responding. Highlight them in blue and explain how they specifically address the user's question. These verses have been selected using advanced semantic search to ensure maximum relevance.`;
+      
+      messages.splice(-1, 0, { role: 'system', content: vectorContext });
     }
 
     // If streaming requested, stream tokens as they arrive
