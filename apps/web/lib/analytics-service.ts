@@ -232,4 +232,85 @@ export class AnalyticsService {
   static clearAnalytics(): void {
     this.events = [];
   }
+
+  // Track enhanced interaction with detailed metrics
+  static async trackEnhancedInteraction(data: {
+    userId: string;
+    correlationId: string;
+    message: string;
+    responseLength: number;
+    questionType: string;
+    userIntent: string;
+    emotionalTone: string;
+    complexity: string;
+    engagementLevel: string;
+    conversationGoal: string;
+    objectionType: string;
+    objectionIntensity: string;
+    userStance: string;
+    duration: number;
+    tokenCount: number;
+    scriptureCount: number;
+    topics: string[];
+  }): Promise<void> {
+    // Track as regular event for now
+    this.trackEvent({
+      userId: data.userId,
+      eventType: 'response_generated',
+      objectionType: data.objectionType,
+      userStance: data.userStance,
+      intensity: data.objectionIntensity,
+      responseStrategy: data.conversationGoal,
+      questionText: data.message.substring(0, 200), // Truncate for storage
+      sessionId: data.correlationId,
+    });
+
+    // Log enhanced metrics for monitoring
+    console.log('Enhanced interaction tracked:', {
+      userId: data.userId,
+      emotionalTone: data.emotionalTone,
+      engagementLevel: data.engagementLevel,
+      conversationGoal: data.conversationGoal,
+      complexity: data.complexity,
+      duration: `${data.duration}ms`,
+      tokenCount: data.tokenCount,
+      scriptureCount: data.scriptureCount,
+      topics: data.topics.slice(0, 5) // Top 5 topics
+    });
+  }
+
+  // Update user engagement profile for personalization
+  static async updateUserEngagementProfile(
+    userId: string,
+    profile: {
+      lastEngagementLevel: string;
+      lastEmotionalTone: string;
+      lastConversationGoal: string;
+      frequentTopics: string[];
+    }
+  ): Promise<void> {
+    // Store in memory for session personalization
+    const userProfiles = (global as any).userEngagementProfiles || {};
+    userProfiles[userId] = {
+      ...userProfiles[userId],
+      ...profile,
+      frequentTopics: Array.from(new Set([
+        ...(userProfiles[userId]?.frequentTopics || []),
+        ...profile.frequentTopics
+      ])).slice(0, 20), // Keep top 20 topics
+      lastUpdated: new Date()
+    };
+    (global as any).userEngagementProfiles = userProfiles;
+
+    console.log('User engagement profile updated:', { 
+      userId, 
+      profile: userProfiles[userId] 
+    });
+  }
+
+  // Get user engagement profile
+  static getUserEngagementProfile(userId: string): any {
+    const userProfiles = (global as any).userEngagementProfiles || {};
+    return userProfiles[userId] || null;
+  }
 } 
