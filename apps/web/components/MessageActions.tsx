@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Share2, RefreshCw, ThumbsUp, ThumbsDown, MoreHorizontal, Check, BookOpen, MessageSquare, Download, Edit, Volume2 } from 'lucide-react';
+import { Copy, Share2, RefreshCw, ThumbsUp, ThumbsDown, MoreHorizontal, Check, BookOpen, MessageSquare, Download, Edit, Volume2, PlusSquare } from 'lucide-react';
 
 interface MessageActionsProps {
   messageId: string;
@@ -15,6 +15,7 @@ interface MessageActionsProps {
   onExport?: () => void;
   theme?: 'light' | 'dark';
   showExtendedActions?: boolean;
+  onAddToPlan?: (content: string) => void;
 }
 
 const MessageActions: React.FC<MessageActionsProps> = ({ 
@@ -30,7 +31,8 @@ const MessageActions: React.FC<MessageActionsProps> = ({
   onSpeech,
   onExport,
   theme = 'dark',
-  showExtendedActions = false
+  showExtendedActions = false,
+  onAddToPlan
 }) => {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<'positive' | 'negative' | null>(null);
@@ -258,6 +260,21 @@ const MessageActions: React.FC<MessageActionsProps> = ({
             <Download size={12} />
             <span>Export</span>
           </button>
+
+          {onAddToPlan && (
+            <button
+              onClick={() => onAddToPlan(content)}
+              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-all duration-200 ${
+                theme === 'dark'
+                  ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 border border-gray-700'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 border border-gray-200'
+              }`}
+              title="Add to Study Plan"
+            >
+              <PlusSquare size={12} />
+              <span>Add to Plan</span>
+            </button>
+          )}
 
           {conversationId && (
             <button

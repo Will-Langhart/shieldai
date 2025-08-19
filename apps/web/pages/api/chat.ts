@@ -10,6 +10,7 @@ import { MemoryService } from '../../lib/memory-service';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { SubscriptionMiddleware } from '../../lib/subscription-middleware';
 import { bibleService } from '../../lib/bible-service';
+import { logger, withCorrelationId } from '../../lib/logger';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -28,7 +29,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  const cid = withCorrelationId(req, `chat_${Date.now()}`);
+  const startedAt = Date.now();
   if (req.method !== 'POST') {
+    logger.warn('Method not allowed', { cid, path: '/api/chat', method: req.method });
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -37,6 +41,7 @@ export default async function handler(
     const shouldStream = Boolean(stream) || req.query.stream === '1' || req.query.stream === 'true';
 
     if (!message) {
+      logger.warn('Missing message', { cid });
       return res.status(400).json({ error: 'Message is required' });
     }
 
@@ -47,30 +52,30 @@ export default async function handler(
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      console.log('Received token:', token.substring(0, 20) + '...');
+      logger.debug('Received token', { cid, token_prefix: token.substring(0, 8) });
       
       try {
         serverSupabase = createServerSupabaseClient(token);
         const { data: { user: authUser }, error: authError } = await serverSupabase.auth.getUser();
         
         if (authError) {
-          console.error('Auth error:', authError);
+          logger.error('Auth error', { cid }, authError);
           return res.status(401).json({ error: 'Invalid authentication token' });
         }
         
         if (authUser) {
           user = authUser;
-          console.log('Authenticated user:', user.id, user.email);
+          logger.info('Authenticated', { cid, userId: user.id, email: user.email });
         } else {
-          console.error('No user found in token');
+          logger.warn('No user found in token', { cid });
           return res.status(401).json({ error: 'No user found in token' });
         }
       } catch (error) {
-        console.error('Error creating Supabase client:', error);
+        logger.error('Supabase client create failed', { cid }, error);
         return res.status(401).json({ error: 'Authentication failed' });
       }
     } else {
-      console.error('No authorization header or invalid format');
+      logger.warn('No authorization header', { cid });
       return res.status(401).json({ error: 'Authorization header required' });
     }
     
@@ -100,7 +105,7 @@ export default async function handler(
         });
       }
     } else {
-      console.log('Developer mode enabled for:', user.email);
+      logger.info('Developer mode enabled', { cid, userId: user.id, email: user.email });
     }
 
     // Get conversation history for this session
@@ -117,7 +122,7 @@ export default async function handler(
 
     // Advanced objection classification
     const objectionAnalysis = classifyObjection(message);
-    console.log('Objection analysis:', objectionAnalysis);
+    logger.debug('Objection analysis', { cid }, objectionAnalysis);
 
     // Track analytics for the question
     if (user) {
@@ -155,34 +160,32 @@ export default async function handler(
             score: msg.relevance,
           }));
         
-        console.log('Found enhanced memory context with', memoryContext.messages.length, 'messages');
-        console.log('Key topics detected:', memoryContext.keyTopics);
-        console.log('Emotional tone:', memoryContext.emotionalTone);
+        logger.info('Memory context', { cid, count: memoryContext.messages.length, keyTopics: memoryContext.keyTopics, emotionalTone: memoryContext.emotionalTone });
       } catch (error) {
-        console.error('Error getting enhanced memory context:', error);
+        logger.error('Enhanced memory context failed', { cid }, error);
         
         // Fallback to basic similarity search
         try {
           similarMessages = await ChatService.searchSimilarMessages(message, user.id, conversationId, 3, serverSupabase);
-          console.log('Fallback: Found similar messages:', similarMessages.length);
+          logger.info('Similarity fallback', { cid, count: similarMessages.length });
         } catch (fallbackError) {
-          console.error('Error in fallback similarity search:', fallbackError);
+          logger.error('Similarity fallback failed', { cid }, fallbackError);
         }
       }
     }
 
     // Search apologetics knowledge base for relevant content
     const relevantContent = searchApologeticsContent(message, objectionAnalysis.primaryType);
-    console.log('Found relevant apologetics content:', relevantContent.length);
+    logger.debug('Apologetics content', { cid, count: relevantContent.length });
 
     // Get Bible verse suggestions based on conversation context
     let verseSuggestions: any[] = [];
     try {
       const suggestions = await bibleService.getVerseSuggestions(message, 'de4e12af7f28f599-02');
       verseSuggestions = suggestions.slice(0, 3); // Limit to 3 suggestions
-      console.log('Found verse suggestions:', verseSuggestions.length);
+      logger.debug('Verse suggestions', { cid, count: verseSuggestions.length });
     } catch (error) {
-      console.error('Error getting verse suggestions:', error);
+      logger.error('Verse suggestions failed', { cid }, error);
     }
 
     // Generate specialized prompt based on context and objection type
@@ -269,6 +272,7 @@ Please reference relevant previous discussions when appropriate and maintain con
       let fullText = '';
 
       try {
+        logger.info('Streaming start', { cid, model, maxTokens, temperature });
         const streamResp = await openai.chat.completions.create({
           model: model,
           max_tokens: maxTokens,
@@ -286,6 +290,7 @@ Please reference relevant previous discussions when appropriate and maintain con
         }
 
         // Analytics and persistence after completion
+        logger.info('Streaming end', { cid, ms: Date.now() - startedAt, bytes: fullText.length });
         if (user) {
           try {
             AnalyticsService.trackResponse(
@@ -297,7 +302,7 @@ Please reference relevant previous discussions when appropriate and maintain con
               conversationId
             );
           } catch (e) {
-            console.error('Error tracking streamed response:', e);
+            logger.error('Track streamed response failed', { cid }, e);
           }
         }
 
@@ -310,7 +315,7 @@ Please reference relevant previous discussions when appropriate and maintain con
               const conversation = await ChatService.createConversation(title, serverSupabase);
               currentConvId = conversation.id;
               isNewConversation = true;
-              console.log('Created new conversation (stream):', currentConvId, conversation.title);
+              logger.info('Created conversation (stream)', { cid, convId: currentConvId, title: conversation.title });
             }
 
             await ChatService.addMessage(currentConvId!, message, 'user', mode, serverSupabase);
@@ -337,7 +342,7 @@ Please reference relevant previous discussions when appropriate and maintain con
                     keyThemes: objectionAnalysis.keyThemes,
                   }
                 );
-                console.log('Stored conversation memory (stream) with enhanced metadata');
+                logger.info('Memory stored (stream)', { cid, convId: currentConvId });
               })();
 
               // Set a 10-second timeout for memory operations
@@ -347,11 +352,11 @@ Please reference relevant previous discussions when appropriate and maintain con
 
               await Promise.race([memoryPromise, timeoutPromise]);
             } catch (memoryError) {
-              console.error('Error storing conversation memory (stream):', memoryError);
+              logger.error('Memory store (stream) failed', { cid }, memoryError);
               // Don't fail the main flow if memory storage fails
             }
           } catch (error) {
-            console.error('Error saving streamed messages to database:', error);
+            logger.error('Save streamed messages failed', { cid }, error);
           }
         }
 
@@ -365,7 +370,7 @@ Please reference relevant previous discussions when appropriate and maintain con
         res.end();
         return; // Important: stop further JSON response handling
       } catch (streamErr) {
-        console.error('Streaming error:', streamErr);
+        logger.error('Streaming error', { cid }, streamErr);
         try {
           res.write('\n');
         } catch (_) {}
@@ -381,6 +386,7 @@ Please reference relevant previous discussions when appropriate and maintain con
       temperature: temperature,
       messages: messages,
     });
+    logger.info('Non-stream completion', { cid, ms: Date.now() - startedAt });
 
     const aiResponse = response.choices[0].message.content;
 
@@ -423,17 +429,17 @@ ${content.content.substring(0, 200)}...
           const conversation = await ChatService.createConversation(title, serverSupabase);
           currentConvId = conversation.id;
           isNewConversation = true;
-          console.log('Created new conversation:', currentConvId, conversation.title);
+          logger.info('Created conversation', { cid, convId: currentConvId, title: conversation.title });
         }
 
         // Save user message to database and Pinecone
         await ChatService.addMessage(currentConvId, message, 'user', mode, serverSupabase);
-        console.log('Saved user message to database and Pinecone');
+        logger.debug('Saved user message', { cid, convId: currentConvId });
         
         // Save AI response to database and Pinecone
         if (aiResponse) {
           await ChatService.addMessage(currentConvId, aiResponse, 'assistant', mode, serverSupabase);
-          console.log('Saved AI response to database and Pinecone');
+          logger.debug('Saved AI response', { cid, convId: currentConvId });
         }
         
         // Store conversation memory with enhanced metadata (only if service is healthy)
@@ -457,7 +463,7 @@ ${content.content.substring(0, 200)}...
                   keyThemes: objectionAnalysis.keyThemes,
                 }
               );
-              console.log('Stored conversation memory with enhanced metadata');
+              logger.info('Memory stored', { cid, convId: currentConvId });
               
               // Reset failure count on success
               memoryServiceFailureCount = 0;
@@ -470,29 +476,29 @@ ${content.content.substring(0, 200)}...
 
             await Promise.race([memoryPromise, timeoutPromise]);
           } catch (memoryError) {
-            console.error('Error storing conversation memory:', memoryError);
+            logger.error('Memory store failed', { cid }, memoryError);
             memoryServiceFailureCount++;
             
             // Disable memory service if it fails too many times
             if (memoryServiceFailureCount >= MAX_MEMORY_FAILURES) {
               memoryServiceDisabled = true;
-              console.warn('Memory service disabled due to repeated failures');
+              logger.warn('Memory service disabled', { cid, failures: memoryServiceFailureCount });
             }
             
             // Don't fail the main flow if memory storage fails
             // Continue with the response
           }
         } else {
-          console.log('Memory service is disabled due to previous failures');
+          logger.warn('Memory disabled (previous failures)', { cid });
         }
         
-        console.log('All messages saved to database, Pinecone, and memory successfully');
+        logger.info('Messages saved', { cid, convId: currentConvId });
       } catch (error) {
-        console.error('Error saving messages to database:', error);
+        logger.error('Save messages failed', { cid }, error);
         // Continue even if database save fails
       }
     } else {
-      console.log('No authenticated user - messages will not be saved to database');
+      logger.warn('Unauthenticated user; skip persistence', { cid });
     }
 
     // Update conversation history
@@ -518,7 +524,7 @@ ${content.content.substring(0, 200)}...
     });
 
   } catch (error) {
-    console.error('Chat API error:', error);
+    logger.error('Chat API error', { cid }, error);
     return res.status(500).json({ 
       error: 'An error occurred while processing your request' 
     });

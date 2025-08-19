@@ -7,6 +7,7 @@ import ConversationHistory from '../components/ConversationHistory';
 import MessageActions from '../components/MessageActions';
 import MessageRenderer from '../components/MessageRenderer';
 import EnhancedSubscriptionModal from '../components/EnhancedSubscriptionModal';
+import PlanPicker from '../components/PlanPicker';
 
 import MoodVerseSystem from '../components/MoodVerseSystem';
 import EnhancedChurchFinder from '../components/EnhancedChurchFinder';
@@ -45,6 +46,9 @@ export default function Home() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [messagesPage, setMessagesPage] = useState(1);
+  const [messagesPageSize] = useState(50);
+  const [messagesTotal, setMessagesTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
@@ -58,6 +62,16 @@ export default function Home() {
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showEnhancedNoteModal, setShowEnhancedNoteModal] = useState(false);
   const [showNotesManager, setShowNotesManager] = useState(false);
+  const [showStudyPlans, setShowStudyPlans] = useState(false);
+  const [showPlanPicker, setShowPlanPicker] = useState(false);
+  const [pendingVerseForPlan, setPendingVerseForPlan] = useState<{ reference: string; text: string } | null>(null);
+  const [pendingMessageForPlan, setPendingMessageForPlan] = useState<{ content: string } | null>(null);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [planSteps, setPlanSteps] = useState<any[]>([]);
+  const [newPlanTitle, setNewPlanTitle] = useState('');
+  const [newPlanDescription, setNewPlanDescription] = useState('');
+  const [newPlanDuration, setNewPlanDuration] = useState<number | ''>('');
   const [selectedVerseForNote, setSelectedVerseForNote] = useState<{ reference: string; text: string } | null>(null);
   const [theme, setTheme] = useState<Theme>('auto');
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
@@ -210,6 +224,34 @@ export default function Home() {
     setCurrentLanguage(languageCode);
     localStorage.setItem('shieldai-language', languageCode);
   };
+
+  // Load plans when the modal opens
+  useEffect(() => {
+    const fetchPlans = async () => {
+      if (!user || !showStudyPlans) return;
+      try {
+        const result = await ClientService.listStudyPlans(user.id);
+        setPlans(result.plans || []);
+      } catch (e) {
+        console.error('Failed to load plans', e);
+      }
+    };
+    fetchPlans();
+  }, [user, showStudyPlans]);
+
+  // Load steps when a plan is selected
+  useEffect(() => {
+    const fetchSteps = async () => {
+      if (!activePlanId) return;
+      try {
+        const result = await ClientService.listStudyPlanSteps(activePlanId);
+        setPlanSteps(result.steps || []);
+      } catch (e) {
+        console.error('Failed to load steps', e);
+      }
+    };
+    fetchSteps();
+  }, [activePlanId]);
 
   // Handle verse selection from mood system
   const handleVerseSelect = (verse: string) => {
@@ -402,8 +444,25 @@ export default function Home() {
 
   const handleSelectConversation = async (conversationId: string) => {
     try {
-      const messages = await ClientService.getMessages(conversationId);
-      const formattedMessages = messages.map((msg: any) => ({
+      // Reset to first page on new conversation
+      const newPage = 1;
+      setMessagesPage(newPage);
+      // Include auth header so API can authorize request
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const resp = await fetch(`/api/messages?conversationId=${encodeURIComponent(conversationId)}&page=${newPage}&pageSize=${messagesPageSize}` , {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      if (!resp.ok) {
+        console.error('Failed to load messages:', resp.status, resp.statusText);
+        return;
+      }
+      const json = await resp.json();
+      setMessagesTotal(json.total || 0);
+      const formattedMessages = (json.items || []).map((msg: any) => ({
         id: msg.id || `loaded_${msg.created_at}_${Math.random().toString(36).substr(2, 9)}`,
         role: msg.role,
         content: msg.content,
@@ -647,6 +706,7 @@ export default function Home() {
           onChurchFinderClick={() => setShowChurchFinder(true)}
           onBibleSearchClick={() => setShowBibleSearch(true)}
           onApologeticsBibleClick={() => setShowApologeticsBible(true)}
+          onStudyPlansClick={() => setShowStudyPlans(true)}
           onNotesManagerClick={() => {
             console.log('Notes manager button clicked!');
             setShowNotesManager(true);
@@ -895,6 +955,11 @@ export default function Home() {
                               }}
                               theme={resolvedTheme}
                               showExtendedActions={true}
+                              onAddToPlan={(content) => {
+                                setPendingMessageForPlan({ content });
+                                setPendingVerseForPlan(null);
+                                setShowPlanPicker(true);
+                              }}
                             />
                           )}
                         </div>
@@ -949,6 +1014,37 @@ export default function Home() {
                       </div>
                     )}
                     
+                    {/* Pagination controls */}
+                    {currentConversationId && (
+                      <div className="flex items-center justify-between mt-4">
+                        <button
+                          disabled={messagesPage <= 1}
+                          onClick={async () => {
+                            const newPage = Math.max(1, messagesPage - 1);
+                            setMessagesPage(newPage);
+                            const resp = await fetch(`/api/messages?conversationId=${encodeURIComponent(currentConversationId)}&page=${newPage}&pageSize=${messagesPageSize}`);
+                            const json = await resp.json();
+                            setMessages((json.items || []).map((msg: any) => ({ id: msg.id, role: msg.role, content: msg.content, timestamp: msg.created_at, mode: msg.mode, isStreaming: false })));
+                            setMessagesTotal(json.total || 0);
+                          }}
+                          className={`px-3 py-1 rounded ${resolvedTheme==='dark' ? 'bg-gray-800 text-gray-200 disabled:opacity-50' : 'bg-gray-100 text-gray-700 disabled:opacity-50'}`}
+                        >Prev</button>
+                        <span className={`text-xs ${resolvedTheme==='dark' ? 'text-gray-400' : 'text-gray-500'}`}>Page {messagesPage} / {Math.max(1, Math.ceil(messagesTotal / messagesPageSize))}</span>
+                        <button
+                          disabled={messagesPage >= Math.ceil(messagesTotal / messagesPageSize)}
+                          onClick={async () => {
+                            const newPage = messagesPage + 1;
+                            setMessagesPage(newPage);
+                            const resp = await fetch(`/api/messages?conversationId=${encodeURIComponent(currentConversationId)}&page=${newPage}&pageSize=${messagesPageSize}`);
+                            const json = await resp.json();
+                            setMessages((json.items || []).map((msg: any) => ({ id: msg.id, role: msg.role, content: msg.content, timestamp: msg.created_at, mode: msg.mode, isStreaming: false })));
+                            setMessagesTotal(json.total || 0);
+                          }}
+                          className={`px-3 py-1 rounded ${resolvedTheme==='dark' ? 'bg-gray-800 text-gray-200 disabled:opacity-50' : 'bg-gray-100 text-gray-700 disabled:opacity-50'}`}
+                        >Next</button>
+                      </div>
+                    )}
+
                     {/* Invisible scroll target for auto-scroll */}
                     <div ref={messagesEndRef} className="h-1" />
                   </div>
@@ -1077,6 +1173,11 @@ export default function Home() {
                 setSelectedVerseForNote({ reference, text });
                 setShowNoteModal(true);
               }}
+              onAddToPlan={(reference, text) => {
+                setPendingVerseForPlan({ reference, text });
+                setPendingMessageForPlan(null);
+                setShowPlanPicker(true);
+              }}
               className="w-full min-h-full"
             />
             <button
@@ -1088,6 +1189,104 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Study Plans Modal (CRUD) */}
+        {showStudyPlans && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowStudyPlans(false)} />
+            <div className={`relative w-full max-w-4xl mx-4 rounded-xl overflow-hidden ${resolvedTheme === 'dark' ? 'bg-[#1f1f1f] text-white' : 'bg-white text-gray-900'}`}>
+              <div className="flex items-center justify-between p-4 border-b border-gray-200/20">
+                <h3 className="text-lg font-semibold">Study Plans</h3>
+                <button onClick={() => setShowStudyPlans(false)} className={`p-2 rounded-lg ${resolvedTheme === 'dark' ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>×</button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+                {/* Left: plans list + create */}
+                <div className={`p-4 border-r ${resolvedTheme === 'dark' ? 'border-gray-800' : 'border-gray-200'}`}>
+                  <div className="mb-3">
+                    <div className="text-sm font-medium mb-2">Create Plan</div>
+                    <div className="space-y-2">
+                      <input value={newPlanTitle} onChange={e=>setNewPlanTitle(e.target.value)} placeholder="Title" className={`w-full px-3 py-2 rounded-lg border ${resolvedTheme==='dark'?'bg-gray-800 border-gray-700':'bg-white border-gray-300'}`} />
+                      <input value={newPlanDescription} onChange={e=>setNewPlanDescription(e.target.value)} placeholder="Description" className={`w-full px-3 py-2 rounded-lg border ${resolvedTheme==='dark'?'bg-gray-800 border-gray-700':'bg-white border-gray-300'}`} />
+                      <input value={newPlanDuration} onChange={e=>setNewPlanDuration(e.target.value?Number(e.target.value):'')} type="number" placeholder="Duration (days)" className={`w-full px-3 py-2 rounded-lg border ${resolvedTheme==='dark'?'bg-gray-800 border-gray-700':'bg-white border-gray-300'}`} />
+                      <div className="flex space-x-2">
+                        <button onClick={async()=>{ if(!user||!newPlanTitle.trim()) return; const r=await ClientService.createStudyPlan({ userId:user.id, title:newPlanTitle.trim(), description:newPlanDescription.trim(), durationDays: newPlanDuration||null, visibility:'private' }); setNewPlanTitle(''); setNewPlanDescription(''); setNewPlanDuration(''); const list=await ClientService.listStudyPlans(user.id); setPlans(list.plans||[]); setActivePlanId(r.plan.id); }} className={`px-3 py-2 rounded-lg ${resolvedTheme==='dark'?'bg-blue-600 hover:bg-blue-700':'bg-blue-600 hover:bg-blue-700'} text-white`}>Create</button>
+                        <button onClick={()=>{ setNewPlanTitle(''); setNewPlanDescription(''); setNewPlanDuration(''); }} className={`px-3 py-2 rounded-lg ${resolvedTheme==='dark'?'bg-gray-800 hover:bg-gray-700':'bg-gray-100 hover:bg-gray-200'}`}>Reset</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-sm font-medium mb-2">Your Plans</div>
+                  <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                    {plans.map((p)=> (
+                      <div key={p.id} className={`flex items-center justify-between p-2 rounded-lg border ${resolvedTheme==='dark'?'border-gray-700 hover:bg-gray-800':'border-gray-200 hover:bg-gray-50'}`}>
+                        <button onClick={()=>setActivePlanId(p.id)} className="text-left flex-1 min-w-0">
+                          <div className="font-medium truncate">{p.title}</div>
+                          <div className="text-xs opacity-70 truncate">{p.description}</div>
+                        </button>
+                        <div className="flex items-center space-x-1 ml-2">
+                          <button onClick={async()=>{ if(!user) return; const title=prompt('Edit title', p.title)||p.title; const description=prompt('Edit description', p.description||'')||''; await ClientService.updateStudyPlan({ id:p.id, userId:user.id, title, description }); const list=await ClientService.listStudyPlans(user.id); setPlans(list.plans||[]); }} className={`px-2 py-1 rounded ${resolvedTheme==='dark'?'hover:bg-gray-700':'hover:bg-gray-100'}`}>Edit</button>
+                          <button onClick={async()=>{ if(!user) return; if(confirm('Delete this plan?')) { await ClientService.deleteStudyPlan(p.id, user.id); const list=await ClientService.listStudyPlans(user.id); setPlans(list.plans||[]); if(activePlanId===p.id){ setActivePlanId(null); setPlanSteps([]);} }}} className={`px-2 py-1 rounded text-red-600 ${resolvedTheme==='dark'?'hover:bg-gray-700':'hover:bg-red-50'}`}>Delete</button>
+                        </div>
+                      </div>
+                    ))}
+                    {plans.length===0 && (
+                      <div className={`p-3 rounded-lg border text-sm ${resolvedTheme==='dark'?'border-gray-700 text-gray-400':'border-gray-200 text-gray-500'}`}>No plans yet</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: plan steps */}
+                <div className="p-4">
+                  {activePlanId ? (
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-sm font-medium">Plan Steps</div>
+                        <button onClick={async()=>{ const reference=prompt('Verse reference (optional)')||null; const title=prompt('Step title (optional)')||''; const notes=prompt('Notes (optional)')||''; const r=await ClientService.createStudyPlanStep({ planId: activePlanId, reference, title, notes }); const list=await ClientService.listStudyPlanSteps(activePlanId); setPlanSteps(list.steps||[]); }} className={`px-3 py-2 rounded-lg ${resolvedTheme==='dark'?'bg-blue-600 hover:bg-blue-700':'bg-blue-600 hover:bg-blue-700'} text-white`}>Add Step</button>
+                      </div>
+                      <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                        {planSteps.map((s)=> (
+                          <div key={s.id} className={`p-2 rounded-lg border ${resolvedTheme==='dark'?'border-gray-700':'border-gray-200'}`}>
+                            <div className="text-sm font-medium">{s.title || s.reference || `Day ${s.day_index}`}</div>
+                            {s.reference && <div className="text-xs opacity-70">{s.reference}</div>}
+                            {s.notes && <div className="text-xs opacity-80 mt-1 whitespace-pre-wrap">{s.notes}</div>}
+                            <div className="mt-2 flex items-center justify-end">
+                              <button onClick={async()=>{ if(confirm('Delete step?')) { await ClientService.deleteStudyPlanStep(s.id); const list=await ClientService.listStudyPlanSteps(activePlanId); setPlanSteps(list.steps||[]); }}} className={`px-2 py-1 rounded text-red-600 ${resolvedTheme==='dark'?'hover:bg-gray-700':'hover:bg-red-50'}`}>Delete</button>
+                            </div>
+                          </div>
+                        ))}
+                        {planSteps.length===0 && (
+                          <div className={`p-3 rounded-lg border text-sm ${resolvedTheme==='dark'?'border-gray-700 text-gray-400':'border-gray-200 text-gray-500'}`}>No steps yet</div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className={`p-3 rounded-lg border text-sm ${resolvedTheme==='dark'?'border-gray-700 text-gray-400':'border-gray-200 text-gray-500'}`}>Select a plan to view steps</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Plan Picker Popover */}
+        {showPlanPicker && user && (
+          <div className="fixed inset-0 z-[2500]" onClick={() => setShowPlanPicker(false)}>
+            <div className="absolute right-4 top-20" onClick={(e)=>e.stopPropagation()}>
+              <PlanPicker
+                userId={user.id}
+                theme={resolvedTheme}
+                onClose={() => setShowPlanPicker(false)}
+                pendingVerse={pendingVerseForPlan}
+                pendingMessage={pendingMessageForPlan}
+                onAdded={async()=>{
+                  if (activePlanId) {
+                    const list = await ClientService.listStudyPlanSteps(activePlanId);
+                    setPlanSteps(list.steps || []);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        )}
         {/* Apologetics Bible Interface */}
         <div className={`fixed inset-0 z-50 flex items-center justify-center ${showApologeticsBible ? 'block' : 'hidden'}`}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowApologeticsBible(false)} />

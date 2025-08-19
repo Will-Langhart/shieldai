@@ -151,4 +151,71 @@ export class ClientService {
       throw new Error('Failed to delete conversation');
     }
   }
+
+  // Study Plans CRUD
+  static async listStudyPlans(userId: string) {
+    const response = await fetch(`/api/bible/plans?userId=${encodeURIComponent(userId)}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to list study plans');
+    return response.json();
+  }
+
+  static async createStudyPlan(payload: { userId: string; title: string; description?: string; durationDays?: number | null; visibility?: 'private' | 'shared' | 'public'; }) {
+    const response = await fetch('/api/bible/plans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error('Failed to create study plan');
+    return response.json();
+  }
+
+  static async updateStudyPlan(payload: { id: string; userId: string; title?: string; description?: string; durationDays?: number | null; visibility?: 'private' | 'shared' | 'public'; }) {
+    const response = await fetch('/api/bible/plans', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error('Failed to update study plan');
+    return response.json();
+  }
+
+  static async deleteStudyPlan(id: string, userId: string) {
+    const response = await fetch(`/api/bible/plans?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(userId)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to delete study plan');
+    return response.json();
+  }
+
+  static async listStudyPlanSteps(planId: string) {
+    const response = await fetch(`/api/bible/plan-steps?planId=${encodeURIComponent(planId)}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to list steps');
+    return response.json();
+  }
+
+  static async createStudyPlanStep(payload: { planId: string; reference?: string | null; title?: string; notes?: string; }) {
+    const response = await fetch('/api/bible/plan-steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error('Failed to create step');
+    return response.json();
+  }
+
+  static async deleteStudyPlanStep(id: string) {
+    const response = await fetch(`/api/bible/plan-steps?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to delete step');
+    return response.json();
+  }
 } 

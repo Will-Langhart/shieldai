@@ -1,11 +1,15 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { bibleService } from '../../../lib/bible-service';
+import { logger, withCorrelationId } from '../../../lib/logger';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  const cid = withCorrelationId(req, `adv_search_${Date.now()}`);
+  const startedAt = Date.now();
   if (req.method !== 'GET') {
+    logger.warn('Method not allowed', { cid, path: '/api/bible/advanced-search', method: req.method });
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -23,6 +27,7 @@ export default async function handler(
     } = req.query;
 
     if (!query || typeof query !== 'string') {
+      logger.warn('Missing query (advanced-search)', { cid });
       return res.status(400).json({ error: 'Query parameter is required' });
     }
 
@@ -47,14 +52,16 @@ export default async function handler(
           await bibleService.saveSearchHistory(userId, query);
         }
       } catch (error) {
-        console.error('Error saving search history:', error);
+        logger.error('Save search history failed (advanced)', { cid }, error);
         // Don't fail the search if history saving fails
       }
     }
 
+    logger.info('Advanced search complete', { cid, ms: Date.now() - startedAt, total: (searchResults as any)?.total || 0 });
+    res.setHeader('Cache-Control', 'private, max-age=10');
     res.status(200).json(searchResults);
   } catch (error) {
-    console.error('Error performing advanced search:', error);
+    logger.error('Advanced search error', { cid }, error);
     res.status(500).json({ error: 'Failed to perform advanced search' });
   }
 } 

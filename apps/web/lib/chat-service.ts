@@ -75,6 +75,25 @@ export class ChatService {
     return data || [];
   }
 
+  // Paged conversations for current user
+  static async getConversationsPaged(page: number, pageSize: number, supabaseClient?: SupabaseClient): Promise<{ items: Conversation[]; total: number; page: number; pageSize: number; }>
+  {
+    const client = supabaseClient || supabase;
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return { items: [], total: 0, page, pageSize };
+    await this.ensureUserProfile(client, user);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    const { data, error, count } = await client
+      .from('conversations')
+      .select('*', { count: 'exact' })
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .range(from, to);
+    if (error) throw error;
+    return { items: data || [], total: count || 0, page, pageSize };
+  }
+
   // Get messages for a specific conversation
   static async getMessages(conversationId: string, supabaseClient?: SupabaseClient): Promise<Message[]> {
     const client = supabaseClient || supabase;
@@ -86,6 +105,22 @@ export class ChatService {
 
     if (error) throw error;
     return data || [];
+  }
+
+  // Paged messages for a conversation
+  static async getMessagesPaged(conversationId: string, page: number, pageSize: number, supabaseClient?: SupabaseClient): Promise<{ items: Message[]; total: number; page: number; pageSize: number; }>
+  {
+    const client = supabaseClient || supabase;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    const { data, error, count } = await client
+      .from('messages')
+      .select('*', { count: 'exact' })
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true })
+      .range(from, to);
+    if (error) throw error;
+    return { items: data || [], total: count || 0, page, pageSize };
   }
 
   // Create a new conversation

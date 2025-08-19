@@ -1,8 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '../../../../lib/supabase';
+import { logger, withCorrelationId } from '../../../../lib/logger';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const cid = withCorrelationId(req, `notes_search_${Date.now()}`);
+  const startedAt = Date.now();
   if (req.method !== 'GET') {
+    logger.warn('Method not allowed', { cid, path: '/api/bible/notes/search', method: req.method });
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -21,6 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } = req.query;
 
     if (!userId || typeof userId !== 'string') {
+      logger.warn('Notes search missing userId', { cid });
       return res.status(400).json({ error: 'User ID is required' });
     }
 
@@ -102,6 +107,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             userId: note.user_id
           }));
 
+          logger.info('Notes search (rpc) ok', { cid, ms: Date.now() - startedAt, count: searchResults.length });
           return res.status(200).json({ 
             notes: transformedNotes,
             total: searchResults.length,
@@ -110,7 +116,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
         }
       } catch (error) {
-        console.log('Full-text search not available, falling back to ILIKE');
+        logger.warn('Notes rpc search unavailable, fallback to ILIKE', { cid });
       }
 
       // Fallback to ILIKE search
@@ -130,7 +136,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { data: notes, error } = await supabaseQuery;
 
     if (error) {
-      console.error('Error searching notes:', error);
+      logger.error('Notes search failed', { cid }, error);
       return res.status(500).json({ error: 'Failed to search notes' });
     }
 
@@ -160,6 +166,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select('*', { count: 'exact', head: true })
       .eq('user_id', userId);
 
+    logger.info('Notes search ok', { cid, ms: Date.now() - startedAt, count: transformedNotes.length, total: count || 0 });
     res.status(200).json({ 
       notes: transformedNotes,
       total: count || 0,
@@ -172,7 +179,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
   } catch (error) {
-    console.error('Error handling search request:', error);
+    logger.error('Notes search error', { cid }, error);
     res.status(500).json({ error: 'Failed to search notes' });
   }
 }

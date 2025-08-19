@@ -19,10 +19,11 @@ interface BibleSearchResult {
 interface BibleSearchProps {
   onVerseSelect?: (reference: string, text: string) => void;
   onAddNote?: (reference: string, text: string) => void;
+  onAddToPlan?: (reference: string, text: string) => void;
   className?: string;
 }
 
-export default function BibleSearch({ onVerseSelect, onAddNote, className = '' }: BibleSearchProps) {
+export default function BibleSearch({ onVerseSelect, onAddNote, onAddToPlan, className = '' }: BibleSearchProps) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<BibleSearchResult | null>(null);
@@ -31,6 +32,8 @@ export default function BibleSearch({ onVerseSelect, onAddNote, className = '' }
   const [showFilters, setShowFilters] = useState(false);
   const [popularVerses, setPopularVerses] = useState<any[]>([]);
   const [showPopular, setShowPopular] = useState(true);
+  const [favorites, setFavorites] = useState<Array<{ id: string; reference: string; text: string; version: string }>>([]);
+  const [history, setHistory] = useState<Array<{ id: string; query: string; created_at: string }>>([]);
 
   // Popular topics for quick search
   const popularTopics = [
@@ -40,7 +43,18 @@ export default function BibleSearch({ onVerseSelect, onAddNote, className = '' }
 
   useEffect(() => {
     loadPopularVerses();
+    if (user?.id) {
+      loadFavorites(user.id);
+      loadHistory(user.id);
+    }
   }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadFavorites(user.id);
+      loadHistory(user.id);
+    }
+  }, [user?.id]);
 
   const loadPopularVerses = async () => {
     try {
@@ -71,10 +85,48 @@ export default function BibleSearch({ onVerseSelect, onAddNote, className = '' }
       const data = await response.json();
       setSearchResults(data);
       setShowPopular(false);
+      if (user?.id) {
+        // refresh history after save in API
+        loadHistory(user.id);
+      }
     } catch (error) {
       console.error('Error searching Bible:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadFavorites = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/bible/favorites?userId=${userId}`);
+      const data = await res.json();
+      setFavorites(data.favorites || []);
+    } catch (e) {
+      console.error('Failed to load favorites', e);
+    }
+  };
+
+  const loadHistory = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/bible/history?userId=${userId}&limit=5`);
+      const data = await res.json();
+      setHistory(data.history || []);
+    } catch (e) {
+      console.error('Failed to load history', e);
+    }
+  };
+
+  const saveFavorite = async (reference: string, text: string, version: string) => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch('/api/bible/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, reference, text, version }),
+      });
+      if (res.ok) loadFavorites(user.id);
+    } catch (e) {
+      console.error('Failed to save favorite', e);
     }
   };
 
@@ -176,6 +228,74 @@ export default function BibleSearch({ onVerseSelect, onAddNote, className = '' }
             ))}
           </div>
         </div>
+
+        {/* Recent Searches (Supabase) */}
+        {user?.id && history.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Recent Searches</h4>
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch(`/api/bible/history?userId=${user.id}`, { method: 'DELETE' });
+                    setHistory([]);
+                  } catch (e) {
+                    console.error('Failed to clear history', e);
+                  }
+                }}
+                className="text-xs text-red-600 dark:text-red-400 hover:underline"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {history.map((h) => (
+                <button
+                  key={h.id}
+                  onClick={() => handleSearch(h.query)}
+                  className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  {h.query}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Favorites (Supabase) */}
+        {user?.id && favorites.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Favorites</h4>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{favorites.length}</span>
+            </div>
+            <div className="space-y-2">
+              {favorites.slice(0, 3).map((fav) => (
+                <div key={fav.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-750 rounded">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{fav.reference}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{fav.text}</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const params = new URLSearchParams({ userId: user.id, reference: fav.reference });
+                        await fetch(`/api/bible/favorites?${params.toString()}`, { method: 'DELETE' });
+                        setFavorites((prev) => prev.filter((f) => f.reference !== fav.reference));
+                      } catch (e) {
+                        console.error('Failed to remove favorite', e);
+                      }
+                    }}
+                    className="ml-2 p-1 text-red-500 hover:text-red-700"
+                    title="Remove"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -193,18 +313,19 @@ export default function BibleSearch({ onVerseSelect, onAddNote, className = '' }
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Popular Verses
             </h4>
-                         <div className="space-y-3">
-               {popularVerses && popularVerses.slice(0, 5).map((verse, index) => (
-                 <BibleVerse
-                   key={index}
-                   reference={verse.reference}
-                   text={verse.text}
-                   version={verse.version?.name}
-                   onSelect={handleVerseSelect}
-                   showActions={false}
-                 />
-               ))}
-             </div>
+            <div className="space-y-3">
+              {popularVerses && popularVerses.slice(0, 5).map((verse, index) => (
+                <BibleVerse
+                  key={index}
+                  reference={verse.reference}
+                  text={verse.text}
+                  version={verse.version?.name}
+                  onSelect={handleVerseSelect}
+                  onFavorite={() => saveFavorite(verse.reference, verse.text, verse.version?.name || 'NIV')}
+                  showActions={true}
+                />
+              ))}
+            </div>
           </div>
         )}
 
@@ -233,6 +354,8 @@ export default function BibleSearch({ onVerseSelect, onAddNote, className = '' }
                           version={passage.version?.name}
                           onSelect={handleVerseSelect}
                           onAddNote={handleAddNote}
+                          onAddToPlan={onAddToPlan}
+                          onFavorite={() => saveFavorite(passage.reference, passage.text, passage.version?.name || 'NIV')}
                         />
                       ))}
                     </div>

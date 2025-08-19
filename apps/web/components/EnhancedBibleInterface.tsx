@@ -5,16 +5,19 @@ import AdvancedBibleSearch from './AdvancedBibleSearch';
 import VerseComparison from './VerseComparison';
 import BibleStudyTools from './BibleStudyTools';
 import BibleVerse from './BibleVerse';
+import { useAuth } from '../lib/auth-context';
 
 interface EnhancedBibleInterfaceProps {
   onVerseSelect?: (reference: string, text: string, version?: string) => void;
   onAddNote?: (reference: string, text: string) => void;
+  onAddToPlan?: (reference: string, text: string) => void;
   className?: string;
 }
 
 type BibleMode = 'search' | 'advanced' | 'comparison' | 'study';
 
-export default function EnhancedBibleInterface({ onVerseSelect, onAddNote, className = '' }: EnhancedBibleInterfaceProps) {
+export default function EnhancedBibleInterface({ onVerseSelect, onAddNote, onAddToPlan, className = '' }: EnhancedBibleInterfaceProps) {
+  const { user } = useAuth();
   const [activeMode, setActiveMode] = useState<BibleMode>('search');
   const [selectedVerse, setSelectedVerse] = useState<string>('');
   const [showInterface, setShowInterface] = useState(false);
@@ -43,7 +46,7 @@ export default function EnhancedBibleInterface({ onVerseSelect, onAddNote, class
     }
   };
 
-  const addToFavorites = (reference: string, text: string, version: string) => {
+  const addToFavorites = async (reference: string, text: string, version: string) => {
     const newFavorite = { reference, text, version };
     setFavoriteVerses(prev => {
       const exists = prev.find(fav => fav.reference === reference);
@@ -52,10 +55,31 @@ export default function EnhancedBibleInterface({ onVerseSelect, onAddNote, class
       }
       return prev;
     });
+    try {
+      if (!user?.id) return;
+      await fetch('/api/bible/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, reference, text, version })
+      });
+    } catch (e) {
+      // no-op
+    }
   };
 
-  const removeFromFavorites = (reference: string) => {
+  const handleAddToPlan = (reference: string, text: string) => {
+    if (onAddToPlan) onAddToPlan(reference, text);
+  };
+
+  const removeFromFavorites = async (reference: string) => {
     setFavoriteVerses(prev => prev.filter(fav => fav.reference !== reference));
+    try {
+      if (!user?.id) return;
+      const params = new URLSearchParams({ userId: user.id, reference });
+      await fetch(`/api/bible/favorites?${params.toString()}`, { method: 'DELETE' });
+    } catch (e) {
+      // no-op
+    }
   };
 
   const addToRecentSearches = (search: string) => {
@@ -208,6 +232,7 @@ export default function EnhancedBibleInterface({ onVerseSelect, onAddNote, class
               addToRecentSearches(reference);
             }}
             onAddNote={handleAddNote}
+            onAddToPlan={handleAddToPlan}
           />
         )}
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Settings, User, LogOut, MessageSquare, Menu, Heart, MapPin, BookOpen, Shield, Globe } from 'lucide-react';
+import { Search, Filter, Settings, User, LogOut, MessageSquare, Heart, MapPin, BookOpen, Shield, Sparkles } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
 import { useAuth } from '../lib/auth-context';
 import AuthModal from './AuthModal';
@@ -17,6 +17,7 @@ interface HeaderProps {
   onBibleSearchClick?: () => void;
   onApologeticsBibleClick?: () => void;
   onNotesManagerClick?: () => void;
+  onStudyPlansClick?: () => void;
   currentLanguage?: string;
   onLanguageChange?: (language: string) => void;
 }
@@ -32,6 +33,7 @@ const Header: React.FC<HeaderProps> = ({
   onBibleSearchClick,
   onApologeticsBibleClick,
   onNotesManagerClick,
+  onStudyPlansClick,
   currentLanguage = 'en',
   onLanguageChange
 }) => {
@@ -49,6 +51,7 @@ const Header: React.FC<HeaderProps> = ({
     sortBy: 'date',
     sortOrder: 'desc'
   });
+  
 
   const handleSignIn = () => {
     setAuthMode('signin');
@@ -100,8 +103,6 @@ const Header: React.FC<HeaderProps> = ({
             {themeIcon}
           </button>
 
-
-
           {/* Mood Verse System */}
           <button
             onClick={onMoodVerseClick}
@@ -128,31 +129,46 @@ const Header: React.FC<HeaderProps> = ({
             <MapPin className="w-5 h-5 group-hover:scale-110 transition-transform" />
           </button>
 
-                      {/* Enhanced Bible Study Suite */}
-            <button
-              onClick={onBibleSearchClick}
-              className={`p-2 rounded-xl transition-all duration-200 group ${
-                theme === 'dark'
-                  ? 'text-shield-white hover:bg-shield-light-gray/50'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-              title="Bible Study Suite - Search, Compare, Study"
-            >
-              <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            </button>
+          {/* Enhanced Bible Study Suite */}
+          <button
+            onClick={onBibleSearchClick}
+            className={`p-2 rounded-xl transition-all duration-200 group ${
+              theme === 'dark'
+                ? 'text-shield-white hover:bg-shield-light-gray/50'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title="Bible Study Suite - Search, Compare, Study"
+          >
+            <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          </button>
 
-            {/* Apologetics Bible Study */}
+          {/* Apologetics Bible Study */}
+          <button
+            onClick={onApologeticsBibleClick}
+            className={`p-2 rounded-xl transition-all duration-200 group ${
+              theme === 'dark'
+                ? 'text-shield-white hover:bg-shield-light-gray/50'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+            title="Apologetics Bible Study - Curated verses for defending the faith"
+          >
+            <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          </button>
+
+          {/* Study Plans */}
+          {onStudyPlansClick && (
             <button
-              onClick={onApologeticsBibleClick}
+              onClick={onStudyPlansClick}
               className={`p-2 rounded-xl transition-all duration-200 group ${
                 theme === 'dark'
                   ? 'text-shield-white hover:bg-shield-light-gray/50'
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
-              title="Apologetics Bible Study - Curated verses for defending the faith"
+              title="Study Plans"
             >
-              <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
+          )}
 
           {/* Language Selector */}
           {onLanguageChange && (
@@ -186,7 +202,6 @@ const Header: React.FC<HeaderProps> = ({
           {user && onNotesManagerClick && (
             <button 
               onClick={() => {
-                console.log('Notes button clicked in Header component');
                 onNotesManagerClick();
               }}
               className={`p-2 rounded-xl transition-all duration-200 group ${

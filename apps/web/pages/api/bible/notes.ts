@@ -1,19 +1,23 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '../../../lib/supabase';
+import { logger, withCorrelationId } from '../../../lib/logger';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  const cid = withCorrelationId(req, `notes_${Date.now()}`);
   if (req.method === 'GET') {
     try {
       const { reference, userId } = req.query;
 
       if (!reference || typeof reference !== 'string') {
+        logger.warn('Notes GET missing reference', { cid });
         return res.status(400).json({ error: 'Reference parameter is required' });
       }
 
       if (!userId || typeof userId !== 'string') {
+        logger.warn('Notes GET missing userId', { cid });
         return res.status(400).json({ error: 'User ID is required' });
       }
 
@@ -43,7 +47,7 @@ export default async function handler(
         .order('last_modified', { ascending: false });
 
       if (error) {
-        console.error('Error fetching notes:', error);
+        logger.error('Notes fetch failed', { cid }, error);
         return res.status(500).json({ error: 'Failed to fetch notes' });
       }
 
@@ -69,7 +73,7 @@ export default async function handler(
 
       res.status(200).json({ notes: transformedNotes });
     } catch (error) {
-      console.error('Error handling GET request:', error);
+      logger.error('Notes GET error', { cid }, error);
       res.status(500).json({ error: 'Failed to get notes' });
     }
   } else if (req.method === 'POST') {
@@ -89,11 +93,13 @@ export default async function handler(
       } = req.body;
 
       if (!reference || !note || !userId) {
+        logger.warn('Notes POST missing fields', { cid, hasReference: !!reference, hasNote: !!note, hasUserId: !!userId });
         return res.status(400).json({ error: 'Reference, note, and user ID are required' });
       }
 
       // Validate visibility
       if (!['private', 'shared', 'public'].includes(visibility)) {
+        logger.warn('Notes POST invalid visibility', { cid, visibility });
         return res.status(400).json({ error: 'Invalid visibility value' });
       }
 
@@ -138,7 +144,7 @@ export default async function handler(
         .single();
 
       if (error) {
-        console.error('Error creating note:', error);
+        logger.error('Notes create failed', { cid }, error);
         return res.status(500).json({ error: 'Failed to create note' });
       }
 
@@ -164,7 +170,7 @@ export default async function handler(
 
       res.status(201).json(transformedNote);
     } catch (error) {
-      console.error('Error handling POST request:', error);
+      logger.error('Notes POST error', { cid }, error);
       res.status(500).json({ error: 'Failed to create note' });
     }
   } else if (req.method === 'PUT') {
@@ -185,11 +191,13 @@ export default async function handler(
       } = req.body;
 
       if (!id || !reference || !note || !userId) {
+        logger.warn('Notes PUT missing fields', { cid, hasId: !!id, hasReference: !!reference, hasNote: !!note, hasUserId: !!userId });
         return res.status(400).json({ error: 'ID, reference, note, and user ID are required' });
       }
 
       // Validate visibility
       if (!['private', 'shared', 'public'].includes(visibility)) {
+        logger.warn('Notes PUT invalid visibility', { cid, visibility });
         return res.status(400).json({ error: 'Invalid visibility value' });
       }
 
@@ -232,7 +240,7 @@ export default async function handler(
         .single();
 
       if (error) {
-        console.error('Error updating note:', error);
+        logger.error('Notes update failed', { cid }, error);
         return res.status(500).json({ error: 'Failed to update note' });
       }
 
@@ -258,7 +266,7 @@ export default async function handler(
 
       res.status(200).json(transformedNote);
     } catch (error) {
-      console.error('Error handling PUT request:', error);
+      logger.error('Notes PUT error', { cid }, error);
       res.status(500).json({ error: 'Failed to update note' });
     }
   } else if (req.method === 'DELETE') {
@@ -266,6 +274,7 @@ export default async function handler(
       const { noteId, userId } = req.query;
 
       if (!noteId || !userId) {
+        logger.warn('Notes DELETE missing fields', { cid, hasNoteId: !!noteId, hasUserId: !!userId });
         return res.status(400).json({ error: 'Note ID and user ID are required' });
       }
 
@@ -276,16 +285,17 @@ export default async function handler(
         .eq('user_id', userId);
 
       if (error) {
-        console.error('Error deleting note:', error);
+        logger.error('Notes delete failed', { cid }, error);
         return res.status(500).json({ error: 'Failed to delete note' });
       }
 
       res.status(200).json({ message: 'Note deleted successfully' });
     } catch (error) {
-      console.error('Error handling DELETE request:', error);
+      logger.error('Notes DELETE error', { cid }, error);
       res.status(500).json({ error: 'Failed to delete note' });
     }
   } else {
+    logger.warn('Notes method not allowed', { cid, method: req.method });
     res.status(405).json({ error: 'Method not allowed' });
   }
 } 

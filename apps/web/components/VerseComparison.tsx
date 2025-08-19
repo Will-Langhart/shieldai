@@ -53,7 +53,7 @@ export default function VerseComparison({ reference, onVerseSelect, className = 
             const versionInfo = availableVersions.find(v => v.id === versionId);
             newComparisons.push({
               version: versionId,
-              versionName: versionInfo?.name || 'Unknown',
+              versionName: versionInfo?.name || data.passage?.version?.name || 'Unknown',
               text: data.passage.content || data.passage.text || '',
               reference: data.passage.reference,
             });

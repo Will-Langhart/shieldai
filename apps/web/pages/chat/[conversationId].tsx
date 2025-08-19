@@ -8,6 +8,7 @@ import MemoryInsights from '../../components/MemoryInsights';
 import { useAuth } from '../../lib/auth-context';
 import { ClientService } from '../../lib/client-service';
 import { supabase } from '../../lib/supabase';
+import EnhancedBibleInterface from '../../components/EnhancedBibleInterface';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -25,6 +26,8 @@ export default function ConversationPage() {
   const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
   const [showSidebar, setShowSidebar] = useState(false);
   const [conversationTitle, setConversationTitle] = useState<string>('');
+  const [showBibleModal, setShowBibleModal] = useState(false);
+  const [banner, setBanner] = useState<string>('');
 
   // Load conversation when component mounts or conversationId changes
   useEffect(() => {
@@ -32,6 +35,13 @@ export default function ConversationPage() {
       loadConversation(conversationId);
     }
   }, [user, conversationId]);
+
+  // Listen for global event to open Bible UI from input bar
+  useEffect(() => {
+    const openHandler = () => setShowBibleModal(true);
+    window.addEventListener('open-bible-search', openHandler as any);
+    return () => window.removeEventListener('open-bible-search', openHandler as any);
+  }, []);
 
   const loadConversation = async (convId: string) => {
     try {
@@ -81,6 +91,76 @@ export default function ConversationPage() {
 
   const handleShareMessage = (conversationId?: string) => {
     console.log('Share link copied to clipboard');
+  };
+
+  const handleQuoteMessage = async (content: string) => {
+    try {
+      if (!conversationId || typeof conversationId !== 'string') return;
+      const quoted = content.split('\n').map((line) => `> ${line}`).join('\n');
+      await ClientService.addMessage(conversationId, quoted, 'user', currentMode);
+      setMessages((prev) => ([
+        ...prev,
+        { role: 'user', content: quoted, timestamp: new Date().toISOString(), mode: currentMode },
+      ]));
+    } catch (e) {
+      console.error('Failed to quote message', e);
+    }
+  };
+
+  const ensureDefaultPlan = async (): Promise<string | null> => {
+    try {
+      if (!user?.id) return null;
+      const plansResp = await ClientService.listStudyPlans(user.id);
+      const existing = (plansResp?.plans || []).find((p: any) => p.title === 'Saved from Chat');
+      if (existing) return existing.id;
+      const { plan } = await ClientService.createStudyPlan({ userId: user.id, title: 'Saved from Chat', description: 'Items saved from chat messages', durationDays: null, visibility: 'private' });
+      return plan?.id || null;
+    } catch (e) {
+      console.error('Failed to ensure default plan', e);
+      return null;
+    }
+  };
+
+  const handleAddMessageToPlan = async (content: string) => {
+    try {
+      const planId = await ensureDefaultPlan();
+      if (!planId) return;
+      const title = content.substring(0, 60);
+      await ClientService.createStudyPlanStep({ planId, title, notes: content });
+      setBanner('Added to plan');
+      setTimeout(() => setBanner(''), 2000);
+    } catch (e) {
+      console.error('Failed to add message to plan', e);
+    }
+  };
+
+  const handleAddVerseToConversation = async (reference: string, text: string, version?: string) => {
+    try {
+      if (!conversationId || typeof conversationId !== 'string') return;
+      const formatted = `${reference}${version ? ` (${version})` : ''}: "${text}"`;
+      await ClientService.addMessage(conversationId, formatted, 'user', currentMode);
+      setMessages((prev) => ([
+        ...prev,
+        { role: 'user', content: formatted, timestamp: new Date().toISOString(), mode: currentMode },
+      ]));
+      setShowBibleModal(false);
+      setBanner('Verse added to conversation');
+      setTimeout(() => setBanner(''), 2000);
+    } catch (e) {
+      console.error('Failed to add verse to conversation', e);
+    }
+  };
+
+  const handleAddVerseToPlan = async (reference: string, text: string) => {
+    try {
+      const planId = await ensureDefaultPlan();
+      if (!planId) return;
+      await ClientService.createStudyPlanStep({ planId, reference, title: reference, notes: text });
+      setBanner('Verse added to plan');
+      setTimeout(() => setBanner(''), 2000);
+    } catch (e) {
+      console.error('Failed to add verse to plan', e);
+    }
   };
 
   const handleFeedback = async (messageIndex: number, type: 'positive' | 'negative') => {
@@ -230,6 +310,12 @@ export default function ConversationPage() {
       </Head>
 
       <div className="min-h-screen bg-shield-black flex">
+        {/* Banner */}
+        {banner && (
+          <div className="fixed top-4 right-4 z-50 px-3 py-2 rounded bg-green-600 text-white text-sm shadow-lg">
+            {banner}
+          </div>
+        )}
         {/* Sidebar backdrop for mobile */}
         {user && showSidebar && (
           <div 
@@ -358,6 +444,9 @@ export default function ConversationPage() {
                         onCopy={() => handleCopyMessage(message.content)}
                         onShare={() => handleShareMessage(conversationId as string)}
                         onFeedback={(type) => handleFeedback(index, type)}
+                        onQuote={() => handleQuoteMessage(message.content)}
+                        onExport={() => {}}
+                        onAddToPlan={(c) => handleAddMessageToPlan(c)}
                       />
                     )}
                   </div>
@@ -401,6 +490,28 @@ export default function ConversationPage() {
               }}
             />
           </div>
+          {/* Bible Modal */}
+          {showBibleModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/60" onClick={() => setShowBibleModal(false)} />
+              <div className="relative z-10 w-full max-w-4xl mx-4">
+                <div className="bg-gray-900 border border-gray-700 rounded-xl overflow-hidden shadow-2xl">
+                  <div className="flex items-center justify-between p-3 border-b border-gray-700">
+                    <h3 className="text-sm font-medium text-white">Bible Study</h3>
+                    <button onClick={() => setShowBibleModal(false)} className="text-gray-300 hover:text-white">✕</button>
+                  </div>
+                  <div className="p-3 bg-gray-900">
+                    <EnhancedBibleInterface
+                      className=""
+                      onVerseSelect={(ref, txt, ver) => handleAddVerseToConversation(ref, txt, ver)}
+                      onAddToPlan={(ref, txt) => handleAddVerseToPlan(ref, txt)}
+                      onAddNote={() => {}}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

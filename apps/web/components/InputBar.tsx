@@ -9,9 +9,10 @@ interface InputBarProps {
   disabled?: boolean;
   theme?: 'light' | 'dark';
   onBibleSelectClick?: () => void;
+  onMicClick?: () => void;
 }
 
-const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false, theme = 'dark', onBibleSelectClick }) => {
+const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false, theme = 'dark', onBibleSelectClick, onMicClick }) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -43,6 +44,7 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
           <button
             type="button"
             disabled={disabled}
+            onClick={onMicClick}
             className={`p-2 sm:p-2.5 rounded-xl transition-all duration-200 mr-2 sm:mr-3 group ${
               disabled 
                 ? 'text-gray-400 cursor-not-allowed' 

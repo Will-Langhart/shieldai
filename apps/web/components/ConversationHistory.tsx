@@ -24,29 +24,27 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   theme = 'dark'
 }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadConversations();
-  }, []);
+    loadConversations(page);
+  }, [page]);
 
-  const loadConversations = async () => {
+  const loadConversations = async (pageNum: number) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
-
-      if (error) {
-        console.error('Error loading conversations:', error);
-        return;
-      }
-
-      setConversations(data || []);
+      const resp = await fetch(`/api/conversations?page=${pageNum}&pageSize=${pageSize}`, {
+        headers: { 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}` }
+      });
+      if (!resp.ok) throw new Error('Failed to load conversations');
+      const json = await resp.json();
+      setConversations(json.items || []);
+      setTotal(json.total || 0);
     } catch (error) {
       console.error('Error loading conversations:', error);
     } finally {
@@ -206,6 +204,23 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                 </div>
               </div>
             ))}
+            <div className="flex items-center justify-between mt-3 px-1">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                className={`px-3 py-1 rounded ${theme==='dark' ? 'bg-gray-800 text-gray-200 disabled:opacity-50' : 'bg-gray-100 text-gray-700 disabled:opacity-50'}`}
+              >
+                Prev
+              </button>
+              <span className={`text-xs ${theme==='dark' ? 'text-gray-400' : 'text-gray-500'}`}>Page {page} / {Math.max(1, Math.ceil(total / pageSize))}</span>
+              <button
+                disabled={page >= Math.ceil(total / pageSize)}
+                onClick={() => setPage(p => p + 1)}
+                className={`px-3 py-1 rounded ${theme==='dark' ? 'bg-gray-800 text-gray-200 disabled:opacity-50' : 'bg-gray-100 text-gray-700 disabled:opacity-50'}`}
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

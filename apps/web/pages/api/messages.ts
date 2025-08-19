@@ -1,11 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { ChatService } from '../../lib/chat-service';
 import { createServerSupabaseClient } from '../../lib/supabase';
+import { logger, withCorrelationId } from '../../lib/logger';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  const cid = withCorrelationId(req, `messages_${Date.now()}`);
+  const startedAt = Date.now();
   // Get authenticated user from Authorization header
   const authHeader = req.headers.authorization;
   let user = null;
@@ -17,13 +20,14 @@ export default async function handler(
     const { data: { user: authUser }, error: authError } = await serverSupabase.auth.getUser();
     if (!authError && authUser) {
       user = authUser;
-      console.log('Authenticated user for messages:', user.id, user.email);
+      logger.info('Authenticated (messages)', { cid, userId: user.id, email: user.email });
     } else {
-      console.error('Auth error:', authError);
+      logger.error('Auth error (messages)', { cid }, authError);
     }
   }
 
   if (!user) {
+    logger.warn('Unauthenticated (messages)', { cid });
     return res.status(401).json({ error: 'Authentication required' });
   }
 
@@ -31,27 +35,36 @@ export default async function handler(
     try {
       const { conversationId } = req.query;
       if (!conversationId || typeof conversationId !== 'string') {
+        logger.warn('Messages GET missing conversationId', { cid });
         return res.status(400).json({ error: 'Conversation ID is required' });
       }
-      const messages = await ChatService.getMessages(conversationId, serverSupabase);
+      const page = Math.max(1, parseInt(String(req.query.page || '1')) || 1);
+      const pageSizeRaw = parseInt(String(req.query.pageSize || '50')) || 50;
+      const pageSize = Math.min(200, Math.max(1, pageSizeRaw));
+      const messages = await ChatService.getMessagesPaged(conversationId, page, pageSize, serverSupabase);
+      logger.info('Messages fetched', { cid, ms: Date.now() - startedAt, count: messages?.items?.length || 0, page, pageSize, total: messages?.total || 0 });
       res.status(200).json(messages);
     } catch (error) {
-      console.error('Error getting messages:', error);
+      logger.error('Get messages failed', { cid }, error);
       res.status(500).json({ error: 'Failed to get messages' });
     }
   } else if (req.method === 'POST') {
     try {
       const { conversationId, content, role, mode } = req.body;
-      if (!conversationId || !content || !role) {
+      if (!conversationId || typeof conversationId !== 'string' || !content || typeof content !== 'string' || !role) {
+        logger.warn('Messages POST missing fields', { cid, hasConvId: !!conversationId, hasContent: !!content, role });
         return res.status(400).json({ error: 'Conversation ID, content, and role are required' });
       }
-      const message = await ChatService.addMessage(conversationId, content, role, mode, serverSupabase);
+      const safeContent = content.slice(0, 8000);
+      const message = await ChatService.addMessage(conversationId, safeContent, role, mode, serverSupabase);
+      logger.info('Message added', { cid, convId: conversationId, id: message?.id });
       res.status(201).json(message);
     } catch (error) {
-      console.error('Error adding message:', error);
+      logger.error('Add message failed', { cid }, error);
       res.status(500).json({ error: 'Failed to add message' });
     }
   } else {
+    logger.warn('Method not allowed (messages)', { cid, method: req.method });
     res.status(405).json({ error: 'Method not allowed' });
   }
 } 

@@ -178,8 +178,12 @@ class BibleService {
           bookName: verse.reference.split(' ')[0]
         }],
         version: {
-          name: 'KJV' // Default to KJV for now
-        }
+          id: versionId,
+          name: apiData.bible?.name || 'Unknown',
+          description: apiData.bible?.description || '',
+          language: apiData.bible?.language || { id: 'eng', name: 'English' },
+          type: apiData.bible?.type || 'text'
+        } as any
       }));
 
       return {
@@ -195,46 +199,13 @@ class BibleService {
 
   // Convert reference format (e.g., "John 3:16" to "JHN.3.16" or "Ephesians 2:8-9" to "EPH.2.8-EPH.2.9")
   private convertReferenceFormat(reference: string): string {
-    const bookMappings: { [key: string]: string } = {
-      'Genesis': 'GEN', 'Exodus': 'EXO', 'Leviticus': 'LEV', 'Numbers': 'NUM', 'Deuteronomy': 'DEU',
-      'Joshua': 'JOS', 'Judges': 'JDG', 'Ruth': 'RUT', '1 Samuel': '1SA', '2 Samuel': '2SA',
-      '1 Kings': '1KI', '2 Kings': '2KI', '1 Chronicles': '1CH', '2 Chronicles': '2CH',
-      'Ezra': 'EZR', 'Nehemiah': 'NEH', 'Esther': 'EST', 'Job': 'JOB', 'Psalms': 'PSA',
-      'Proverbs': 'PRO', 'Ecclesiastes': 'ECC', 'Song of Solomon': 'SNG', 'Isaiah': 'ISA',
-      'Jeremiah': 'JER', 'Lamentations': 'LAM', 'Ezekiel': 'EZK', 'Daniel': 'DAN',
-      'Hosea': 'HOS', 'Joel': 'JOL', 'Amos': 'AMO', 'Obadiah': 'OBA', 'Jonah': 'JON',
-      'Micah': 'MIC', 'Nahum': 'NAH', 'Habakkuk': 'HAB', 'Zephaniah': 'ZEP', 'Haggai': 'HAG',
-      'Zechariah': 'ZEC', 'Malachi': 'MAL',
-      'Matthew': 'MAT', 'Mark': 'MRK', 'Luke': 'LUK', 'John': 'JHN', 'Acts': 'ACT',
-      'Romans': 'ROM', '1 Corinthians': '1CO', '2 Corinthians': '2CO', 'Galatians': 'GAL',
-      'Ephesians': 'EPH', 'Philippians': 'PHP', 'Colossians': 'COL', '1 Thessalonians': '1TH',
-      '2 Thessalonians': '2TH', '1 Timothy': '1TI', '2 Timothy': '2TI', 'Titus': 'TIT',
-      'Philemon': 'PHM', 'Hebrews': 'HEB', 'James': 'JAS', '1 Peter': '1PE', '2 Peter': '2PE',
-      '1 John': '1JN', '2 John': '2JN', '3 John': '3JN', 'Jude': 'JUD', 'Revelation': 'REV'
-    };
-
-    // Try to match verse range format (e.g., "Ephesians 2:8-9")
-    const rangeMatch = reference.match(/^([1-3]?\s*[A-Za-z\s]+)\s+(\d+):(\d+)-(\d+)$/);
-    if (rangeMatch) {
-      const [, bookName, chapter, startVerse, endVerse] = rangeMatch;
-      const bookCode = bookMappings[bookName.trim()];
-      if (bookCode) {
-        return `${bookCode}.${chapter}.${startVerse}-${bookCode}.${chapter}.${endVerse}`;
-      }
+    // Delegate to shared utility
+    try {
+      const { toApiBibleId } = require('./reference-utils');
+      return toApiBibleId(reference);
+    } catch {
+      return reference;
     }
-
-    // Try to match single verse format (e.g., "John 3:16")
-    const singleMatch = reference.match(/^([1-3]?\s*[A-Za-z\s]+)\s+(\d+):(\d+)$/);
-    if (singleMatch) {
-      const [, bookName, chapter, verse] = singleMatch;
-      const bookCode = bookMappings[bookName.trim()];
-      if (bookCode) {
-        return `${bookCode}.${chapter}.${verse}`;
-      }
-    }
-
-    // If no match, return the original reference
-    return reference;
   }
 
   // Get verse by reference (e.g., "John 3:16")
@@ -669,8 +640,12 @@ class BibleService {
           bookName: verse.reference.split(' ')[0]
         }],
         version: {
-          name: 'KJV' // Default to KJV for now
-        }
+          id: params.versionId,
+          name: apiData.bible?.name || 'Unknown',
+          description: apiData.bible?.description || '',
+          language: apiData.bible?.language || { id: 'eng', name: 'English' },
+          type: apiData.bible?.type || 'text'
+        } as any
       }));
 
       return {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Search, Copy, Share2, Heart, ExternalLink, Edit } from 'lucide-react';
+import { BookOpen, Search, Copy, Share2, Heart, ExternalLink, Edit, PlusSquare } from 'lucide-react';
 
 interface BibleVerseProps {
   reference: string;
@@ -7,6 +7,7 @@ interface BibleVerseProps {
   version?: string;
   onSelect?: (reference: string, text: string) => void;
   onAddNote?: (reference: string, text: string) => void;
+  onAddToPlan?: (reference: string, text: string) => void;
   onCopy?: () => void;
   onShare?: () => void;
   onFavorite?: () => void;
@@ -22,6 +23,7 @@ export default function BibleVerse({
   version = 'NIV',
   onSelect,
   onAddNote,
+  onAddToPlan,
   onCopy,
   onShare,
   onFavorite,
@@ -78,6 +80,12 @@ export default function BibleVerse({
     }
   };
 
+  const handleAddToPlan = () => {
+    if (onAddToPlan) {
+      onAddToPlan(reference, text);
+    }
+  };
+
   return (
     <div className={`bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 ${className}`}>
       <div className="flex items-start justify-between mb-2">
@@ -101,6 +109,15 @@ export default function BibleVerse({
                 title="Add study note"
               >
                 <Edit className="w-4 h-4" />
+              </button>
+            )}
+            {onAddToPlan && (
+              <button
+                onClick={handleAddToPlan}
+                className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-green-600 hover:text-green-700"
+                title="Add to plan"
+              >
+                <PlusSquare className="w-4 h-4" />
               </button>
             )}
             <button

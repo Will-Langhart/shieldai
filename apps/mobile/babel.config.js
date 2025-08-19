@@ -3,12 +3,13 @@ module.exports = function (api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
+      'nativewind/babel',
       ['module-resolver', {
         extensions: ['.tsx', '.ts', '.js', '.json'],
         alias: {
-          '@services': '../../packages/services',
-          '@types': '../../packages/types',
-          '@ui': '../../packages/ui',
+          '@services': '../../packages/services/src',
+          '@types': '../../packages/types/src',
+          '@ui': '../../packages/ui/src',
         }
       }]
     ]

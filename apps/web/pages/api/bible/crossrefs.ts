@@ -16,12 +16,13 @@ export default async function handler(
       return res.status(400).json({ error: 'Reference parameter is required' });
     }
 
-    const crossReferences = await bibleService.getCrossReferences(
+    const result = await bibleService.getCrossReferences(
       reference,
       versionId as string
     );
-
-    res.status(200).json(crossReferences);
+    // Normalize to { crossReferences: [...] } with objects
+    const crossReferences = (result && (result as any).references) || [];
+    res.status(200).json({ crossReferences });
   } catch (error) {
     console.error('Error getting cross-references:', error);
     res.status(500).json({ error: 'Failed to get cross-references' });

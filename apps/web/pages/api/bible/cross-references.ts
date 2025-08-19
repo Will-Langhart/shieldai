@@ -1,38 +1,46 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { bibleService } from '../../../lib/bible-service';
+import { logger, withCorrelationId } from '../../../lib/logger';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const cid = withCorrelationId(req, `crossrefs_${Date.now()}`);
+  const startedAt = Date.now();
   if (req.method !== 'GET') {
+    logger.warn('Method not allowed', { cid, path: '/api/bible/cross-references', method: req.method });
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { reference } = req.query;
+    const { reference, versionId = 'de4e12af7f28f599-02' } = req.query as { reference?: string; versionId?: string };
 
     if (!reference || typeof reference !== 'string') {
+      logger.warn('Missing reference (cross-references)', { cid });
       return res.status(400).json({ error: 'Reference parameter is required' });
     }
 
     // Get cross-references for the verse
-    const crossReferences = await getCrossReferencesForVerse(reference);
-    
+    const crossReferences = await getCrossReferencesForVerse(reference, versionId);
+    logger.info('Cross-references fetched', { cid, ms: Date.now() - startedAt, count: crossReferences?.length || 0 });
     res.status(200).json({ crossReferences });
   } catch (error) {
-    console.error('Error fetching cross-references:', error);
+    logger.error('Cross-references error', { cid }, error);
     res.status(500).json({ error: 'Failed to get cross-references' });
   }
 }
 
-async function getCrossReferencesForVerse(reference: string): Promise<string[]> {
+type CrossRefObj = { reference: string; text: string; relevance: string };
+
+async function getCrossReferencesForVerse(reference: string, versionId: string): Promise<CrossRefObj[]> {
   try {
     // Use our Bible service to get cross-references
-    const crossRefs = await bibleService.getCrossReferences(reference, 'KJV');
-    return crossRefs || [];
+    const crossRefs = await bibleService.getCrossReferences(reference, versionId);
+    const references = (crossRefs && (crossRefs as any).references) || [];
+    return references;
   } catch (error) {
-    console.error('Error getting cross-references from Bible service:', error);
+    // keep minimal console for fallback, but avoid spamming logs
     
     // Fallback to manual cross-reference mapping for common verses
-    return getFallbackCrossReferences(reference);
+    return getFallbackCrossReferences(reference).map((ref) => ({ reference: ref, text: '', relevance: 'Related' }));
   }
 }
 

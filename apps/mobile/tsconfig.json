@@ -5,7 +5,10 @@
     "paths": {
       "@/*": [
         "./*"
-      ]
+      ],
+      "@services/*": ["../../packages/services/src/*"],
+      "@types/*": ["../../packages/types/src/*"],
+      "@ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": [
