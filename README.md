@@ -1,4 +1,4 @@
-# Shield AI
+# 🛡️ Shield AI
 
 <!-- Test CI/CD Trigger - GitHub Actions Workflow Test -->
 Shield AI is an intelligent Bible study and church recommendation platform that helps users grow their faith through AI-powered insights and community connections.
