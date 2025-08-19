@@ -20,10 +20,11 @@ export default function Document() {
         {/* Mobile Viewport */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 
-        {/* PWA Icons */}
-        <link rel="apple-touch-icon" href="/logo.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/logo.png" />
+        {/* PWA Icons - Updated to use new favicon files */}
+        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="mask-icon" href="/logo.svg" color="#3b82f6" />
         <link rel="shortcut icon" href="/favicon.ico" />
