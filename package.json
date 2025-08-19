@@ -13,6 +13,10 @@
     "start:web": "npm run start --workspace apps/web",
     "lint:web": "npm run lint --workspace apps/web",
     "dev:mobile": "npm run start --workspace apps/mobile || (echo 'Mobile app not yet created' && exit 0)",
+    "favicon": "node scripts/generate-favicon.js",
     "postinstall": "echo Monorepo bootstrap complete"
+  },
+  "devDependencies": {
+    "sharp": "^0.33.0"
   }
 }
