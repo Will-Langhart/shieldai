@@ -1,5 +1,5 @@
 import { EmbeddingService } from './embeddings';
-import { BibleService } from './bible-service';
+import { bibleService } from './bible-service';
 
 export interface BibleVector {
   id: string;
@@ -365,7 +365,6 @@ export class BiblePineconeService {
     try {
       console.log(`🚀 Starting bulk import of Bible version: ${versionId}`);
       
-      const bibleService = new BibleService();
       const version = await bibleService.getBibleVersion(versionId);
       if (!version) {
         throw new Error(`Bible version not found: ${versionId}`);
@@ -384,7 +383,9 @@ export class BiblePineconeService {
         if (totalChapters >= maxChapters) break;
         
         try {
-          const book = await bibleService.getBookByName(versionId, bookName);
+          // Get all books and find the one by name
+          const allBooks = await bibleService.getBooks(versionId);
+          const book = allBooks.find((b: any) => b.name === bookName);
           if (!book) continue;
 
           const chapters = await bibleService.getChapters(versionId, book.id);
@@ -397,16 +398,16 @@ export class BiblePineconeService {
               if (!passage || !passage.verses || passage.verses.length === 0) continue;
 
               // Generate embeddings for all verses in the chapter
-              const verseTexts = passage.verses.map(v => v.text);
+              const verseTexts = passage.verses.map((v: any) => v.text);
               const embeddings = await Promise.all(
-                verseTexts.map(text => EmbeddingService.generateEmbedding(text))
+                verseTexts.map((text: string) => EmbeddingService.generateEmbedding(text))
               );
 
               // Store the chapter
               await this.storeBibleChapter(
                 bookName,
                 chapter.number,
-                passage.verses.map(v => ({
+                passage.verses.map((v: any) => ({
                   verse: v.verseNumber,
                   text: v.text,
                   reference: v.reference,
