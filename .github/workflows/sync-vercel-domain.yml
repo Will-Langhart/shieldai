@@ -1,0 +1,68 @@
+name: Sync Vercel Domain
+
+on:
+  push:
+    branches:
+      - ios-app
+  workflow_dispatch:
+
+jobs:
+  sync-domain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Deploy to Vercel
+        run: |
+          vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Sync Custom Domain
+        run: |
+          # Wait a moment for deployment to complete
+          sleep 30
+          
+          # Get latest production deployment
+          LATEST_DEPLOYMENT=$(vercel ls --limit=1 | grep "Production" | head -1 | awk '{print $3}')
+          
+          if [ -n "$LATEST_DEPLOYMENT" ]; then
+            echo "Latest production deployment: $LATEST_DEPLOYMENT"
+            
+            # Update domain alias
+            vercel alias "$LATEST_DEPLOYMENT" shieldai.cloud
+            
+            echo "Domain synced successfully"
+          else
+            echo "No production deployment found"
+            exit 1
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Verify Domain Sync
+        run: |
+          # Wait for DNS propagation
+          sleep 60
+          
+          # Check if domain is pointing to latest deployment
+          CURRENT_ALIAS=$(vercel inspect shieldai.cloud 2>/dev/null | grep "url" | awk '{print $2}' || echo "none")
+          LATEST_DEPLOYMENT=$(vercel ls --limit=1 | grep "Production" | head -1 | awk '{print $3}')
+          
+          if [ "$CURRENT_ALIAS" = "$LATEST_DEPLOYMENT" ]; then
+            echo "✅ Domain sync verified successfully"
+          else
+            echo "❌ Domain sync verification failed"
+            exit 1
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

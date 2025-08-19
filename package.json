@@ -14,6 +14,8 @@
     "lint:web": "npm run lint --workspace apps/web",
     "dev:mobile": "npm run start --workspace apps/mobile || (echo 'Mobile app not yet created' && exit 0)",
     "favicon": "node scripts/generate-favicon.js",
+    "sync-domain": "./scripts/sync-vercel-domain.sh",
+    "deploy": "vercel --prod && npm run sync-domain",
     "postinstall": "echo Monorepo bootstrap complete"
   },
   "devDependencies": {
