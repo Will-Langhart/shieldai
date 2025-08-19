@@ -19,6 +19,8 @@ import EnhancedNoteModal from '../components/EnhancedNoteModal';
 import NotesManager from '../components/NotesManager';
 import MobileNavigation from '../components/MobileNavigation';
 import BibleVersionSelector from '../components/BibleVersionSelector';
+import EnhancedLoadingIndicator from '../components/EnhancedLoadingIndicator';
+import EnhancedStreamingText from '../components/EnhancedStreamingText';
 import { useAuth } from '../lib/auth-context';
 import { useBible } from '../contexts/bible-context';
 import { ClientService } from '../lib/client-service';
@@ -902,20 +904,25 @@ export default function Home() {
                               <div className={`text-sm sm:text-base ${
                                 resolvedTheme === 'dark' ? 'text-shield-white' : 'text-gray-900'
                               }`}>
-                                <MessageRenderer
-                                  content={message.content}
-                                  theme={resolvedTheme}
-                                  animated={message.isStreaming || false}
-                                  className="message-scrollbar"
-                                  onCopy={(text) => {
-                                    navigator.clipboard.writeText(text);
-                                    // You can add a toast notification here
-                                  }}
-                                />
-                                {message.isStreaming && (
-                                  <span className="inline-block ml-2 text-blue-400 animate-pulse">
-                                    ●
-                                  </span>
+                                {message.isStreaming ? (
+                                  <EnhancedStreamingText
+                                    content={message.content}
+                                    theme={resolvedTheme}
+                                    isStreaming={true}
+                                    showTypingIndicator={true}
+                                    className="message-scrollbar"
+                                  />
+                                ) : (
+                                  <MessageRenderer
+                                    content={message.content}
+                                    theme={resolvedTheme}
+                                    animated={false}
+                                    className="message-scrollbar"
+                                    onCopy={(text) => {
+                                      navigator.clipboard.writeText(text);
+                                      // You can add a toast notification here
+                                    }}
+                                  />
                                 )}
                               </div>
                               <p className={`text-xs mt-2 opacity-60 ${
@@ -972,50 +979,12 @@ export default function Home() {
                     
                     {/* Enhanced Loading indicator */}
                     {isLoading && (
-                      <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <div className={`max-w-2xl px-6 py-4 rounded-2xl shadow-lg backdrop-blur-sm border ${
-                          resolvedTheme === 'dark'
-                            ? 'bg-transparent border-gray-700/30'
-                            : 'bg-transparent border-gray-200'
-                        }`}>
-                          <div className="flex items-start space-x-3">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${
-                              resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                            }`}>
-                              <img src="/logo.png" alt="Shield AI" className="w-6 h-6 rounded animate-pulse" />
-                            </div>
-                            <div className="flex-1 pt-1">
-                              <div className="flex items-center space-x-1 mb-3">
-                                <div className={`w-2 h-2 rounded-full loading-dot ${
-                                  resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                                }`}></div>
-                                <div className={`w-2 h-2 rounded-full loading-dot ${
-                                  resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                                }`}></div>
-                                <div className={`w-2 h-2 rounded-full loading-dot ${
-                                  resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                                }`}></div>
-                              </div>
-                              <div className="space-y-2">
-                                <div className={`h-2 rounded animate-pulse ${
-                                  resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
-                                }`} style={{ width: '75%' }}></div>
-                                <div className={`h-2 rounded animate-pulse ${
-                                  resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
-                                }`} style={{ width: '60%' }}></div>
-                                <div className={`h-2 rounded animate-pulse ${
-                                  resolvedTheme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
-                                }`} style={{ width: '45%' }}></div>
-                              </div>
-                              <p className={`text-xs mt-2 ${
-                                resolvedTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'
-                              }`}>
-                                Shield AI is thinking...
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <EnhancedLoadingIndicator
+                        theme={resolvedTheme}
+                        message="Shield AI is analyzing your question and preparing a thoughtful response..."
+                        showProgress={true}
+                        variant="thinking"
+                      />
                     )}
                     
                     {/* Pagination controls */}

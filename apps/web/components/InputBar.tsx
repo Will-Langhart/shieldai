@@ -91,18 +91,28 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
           </div>
 
           {/* Input field */}
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder={disabled ? "Upgrade required to continue..." : "Ask me anything about apologetics, theology, or philosophy..."}
-            disabled={isLoading || disabled}
-            className={`flex-1 bg-transparent outline-none text-base sm:text-lg font-medium min-w-0 w-full transition-colors duration-300 ${
-              disabled 
-                ? theme === 'dark' ? 'text-gray-400 placeholder-gray-500' : 'text-gray-400 placeholder-gray-400'
-                : theme === 'dark' ? 'text-shield-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
-            }`}
-          />
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder={disabled ? "Upgrade required to continue..." : "Ask me anything about apologetics, theology, or philosophy..."}
+              disabled={isLoading || disabled}
+              className={`w-full bg-transparent outline-none text-base sm:text-lg font-medium min-w-0 transition-colors duration-300 ${
+                disabled 
+                  ? theme === 'dark' ? 'text-gray-400 placeholder-gray-500' : 'text-gray-400 placeholder-gray-400'
+                  : isLoading
+                    ? theme === 'dark' ? 'text-gray-500 placeholder-gray-600' : 'text-gray-400 placeholder-gray-500'
+                    : theme === 'dark' ? 'text-shield-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
+              }`}
+            />
+            {isLoading && (
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${theme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'} animate-pulse`}></div>
+                <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>AI thinking...</span>
+              </div>
+            )}
+          </div>
 
           {/* Bible select button */}
           <button
@@ -138,12 +148,23 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
             className={`p-2 sm:p-2.5 rounded-xl transition-all duration-200 ml-2 sm:ml-3 disabled:opacity-50 disabled:cursor-not-allowed group ${
               disabled 
                 ? 'text-gray-400' 
-                : theme === 'dark'
-                  ? 'text-shield-white hover:bg-shield-blue/20'
-                  : 'text-blue-600 hover:bg-blue-50'
+                : isLoading
+                  ? theme === 'dark'
+                    ? 'bg-shield-blue/30 text-shield-blue border border-shield-blue/50'
+                    : 'bg-blue-100 text-blue-700 border border-blue-300'
+                  : theme === 'dark'
+                    ? 'text-shield-white hover:bg-shield-blue/20'
+                    : 'text-blue-600 hover:bg-blue-50'
             }`}
           >
-            <Send size={18} className="sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-xs font-medium">Processing...</span>
+              </div>
+            ) : (
+              <Send size={18} className="sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
+            )}
           </button>
         </div>
       </form>

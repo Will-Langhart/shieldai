@@ -174,6 +174,151 @@
 .loading-dot:nth-child(2) { animation-delay: -0.16s; }
 .loading-dot:nth-child(3) { animation-delay: 0s; }
 
+/* Enhanced Loading Animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.6);
+  }
+}
+
+@keyframes typing-indicator {
+  0%, 20% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes progress-fill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes thinking-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes shield-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes text-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced Loading Components */
+.enhanced-loading {
+  animation: thinking-pulse 2s ease-in-out infinite;
+}
+
+.typing-indicator {
+  animation: typing-indicator 1.5s ease-in-out infinite;
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
+  background-size: 200% 100%;
+  animation: progress-fill 3s ease-in-out infinite, progress-fill 3s ease-in-out infinite reverse;
+}
+
+.shield-rotating {
+  animation: shield-rotate 3s linear infinite;
+}
+
+.text-reveal {
+  animation: text-reveal 0.5s ease-out forwards;
+}
+
+/* Enhanced Streaming Text */
+.streaming-text {
+  position: relative;
+}
+
+.streaming-text::after {
+  content: '|';
+  animation: blink 1s infinite;
+  color: #3b82f6;
+  font-weight: bold;
+}
+
+/* Enhanced Loading States */
+.loading-state-1 { animation-delay: 0s; }
+.loading-state-2 { animation-delay: 0.2s; }
+.loading-state-3 { animation-delay: 0.4s; }
+
+/* Pulse Glow Effect */
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Enhanced Message Animations */
+.message-enter {
+  animation: message-enter 0.5s ease-out forwards;
+}
+
+@keyframes message-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Enhanced Loading Bar */
+.enhanced-progress {
+  background: linear-gradient(90deg, 
+    #3b82f6 0%, 
+    #1d4ed8 25%, 
+    #3b82f6 50%, 
+    #1d4ed8 75%, 
+    #3b82f6 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-shift 2s ease-in-out infinite;
+}
+
+@keyframes progress-shift {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
