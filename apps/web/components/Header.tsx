@@ -90,141 +90,157 @@ const Header: React.FC<HeaderProps> = ({
 
         {/* Right side - Navigation and buttons */}
         <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
-          {/* Theme Toggle */}
-          <button
-            onClick={onThemeToggle}
-            className={`p-2 rounded-xl transition-all duration-200 group ${
-              theme === 'dark' 
-                ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            title="Toggle theme"
-          >
-            {themeIcon}
-          </button>
+          {/* Show navigation buttons only when user is authenticated */}
+          {user ? (
+            <>
+              {/* Theme Toggle */}
+              <button
+                onClick={onThemeToggle}
+                className={`p-2 rounded-xl transition-all duration-200 group ${
+                  theme === 'dark' 
+                    ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                title="Toggle theme"
+              >
+                {themeIcon}
+              </button>
 
-          {/* Mood Verse System */}
-          <button
-            onClick={onMoodVerseClick}
-            className={`p-2 rounded-xl transition-all duration-200 group ${
-              theme === 'dark' 
-                ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            title="Mood-based Bible Verses"
-          >
-            <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          </button>
+              {/* Mood Verse System */}
+              <button
+                onClick={onMoodVerseClick}
+                className={`p-2 rounded-xl transition-all duration-200 group ${
+                  theme === 'dark' 
+                    ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                title="Mood-based Bible Verses"
+              >
+                <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              </button>
 
-          {/* Church Finder */}
-          <button
-            onClick={onChurchFinderClick}
-            className={`p-2 rounded-xl transition-all duration-200 group ${
-              theme === 'dark' 
-                ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            title="Find Local Churches"
-          >
-            <MapPin className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          </button>
+              {/* Church Finder */}
+              <button
+                onClick={onChurchFinderClick}
+                className={`p-2 rounded-xl transition-all duration-200 group ${
+                  theme === 'dark' 
+                    ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                title="Find Local Churches"
+              >
+                <MapPin className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              </button>
 
-          {/* Enhanced Bible Study Suite */}
-          <button
-            onClick={onBibleSearchClick}
-            className={`p-2 rounded-xl transition-all duration-200 group ${
-              theme === 'dark'
-                ? 'text-shield-white hover:bg-shield-light-gray/50'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            title="Bible Study Suite - Search, Compare, Study"
-          >
-            <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          </button>
+              {/* Enhanced Bible Study Suite */}
+              <button
+                onClick={onBibleSearchClick}
+                className={`p-2 rounded-xl transition-all duration-200 group ${
+                  theme === 'dark'
+                    ? 'text-shield-white hover:bg-shield-light-gray/50'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                title="Bible Study Suite - Search, Compare, Study"
+              >
+                <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              </button>
 
-          {/* Apologetics Bible Study */}
-          <button
-            onClick={onApologeticsBibleClick}
-            className={`p-2 rounded-xl transition-all duration-200 group ${
-              theme === 'dark'
-                ? 'text-shield-white hover:bg-shield-light-gray/50'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-            title="Apologetics Bible Study - Curated verses for defending the faith"
-          >
-            <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          </button>
+              {/* Apologetics Bible Study */}
+              <button
+                onClick={onApologeticsBibleClick}
+                className={`p-2 rounded-xl transition-all duration-200 group ${
+                  theme === 'dark'
+                    ? 'text-shield-white hover:bg-shield-light-gray/50'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                title="Apologetics Bible Study - Curated verses for defending the faith"
+              >
+                <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              </button>
 
-          {/* Study Plans */}
-          {onStudyPlansClick && (
+              {/* Study Plans */}
+              {onStudyPlansClick && (
+                <button
+                  onClick={onStudyPlansClick}
+                  className={`p-2 rounded-xl transition-all duration-200 group ${
+                    theme === 'dark'
+                      ? 'text-shield-white hover:bg-shield-light-gray/50'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                  title="Study Plans"
+                >
+                  <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                </button>
+              )}
+
+              {/* Language Selector */}
+              {onLanguageChange && (
+                <LanguageSelector
+                  currentLanguage={currentLanguage}
+                  onLanguageChange={onLanguageChange}
+                  theme={theme}
+                  compact={true}
+                />
+              )}
+
+              {/* Icons - Hide search on mobile for space */}
+              <button className={`p-2 rounded-xl transition-all duration-200 group hidden md:block ${
+                theme === 'dark' 
+                  ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`} title="Search">
+                <Search size={20} className="group-hover:scale-110 transition-transform" />
+              </button>
+              <button 
+                onClick={() => setFilterModalOpen(true)}
+                className={`p-2 rounded-xl transition-all duration-200 group ${
+                  theme === 'dark' 
+                    ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`} 
+                title="Filter conversations"
+              >
+                <Filter size={20} className="group-hover:scale-110 transition-transform" />
+              </button>
+              {onNotesManagerClick && (
+                <button 
+                  onClick={() => {
+                    onNotesManagerClick();
+                  }}
+                  className={`p-2 rounded-xl transition-all duration-200 group ${
+                    theme === 'dark' 
+                      ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`} 
+                  title="Bible Study Notes - Manage your study notes and insights"
+                >
+                  <MessageSquare size={20} className="group-hover:scale-110 transition-transform" />
+                </button>
+              )}
+              <button 
+                onClick={() => setSettingsModalOpen(true)}
+                className={`p-2 rounded-xl transition-all duration-200 group ${
+                  theme === 'dark' 
+                    ? 'text-shield-white hover:bg-shield-light-gray/50' 
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`} 
+                title="User settings"
+              >
+                <Settings size={20} className="group-hover:scale-110 transition-transform" />
+              </button>
+            </>
+          ) : (
+            /* Show only theme toggle for unauthenticated users */
             <button
-              onClick={onStudyPlansClick}
+              onClick={onThemeToggle}
               className={`p-2 rounded-xl transition-all duration-200 group ${
-                theme === 'dark'
-                  ? 'text-shield-white hover:bg-shield-light-gray/50'
+                theme === 'dark' 
+                  ? 'text-shield-white hover:bg-shield-light-gray/50' 
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
-              title="Study Plans"
+              title="Toggle theme"
             >
-              <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            </button>
-          )}
-
-          {/* Language Selector */}
-          {onLanguageChange && (
-            <LanguageSelector
-              currentLanguage={currentLanguage}
-              onLanguageChange={onLanguageChange}
-              theme={theme}
-              compact={true}
-            />
-          )}
-
-          {/* Icons - Hide search on mobile for space */}
-          <button className={`p-2 rounded-xl transition-all duration-200 group hidden md:block ${
-            theme === 'dark' 
-              ? 'text-shield-white hover:bg-shield-light-gray/50' 
-              : 'text-gray-700 hover:bg-gray-100'
-          }`} title="Search">
-            <Search size={20} className="group-hover:scale-110 transition-transform" />
-          </button>
-          <button 
-            onClick={() => setFilterModalOpen(true)}
-            className={`p-2 rounded-xl transition-all duration-200 group ${
-              theme === 'dark' 
-                ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                : 'text-gray-700 hover:bg-gray-100'
-            }`} 
-            title="Filter conversations"
-          >
-            <Filter size={20} className="group-hover:scale-110 transition-transform" />
-          </button>
-          {user && onNotesManagerClick && (
-            <button 
-              onClick={() => {
-                onNotesManagerClick();
-              }}
-              className={`p-2 rounded-xl transition-all duration-200 group ${
-                theme === 'dark' 
-                  ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`} 
-              title="Bible Study Notes - Manage your study notes and insights"
-            >
-              <MessageSquare size={20} className="group-hover:scale-110 transition-transform" />
-            </button>
-          )}
-          {user && (
-            <button 
-              onClick={() => setSettingsModalOpen(true)}
-              className={`p-2 rounded-xl transition-all duration-200 group ${
-                theme === 'dark' 
-                  ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`} 
-              title="User settings"
-            >
-              <Settings size={20} className="group-hover:scale-110 transition-transform" />
+              {themeIcon}
             </button>
           )}
 

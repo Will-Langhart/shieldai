@@ -695,7 +695,7 @@ export default function Home() {
           ? 'bg-shield-black text-shield-white' 
           : 'bg-gray-50 text-gray-900'
       }`}>
-        {/* Header */}
+        {/* Header - Always show, handles authentication internally */}
         <Header 
           onMenuClick={() => setShowSidebar(!showSidebar)}
           showSidebar={showSidebar}
