@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Mic, Zap, ChevronDown, Volume2, Send, Sparkles, BookOpen } from 'lucide-react';
-import AnimatedPlaceholder from './AnimatedPlaceholder';
 
 interface InputBarProps {
   onSubmit: (message: string) => void;
@@ -115,12 +114,7 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
             )}
           </div>
           
-          {/* Animated placeholder hint below input */}
-          {!isLoading && !disabled && (
-            <div className="absolute -bottom-6 left-0 text-xs opacity-60">
-              <AnimatedPlaceholder theme={theme} />
-            </div>
-          )}
+
 
           {/* Bible select button */}
           <button
