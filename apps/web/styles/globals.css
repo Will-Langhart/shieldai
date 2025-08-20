@@ -476,4 +476,18 @@ a {
 
 [data-theme="dark"] * {
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Favicon transparency support */
+link[rel="icon"],
+link[rel="shortcut icon"],
+link[rel="apple-touch-icon"] {
+  background: transparent !important;
+}
+
+/* Force transparent backgrounds for favicon elements */
+[rel="icon"],
+[rel="shortcut icon"] {
+  background-color: transparent !important;
+  background-image: none !important;
 } 
