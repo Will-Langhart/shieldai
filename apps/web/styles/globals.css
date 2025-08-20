@@ -234,6 +234,17 @@ body {
   overflow: hidden;
 }
 
+/* Set light theme as default */
+html[data-theme="light"] body {
+  color: var(--shield-white);
+  background: var(--shield-black);
+}
+
+html[data-theme="dark"] body {
+  color: var(--shield-white);
+  background: var(--shield-black);
+}
+
 /* Mobile-specific improvements */
 @media (max-width: 640px) {
   /* Prevent horizontal scrolling */
@@ -292,6 +303,69 @@ body {
     min-height: 48px;
     min-width: 48px;
     padding: 12px;
+  }
+
+  /* Ensure all interactive elements are clickable */
+  .touch-button button,
+  .touch-button input,
+  .touch-button [role="button"] {
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Enhanced touch targets for mobile */
+  .touch-button button {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Prevent text selection on interactive elements */
+  .touch-button button:active,
+  .touch-button input:active {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Ensure input field is properly clickable */
+  .touch-button input[type="text"] {
+    cursor: text;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    touch-action: manipulation;
+  }
+
+  /* Enhanced focus states for accessibility */
+  .touch-button button:focus-visible,
+  .touch-button input:focus-visible {
+    outline: 2px solid var(--shield-blue);
+    outline-offset: 2px;
+  }
+
+  /* Ensure proper cursor states */
+  .touch-button button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  .touch-button button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Enhanced hover states for better UX */
+  .touch-button button:not(:disabled):hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
+  }
+
+  /* Active state feedback */
+  .touch-button button:not(:disabled):active {
+    transform: translateY(0px);
+    transition: transform 0.1s ease;
   }
 
   /* Mobile-optimized modals */

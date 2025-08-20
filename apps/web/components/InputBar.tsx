@@ -21,6 +21,7 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted with value:', inputValue);
     if (inputValue.trim() && !isLoading && !disabled) {
       onSubmit(inputValue.trim());
       setInputValue('');
@@ -28,6 +29,7 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
   };
 
   const handleSendClick = () => {
+    console.log('Send button clicked with value:', inputValue);
     if (inputValue.trim() && !isLoading && !disabled) {
       onSubmit(inputValue.trim());
       setInputValue('');
@@ -48,7 +50,10 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
           <button
             type="button"
             disabled={disabled}
-            onClick={onMicClick}
+            onClick={() => {
+              console.log('Microphone button clicked');
+              onMicClick?.();
+            }}
             className={`p-2 sm:p-2.5 rounded-xl transition-all duration-200 mr-2 sm:mr-3 group ${
               disabled 
                 ? 'text-gray-400 cursor-not-allowed' 
@@ -77,7 +82,10 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
             <button
               type="button"
               disabled={disabled}
-              onClick={() => onModeChange(mode === 'fast' ? 'accurate' : 'fast')}
+              onClick={() => {
+                console.log('Mode toggle clicked, current mode:', mode);
+                onModeChange(mode === 'fast' ? 'accurate' : 'fast');
+              }}
               className={`p-1 rounded transition-all duration-200 ${
                 disabled 
                   ? 'text-gray-400 cursor-not-allowed' 
@@ -119,7 +127,10 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
           {/* Bible select button */}
           <button
             type="button"
-            onClick={onBibleSelectClick}
+            onClick={() => {
+              console.log('Bible select button clicked');
+              onBibleSelectClick?.();
+            }}
             disabled={disabled}
             className={`flex items-center space-x-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl transition-all duration-200 ml-2 sm:ml-3 ${
               disabled 

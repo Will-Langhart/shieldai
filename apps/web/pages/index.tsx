@@ -80,8 +80,8 @@ export default function Home() {
   const [newPlanDescription, setNewPlanDescription] = useState('');
   const [newPlanDuration, setNewPlanDuration] = useState<number | ''>('');
   const [selectedVerseForNote, setSelectedVerseForNote] = useState<{ reference: string; text: string } | null>(null);
-  const [theme, setTheme] = useState<Theme>('auto');
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
+  const [theme, setTheme] = useState<Theme>('light');
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
   const [currentLanguage, setCurrentLanguage] = useState<string>('en');
   const [currentMobileSection, setCurrentMobileSection] = useState<'chat' | 'bible' | 'church' | 'mood' | 'settings'>('chat');
   
@@ -177,7 +177,7 @@ export default function Home() {
 
   // Theme and Language management
   useEffect(() => {
-    const savedTheme = localStorage.getItem('shieldai-theme') as Theme || 'auto';
+    const savedTheme = localStorage.getItem('shieldai-theme') as Theme || 'light';
     const savedLanguage = localStorage.getItem('shieldai-language') || 'en';
     setTheme(savedTheme);
     setCurrentLanguage(savedLanguage);
@@ -1046,6 +1046,10 @@ export default function Home() {
                     isLoading={isLoading}
                     disabled={shouldShowUpgradePrompt}
                     theme={resolvedTheme}
+                    onMicClick={() => {
+                      // TODO: Implement microphone functionality
+                      console.log('Microphone clicked - functionality to be implemented');
+                    }}
                     onBibleSelectClick={() => setShowBibleVersionSelector(true)}
                     selectedBibleVersion={selectedVersion}
                   />
