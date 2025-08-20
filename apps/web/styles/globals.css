@@ -245,6 +245,31 @@ html[data-theme="dark"] body {
   background: var(--shield-black);
 }
 
+/* CRITICAL: Global clickability fixes */
+.touch-button {
+  pointer-events: auto !important;
+}
+
+.touch-button * {
+  pointer-events: auto !important;
+}
+
+.touch-button button,
+.touch-button input,
+.touch-button [role="button"] {
+  pointer-events: auto !important;
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
+}
+
+.touch-button input[type="text"] {
+  cursor: text !important;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10;
+}
+
 /* Mobile-specific improvements */
 @media (max-width: 640px) {
   /* Prevent horizontal scrolling */
@@ -303,6 +328,23 @@ html[data-theme="dark"] body {
     min-height: 48px;
     min-width: 48px;
     padding: 12px;
+  }
+
+  /* CRITICAL: Ensure all elements are clickable */
+  .touch-button * {
+    pointer-events: auto !important;
+  }
+
+  .touch-button button,
+  .touch-button input,
+  .touch-button [role="button"] {
+    pointer-events: auto !important;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    position: relative;
+    z-index: 10;
   }
 
   /* Ensure all interactive elements are clickable */
