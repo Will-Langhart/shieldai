@@ -16,7 +16,7 @@ interface InputBarProps {
   } | null;
 }
 
-const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false, theme = 'dark', onBibleSelectClick, onMicClick, selectedBibleVersion }) => {
+const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false, theme = 'light', onBibleSelectClick, onMicClick, selectedBibleVersion }) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -37,13 +37,13 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
   return (
     <div className="w-full mx-auto px-2 sm:px-4 min-w-0 mobile-input-bar">
       <form onSubmit={handleSubmit} className="relative min-w-0">
-        <div className={`flex items-center backdrop-blur-sm rounded-2xl p-3 sm:p-4 transition-colors duration-300 touch-button ${
+        <div className={`flex items-center backdrop-blur-sm rounded-2xl p-3 sm:p-4 transition-all duration-300 touch-button relative focus-within:ring-2 focus-within:ring-shield-blue/20 focus-within:border-shield-blue/50 ${
           disabled 
-            ? theme === 'dark' ? 'bg-gray-600/50' : 'bg-gray-200'
+            ? theme === 'dark' ? 'bg-gray-600/50 border border-gray-400/30' : 'bg-gray-200 border border-gray-300'
             : theme === 'dark'
-              ? 'bg-shield-light-gray/50'
-              : 'bg-white'
-        }`}>
+              ? 'bg-shield-light-gray/50 border border-gray-600/50 shadow-lg shadow-black/10'
+              : 'bg-white border border-gray-200 shadow-lg shadow-gray-200/50'
+        } hover:border-opacity-80 hover:shadow-xl before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-r before:from-transparent before:via-shield-blue/5 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300`}>
           {/* Left side - Microphone */}
           <button
             type="button"
@@ -98,7 +98,7 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={disabled ? "Upgrade required to continue..." : "Ask me anything about apologetics, theology, or philosophy..."}
               disabled={isLoading || disabled}
-              className={`w-full bg-transparent outline-none text-base sm:text-lg font-medium min-w-0 transition-colors duration-300 ${
+              className={`w-full bg-transparent outline-none text-base sm:text-lg font-medium min-w-0 transition-all duration-300 focus:ring-2 focus:ring-shield-blue/20 ${
                 disabled 
                   ? theme === 'dark' ? 'text-gray-400 placeholder-gray-500' : 'text-gray-400 placeholder-gray-400'
                   : isLoading
