@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Play, ExternalLink, Clock, User, Calendar, BookOpen, Eye, EyeOff, X, Maximize2, AlertTriangle } from 'lucide-react';
 import { VideoResult } from '../lib/video-service';
 
@@ -23,6 +23,8 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoAvailability, setVideoAvailability] = useState<Map<string, boolean>>(new Map());
   const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Check video availability when videos change
   useEffect(() => {
@@ -111,12 +113,64 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
     }
     
     if (videoId) {
-      // Use enhanced embed parameters for better compatibility
-      return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+      // Use enhanced embed parameters for better compatibility and to avoid errors
+      const params = new URLSearchParams({
+        autoplay: '0',
+        rel: '0',
+        modestbranding: '1',
+        enablejsapi: '1',
+        origin: window.location.origin,
+        widget_referrer: window.location.origin,
+        hl: 'en',
+        cc_load_policy: '1',
+        iv_load_policy: '3',
+        fs: '1',
+        // Add parameters to help with embedding restrictions
+        playsinline: '1',
+        showinfo: '0'
+      });
+      
+      return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
     }
     
     // Fallback to original URL if we can't parse it
     return url;
+  };
+
+  // Function to check if a video is embeddable
+  const checkVideoEmbeddability = async (videoId: string) => {
+    try {
+      // Try to fetch video info to check if it's embeddable
+      const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+      if (response.ok) {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.warn('Could not check video embeddability:', error);
+      return true; // Assume embeddable if we can't check
+    }
+  };
+
+  // Function to detect iframe loading issues
+  const detectIframeIssues = (iframeElement: HTMLIFrameElement) => {
+    // Set a timeout to detect if the iframe fails to load content
+    const timeout = setTimeout(() => {
+      try {
+        // Check if iframe has content or if it's showing an error
+        const iframeDoc = iframeElement.contentDocument || iframeElement.contentWindow?.document;
+        if (!iframeDoc || iframeDoc.body.innerHTML.includes('error') || iframeDoc.body.innerHTML.includes('unavailable')) {
+          console.warn('Iframe content issue detected');
+          const fallback = document.getElementById('video-fallback');
+          if (fallback) fallback.classList.remove('hidden');
+        }
+      } catch (error) {
+        // Cross-origin restrictions might prevent access
+        console.log('Could not check iframe content due to CORS restrictions');
+      }
+    }, 5000); // 5 second timeout
+
+    return timeout;
   };
 
   const formatDate = (dateString: string) => {
@@ -446,23 +500,49 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
               {/* Video Player */}
               <div className="relative w-full aspect-video bg-black">
                 <iframe
+                  ref={iframeRef}
                   src={getYouTubeEmbedUrl(selectedVideo.url)}
                   title={selectedVideo.title}
                   className="w-full h-full"
                   frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
+                  loading="lazy"
+                  onLoad={(e) => {
+                    console.log('Video iframe loaded successfully');
+                    setIframeError(false);
+                    // Hide any fallback that might be showing
+                    const fallback = document.getElementById('video-fallback');
+                    if (fallback) fallback.classList.add('hidden');
+                    
+                    // Start monitoring for iframe issues
+                    const iframeElement = e.currentTarget as HTMLIFrameElement;
+                    const timeoutId = detectIframeIssues(iframeElement);
+                    
+                    // Clean up timeout when component unmounts
+                    return () => clearTimeout(timeoutId);
+                  }}
                   onError={(e) => {
                     console.error('Video iframe failed to load:', e);
+                    setIframeError(true);
+                    // Show fallback when iframe fails
+                    const fallback = document.getElementById('video-fallback');
+                    if (fallback) fallback.classList.remove('hidden');
                   }}
                 />
                 {/* Fallback message if video fails */}
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white hidden" id="video-fallback">
                   <div className="text-center">
-                    <p className="mb-2">Video unavailable</p>
+                    <div className="mb-4">
+                      <div className="w-16 h-16 mx-auto mb-2 bg-red-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-2xl">!</span>
+                      </div>
+                      <p className="text-lg font-medium mb-2">Video Unavailable</p>
+                      <p className="text-sm text-gray-300 mb-4">This video cannot be embedded. Please watch it directly on YouTube.</p>
+                    </div>
                     <button
                       onClick={() => window.open(selectedVideo.url, '_blank', 'noopener,noreferrer')}
-                      className="px-4 py-2 bg-shield-blue rounded-lg hover:bg-blue-600 transition-colors"
+                      className="px-6 py-3 bg-shield-blue rounded-lg hover:bg-blue-600 transition-colors font-medium"
                     >
                       Watch on YouTube
                     </button>
