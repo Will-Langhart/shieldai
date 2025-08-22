@@ -4,7 +4,9 @@ import { useAuth } from '../lib/auth-context';
 
 interface UsageMetrics {
   conversations_today: number;
-  accurate_mode_today: number;
+  gentle_mode_today: number;
+  scholarly_mode_today: number;
+  debate_mode_today: number;
   bible_searches_today: number;
   exports_today: number;
   notes_this_month: number;
@@ -14,7 +16,9 @@ interface UsageMetrics {
 
 interface SubscriptionLimits {
   daily_conversations?: number;
-  daily_accurate_mode?: number;
+  daily_gentle_mode?: number;
+  daily_scholarly_mode?: number;
+  daily_debate_mode?: number;
   daily_bible_searches?: number;
   daily_exports?: number;
   monthly_notes?: number;
@@ -268,12 +272,30 @@ const SubscriptionUsageDashboard: React.FC<SubscriptionUsageDashboardProps> = ({
         />
 
         <UsageCard
-          title="Accurate Mode"
+          title="Gentle Mode"
+          icon={<Zap className="w-4 h-4 text-green-500" />}
+          current={usage.gentle_mode_today}
+          limit={limits.daily_gentle_mode}
+          subtitle="Gentle mode usage today"
+          isUnlimited={!limits.daily_gentle_mode}
+        />
+
+        <UsageCard
+          title="Scholarly Mode"
           icon={<Zap className="w-4 h-4 text-purple-500" />}
-          current={usage.accurate_mode_today}
-          limit={limits.daily_accurate_mode}
-          subtitle="GPT-4 usage today"
-          isUnlimited={!limits.daily_accurate_mode}
+          current={usage.scholarly_mode_today}
+          limit={limits.daily_scholarly_mode}
+          subtitle="Scholarly mode usage today"
+          isUnlimited={!limits.daily_scholarly_mode}
+        />
+
+        <UsageCard
+          title="Debate Mode"
+          icon={<Zap className="w-4 h-4 text-red-500" />}
+          current={usage.debate_mode_today}
+          limit={limits.daily_debate_mode}
+          subtitle="Debate mode usage today"
+          isUnlimited={!limits.daily_debate_mode}
         />
 
         <UsageCard
