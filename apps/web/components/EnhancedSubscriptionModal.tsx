@@ -13,13 +13,17 @@ interface SubscriptionPlan {
   features: string[];
   limits: {
     daily_conversations?: number;
-    daily_accurate_mode?: number;
+    daily_gentle_mode?: number;
+    daily_scholarly_mode?: number;
+    daily_debate_mode?: number;
     daily_bible_searches?: number;
     daily_exports?: number;
     monthly_notes?: number;
     monthly_api_calls?: number;
     monthly_church_searches?: number;
-    accurate_mode_enabled: boolean;
+    gentle_mode_enabled: boolean;
+    scholarly_mode_enabled: boolean;
+    debate_mode_enabled: boolean;
     advanced_bible_search: boolean;
     cross_references_enabled: boolean;
     collaboration_enabled: boolean;
@@ -301,11 +305,11 @@ const EnhancedSubscriptionModal: React.FC<EnhancedSubscriptionModalProps> = ({
                         {plan.limits.daily_conversations} conversations/day
                       </div>
                     )}
-                    {plan.limits.daily_accurate_mode && (
+                    {plan.limits.daily_gentle_mode && (
                       <div className="text-xs text-shield-gray">
                         {plan.limits.daily_gentle_mode} gentle mode/day
-                {plan.limits.daily_scholarly_mode && ` • ${plan.limits.daily_scholarly_mode} scholarly mode/day`}
-                {plan.limits.daily_debate_mode && ` • ${plan.limits.daily_debate_mode} debate mode/day`}
+                        {plan.limits.daily_scholarly_mode && ` • ${plan.limits.daily_scholarly_mode} scholarly mode/day`}
+                        {plan.limits.daily_debate_mode && ` • ${plan.limits.daily_debate_mode} debate mode/day`}
                       </div>
                     )}
                     {plan.limits.monthly_notes && (
