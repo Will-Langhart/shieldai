@@ -214,12 +214,25 @@ export class VideoService {
    * Search YouTube for relevant videos
    */
   private static async searchYouTube(query: string, maxResults: number): Promise<VideoResult[]> {
+    console.log('YouTube API key check:', { 
+      hasKey: !!this.YOUTUBE_API_KEY, 
+      keyLength: this.YOUTUBE_API_KEY ? this.YOUTUBE_API_KEY.length : 0,
+      keyPreview: this.YOUTUBE_API_KEY ? `${this.YOUTUBE_API_KEY.substring(0, 10)}...` : 'none'
+    });
+    
     if (!this.YOUTUBE_API_KEY) {
       console.warn('YouTube API key not configured, using fallback search');
       return this.fallbackVideoSearch(query, maxResults);
     }
 
     try {
+      console.log('Making YouTube API request:', { 
+        url: this.YOUTUBE_SEARCH_URL, 
+        query, 
+        maxResults, 
+        apiKey: this.YOUTUBE_API_KEY ? `${this.YOUTUBE_API_KEY.substring(0, 10)}...` : 'none'
+      });
+      
       // Search for videos - get more results to account for filtering
       const searchResponse = await axios.get(this.YOUTUBE_SEARCH_URL, {
         params: {
@@ -342,7 +355,7 @@ export class VideoService {
         id: 'general-1',
         title: 'Introduction to Christian Apologetics',
         description: 'A foundational overview of defending the Christian faith with reason and evidence',
-        thumbnail: 'https://img.youtube.com/vi/7Xr-E7N9eq4/default.jpg',
+        thumbnail: 'https://img.youtube.com/vi/7Xr-E7N9eq4/maxresdefault.jpg',
         url: 'https://www.youtube.com/watch?v=7Xr-E7N9eq4',
         duration: '20:00',
         channel: 'Apologetics Academy',
@@ -354,7 +367,7 @@ export class VideoService {
         id: 'general-2',
         title: 'Evidence for Christianity',
         description: 'Historical, archaeological, and scientific evidence supporting the Christian worldview',
-        thumbnail: 'https://img.youtube.com/vi/8Xr-E7N9eq4/default.jpg',
+        thumbnail: 'https://img.youtube.com/vi/8Xr-E7N9eq4/maxresdefault.jpg',
         url: 'https://www.youtube.com/watch?v=8Xr-E7N9eq4',
         duration: '18:30',
         channel: 'Christian Evidence',
@@ -379,7 +392,7 @@ export class VideoService {
         id: 'curated-1',
         title: 'Evidence for the Resurrection of Jesus Christ',
         description: 'A comprehensive examination of the historical evidence for Jesus\' resurrection',
-        thumbnail: 'https://img.youtube.com/vi/7Xr-E7N9eq4/default.jpg',
+        thumbnail: 'https://img.youtube.com/vi/7Xr-E7N9eq4/maxresdefault.jpg',
         url: 'https://www.youtube.com/watch?v=7Xr-E7N9eq4',
         duration: '15:30',
         channel: 'Apologetics Academy',
@@ -391,7 +404,7 @@ export class VideoService {
         id: 'curated-2',
         title: 'The Problem of Evil: A Christian Response',
         description: 'How Christianity addresses the problem of evil and suffering in the world',
-        thumbnail: 'https://img.youtube.com/vi/8Xr-E7N9eq4/default.jpg',
+        thumbnail: 'https://img.youtube.com/vi/8Xr-E7N9eq4/maxresdefault.jpg',
         url: 'https://www.youtube.com/watch?v=8Xr-E7N9eq4',
         duration: '12:45',
         channel: 'Theological Defense',
@@ -403,7 +416,7 @@ export class VideoService {
         id: 'curated-3',
         title: 'Scientific Evidence for God\'s Existence',
         description: 'Exploring the fine-tuning of the universe and other scientific evidence',
-        thumbnail: 'https://img.youtube.com/vi/9Xr-E7N9eq4/default.jpg',
+        thumbnail: 'https://img.youtube.com/vi/9Xr-E7N9eq4/maxresdefault.jpg',
         url: 'https://www.youtube.com/watch?v=9Xr-E7N9eq4',
         duration: '18:20',
         channel: 'Science and Faith',
