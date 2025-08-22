@@ -219,7 +219,9 @@ const SubscriptionUsageDashboard: React.FC<SubscriptionUsageDashboardProps> = ({
   const hasAnyLimits = Object.values(limits).some(limit => limit !== null && limit !== undefined);
   const isNearAnyLimit = hasAnyLimits && [
     { current: usage.conversations_today, limit: limits.daily_conversations },
-    { current: usage.accurate_mode_today, limit: limits.daily_accurate_mode },
+            { current: usage.gentle_mode_today, limit: limits.daily_gentle_mode },
+        { current: usage.scholarly_mode_today, limit: limits.daily_scholarly_mode },
+        { current: usage.debate_mode_today, limit: limits.daily_debate_mode },
     { current: usage.bible_searches_today, limit: limits.daily_bible_searches },
     { current: usage.exports_today, limit: limits.daily_exports },
     { current: usage.notes_this_month, limit: limits.monthly_notes },

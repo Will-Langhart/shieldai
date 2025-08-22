@@ -72,7 +72,7 @@ Shield AI is an intelligent Bible study and church recommendation platform that 
 
 ### 🤖 Core AI Features
 - **Conversational AI**: Interactive chat with context-aware responses
-- **Fast/Accurate Mode Toggle**: Choose between quick responses or detailed analysis
+- **Conversational Tone Modes**: Choose between Gentle 🤝 (pastoral), Scholarly 📚 (academic), or Debate ⚔️ (apologetics defense)
 - **Voice Input**: Microphone support for hands-free interaction
 - **Real-time Chat**: Interactive conversation with AI
 - **Conversation History**: Save and manage your chat sessions
@@ -506,9 +506,9 @@ Key principles:
 ### Mobile screens (scope)
 
 - **Chat**
-  - Conversation list, chat detail, composer with Fast/Accurate toggle
+  - Conversation list, chat detail, composer with Conversational Tone Mode toggle
   - Endpoints: `POST /api/chat`, Supabase tables for conversations/messages via server services
-  - Gating: Accurate mode and daily limits checked via `/api/subscriptions/usage` and feature checks
+  - Gating: Scholarly/Debate modes and daily limits checked via `/api/subscriptions/usage` and feature checks
 
 - **Bible**
   - Versions, search, passage reader, context/cross-references, daily verse

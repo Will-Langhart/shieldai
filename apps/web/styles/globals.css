@@ -2,9 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Enhanced Message Formatting */
+/* Enhanced Message Formatting - Cleaner, more spacious */
 .message-content {
-  @apply leading-relaxed;
+  @apply leading-relaxed max-w-none;
 }
 
 .message-content h1,
@@ -108,7 +108,7 @@
   @apply text-blue-600 dark:text-blue-400;
 }
 
-/* Message Animations */
+/* Consolidated Animation System - Single source of truth */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -120,26 +120,63 @@
   }
 }
 
-.message-fade-in {
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.6);
+  }
+}
+
+@keyframes progress-shift {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes loadingDots {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Single Animation Classes - No duplicates */
+.fade-in-up {
   animation: fadeInUp 0.3s ease-out;
 }
 
-/* Typewriter Effect */
-@keyframes typing {
-  from { width: 0; }
-  to { width: 100%; }
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
 
-@keyframes blink {
-  50% { border-color: transparent; }
+.enhanced-progress {
+  background: linear-gradient(90deg, 
+    #3b82f6 0%, 
+    #1d4ed8 25%, 
+    #3b82f6 50%, 
+    #1d4ed8 75%, 
+    #3b82f6 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-shift 2s ease-in-out infinite;
 }
 
-.typewriter {
-  overflow: hidden;
-  border-right: 2px solid;
-  white-space: nowrap;
-  animation: typing 2s steps(40, end), blink 0.75s step-end infinite;
+.loading-dot {
+  animation: loadingDots 1.4s infinite ease-in-out both;
 }
+
+.loading-dot:nth-child(1) { animation-delay: -0.32s; }
+.loading-dot:nth-child(2) { animation-delay: -0.16s; }
+.loading-dot:nth-child(3) { animation-delay: 0s; }
 
 /* Enhanced Scrollbars for Message Areas */
 .message-scrollbar::-webkit-scrollbar {
@@ -154,171 +191,7 @@
   @apply bg-gray-400 dark:bg-gray-600 rounded-full hover:bg-gray-500 dark:hover:bg-gray-500;
 }
 
-/* Loading Dots Animation */
-@keyframes loadingDots {
-  0%, 80%, 100% {
-    transform: scale(0.8);
-    opacity: 0.5;
-  }
-  40% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.loading-dot {
-  animation: loadingDots 1.4s infinite ease-in-out both;
-}
-
-.loading-dot:nth-child(1) { animation-delay: -0.32s; }
-.loading-dot:nth-child(2) { animation-delay: -0.16s; }
-.loading-dot:nth-child(3) { animation-delay: 0s; }
-
-/* Enhanced Loading Animations */
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.6);
-  }
-}
-
-@keyframes typing-indicator {
-  0%, 20% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-
-@keyframes progress-fill {
-  0% {
-    width: 0%;
-  }
-  100% {
-    width: 100%;
-  }
-}
-
-@keyframes thinking-pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 0.8;
-  }
-}
-
-@keyframes shield-rotate {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes text-reveal {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Enhanced Loading Components */
-.enhanced-loading {
-  animation: thinking-pulse 2s ease-in-out infinite;
-}
-
-.typing-indicator {
-  animation: typing-indicator 1.5s ease-in-out infinite;
-}
-
-.progress-bar {
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
-  background-size: 200% 100%;
-  animation: progress-fill 3s ease-in-out infinite, progress-fill 3s ease-in-out infinite reverse;
-}
-
-.shield-rotating {
-  animation: shield-rotate 3s linear infinite;
-}
-
-.text-reveal {
-  animation: text-reveal 0.5s ease-out forwards;
-}
-
-/* Enhanced Streaming Text */
-.streaming-text {
-  position: relative;
-}
-
-.streaming-text::after {
-  content: '|';
-  animation: blink 1s infinite;
-  color: #3b82f6;
-  font-weight: bold;
-}
-
-/* Enhanced Loading States */
-.loading-state-1 { animation-delay: 0s; }
-.loading-state-2 { animation-delay: 0.2s; }
-.loading-state-3 { animation-delay: 0.4s; }
-
-/* Pulse Glow Effect */
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* Enhanced Message Animations */
-.message-enter {
-  animation: message-enter 0.5s ease-out forwards;
-}
-
-@keyframes message-enter {
-  0% {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Enhanced Loading Bar */
-.enhanced-progress {
-  background: linear-gradient(90deg, 
-    #3b82f6 0%, 
-    #1d4ed8 25%, 
-    #3b82f6 50%, 
-    #1d4ed8 75%, 
-    #3b82f6 100%
-  );
-  background-size: 200% 100%;
-  animation: progress-shift 2s ease-in-out infinite;
-}
-
-@keyframes progress-shift {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
+/* Import Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
@@ -359,6 +232,42 @@ body {
   transition: color 0.3s ease, background-color 0.3s ease;
   height: 100vh;
   overflow: hidden;
+}
+
+/* Set light theme as default */
+html[data-theme="light"] body {
+  color: var(--shield-white);
+  background: var(--shield-black);
+}
+
+html[data-theme="dark"] body {
+  color: var(--shield-white);
+  background: var(--shield-black);
+}
+
+/* CRITICAL: Global clickability fixes */
+.touch-button {
+  pointer-events: auto !important;
+}
+
+.touch-button * {
+  pointer-events: auto !important;
+}
+
+.touch-button button,
+.touch-button input,
+.touch-button [role="button"] {
+  pointer-events: auto !important;
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
+}
+
+.touch-button input[type="text"] {
+  cursor: text !important;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10;
 }
 
 /* Mobile-specific improvements */
@@ -419,6 +328,86 @@ body {
     min-height: 48px;
     min-width: 48px;
     padding: 12px;
+  }
+
+  /* CRITICAL: Ensure all elements are clickable */
+  .touch-button * {
+    pointer-events: auto !important;
+  }
+
+  .touch-button button,
+  .touch-button input,
+  .touch-button [role="button"] {
+    pointer-events: auto !important;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Ensure all interactive elements are clickable */
+  .touch-button button,
+  .touch-button input,
+  .touch-button [role="button"] {
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Enhanced touch targets for mobile */
+  .touch-button button {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Prevent text selection on interactive elements */
+  .touch-button button:active,
+  .touch-button input:active {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Ensure input field is properly clickable */
+  .touch-button input[type="text"] {
+    cursor: text;
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    touch-action: manipulation;
+  }
+
+  /* Enhanced focus states for accessibility */
+  .touch-button button:focus-visible,
+  .touch-button input:focus-visible {
+    outline: 2px solid var(--shield-blue);
+    outline-offset: 2px;
+  }
+
+  /* Ensure proper cursor states */
+  .touch-button button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  .touch-button button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Enhanced hover states for better UX */
+  .touch-button button:not(:disabled):hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
+  }
+
+  /* Active state feedback */
+  .touch-button button:not(:disabled):active {
+    transform: translateY(0px);
+    transition: transform 0.1s ease;
   }
 
   /* Mobile-optimized modals */
@@ -566,51 +555,6 @@ a {
   overflow: hidden;
 }
 
-/* Custom animations */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slide-in-from-bottom {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.animate-in {
-  animation: fade-in 0.3s ease-out;
-}
-
-.fade-in {
-  animation: fade-in 0.3s ease-out;
-}
-
-.slide-in-from-bottom-2 {
-  animation: slide-in-from-bottom 0.3s ease-out;
-}
-
-.slide-in-from-bottom-4 {
-  animation: slide-in-from-bottom 0.4s ease-out;
-}
-
-.slide-in-from-bottom-6 {
-  animation: slide-in-from-bottom 0.6s ease-out;
-}
-
-.slide-in-from-bottom-8 {
-  animation: slide-in-from-bottom 0.8s ease-out;
-}
-
 /* Theme transition utilities */
 .theme-transition {
   transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
@@ -648,4 +592,18 @@ a {
 
 [data-theme="dark"] * {
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* Favicon transparency support */
+link[rel="icon"],
+link[rel="shortcut icon"],
+link[rel="apple-touch-icon"] {
+  background: transparent !important;
+}
+
+/* Force transparent backgrounds for favicon elements */
+[rel="icon"],
+[rel="shortcut icon"] {
+  background-color: transparent !important;
+  background-image: none !important;
 } 

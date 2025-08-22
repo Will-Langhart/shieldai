@@ -13,21 +13,30 @@ export default function Document() {
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
-        <meta name="msapplication-TileColor" content="#3b82f6" />
+        <meta name="msapplication-TileColor" content="#0a0a0a" />
         <meta name="msapplication-tap-highlight" content="no" />
-        <meta name="theme-color" content="#3b82f6" />
+        <meta name="theme-color" content="#0a0a0a" />
+        <meta name="msapplication-TileImage" content="/favicon-48x48.png" />
 
         {/* Mobile Viewport */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 
-        {/* PWA Icons - Updated to use new favicon files */}
+        {/* PWA Icons - Updated to use new favicon files with transparency support */}
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192x192.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512x512.png" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="mask-icon" href="/logo.svg" color="#3b82f6" />
+        <link rel="mask-icon" href="/logo.svg" color="#0a0a0a" />
         <link rel="shortcut icon" href="/favicon.ico" />
+        
+        {/* Additional favicon transparency support */}
+        <meta name="msapplication-TileImage" content="/favicon-48x48.png" />
+        <meta name="msapplication-square70x70logo" content="/favicon-48x48.png" />
+        <meta name="msapplication-square150x150logo" content="/icon-192x192.png" />
+        <meta name="msapplication-square310x310logo" content="/icon-512x512.png" />
 
         {/* Preconnect for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

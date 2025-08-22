@@ -6,6 +6,8 @@ import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
 import MessageActions from '../components/MessageActions';
 import MessageRenderer from '../components/MessageRenderer';
+import VideoDisplay from '../components/VideoDisplay';
+import { VideoResult } from '../lib/video-service';
 import EnhancedSubscriptionModal from '../components/EnhancedSubscriptionModal';
 import PlanPicker from '../components/PlanPicker';
 
@@ -21,6 +23,7 @@ import MobileNavigation from '../components/MobileNavigation';
 import BibleVersionSelector from '../components/BibleVersionSelector';
 import EnhancedLoadingIndicator from '../components/EnhancedLoadingIndicator';
 import EnhancedStreamingText from '../components/EnhancedStreamingText';
+import AnimatedPlaceholder from '../components/AnimatedPlaceholder';
 import { useAuth } from '../lib/auth-context';
 import { useBible } from '../contexts/bible-context';
 import { ClientService } from '../lib/client-service';
@@ -35,6 +38,8 @@ interface Message {
   timestamp?: string;
   mode?: string;
   isStreaming?: boolean;
+  relevantVideos?: VideoResult[];
+  bibleVerses?: any[];
 }
 
 interface SubscriptionStatus {
@@ -55,7 +60,7 @@ export default function Home() {
   const [messagesPageSize] = useState(50);
   const [messagesTotal, setMessagesTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
+  const [currentMode, setCurrentMode] = useState<'gentle' | 'scholarly' | 'debate'>('gentle');
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -79,8 +84,8 @@ export default function Home() {
   const [newPlanDescription, setNewPlanDescription] = useState('');
   const [newPlanDuration, setNewPlanDuration] = useState<number | ''>('');
   const [selectedVerseForNote, setSelectedVerseForNote] = useState<{ reference: string; text: string } | null>(null);
-  const [theme, setTheme] = useState<Theme>('auto');
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
+  const [theme, setTheme] = useState<Theme>('light');
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
   const [currentLanguage, setCurrentLanguage] = useState<string>('en');
   const [currentMobileSection, setCurrentMobileSection] = useState<'chat' | 'bible' | 'church' | 'mood' | 'settings'>('chat');
   
@@ -176,7 +181,7 @@ export default function Home() {
 
   // Theme and Language management
   useEffect(() => {
-    const savedTheme = localStorage.getItem('shieldai-theme') as Theme || 'auto';
+    const savedTheme = localStorage.getItem('shieldai-theme') as Theme || 'light';
     const savedLanguage = localStorage.getItem('shieldai-language') || 'en';
     setTheme(savedTheme);
     setCurrentLanguage(savedLanguage);
@@ -409,6 +414,8 @@ export default function Home() {
               timestamp: msg.created_at,
               mode: msg.mode,
               isStreaming: false, // Ensure loaded messages are not streaming
+              relevantVideos: msg.relevant_videos || [],
+              bibleVerses: msg.bible_verses || []
             }));
             console.log('Loading messages with isStreaming=false:', formattedMessages.length);
             setMessages(formattedMessages);
@@ -433,6 +440,8 @@ export default function Home() {
             timestamp: msg.created_at,
             mode: msg.mode,
             isStreaming: false, // Ensure loaded messages are not streaming
+            relevantVideos: msg.relevant_videos || [],
+            bibleVerses: msg.bible_verses || []
           }));
           console.log('Loading most recent conversation with isStreaming=false:', formattedMessages.length);
           setMessages(formattedMessages);
@@ -475,6 +484,8 @@ export default function Home() {
         timestamp: msg.created_at,
         mode: msg.mode,
         isStreaming: false, // Ensure loaded messages are not streaming
+        relevantVideos: msg.relevant_videos || [],
+        bibleVerses: msg.bible_verses || []
       }));
       console.log('Selecting conversation with isStreaming=false:', formattedMessages.length);
       setMessages(formattedMessages);
@@ -612,6 +623,7 @@ export default function Home() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let aggregated = '';
+      let videoData: { videos?: VideoResult[]; bibleVerses?: any[] } | null = null;
       let done = false;
       
       while (!done) {
@@ -619,7 +631,30 @@ export default function Home() {
         done = readerDone;
         if (value) {
           const chunk = decoder.decode(value, { stream: true });
-          aggregated += chunk;
+          
+          // Check if this chunk contains video data markers
+          if (chunk.includes('VIDEO_DATA_START') && chunk.includes('VIDEO_DATA_END')) {
+            try {
+              const startMarker = 'VIDEO_DATA_START';
+              const endMarker = 'VIDEO_DATA_END';
+              
+              const startIndex = chunk.indexOf(startMarker) + startMarker.length;
+              const endIndex = chunk.indexOf(endMarker);
+              
+              if (startIndex !== -1 && endIndex !== -1) {
+                const jsonStr = chunk.substring(startIndex, endIndex).trim();
+                console.log('Raw JSON string from stream:', jsonStr);
+                videoData = JSON.parse(jsonStr);
+                console.log('Successfully parsed video data:', videoData);
+              }
+            } catch (e) {
+              console.error('Failed to parse video data:', e);
+              console.error('Chunk content:', chunk);
+            }
+          } else {
+            // This is AI response content, not video data
+            aggregated += chunk;
+          }
           
           // Update only the specific message being streamed
           setMessages(prev => prev.map(msg => 
@@ -628,6 +663,19 @@ export default function Home() {
               : msg
           ));
         }
+      }
+      
+      // After streaming is complete, update the message with video data
+      if (videoData && videoData.videos && Array.isArray(videoData.videos) && videoData.videos.length > 0) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { 
+                ...msg, 
+                relevantVideos: videoData.videos,
+                bibleVerses: videoData.bibleVerses || []
+              }
+            : msg
+        ));
       }
       
       // Mark streaming as complete
@@ -819,7 +867,7 @@ export default function Home() {
                               className={`flex-1 px-4 sm:px-5 py-3 sm:py-4 rounded-l-xl focus:outline-none ${
                                 resolvedTheme === 'dark' ? 'bg-transparent text-white placeholder-gray-400' : 'bg-transparent text-gray-900 placeholder-gray-500'
                               }`}
-                              placeholder="Ask a question... e.g., Where was Jesus born?"
+                              placeholder="Ask a question..."
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   const val = (e.target as HTMLInputElement).value;
@@ -839,6 +887,10 @@ export default function Home() {
                               Search
                             </button>
                           </div>
+                          {/* Animated placeholder text below search bar */}
+                          <div className="mt-3 text-center">
+                            <AnimatedPlaceholder theme={resolvedTheme} />
+                          </div>
                         </div>
                         {user && (
                           <p className={`mt-4 text-xs ${resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -853,43 +905,43 @@ export default function Home() {
 
               {/* Messages Display */}
               {hasMessages && (
-                <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 pb-4 min-w-0">
+                <div className="w-full max-w-6xl mx-auto space-y-4 sm:space-y-6 pb-4 min-w-0">
                   <div className="space-y-4 sm:space-y-6 min-w-0">
                     {messages.map((message, index) => (
                       <div
                         key={index}
-                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300 min-w-0`}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} fade-in-up duration-300 min-w-0`}
                       >
                         <div
-                          className={`max-w-xs sm:max-w-md lg:max-w-3xl px-5 sm:px-6 py-4 sm:py-5 rounded-2xl shadow-lg min-w-0 message-bubble-mobile transition-all duration-200 hover:shadow-xl ${
+                          className={`max-w-xs sm:max-w-md lg:max-w-5xl px-5 sm:px-6 py-4 sm:py-5 min-w-0 message-bubble-mobile transition-all duration-200 ${
                             message.role === 'user' 
                               ? (resolvedTheme === 'dark'
-                                ? 'bg-gradient-to-r from-shield-blue/10 to-shield-blue/20 border border-shield-blue/30 text-shield-white backdrop-blur-sm'
-                                : 'bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 text-gray-900')
+                                ? 'bg-gradient-to-r from-shield-blue/10 to-shield-blue/20 text-shield-white'
+                                : 'bg-gradient-to-r from-blue-50 to-blue-100 text-gray-900')
                               : (resolvedTheme === 'dark'
-                                ? 'bg-transparent border border-gray-700/50 text-shield-white'
-                                : 'bg-transparent border border-gray-200 text-gray-900')
+                                ? 'bg-transparent text-shield-white'
+                                : 'bg-transparent text-gray-900')
                           }`}
                         >
                           <div className="flex items-start space-x-2 sm:space-x-3">
                             {message.role === 'assistant' && (
-                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
+                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 mt-1 ${
                                 resolvedTheme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
                               }`}>
                                 <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
                               </div>
                             )}
                             {message.role === 'user' && (
-                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg ${
+                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
                                 resolvedTheme === 'dark'
-                                  ? 'bg-shield-blue/20 border border-shield-blue/30'
-                                  : 'bg-blue-100 border border-blue-200'
+                                  ? 'bg-shield-blue/20'
+                                  : 'bg-blue-100'
                               }`}>
                                 {user?.user_metadata?.avatar_url ? (
                                   <img 
                                     src={user.user_metadata.avatar_url} 
                                     alt="User" 
-                                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
+                                    className="w-6 h-6 sm:w-8 sm:w-8 rounded-full object-cover"
                                   />
                                 ) : (
                                   <span className={`font-bold text-xs sm:text-sm ${
@@ -924,6 +976,21 @@ export default function Home() {
                                     }}
                                   />
                                 )}
+                                
+                                {/* Video Display for AI responses */}
+                                {message.role === 'assistant' && message.relevantVideos && message.relevantVideos.length > 0 && (
+                                  <div className="mt-4">
+                                    <VideoDisplay
+                                      videos={message.relevantVideos}
+                                      theme={resolvedTheme}
+                                      onVideoSelect={(video) => {
+                                        console.log('Video selected:', video);
+                                        // You can implement custom video handling here
+                                      }}
+                                      showScripture={true}
+                                    />
+                                  </div>
+                                )}
                               </div>
                               <p className={`text-xs mt-2 opacity-60 ${
                                 resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
@@ -931,7 +998,7 @@ export default function Home() {
                                 {message.timestamp && new Date(message.timestamp).toLocaleTimeString()}
                                 {message.mode && (
                                   <span className="ml-2">
-                                    • {message.mode === 'fast' ? '⚡' : '🎯'} {message.mode}
+                                    • {message.mode === 'gentle' ? '🤝' : message.mode === 'scholarly' ? '📚' : '⚔️'} {message.mode}
                                   </span>
                                 )}
                               </p>
@@ -977,8 +1044,8 @@ export default function Home() {
                       </div>
                     ))}
                     
-                    {/* Enhanced Loading indicator */}
-                    {isLoading && (
+                    {/* Enhanced Loading indicator - Only show when no message is streaming */}
+                    {isLoading && !messages.some(msg => msg.isStreaming) && (
                       <EnhancedLoadingIndicator
                         theme={resolvedTheme}
                         message="Shield AI is analyzing your question and preparing a thoughtful response..."
@@ -987,36 +1054,7 @@ export default function Home() {
                       />
                     )}
                     
-                    {/* Pagination controls */}
-                    {currentConversationId && (
-                      <div className="flex items-center justify-between mt-4">
-                        <button
-                          disabled={messagesPage <= 1}
-                          onClick={async () => {
-                            const newPage = Math.max(1, messagesPage - 1);
-                            setMessagesPage(newPage);
-                            const resp = await fetch(`/api/messages?conversationId=${encodeURIComponent(currentConversationId)}&page=${newPage}&pageSize=${messagesPageSize}`);
-                            const json = await resp.json();
-                            setMessages((json.items || []).map((msg: any) => ({ id: msg.id, role: msg.role, content: msg.content, timestamp: msg.created_at, mode: msg.mode, isStreaming: false })));
-                            setMessagesTotal(json.total || 0);
-                          }}
-                          className={`px-3 py-1 rounded ${resolvedTheme==='dark' ? 'bg-gray-800 text-gray-200 disabled:opacity-50' : 'bg-gray-100 text-gray-700 disabled:opacity-50'}`}
-                        >Prev</button>
-                        <span className={`text-xs ${resolvedTheme==='dark' ? 'text-gray-400' : 'text-gray-500'}`}>Page {messagesPage} / {Math.max(1, Math.ceil(messagesTotal / messagesPageSize))}</span>
-                        <button
-                          disabled={messagesPage >= Math.ceil(messagesTotal / messagesPageSize)}
-                          onClick={async () => {
-                            const newPage = messagesPage + 1;
-                            setMessagesPage(newPage);
-                            const resp = await fetch(`/api/messages?conversationId=${encodeURIComponent(currentConversationId)}&page=${newPage}&pageSize=${messagesPageSize}`);
-                            const json = await resp.json();
-                            setMessages((json.items || []).map((msg: any) => ({ id: msg.id, role: msg.role, content: msg.content, timestamp: msg.created_at, mode: msg.mode, isStreaming: false })));
-                            setMessagesTotal(json.total || 0);
-                          }}
-                          className={`px-3 py-1 rounded ${resolvedTheme==='dark' ? 'bg-gray-800 text-gray-200 disabled:opacity-50' : 'bg-gray-100 text-gray-700 disabled:opacity-50'}`}
-                        >Next</button>
-                      </div>
-                    )}
+
 
                     {/* Invisible scroll target for auto-scroll */}
                     <div ref={messagesEndRef} className="h-1" />
@@ -1033,7 +1071,7 @@ export default function Home() {
                 ? 'border-gray-700/50 bg-shield-black' 
                 : 'border-gray-200 bg-white'
             } min-w-0 flex-shrink-0`}>
-              <div className="w-full max-w-4xl mx-auto min-w-0">
+              <div className="w-full max-w-6xl mx-auto min-w-0">
                                   <InputBar
                     onSubmit={handleSubmit}
                     mode={currentMode}
@@ -1041,6 +1079,10 @@ export default function Home() {
                     isLoading={isLoading}
                     disabled={shouldShowUpgradePrompt}
                     theme={resolvedTheme}
+                    onMicClick={() => {
+                      // TODO: Implement microphone functionality
+                      console.log('Microphone clicked - functionality to be implemented');
+                    }}
                     onBibleSelectClick={() => setShowBibleVersionSelector(true)}
                     selectedBibleVersion={selectedVersion}
                   />

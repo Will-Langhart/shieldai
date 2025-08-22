@@ -12,6 +12,7 @@ import { SubscriptionMiddleware } from '../../lib/subscription-middleware';
 import { bibleService } from '../../lib/bible-service';
 import { BiblePineconeService } from '../../lib/bible-pinecone';
 import { EmbeddingService } from '../../lib/embeddings';
+import { VideoService } from '../../lib/video-service';
 import { logger, withCorrelationId } from '../../lib/logger';
 
 // Initialize OpenAI client
@@ -39,7 +40,7 @@ export default async function handler(
   }
 
   try {
-    const { message, mode = 'fast', sessionId = 'default', conversationId, stream, bibleVersion } = req.body || {};
+    const { message, mode = 'gentle', sessionId = 'default', conversationId, stream, bibleVersion } = req.body || {};
     const shouldStream = Boolean(stream) || req.query.stream === '1' || req.query.stream === 'true';
 
     if (!message) {
@@ -98,7 +99,7 @@ export default async function handler(
       if (!featureAccess.allowed) {
         return res.status(403).json({ 
           error: 'Feature not available',
-          message: `${mode === 'accurate' ? 'GPT-4 Accurate mode' : 'AI conversations'} not available on your current plan`,
+          message: `${mode === 'scholarly' ? 'GPT-4 Scholarly mode' : mode === 'debate' ? 'GPT-4 Debate mode' : 'AI conversations'} not available on your current plan`,
           upgrade_required: featureAccess.upgrade_required,
           current_tier: featureAccess.current_tier,
           required_tier: featureAccess.required_tier,
@@ -210,6 +211,23 @@ export default async function handler(
       // Don't fail the entire request if vector search fails
     }
 
+    // Search for relevant videos based on user message
+    let relevantVideos: any[] = [];
+    try {
+      const videoResults = await VideoService.searchRelevantVideos({
+        query: message,
+        maxResults: 3,
+        relevanceThreshold: 0.6,
+        includeScripture: true
+      });
+      
+      relevantVideos = videoResults;
+      logger.debug('Video search results', { cid, count: relevantVideos.length });
+    } catch (error) {
+      logger.error('Video search failed', { cid }, error);
+      // Don't fail the entire request if video search fails
+    }
+
     // Generate specialized prompt based on context and objection type
     let systemPrompt = generateSpecializedPrompt(questionContext, mode);
     
@@ -262,13 +280,13 @@ Please reference relevant previous discussions when appropriate and maintain con
     }
 
     // Use different models and settings based on mode and subscription
-    let model = mode === 'fast' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
-    let maxTokens = mode === 'fast' ? 2000 : 4000; // Increased token limits
-    let temperature = mode === 'fast' ? 0.7 : 0.8;
+    let model = mode === 'gentle' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
+    let maxTokens = mode === 'gentle' ? 2000 : 4000; // Increased token limits for scholarly/debate modes
+    let temperature = mode === 'gentle' ? 0.7 : 0.8;
 
     // Check if user has access to advanced models
     const advancedModelAccess = await SubscriptionMiddleware.checkApiFeatureAccess(user.id, 'advanced_ai_models');
-    if (!advancedModelAccess.allowed && mode === 'accurate') {
+    if (!advancedModelAccess.allowed && (mode === 'scholarly' || mode === 'debate')) {
       // Fallback to basic model for users without premium
       model = 'gpt-3.5-turbo';
       maxTokens = 800;
@@ -304,6 +322,20 @@ ${bibleVectorResults.map(result => `${result.reference} (${result.book} ${result
 Please use these Scripture passages as your primary biblical foundation when responding. Highlight them in blue and explain how they specifically address the user's question. These verses have been selected using advanced semantic search to ensure maximum relevance.`;
       
       messages.splice(-1, 0, { role: 'system', content: vectorContext });
+    }
+
+    // Add relevant video content as multimedia context
+    if (relevantVideos.length > 0) {
+      const videoContext = `\n\nMULTIMEDIA CONTEXT - RELEVANT VIDEOS:
+I have found relevant video content that can enhance your understanding of this topic. Here are the most relevant videos:
+
+${relevantVideos.map(video => `📹 ${video.title} (${video.duration}) - ${video.channel}
+${video.description}
+Watch: ${video.url}`).join('\n\n')}
+
+Please mention these relevant videos in your response and explain how they can help the user better understand the topic. Include the video titles and brief descriptions to give context. These videos have been selected for their relevance to your question and include scripture references where applicable.`;
+      
+      messages.splice(-1, 0, { role: 'system', content: videoContext });
     }
 
     // If streaming requested, stream tokens as they arrive
@@ -354,6 +386,60 @@ Please use these Scripture passages as your primary biblical foundation when res
           }
         }
 
+        // Send video and scripture data after streaming completes
+        try {
+          // Ensure we have video data - if none found, use fallback
+          let videosToSend = relevantVideos;
+          if (!videosToSend || videosToSend.length === 0) {
+            logger.warn('No videos found, using fallback', { cid });
+            videosToSend = [
+              {
+                id: 'fallback-1',
+                title: 'Apologetics Resources',
+                description: 'Helpful resources for defending the Christian faith',
+                thumbnail: '/placeholder-video.jpg',
+                url: 'https://www.youtube.com/results?search_query=apologetics',
+                duration: '10:00',
+                channel: 'Shield AI',
+                publishedAt: new Date().toISOString(),
+                relevance: 0.8,
+                source: 'other' as any
+              }
+            ];
+          }
+          
+          const videoData = {
+            type: 'video_data',
+            videos: videosToSend,
+            bibleVerses: bibleVectorResults || []
+          };
+          
+          // Debug logging
+          logger.debug('Preparing video data for stream', { 
+            cid, 
+            videoCount: relevantVideos.length,
+            videoDataStructure: JSON.stringify(videoData),
+            firstVideo: relevantVideos[0] ? {
+              id: relevantVideos[0].id,
+              title: relevantVideos[0].title,
+              url: relevantVideos[0].url
+            } : null
+          });
+          
+          // Send video data as a separate chunk with clear separation
+          res.write('\n'); // Ensure separation from AI response
+          res.write('VIDEO_DATA_START\n');
+          res.write(JSON.stringify(videoData));
+          res.write('\nVIDEO_DATA_END\n');
+          logger.debug('Sent video data in stream', { 
+            cid, 
+            videoCount: relevantVideos.length,
+            dataLength: JSON.stringify(videoData).length
+          });
+        } catch (e) {
+          logger.error('Failed to send video data in stream', { cid }, e);
+        }
+
         let currentConvId = conversationId as string | undefined;
         let isNewConversation = false;
         if (user) {
@@ -368,7 +454,21 @@ Please use these Scripture passages as your primary biblical foundation when res
 
             await ChatService.addMessage(currentConvId!, message, 'user', mode, serverSupabase);
             if (fullText) {
-              await ChatService.addMessage(currentConvId!, fullText, 'assistant', mode, serverSupabase);
+              await ChatService.addMessage(
+                currentConvId!, 
+                fullText, 
+                'assistant', 
+                mode, 
+                serverSupabase,
+                relevantVideos,
+                bibleVectorResults,
+                {
+                  searchQuery: message,
+                  searchTimestamp: new Date().toISOString(),
+                  videoCount: relevantVideos?.length || 0,
+                  bibleVerseCount: bibleVectorResults?.length || 0
+                }
+              );
             }
 
             try {
@@ -486,8 +586,22 @@ ${content.content.substring(0, 200)}...
         
         // Save AI response to database and Pinecone
         if (aiResponse) {
-          await ChatService.addMessage(currentConvId, aiResponse, 'assistant', mode, serverSupabase);
-          logger.debug('Saved AI response', { cid, convId: currentConvId });
+          await ChatService.addMessage(
+            currentConvId, 
+            aiResponse, 
+            'assistant', 
+            mode, 
+            serverSupabase,
+            relevantVideos,
+            bibleVectorResults,
+            {
+              searchQuery: message,
+              searchTimestamp: new Date().toISOString(),
+              videoCount: relevantVideos?.length || 0,
+              bibleVerseCount: bibleVectorResults?.length || 0
+            }
+          );
+          logger.debug('Saved AI response with videos', { cid, convId: currentConvId, videoCount: relevantVideos?.length || 0 });
         }
         
         // Store conversation memory with enhanced metadata (only if service is healthy)
@@ -563,6 +677,8 @@ ${content.content.substring(0, 200)}...
       sessionId: sessionId,
       conversationId: currentConvId,
       isNewConversation: isNewConversation,
+      relevantVideos: relevantVideos,
+      bibleVerses: bibleVectorResults,
       subscription: {
         isInTrial: false, // TODO: Add trial status to FeatureCheckResult
         hasActiveSubscription: featureAccess?.allowed || false,

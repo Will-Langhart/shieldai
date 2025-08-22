@@ -74,7 +74,7 @@ NODE_ENV=production
 # Test the API
 curl -X POST https://your-domain.vercel.app/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "What is the problem of evil?", "mode": "fast"}'
+  -d '{"message": "What is the problem of evil?", "mode": "gentle"}'
 ```
 
 ## 🚨 Troubleshooting

@@ -5,6 +5,7 @@ export interface PromptContext {
   userIntent: 'seeking' | 'challenging' | 'learning' | 'struggling' | 'curious';
   complexity: 'basic' | 'intermediate' | 'advanced';
   sessionLength: number;
+  mode?: 'gentle' | 'scholarly' | 'debate';
 }
 
 export function analyzeQuestion(message: string): PromptContext {
@@ -55,7 +56,7 @@ export function analyzeQuestion(message: string): PromptContext {
   };
 }
 
-export function generateSpecializedPrompt(context: PromptContext, mode: 'fast' | 'accurate'): string {
+export function generateSpecializedPrompt(context: PromptContext, mode: 'gentle' | 'scholarly' | 'debate'): string {
   const basePrompt = `You are Shield AI, an advanced AI-powered apologetics companion designed to help believers, seekers, and faith leaders explore and defend the Christian worldview with wisdom, compassion, and intellectual rigor.
 
 ## CORE IDENTITY & MISSION
@@ -101,14 +102,20 @@ Structure your responses using this approach:
 - **Honest about limitations** - Admit when you don't have all answers
 
 ## RESPONSE LENGTH GUIDELINES
-- **Fast Mode**: Concise, focused responses (2-3 paragraphs)
-- **Accurate Mode**: Comprehensive, detailed responses (4-6 paragraphs)
+- **Gentle Mode**: Concise, encouraging responses (2-3 paragraphs)
+- **Scholarly Mode**: Comprehensive, detailed responses (4-6 paragraphs)
+- **Debate Mode**: Focused, argumentative responses (3-4 paragraphs)
 
 ## CONVERSATION CONTEXT
 - Remember previous questions and responses in this conversation
 - Build upon earlier discussions when relevant
 - Maintain consistency in your theological approach
 - Reference previous points when they relate to the current question
+
+## CONVERSATIONAL TONE MODES
+- **Gentle Mode 🤝**: Pastoral, encouraging tone with empathy and comfort
+- **Scholarly Mode 📚**: Deep, academic tone with citations and historical/theological depth
+- **Debate Mode ⚔️**: Mock-debate style with sharper apologetics defense
 
 ## IMPORTANT REMINDERS
 - **Base every response on Scripture** - Always provide biblical foundation
@@ -121,6 +128,50 @@ Structure your responses using this approach:
 - Encourage critical thinking and personal study
 - Point to Scripture and Christian resources
 - Remember that faith is both personal and communal`;
+
+  // Add mode-specific tone guidance
+  let modeGuidance = '';
+  
+  switch (context.mode) {
+    case 'gentle':
+      modeGuidance = `
+## GENTLE MODE INSTRUCTIONS 🤝
+- Use a pastoral, encouraging tone
+- Show deep empathy and understanding
+- Provide comfort and hope
+- Use gentle, nurturing language
+- Focus on building up and encouraging
+- Be patient and understanding
+- Offer practical steps for growth
+- Emphasize God's love and grace`;
+      break;
+    
+    case 'scholarly':
+      modeGuidance = `
+## SCHOLARLY MODE INSTRUCTIONS 📚
+- Use academic, intellectual language
+- Provide detailed citations and references
+- Include historical and theological context
+- Reference scholars, theologians, and philosophers
+- Use precise theological terminology
+- Provide comprehensive analysis
+- Include multiple perspectives and viewpoints
+- Encourage deeper academic study`;
+      break;
+    
+    case 'debate':
+      modeGuidance = `
+## DEBATE MODE INSTRUCTIONS ⚔️
+- Use sharper, more direct language
+- Present strong apologetic arguments
+- Address objections head-on
+- Use logical reasoning and evidence
+- Be more assertive in defending positions
+- Present counter-arguments clearly
+- Use debate-style language and structure
+- Maintain respect while being firm`;
+      break;
+  }
 
   // Add specialized guidance based on context
   let specializedGuidance = '';
@@ -227,7 +278,7 @@ Structure your responses using this approach:
       break;
   }
 
-  return basePrompt + specializedGuidance;
+  return basePrompt + modeGuidance + specializedGuidance;
 }
 
 export function generateResponseTemplate(context: PromptContext): string {

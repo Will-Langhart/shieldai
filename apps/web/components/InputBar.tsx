@@ -3,8 +3,8 @@ import { Mic, Zap, ChevronDown, Volume2, Send, Sparkles, BookOpen } from 'lucide
 
 interface InputBarProps {
   onSubmit: (message: string) => void;
-  mode: 'fast' | 'accurate';
-  onModeChange: (mode: 'fast' | 'accurate') => void;
+  mode: 'gentle' | 'scholarly' | 'debate';
+  onModeChange: (mode: 'gentle' | 'scholarly' | 'debate') => void;
   isLoading?: boolean;
   disabled?: boolean;
   theme?: 'light' | 'dark';
@@ -16,11 +16,12 @@ interface InputBarProps {
   } | null;
 }
 
-const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false, theme = 'dark', onBibleSelectClick, onMicClick, selectedBibleVersion }) => {
+const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoading = false, disabled = false, theme = 'light', onBibleSelectClick, onMicClick, selectedBibleVersion }) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted with value:', inputValue);
     if (inputValue.trim() && !isLoading && !disabled) {
       onSubmit(inputValue.trim());
       setInputValue('');
@@ -28,6 +29,7 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
   };
 
   const handleSendClick = () => {
+    console.log('Send button clicked with value:', inputValue);
     if (inputValue.trim() && !isLoading && !disabled) {
       onSubmit(inputValue.trim());
       setInputValue('');
@@ -35,20 +37,26 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 min-w-0 mobile-input-bar">
+    <div className="w-full mx-auto px-2 sm:px-4 min-w-0 mobile-input-bar">
       <form onSubmit={handleSubmit} className="relative min-w-0">
-        <div className={`flex items-center backdrop-blur-sm rounded-2xl p-3 sm:p-4 border shadow-lg transition-colors duration-300 touch-button ${
+        <div 
+          onClick={() => console.log('Container clicked')}
+          className={`flex items-center backdrop-blur-sm rounded-2xl p-3 sm:p-4 transition-all duration-300 touch-button relative focus-within:ring-2 focus-within:ring-shield-blue/20 focus-within:border-shield-blue/50 ${
           disabled 
-            ? theme === 'dark' ? 'bg-gray-600/50 border-gray-500/50' : 'bg-gray-200 border-gray-300'
+            ? theme === 'dark' ? 'bg-gray-600/50 border border-gray-400/30' : 'bg-gray-200 border border-gray-300'
             : theme === 'dark'
-              ? 'bg-shield-light-gray/50 border-gray-700/50'
-              : 'bg-white border-gray-200'
-        }`}>
+              ? 'bg-shield-light-gray/50 border border-gray-600/50 shadow-lg shadow-black/10'
+              : 'bg-white border border-gray-200 shadow-lg shadow-gray-200/50'
+        } hover:border-opacity-80 hover:shadow-xl`}>
           {/* Left side - Microphone */}
           <button
             type="button"
             disabled={disabled}
-            onClick={onMicClick}
+            onClick={() => {
+              console.log('Microphone button clicked');
+              onMicClick?.();
+            }}
+            style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}
             className={`p-2 sm:p-2.5 rounded-xl transition-all duration-200 mr-2 sm:mr-3 group ${
               disabled 
                 ? 'text-gray-400 cursor-not-allowed' 
@@ -72,17 +80,28 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
                 ? 'text-gray-400' 
                 : theme === 'dark' ? 'text-shield-white' : 'text-gray-700'
             }`}>
-              {mode === 'fast' ? 'Fast' : 'Accurate'}
+              {mode === 'gentle' ? '🤝 Gentle' : mode === 'scholarly' ? '📚 Scholarly' : '⚔️ Debate'}
             </span>
             <button
               type="button"
               disabled={disabled}
-              onClick={() => onModeChange(mode === 'fast' ? 'accurate' : 'fast')}
+              onClick={() => {
+                console.log('Mode toggle clicked, current mode:', mode);
+                // Cycle through the three modes
+                if (mode === 'gentle') {
+                  onModeChange('scholarly');
+                } else if (mode === 'scholarly') {
+                  onModeChange('debate');
+                } else {
+                  onModeChange('gentle');
+                }
+              }}
+              style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}
               className={`p-1 rounded transition-all duration-200 ${
                 disabled 
                   ? 'text-gray-400 cursor-not-allowed' 
                   : theme === 'dark'
-                    ? 'text-shield-white hover:bg-shield-gray/50'
+                    ? 'text-gray-400 hover:bg-shield-gray/50'
                     : 'text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -98,12 +117,13 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={disabled ? "Upgrade required to continue..." : "Ask me anything about apologetics, theology, or philosophy..."}
               disabled={isLoading || disabled}
-              className={`w-full bg-transparent outline-none text-base sm:text-lg font-medium min-w-0 transition-colors duration-300 ${
+              style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}
+              className={`w-full bg-transparent outline-none text-base sm:text-lg font-medium min-w-0 transition-all duration-300 focus:ring-2 focus:ring-shield-blue/20 ${
                 disabled 
                   ? theme === 'dark' ? 'text-gray-400 placeholder-gray-500' : 'text-gray-400 placeholder-gray-400'
                   : isLoading
                     ? theme === 'dark' ? 'text-gray-500 placeholder-gray-600' : 'text-gray-400 placeholder-gray-500'
-                    : theme === 'dark' ? 'text-shield-white placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
+                    : theme === 'dark' ? 'text-gray-900 placeholder-gray-400' : 'text-gray-900 placeholder-gray-500'
               }`}
             />
             {isLoading && (
@@ -113,24 +133,29 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
               </div>
             )}
           </div>
+          
+
 
           {/* Bible select button */}
           <button
             type="button"
-            onClick={onBibleSelectClick}
+            onClick={() => {
+              console.log('Bible select button clicked');
+              onBibleSelectClick?.();
+            }}
             disabled={disabled}
+            style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}
             className={`flex items-center space-x-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl transition-all duration-200 ml-2 sm:ml-3 ${
               disabled 
                 ? 'text-gray-400 cursor-not-allowed' 
                 : selectedBibleVersion
                   ? theme === 'dark'
-                    ? 'bg-shield-blue/20 text-shield-blue border border-shield-blue/30'
-                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                    ? 'bg-shield-blue/20 text-shield-blue'
+                    : 'bg-blue-50 text-blue-700'
                   : theme === 'dark'
-                    ? 'text-shield-white hover:bg-shield-blue/20'
-                    : 'text-blue-600 hover:bg-blue-50'
+                    ? 'text-gray-400 hover:bg-shield-gray/50'
+                    : 'text-gray-600 hover:bg-gray-100'
             }`}
-            title={selectedBibleVersion ? `Current: ${selectedBibleVersion.name}` : "Select Bible Version"}
           >
             <BookOpen size={18} className="sm:w-5 sm:h-5" />
             {selectedBibleVersion && (
@@ -145,6 +170,7 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
             type="button"
             onClick={handleSendClick}
             disabled={!inputValue.trim() || isLoading || disabled}
+            style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}
             className={`p-2 sm:p-2.5 rounded-xl transition-all duration-200 ml-2 sm:ml-3 disabled:opacity-50 disabled:cursor-not-allowed group ${
               disabled 
                 ? 'text-gray-400' 

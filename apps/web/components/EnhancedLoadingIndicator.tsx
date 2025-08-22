@@ -9,7 +9,7 @@ interface EnhancedLoadingIndicatorProps {
 }
 
 const EnhancedLoadingIndicator: React.FC<EnhancedLoadingIndicatorProps> = ({
-  theme = 'dark',
+  theme = 'light',
   message = 'Shield AI is thinking...',
   showProgress = true,
   variant = 'default'
@@ -20,7 +20,9 @@ const EnhancedLoadingIndicator: React.FC<EnhancedLoadingIndicatorProps> = ({
 
   const phases = [
     'Analyzing your question...',
-    'Searching Scripture...',
+    'Searching database...',
+    'Finding relevant videos...',
+    'Searching scripture...',
     'Formulating response...',
     'Preparing answer...'
   ];
@@ -67,19 +69,15 @@ const EnhancedLoadingIndicator: React.FC<EnhancedLoadingIndicatorProps> = ({
   };
 
   return (
-    <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className={`max-w-2xl px-6 py-4 rounded-2xl shadow-lg backdrop-blur-sm border ${
-        theme === 'dark'
-          ? 'bg-shield-gray/80 border-gray-700/50'
-          : 'bg-white/80 border-gray-200'
-      }`}>
+    <div className="flex justify-start fade-in-up duration-300 w-full">
+      <div className={`w-full px-6 py-4 ${theme === 'dark' ? 'text-shield-white' : 'text-gray-900'}`}>
         <div className="flex items-start space-x-4">
           {/* Enhanced Icon */}
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 enhanced-loading ${
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 ${
             theme === 'dark' ? 'bg-shield-blue/20' : 'bg-blue-100'
           }`}>
             <IconComponent 
-              className={`w-6 h-6 ${theme === 'dark' ? 'text-shield-blue' : 'text-blue-600'} shield-rotating`} 
+              className={`w-6 h-6 ${theme === 'dark' ? 'text-shield-blue' : 'text-blue-600'} animate-pulse`} 
             />
           </div>
 

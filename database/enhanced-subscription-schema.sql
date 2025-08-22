@@ -52,8 +52,9 @@ CREATE TABLE IF NOT EXISTS usage_tracking (
     
     -- AI Usage Metrics
     conversations_count INTEGER DEFAULT 0,
-    fast_mode_requests INTEGER DEFAULT 0,
-    accurate_mode_requests INTEGER DEFAULT 0,
+    gentle_mode_requests INTEGER DEFAULT 0,
+    scholarly_mode_requests INTEGER DEFAULT 0,
+    debate_mode_requests INTEGER DEFAULT 0,
     total_tokens_used BIGINT DEFAULT 0,
     
     -- Bible Feature Usage
@@ -79,13 +80,16 @@ CREATE TABLE IF NOT EXISTS usage_tracking (
 );
 
 -- Create subscription limits configuration table
+DROP TABLE IF EXISTS subscription_limits CASCADE;
 CREATE TABLE IF NOT EXISTS subscription_limits (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     plan_name subscription_plan NOT NULL UNIQUE,
     
     -- Daily Limits
     daily_conversations INTEGER,
-    daily_accurate_mode INTEGER,
+    daily_gentle_mode INTEGER,
+    daily_scholarly_mode INTEGER,
+    daily_debate_mode INTEGER,
     daily_bible_searches INTEGER,
     daily_exports INTEGER,
     
@@ -95,7 +99,9 @@ CREATE TABLE IF NOT EXISTS subscription_limits (
     monthly_church_searches INTEGER,
     
     -- Feature Access
-    accurate_mode_enabled BOOLEAN DEFAULT FALSE,
+    gentle_mode_enabled BOOLEAN DEFAULT FALSE,
+    scholarly_mode_enabled BOOLEAN DEFAULT FALSE,
+    debate_mode_enabled BOOLEAN DEFAULT FALSE,
     advanced_bible_search BOOLEAN DEFAULT FALSE,
     cross_references_enabled BOOLEAN DEFAULT FALSE,
     collaboration_enabled BOOLEAN DEFAULT FALSE,
@@ -111,42 +117,31 @@ CREATE TABLE IF NOT EXISTS subscription_limits (
 );
 
 -- Insert default limits for each plan
+-- DEBUG: This INSERT has 20 columns:
+-- 1. plan_name, 2. daily_conversations, 3. daily_gentle_mode, 4. daily_scholarly_mode, 5. daily_debate_mode,
+-- 6. daily_bible_searches, 7. daily_exports, 8. monthly_notes, 9. monthly_api_calls, 10. monthly_church_searches,
+-- 11. gentle_mode_enabled, 12. scholarly_mode_enabled, 13. debate_mode_enabled, 14. advanced_bible_search,
+-- 15. cross_references_enabled, 16. collaboration_enabled, 17. api_access_enabled, 18. priority_support,
+-- 19. white_label_enabled, 20. max_team_members
 INSERT INTO subscription_limits (
     plan_name, 
-    daily_conversations, daily_accurate_mode, daily_bible_searches, daily_exports,
+    daily_conversations, daily_gentle_mode, daily_scholarly_mode, daily_debate_mode, daily_bible_searches, daily_exports,
     monthly_notes, monthly_api_calls, monthly_church_searches,
-    accurate_mode_enabled, advanced_bible_search, cross_references_enabled, 
+    gentle_mode_enabled, scholarly_mode_enabled, debate_mode_enabled, advanced_bible_search, cross_references_enabled, 
     collaboration_enabled, api_access_enabled, priority_support, white_label_enabled,
     max_team_members
 ) VALUES
-    -- Basic (Trial) Plan
-    ('basic', 5, 0, 20, 1, 20, 0, 5, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, 1),
+    -- Basic (Trial) Plan - 20 values
+    ('basic', 5, 10, 0, 0, 20, 1, 20, 0, 5, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, 1),
     
-    -- Student Plan  
-    ('student', NULL, 10, NULL, 10, NULL, 0, 50, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, 1),
+    -- Student Plan - 20 values  
+    ('student', NULL, 20, 10, 0, NULL, 10, NULL, 0, 50, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, 1),
     
-    -- Scholar Plan
-    ('scholar', NULL, NULL, NULL, NULL, NULL, 1000, NULL, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, 3),
+    -- Scholar Plan - 20 values
+    ('scholar', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1000, NULL, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, 3),
     
-    -- Ministry Plan
-    ('ministry', NULL, NULL, NULL, NULL, NULL, 5000, NULL, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, 25)
-ON CONFLICT (plan_name) DO UPDATE SET
-    daily_conversations = EXCLUDED.daily_conversations,
-    daily_accurate_mode = EXCLUDED.daily_accurate_mode,
-    daily_bible_searches = EXCLUDED.daily_bible_searches,
-    daily_exports = EXCLUDED.daily_exports,
-    monthly_notes = EXCLUDED.monthly_notes,
-    monthly_api_calls = EXCLUDED.monthly_api_calls,
-    monthly_church_searches = EXCLUDED.monthly_church_searches,
-    accurate_mode_enabled = EXCLUDED.accurate_mode_enabled,
-    advanced_bible_search = EXCLUDED.advanced_bible_search,
-    cross_references_enabled = EXCLUDED.cross_references_enabled,
-    collaboration_enabled = EXCLUDED.collaboration_enabled,
-    api_access_enabled = EXCLUDED.api_access_enabled,
-    priority_support = EXCLUDED.priority_support,
-    white_label_enabled = EXCLUDED.white_label_enabled,
-    max_team_members = EXCLUDED.max_team_members,
-    updated_at = NOW();
+    -- Ministry Plan - 20 values
+    ('ministry', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 5000, NULL, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, 25);
 
 -- Create promo codes table
 CREATE TABLE IF NOT EXISTS promo_codes (

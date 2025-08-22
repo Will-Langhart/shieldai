@@ -59,7 +59,7 @@ export default function TestPineconeMemory() {
       },
     ],
     metadata: {
-      mode: 'accurate',
+              mode: 'scholarly',
       topic: 'faith',
       test: true,
     },

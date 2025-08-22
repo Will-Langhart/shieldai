@@ -25,7 +25,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ 
   onMenuClick, 
   showSidebar, 
-  theme = 'dark', 
+  theme = 'light', 
   onThemeToggle, 
   themeIcon, 
   onMoodVerseClick,

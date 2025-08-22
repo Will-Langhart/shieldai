@@ -5,16 +5,20 @@ import InputBar from '../../components/InputBar';
 import ConversationHistory from '../../components/ConversationHistory';
 import MessageActions from '../../components/MessageActions';
 import MemoryInsights from '../../components/MemoryInsights';
+import VideoDisplay from '../../components/VideoDisplay';
 import { useAuth } from '../../lib/auth-context';
 import { ClientService } from '../../lib/client-service';
 import { supabase } from '../../lib/supabase';
 import EnhancedBibleInterface from '../../components/EnhancedBibleInterface';
+import { VideoResult } from '../../lib/video-service';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp?: string;
   mode?: string;
+  relevantVideos?: VideoResult[];
+  bibleVerses?: any[];
 }
 
 export default function ConversationPage() {
@@ -23,11 +27,14 @@ export default function ConversationPage() {
   const { user, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
+  const [currentMode, setCurrentMode] = useState<'gentle' | 'scholarly' | 'debate'>('gentle');
   const [showSidebar, setShowSidebar] = useState(false);
   const [conversationTitle, setConversationTitle] = useState<string>('');
   const [showBibleModal, setShowBibleModal] = useState(false);
   const [banner, setBanner] = useState<string>('');
+  const [currentVideos, setCurrentVideos] = useState<VideoResult[]>([]);
+  const [currentBibleVerses, setCurrentBibleVerses] = useState<any[]>([]);
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   // Load conversation when component mounts or conversationId changes
   useEffect(() => {
@@ -43,6 +50,17 @@ export default function ConversationPage() {
     return () => window.removeEventListener('open-bible-search', openHandler as any);
   }, []);
 
+  // Detect system theme preference
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const updateTheme = (e: MediaQueryListEvent) => setTheme(e.matches ? 'dark' : 'light');
+    
+    setTheme(mediaQuery.matches ? 'dark' : 'light');
+    mediaQuery.addEventListener('change', updateTheme);
+    
+    return () => mediaQuery.removeEventListener('change', updateTheme);
+  }, []);
+
   const loadConversation = async (convId: string) => {
     try {
       console.log('Loading conversation:', convId);
@@ -53,7 +71,9 @@ export default function ConversationPage() {
         role: msg.role,
         content: msg.content,
         timestamp: msg.created_at,
-        mode: msg.mode
+        mode: msg.mode,
+        relevantVideos: msg.relevant_videos || [],
+        bibleVerses: msg.bible_verses || []
       })));
       
       console.log('Loaded conversation with', messages.length, 'messages');
@@ -245,21 +265,91 @@ export default function ConversationPage() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let done = false;
-      let aggregated = '';
+      let aiResponseContent = '';
+      let videoData: any = null;
+      let isVideoDataChunk = false;
+      
       while (!done) {
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
         if (value) {
           const chunk = decoder.decode(value, { stream: true });
-          aggregated += chunk;
-          setMessages(prev => {
-            const updated = [...prev];
-            const lastIndex = updated.length - 1;
-            if (lastIndex >= 0 && updated[lastIndex].role === 'assistant') {
-              updated[lastIndex] = { ...updated[lastIndex], content: aggregated };
+          console.log('Received chunk:', chunk);
+          
+          // Check if this chunk contains video data markers
+          if (chunk.includes('VIDEO_DATA_START') && chunk.includes('VIDEO_DATA_END')) {
+            isVideoDataChunk = true;
+            try {
+              const startMarker = 'VIDEO_DATA_START';
+              const endMarker = 'VIDEO_DATA_END';
+              
+              const startIndex = chunk.indexOf(startMarker) + startMarker.length;
+              const endIndex = chunk.indexOf(endMarker);
+              
+              if (startIndex !== -1 && endIndex !== -1) {
+                const jsonStr = chunk.substring(startIndex, endIndex).trim();
+                console.log('Raw JSON string from stream:', jsonStr);
+                videoData = JSON.parse(jsonStr);
+                console.log('Successfully parsed video data:', videoData);
+                console.log('Video count:', videoData.videos?.length || 0);
+                console.log('Bible verses count:', videoData.bibleVerses?.length || 0);
+              }
+            } catch (e) {
+              console.error('Failed to parse video data:', e);
+              console.error('Chunk content:', chunk);
             }
-            return updated;
-          });
+          } else {
+            // This is AI response content, not video data
+            aiResponseContent += chunk;
+            console.log('Adding to AI response content:', chunk.substring(0, 50) + '...');
+            
+            // Update the message content in real-time
+            setMessages(prev => {
+              const updated = [...prev];
+              const lastIndex = updated.length - 1;
+              if (lastIndex >= 0 && updated[lastIndex].role === 'assistant') {
+                updated[lastIndex] = { ...updated[lastIndex], content: aiResponseContent };
+              }
+              return updated;
+            });
+          }
+        }
+      }
+      
+      // Extract video and scripture data if available
+      console.log('Final video data:', videoData);
+      console.log('Video data type:', typeof videoData);
+      console.log('Video data keys:', videoData ? Object.keys(videoData) : 'null');
+      console.log('AI Response Content:', aiResponseContent);
+      
+      // AI response content is already set in real-time during streaming
+      
+      if (videoData && videoData.videos && Array.isArray(videoData.videos) && videoData.videos.length > 0) {
+        console.log('Setting videos:', videoData.videos);
+        console.log('First video structure:', videoData.videos[0]);
+        setCurrentVideos(videoData.videos);
+        setCurrentBibleVerses(videoData.bibleVerses || []);
+        
+        // Update the last message with video data
+        setMessages(prev => {
+          const updated = [...prev];
+          const lastIndex = updated.length - 1;
+          if (lastIndex >= 0 && updated[lastIndex].role === 'assistant') {
+            console.log('Updating message with videos:', videoData.videos);
+            updated[lastIndex] = { 
+              ...updated[lastIndex], 
+              relevantVideos: videoData.videos,
+              bibleVerses: videoData.bibleVerses || []
+            };
+          }
+          return updated;
+        });
+      } else {
+        console.log('No video data found or videos array is empty');
+        console.log('Video data structure:', videoData);
+        if (videoData && videoData.videos) {
+          console.log('Videos array type:', typeof videoData.videos);
+          console.log('Videos array length:', videoData.videos.length);
         }
       }
 
@@ -390,27 +480,27 @@ export default function ConversationPage() {
 
           {/* Messages Display */}
           {hasMessages && (
-            <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6 mb-6 sm:mb-8 px-2 sm:px-0">
+            <div className="w-full max-w-6xl mx-auto space-y-4 sm:space-y-6 mb-6 sm:mb-8 px-2 sm:px-0">
               {messages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} fade-in-up duration-300`}
                 >
                   <div
-                    className={`max-w-xs sm:max-w-md lg:max-w-2xl px-4 sm:px-6 py-3 sm:py-4 rounded-2xl shadow-lg ${
+                    className={`max-w-xs sm:max-w-md lg:max-w-5xl px-4 sm:px-6 py-3 sm:py-4 ${
                       message.role === 'user' 
-                        ? 'bg-shield-blue/20 border border-shield-blue/30 text-shield-white' 
-                        : 'bg-transparent border border-gray-700/50 text-shield-white'
+                        ? 'bg-shield-blue/20 text-shield-white' 
+                        : 'bg-transparent text-shield-white'
                     }`}
                   >
                     <div className="flex items-start space-x-2 sm:space-x-3">
                       {message.role === 'assistant' && (
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
                           <img src="/logo.png" alt="Shield AI" className="w-6 h-6 sm:w-8 sm:h-8 rounded" />
                         </div>
                       )}
                       {message.role === 'user' && (
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue/20 border border-shield-blue/30 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-lg">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-shield-blue/20 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                           {user?.user_metadata?.avatar_url ? (
                             <img 
                               src={user.user_metadata.avatar_url} 
@@ -449,14 +539,44 @@ export default function ConversationPage() {
                         onAddToPlan={(c) => handleAddMessageToPlan(c)}
                       />
                     )}
+
+                    {/* Video Display for AI responses */}
+                    {message.role === 'assistant' && (
+                      <div>
+                        {(() => { 
+                          console.log('Message videos:', message.relevantVideos); 
+                          console.log('Message structure:', message);
+                          console.log('Message role:', message.role);
+                          console.log('Message content length:', message.content?.length);
+                          return null; 
+                        })()}
+                        {message.relevantVideos && message.relevantVideos.length > 0 ? (
+                          <div className="mt-4">
+                            <VideoDisplay
+                              videos={message.relevantVideos}
+                              theme={theme}
+                              onVideoSelect={(video) => {
+                                console.log('Video selected:', video);
+                                // You can implement custom video handling here
+                              }}
+                              showScripture={true}
+                            />
+                          </div>
+                        ) : (
+                          <div className="mt-2 text-gray-400 text-sm">
+                            Debug: No videos found for this message. Videos array: {JSON.stringify(message.relevantVideos)}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
               
               {/* Loading indicator */}
               {isLoading && (
-                <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="max-w-2xl px-6 py-4 rounded-2xl shadow-lg bg-shield-gray/80 backdrop-blur-sm border border-gray-700/50">
+                <div className="flex justify-start fade-in-up duration-300">
+                  <div className="w-full px-6 py-4 text-shield-white">
                     <div className="flex items-start space-x-3">
                       <div className="w-8 h-8 bg-shield-blue rounded-lg flex items-center justify-center flex-shrink-0 mt-1">
                         <span className="text-shield-white font-bold text-sm">S</span>
