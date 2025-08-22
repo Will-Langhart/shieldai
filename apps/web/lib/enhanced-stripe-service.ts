@@ -130,7 +130,9 @@ export class EnhancedStripeService extends StripeService {
       const usage = data?.[0];
       return {
         conversations_today: usage?.conversations_today || 0,
-        accurate_mode_today: usage?.accurate_mode_today || 0,
+        gentle_mode_today: usage?.gentle_mode_today || 0,
+        scholarly_mode_today: usage?.scholarly_mode_today || 0,
+        debate_mode_today: usage?.debate_mode_today || 0,
         bible_searches_today: usage?.bible_searches_today || 0,
         exports_today: usage?.exports_today || 0,
         notes_this_month: usage?.notes_this_month || 0,
