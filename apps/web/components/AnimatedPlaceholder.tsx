@@ -6,7 +6,7 @@ interface AnimatedPlaceholderProps {
 }
 
 const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({
-  theme = 'dark',
+  theme = 'light',
   className = ''
 }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);

@@ -23,6 +23,8 @@ Detailed feature implementations and enhancements:
 - **SETTINGS_ENHANCEMENT_SUMMARY.md** - User settings and customization  
 - **BIBLE_FEATURE_ENHANCEMENT.md** - Bible API and verse features
 - **GAMIFICATION_FEATURES.md** - Gamification and achievement system
+- **[VIDEO_INTEGRATION.md](docs/features/VIDEO_INTEGRATION.md)** - Video search and display with scripture integration
+- **[VIDEO_INTEGRATION_SUMMARY.md](docs/features/VIDEO_INTEGRATION_SUMMARY.md)** - Video integration implementation summary
 
 ### 🔌 **API Integrations** (`docs/api/`)
 External API integration documentation:

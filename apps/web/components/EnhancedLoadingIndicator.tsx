@@ -9,7 +9,7 @@ interface EnhancedLoadingIndicatorProps {
 }
 
 const EnhancedLoadingIndicator: React.FC<EnhancedLoadingIndicatorProps> = ({
-  theme = 'dark',
+  theme = 'light',
   message = 'Shield AI is thinking...',
   showProgress = true,
   variant = 'default'
@@ -20,7 +20,9 @@ const EnhancedLoadingIndicator: React.FC<EnhancedLoadingIndicatorProps> = ({
 
   const phases = [
     'Analyzing your question...',
-    'Searching Scripture...',
+    'Searching database...',
+    'Finding relevant videos...',
+    'Searching scripture...',
     'Formulating response...',
     'Preparing answer...'
   ];

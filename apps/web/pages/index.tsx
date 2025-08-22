@@ -6,6 +6,8 @@ import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
 import MessageActions from '../components/MessageActions';
 import MessageRenderer from '../components/MessageRenderer';
+import VideoDisplay from '../components/VideoDisplay';
+import { VideoResult } from '../lib/video-service';
 import EnhancedSubscriptionModal from '../components/EnhancedSubscriptionModal';
 import PlanPicker from '../components/PlanPicker';
 
@@ -36,6 +38,8 @@ interface Message {
   timestamp?: string;
   mode?: string;
   isStreaming?: boolean;
+  relevantVideos?: VideoResult[];
+  bibleVerses?: any[];
 }
 
 interface SubscriptionStatus {
@@ -410,6 +414,8 @@ export default function Home() {
               timestamp: msg.created_at,
               mode: msg.mode,
               isStreaming: false, // Ensure loaded messages are not streaming
+              relevantVideos: msg.relevant_videos || [],
+              bibleVerses: msg.bible_verses || []
             }));
             console.log('Loading messages with isStreaming=false:', formattedMessages.length);
             setMessages(formattedMessages);
@@ -434,6 +440,8 @@ export default function Home() {
             timestamp: msg.created_at,
             mode: msg.mode,
             isStreaming: false, // Ensure loaded messages are not streaming
+            relevantVideos: msg.relevant_videos || [],
+            bibleVerses: msg.bible_verses || []
           }));
           console.log('Loading most recent conversation with isStreaming=false:', formattedMessages.length);
           setMessages(formattedMessages);
@@ -476,6 +484,8 @@ export default function Home() {
         timestamp: msg.created_at,
         mode: msg.mode,
         isStreaming: false, // Ensure loaded messages are not streaming
+        relevantVideos: msg.relevant_videos || [],
+        bibleVerses: msg.bible_verses || []
       }));
       console.log('Selecting conversation with isStreaming=false:', formattedMessages.length);
       setMessages(formattedMessages);
@@ -613,6 +623,7 @@ export default function Home() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let aggregated = '';
+      let videoData: { videos?: VideoResult[]; bibleVerses?: any[] } | null = null;
       let done = false;
       
       while (!done) {
@@ -620,7 +631,30 @@ export default function Home() {
         done = readerDone;
         if (value) {
           const chunk = decoder.decode(value, { stream: true });
-          aggregated += chunk;
+          
+          // Check if this chunk contains video data markers
+          if (chunk.includes('VIDEO_DATA_START') && chunk.includes('VIDEO_DATA_END')) {
+            try {
+              const startMarker = 'VIDEO_DATA_START';
+              const endMarker = 'VIDEO_DATA_END';
+              
+              const startIndex = chunk.indexOf(startMarker) + startMarker.length;
+              const endIndex = chunk.indexOf(endMarker);
+              
+              if (startIndex !== -1 && endIndex !== -1) {
+                const jsonStr = chunk.substring(startIndex, endIndex).trim();
+                console.log('Raw JSON string from stream:', jsonStr);
+                videoData = JSON.parse(jsonStr);
+                console.log('Successfully parsed video data:', videoData);
+              }
+            } catch (e) {
+              console.error('Failed to parse video data:', e);
+              console.error('Chunk content:', chunk);
+            }
+          } else {
+            // This is AI response content, not video data
+            aggregated += chunk;
+          }
           
           // Update only the specific message being streamed
           setMessages(prev => prev.map(msg => 
@@ -629,6 +663,19 @@ export default function Home() {
               : msg
           ));
         }
+      }
+      
+      // After streaming is complete, update the message with video data
+      if (videoData && videoData.videos && Array.isArray(videoData.videos) && videoData.videos.length > 0) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { 
+                ...msg, 
+                relevantVideos: videoData.videos,
+                bibleVerses: videoData.bibleVerses || []
+              }
+            : msg
+        ));
       }
       
       // Mark streaming as complete
@@ -929,6 +976,21 @@ export default function Home() {
                                     }}
                                   />
                                 )}
+                                
+                                {/* Video Display for AI responses */}
+                                {message.role === 'assistant' && message.relevantVideos && message.relevantVideos.length > 0 && (
+                                  <div className="mt-4">
+                                    <VideoDisplay
+                                      videos={message.relevantVideos}
+                                      theme={resolvedTheme}
+                                      onVideoSelect={(video) => {
+                                        console.log('Video selected:', video);
+                                        // You can implement custom video handling here
+                                      }}
+                                      showScripture={true}
+                                    />
+                                  </div>
+                                )}
                               </div>
                               <p className={`text-xs mt-2 opacity-60 ${
                                 resolvedTheme === 'dark' ? 'text-gray-400' : 'text-gray-500'
@@ -982,8 +1044,8 @@ export default function Home() {
                       </div>
                     ))}
                     
-                    {/* Enhanced Loading indicator */}
-                    {isLoading && (
+                    {/* Enhanced Loading indicator - Only show when no message is streaming */}
+                    {isLoading && !messages.some(msg => msg.isStreaming) && (
                       <EnhancedLoadingIndicator
                         theme={resolvedTheme}
                         message="Shield AI is analyzing your question and preparing a thoughtful response..."

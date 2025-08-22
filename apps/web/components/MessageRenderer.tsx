@@ -25,7 +25,7 @@ interface ListItem {
 
 const MessageRenderer: React.FC<MessageRendererProps> = ({
   content,
-  theme = 'dark',
+  theme = 'light',
   className = '',
   animated = false, // Default to false to prevent unwanted animations
   onCopy

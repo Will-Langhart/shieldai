@@ -11,7 +11,7 @@ interface EnhancedStreamingTextProps {
 
 const EnhancedStreamingText: React.FC<EnhancedStreamingTextProps> = ({
   content,
-  theme = 'dark',
+  theme = 'light',
   isStreaming = false,
   showTypingIndicator = true,
   className = ''
@@ -114,9 +114,9 @@ const EnhancedStreamingText: React.FC<EnhancedStreamingTextProps> = ({
             <span className={`text-xs font-medium ${
               theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
             }`}>
-              {streamingVariant === 'analyzing' && 'Analyzing...'}
-              {streamingVariant === 'thinking' && 'Thinking...'}
-              {streamingVariant === 'writing' && 'Writing...'}
+              {streamingVariant === 'analyzing' && 'Analyzing question...'}
+              {streamingVariant === 'thinking' && 'Searching database & videos...'}
+              {streamingVariant === 'writing' && 'Formulating response...'}
             </span>
             <span className={`text-xs ${
               theme === 'dark' ? 'text-shield-blue' : 'text-blue-600'
@@ -164,7 +164,7 @@ const EnhancedStreamingText: React.FC<EnhancedStreamingTextProps> = ({
               <div className={`w-2 h-2 rounded-full ${
                 theme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
               } animate-pulse`}></div>
-              <span>Streaming response...</span>
+              <span>Shield AI is thinking...</span>
             </div>
             <div className={`flex items-center space-x-1 ${
               theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
@@ -173,6 +173,14 @@ const EnhancedStreamingText: React.FC<EnhancedStreamingTextProps> = ({
                 theme === 'dark' ? 'bg-green-500' : 'bg-green-600'
               } animate-pulse`}></div>
               <span>{currentCharIndex} characters</span>
+            </div>
+            <div className={`flex items-center space-x-1 ${
+              theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                theme === 'dark' ? 'bg-yellow-500' : 'bg-yellow-600'
+              } animate-pulse`}></div>
+              <span>Searching videos & scripture</span>
             </div>
           </div>
         </div>

@@ -17,6 +17,9 @@ export interface Message {
   role: 'user' | 'assistant';
   mode?: 'fast' | 'accurate';
   created_at: string;
+  relevant_videos?: any[];
+  bible_verses?: any[];
+  video_metadata?: any;
 }
 
 export class ClientService {

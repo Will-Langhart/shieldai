@@ -161,7 +161,10 @@ export class ChatService {
     content: string,
     role: 'user' | 'assistant',
     mode?: 'fast' | 'accurate',
-    supabaseClient?: SupabaseClient
+    supabaseClient?: SupabaseClient,
+    relevantVideos?: any[],
+    bibleVerses?: any[],
+    videoMetadata?: any
   ): Promise<Message> {
     const client = supabaseClient || supabase;
     console.log('Adding message to conversation:', conversationId, 'role:', role, 'content length:', content.length);
@@ -173,6 +176,9 @@ export class ChatService {
         content,
         role,
         mode,
+        relevant_videos: relevantVideos || [],
+        bible_verses: bibleVerses || [],
+        video_metadata: videoMetadata || {}
       })
       .select()
       .single();
