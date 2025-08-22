@@ -218,7 +218,15 @@ export default async function handler(
         query: message,
         maxResults: 3,
         relevanceThreshold: 0.6,
-        includeScripture: true
+        includeScripture: true,
+        userContext: {
+          objectionType: objectionAnalysis.primaryType,
+          userStance: objectionAnalysis.userStance,
+          intensity: objectionAnalysis.intensity,
+          mode: mode,
+          previousTopics: memoryContext?.keyTopics || [],
+          emotionalTone: memoryContext?.emotionalTone
+        }
       });
       
       relevantVideos = videoResults;
@@ -386,10 +394,44 @@ Please mention these relevant videos in your response and explain how they can h
           }
         }
 
-        // Send video and scripture data after streaming completes
+        // Enhanced video search after AI response for better context matching
         try {
-          // Ensure we have video data - if none found, use fallback
           let videosToSend = relevantVideos;
+          
+          // If we have an AI response, do an enhanced video search
+          if (fullText && fullText.length > 50) {
+            try {
+              const enhancedVideoResults = await VideoService.searchRelevantVideos({
+                query: message,
+                maxResults: 3,
+                relevanceThreshold: 0.6,
+                includeScripture: true,
+                userContext: {
+                  objectionType: objectionAnalysis.primaryType,
+                  userStance: objectionAnalysis.userStance,
+                  intensity: objectionAnalysis.intensity,
+                  mode: mode,
+                  previousTopics: memoryContext?.keyTopics || [],
+                  emotionalTone: memoryContext?.emotionalTone
+                },
+                aiResponse: fullText
+              });
+              
+              // Use enhanced results if they're better, otherwise keep original
+              if (enhancedVideoResults.length > 0) {
+                videosToSend = enhancedVideoResults;
+                logger.debug('Enhanced video search completed', { 
+                  cid, 
+                  enhancedCount: enhancedVideoResults.length,
+                  originalCount: relevantVideos.length
+                });
+              }
+            } catch (enhancedError) {
+              logger.warn('Enhanced video search failed, using original results', { cid }, enhancedError);
+            }
+          }
+          
+          // Ensure we have video data - if none found, use fallback
           if (!videosToSend || videosToSend.length === 0) {
             logger.warn('No videos found, using fallback', { cid });
             videosToSend = [
@@ -415,15 +457,16 @@ Please mention these relevant videos in your response and explain how they can h
           };
           
           // Debug logging
-          logger.debug('Preparing video data for stream', { 
+          logger.debug('Preparing enhanced video data for stream', { 
             cid, 
-            videoCount: relevantVideos.length,
+            videoCount: videosToSend.length,
             videoDataStructure: JSON.stringify(videoData),
-            firstVideo: relevantVideos[0] ? {
-              id: relevantVideos[0].id,
-              title: relevantVideos[0].title,
-              url: relevantVideos[0].url
-            } : null
+            firstVideo: videosToSend[0] ? {
+              id: videosToSend[0].id,
+              title: videosToSend[0].title,
+              url: videosToSend[0].url
+            } : null,
+            enhancedSearch: fullText ? 'yes' : 'no'
           });
           
           // Send video data as a separate chunk with clear separation
@@ -431,13 +474,13 @@ Please mention these relevant videos in your response and explain how they can h
           res.write('VIDEO_DATA_START\n');
           res.write(JSON.stringify(videoData));
           res.write('\nVIDEO_DATA_END\n');
-          logger.debug('Sent video data in stream', { 
+          logger.debug('Sent enhanced video data in stream', { 
             cid, 
-            videoCount: relevantVideos.length,
+            videoCount: videosToSend.length,
             dataLength: JSON.stringify(videoData).length
           });
         } catch (e) {
-          logger.error('Failed to send video data in stream', { cid }, e);
+          logger.error('Failed to send enhanced video data in stream', { cid }, e);
         }
 
         let currentConvId = conversationId as string | undefined;
