@@ -78,6 +78,114 @@ export class VideoService {
   }
 
   /**
+   * Perform real-time availability check for a single video
+   * This can be called before displaying a video to ensure it's still available
+   */
+  static async verifyVideoAvailability(videoId: string): Promise<boolean> {
+    if (!this.YOUTUBE_API_KEY) {
+      return true; // Assume available if no API key
+    }
+
+    try {
+      const response = await axios.get(this.YOUTUBE_VIDEO_URL, {
+        params: {
+          part: 'status',
+          id: videoId,
+          key: this.YOUTUBE_API_KEY
+        },
+        timeout: 5000 // Shorter timeout for real-time checks
+      });
+
+      if (response.data.items && response.data.items.length > 0) {
+        return this.isVideoAvailable(response.data.items[0]);
+      }
+      
+      return false;
+    } catch (error) {
+      console.error(`Failed to verify availability for video ${videoId}:`, error);
+      return false; // Assume unavailable if we can't check
+    }
+  }
+
+  /**
+   * Batch verify multiple videos for availability
+   */
+  static async verifyMultipleVideosAvailability(videoIds: string[]): Promise<Map<string, boolean>> {
+    if (!this.YOUTUBE_API_KEY || videoIds.length === 0) {
+      return new Map(videoIds.map(id => [id, true]));
+    }
+
+    try {
+      const response = await axios.get(this.YOUTUBE_VIDEO_URL, {
+        params: {
+          part: 'status',
+          id: videoIds.join(','),
+          key: this.YOUTUBE_API_KEY
+        },
+        timeout: 10000
+      });
+
+      const availabilityMap = new Map<string, boolean>();
+      
+      if (response.data.items) {
+        response.data.items.forEach((video: any) => {
+          const isAvailable = this.isVideoAvailable(video);
+          availabilityMap.set(video.id, isAvailable);
+        });
+      }
+
+      // Mark any videos not returned as unavailable
+      videoIds.forEach(id => {
+        if (!availabilityMap.has(id)) {
+          availabilityMap.set(id, false);
+        }
+      });
+
+      return availabilityMap;
+    } catch (error) {
+      console.error('Failed to verify multiple videos availability:', error);
+      return new Map(videoIds.map(id => [id, false]));
+    }
+  }
+
+  /**
+   * Check if a video is available based on its status
+   */
+  private static isVideoAvailable(video: any): boolean {
+    if (!video || !video.status) {
+      return false;
+    }
+
+    const status = video.status;
+    
+    // Check if video is embeddable and public
+    if (status.embeddable === false) {
+      return false;
+    }
+    
+    if (status.privacyStatus !== 'public') {
+      return false;
+    }
+    
+    // Check if video is not blocked in any region
+    if (status.blockedInCountries && status.blockedInCountries.length > 0) {
+      return false;
+    }
+    
+    // Check if video has been removed or deleted
+    if (status.uploadStatus === 'failed' || status.uploadStatus === 'rejected') {
+      return false;
+    }
+    
+    // Check if video is age-restricted (optional - you can remove this if you want to allow age-restricted content)
+    if (status.contentRating && status.contentRating.ytRating === 'ytAgeRestricted') {
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
    * Get detailed information for multiple videos
    */
   private static async getVideoDetails(videoIds: string[]): Promise<any[]> {
@@ -112,13 +220,13 @@ export class VideoService {
     }
 
     try {
-      // Search for videos
+      // Search for videos - get more results to account for filtering
       const searchResponse = await axios.get(this.YOUTUBE_SEARCH_URL, {
         params: {
           part: 'snippet',
           q: query,
           type: 'video',
-          maxResults: Math.min(maxResults * 2, 50), // Get more results to filter from
+          maxResults: Math.min(maxResults * 3, 50), // Get 3x more results to filter from
           order: 'relevance',
           videoDuration: 'medium', // Prefer medium-length videos (4-20 minutes)
           relevanceLanguage: 'en',
@@ -136,25 +244,73 @@ export class VideoService {
       // Get video details for duration and other metadata
       const videoIds = searchResponse.data.items.map((item: any) => item.id.videoId);
       const videoDetails = await this.getVideoDetails(videoIds);
+      
+      // Check video availability
+      const availabilityMap = await this.verifyMultipleVideosAvailability(videoIds);
 
-      // Combine search results with video details
-      const videos: VideoResult[] = searchResponse.data.items.map((item: any, index: number) => {
-        const details = videoDetails.find((v: any) => v.id === item.id.videoId);
-        return {
-          id: item.id.videoId,
-          title: item.snippet.title,
-          description: item.snippet.description,
-          thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || '/placeholder-video.jpg',
-          url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-          duration: details?.contentDetails?.duration ? this.formatDuration(details.contentDetails.duration) : 'Unknown',
-          channel: item.snippet.channelTitle,
-          publishedAt: item.snippet.publishedAt,
-          relevance: 0.8 - (index * 0.1), // Start with high relevance and decrease
-          source: 'youtube' as const
-        };
+      // Combine search results with video details and filter by availability
+      const availableVideos: VideoResult[] = [];
+      
+      searchResponse.data.items.forEach((item: any, index: number) => {
+        const videoId = item.id.videoId;
+        const isAvailable = availabilityMap.get(videoId);
+        
+        // Only include available videos
+        if (isAvailable) {
+          const details = videoDetails.find((v: any) => v.id === videoId);
+          const video: VideoResult = {
+            id: videoId,
+            title: item.snippet.title,
+            description: item.snippet.description,
+            thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || '/placeholder-video.jpg',
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+            duration: details?.contentDetails?.duration ? this.formatDuration(details.contentDetails.duration) : 'Unknown',
+            channel: item.snippet.channelTitle,
+            publishedAt: item.snippet.publishedAt,
+            relevance: 0.9 - (index * 0.05), // Start with high relevance and decrease slightly
+            source: 'youtube' as const
+          };
+          
+          availableVideos.push(video);
+          
+          // Stop when we have enough available videos
+          if (availableVideos.length >= maxResults) {
+            return;
+          }
+        }
       });
 
-      return videos;
+      // If we don't have enough available videos, try to get more
+      if (availableVideos.length < maxResults && searchResponse.data.items.length > maxResults * 2) {
+        const additionalVideos = searchResponse.data.items.slice(maxResults * 2);
+        for (const item of additionalVideos) {
+          if (availableVideos.length >= maxResults) break;
+          
+          const videoId = item.id.videoId;
+          const isAvailable = availabilityMap.get(videoId);
+          
+          if (isAvailable) {
+            const details = videoDetails.find((v: any) => v.id === videoId);
+            const video: VideoResult = {
+              id: videoId,
+              title: item.snippet.title,
+              description: item.snippet.description,
+              thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || '/placeholder-video.jpg',
+              url: `https://www.youtube.com/watch?v=${videoId}`,
+              duration: details?.contentDetails?.duration ? this.formatDuration(details.contentDetails.duration) : 'Unknown',
+              channel: item.snippet.channelTitle,
+              publishedAt: item.snippet.publishedAt,
+              relevance: 0.7, // Lower relevance for additional videos
+              source: 'youtube' as const
+            };
+            
+            availableVideos.push(video);
+          }
+        }
+      }
+
+      console.log(`Found ${availableVideos.length} available videos out of ${searchResponse.data.items.length} total results`);
+      return availableVideos;
     } catch (error) {
       console.error('YouTube API search failed:', error);
       console.warn('Falling back to mock video search');

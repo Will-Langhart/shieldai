@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Play, ExternalLink, Clock, User, Calendar, BookOpen, Eye, EyeOff, X, Maximize2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Play, ExternalLink, Clock, User, Calendar, BookOpen, Eye, EyeOff, X, Maximize2, AlertTriangle } from 'lucide-react';
 import { VideoResult } from '../lib/video-service';
 
 interface VideoDisplayProps {
@@ -21,13 +21,42 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
   const [showAllVideos, setShowAllVideos] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<VideoResult | null>(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoAvailability, setVideoAvailability] = useState<Map<string, boolean>>(new Map());
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+
+  // Check video availability when videos change
+  useEffect(() => {
+    if (videos && videos.length > 0) {
+      checkVideoAvailability();
+    }
+  }, [videos]);
+
+  const checkVideoAvailability = async () => {
+    setCheckingAvailability(true);
+    try {
+      // Import the video service dynamically to avoid SSR issues
+      const { VideoService } = await import('../lib/video-service');
+      const videoIds = videos.map(v => v.id);
+      const availability = await VideoService.verifyMultipleVideosAvailability(videoIds);
+      setVideoAvailability(availability);
+    } catch (error) {
+      console.error('Failed to check video availability:', error);
+      // Assume all videos are available if check fails
+      const availability = new Map(videos.map(v => [v.id, true]));
+      setVideoAvailability(availability);
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
 
   if (!videos || videos.length === 0) {
     return null;
   }
 
-  const displayedVideos = showAllVideos ? videos : videos.slice(0, 3);
-  const hasMoreVideos = videos.length > 3;
+  // Filter out unavailable videos
+  const availableVideos = videos.filter(video => videoAvailability.get(video.id) !== false);
+  const displayedVideos = showAllVideos ? availableVideos : availableVideos.slice(0, 3);
+  const hasMoreVideos = availableVideos.length > 3;
 
   const toggleVideoExpansion = (videoId: string) => {
     const newExpanded = new Set(expandedVideos);
@@ -124,11 +153,25 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
           <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-shield-white' : 'text-gray-900'}`}>
             Related Videos & Scripture
           </h3>
-          <span className={`text-sm px-2 py-1 rounded-full ${
-            theme === 'dark' ? 'bg-shield-blue/20 text-shield-blue' : 'bg-blue-100 text-blue-700'
-          }`}>
-            {videos.length} found
+          {checkingAvailability && (
+            <div className="flex items-center space-x-2 text-sm text-gray-500">
+              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+              <span>Verifying availability...</span>
+            </div>
+          )}
+        </div>
+        
+        {/* Availability Status */}
+        <div className="flex items-center space-x-2 text-sm">
+          <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+            {availableVideos.length} of {videos.length} videos available
           </span>
+          {availableVideos.length < videos.length && (
+            <div className="flex items-center space-x-1 text-yellow-500">
+              <AlertTriangle size={14} />
+              <span>Some videos unavailable</span>
+            </div>
+          )}
         </div>
         
         {hasMoreVideos && (
@@ -155,8 +198,28 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
         )}
       </div>
 
+      {/* No Videos Message */}
+      {availableVideos.length === 0 && !checkingAvailability && (
+        <div className={`text-center py-8 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+          <Play className="w-12 h-12 mx-auto mb-3 opacity-50" />
+          {videos.length === 0 ? (
+            <>
+              <p>No relevant videos found for this topic.</p>
+              <p className="text-sm mt-1">Try rephrasing your question or check back later.</p>
+            </>
+          ) : (
+            <>
+              <p>All found videos are currently unavailable.</p>
+              <p className="text-sm mt-1">This can happen when videos are removed, made private, or blocked in your region.</p>
+              <p className="text-sm mt-2">Try asking a different question or check back later for new content.</p>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Videos Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {availableVideos.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {displayedVideos.map((video, index) => (
           <div
             key={video.id}
@@ -237,9 +300,25 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
                 <span className={`text-xs font-medium ${getRelevanceColor(video.relevance)}`}>
                   {getRelevanceText(video.relevance)}
                 </span>
-                <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {Math.round(video.relevance * 100)}% match
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {Math.round(video.relevance * 100)}% match
+                  </span>
+                  {/* Availability Badge */}
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    videoAvailability.get(video.id) === false
+                      ? 'bg-red-100 text-red-700'
+                      : videoAvailability.get(video.id) === true
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {videoAvailability.get(video.id) === false
+                      ? 'Unavailable'
+                      : videoAvailability.get(video.id) === true
+                      ? 'Available'
+                      : 'Checking...'}
+                  </span>
+                </div>
               </div>
 
               {/* Description Preview */}
@@ -324,16 +403,6 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
           </div>
         ))}
       </div>
-
-      {/* No Videos Message */}
-      {videos.length === 0 && (
-        <div className={`text-center py-8 ${
-          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-        }`}>
-          <Play className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>No relevant videos found for this topic.</p>
-          <p className="text-sm mt-1">Try rephrasing your question or check back later.</p>
-        </div>
       )}
 
       {/* Video Modal */}
