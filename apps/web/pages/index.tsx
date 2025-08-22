@@ -1054,36 +1054,7 @@ export default function Home() {
                       />
                     )}
                     
-                    {/* Pagination controls */}
-                    {currentConversationId && (
-                      <div className="flex items-center justify-between mt-4">
-                        <button
-                          disabled={messagesPage <= 1}
-                          onClick={async () => {
-                            const newPage = Math.max(1, messagesPage - 1);
-                            setMessagesPage(newPage);
-                            const resp = await fetch(`/api/messages?conversationId=${encodeURIComponent(currentConversationId)}&page=${newPage}&pageSize=${messagesPageSize}`);
-                            const json = await resp.json();
-                            setMessages((json.items || []).map((msg: any) => ({ id: msg.id, role: msg.role, content: msg.content, timestamp: msg.created_at, mode: msg.mode, isStreaming: false })));
-                            setMessagesTotal(json.total || 0);
-                          }}
-                          className={`px-3 py-1 rounded ${resolvedTheme==='dark' ? 'bg-gray-800 text-gray-200 disabled:opacity-50' : 'bg-gray-100 text-gray-700 disabled:opacity-50'}`}
-                        >Prev</button>
-                        <span className={`text-xs ${resolvedTheme==='dark' ? 'text-gray-400' : 'text-gray-500'}`}>Page {messagesPage} / {Math.max(1, Math.ceil(messagesTotal / messagesPageSize))}</span>
-                        <button
-                          disabled={messagesPage >= Math.ceil(messagesTotal / messagesPageSize)}
-                          onClick={async () => {
-                            const newPage = messagesPage + 1;
-                            setMessagesPage(newPage);
-                            const resp = await fetch(`/api/messages?conversationId=${encodeURIComponent(currentConversationId)}&page=${newPage}&pageSize=${messagesPageSize}`);
-                            const json = await resp.json();
-                            setMessages((json.items || []).map((msg: any) => ({ id: msg.id, role: msg.role, content: msg.content, timestamp: msg.created_at, mode: msg.mode, isStreaming: false })));
-                            setMessagesTotal(json.total || 0);
-                          }}
-                          className={`px-3 py-1 rounded ${resolvedTheme==='dark' ? 'bg-gray-800 text-gray-200 disabled:opacity-50' : 'bg-gray-100 text-gray-700 disabled:opacity-50'}`}
-                        >Next</button>
-                      </div>
-                    )}
+
 
                     {/* Invisible scroll target for auto-scroll */}
                     <div ref={messagesEndRef} className="h-1" />

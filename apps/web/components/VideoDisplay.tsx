@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, ExternalLink, Clock, User, Calendar, BookOpen, Eye, EyeOff } from 'lucide-react';
+import { Play, ExternalLink, Clock, User, Calendar, BookOpen, Eye, EyeOff, X, Maximize2 } from 'lucide-react';
 import { VideoResult } from '../lib/video-service';
 
 interface VideoDisplayProps {
@@ -19,6 +19,8 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
 }) => {
   const [expandedVideos, setExpandedVideos] = useState<Set<string>>(new Set());
   const [showAllVideos, setShowAllVideos] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<VideoResult | null>(null);
+  const [showVideoModal, setShowVideoModal] = useState(false);
 
   if (!videos || videos.length === 0) {
     return null;
@@ -41,9 +43,25 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
     if (onVideoSelect) {
       onVideoSelect(video);
     } else {
-      // Default behavior: open in new tab
-      window.open(video.url, '_blank', 'noopener,noreferrer');
+      // Open video in modal for inline viewing
+      setSelectedVideo(video);
+      setShowVideoModal(true);
     }
+  };
+
+  const handlePlayInline = (video: VideoResult) => {
+    setSelectedVideo(video);
+    setShowVideoModal(true);
+  };
+
+  const closeVideoModal = () => {
+    setShowVideoModal(false);
+    setSelectedVideo(null);
+  };
+
+  const getYouTubeEmbedUrl = (url: string) => {
+    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+    return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1` : url;
   };
 
   const formatDate = (dateString: string) => {
@@ -123,7 +141,7 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
             } ${className}`}
           >
             {/* Thumbnail */}
-            <div className="relative group cursor-pointer" onClick={() => handleVideoClick(video)}>
+            <div className="relative group">
               <img
                 src={video.thumbnail || '/placeholder-video.jpg'}
                 alt={video.title}
@@ -136,7 +154,7 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
               
               {/* Play Button Overlay */}
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className={`w-16 h-16 rounded-full bg-shield-blue/90 flex items-center justify-center`}>
+                <div className={`w-16 h-16 rounded-full bg-shield-blue/90 flex items-center justify-center cursor-pointer`} onClick={() => handlePlayInline(video)}>
                   <Play className="w-8 h-8 text-white ml-1" />
                 </div>
               </div>
@@ -147,6 +165,14 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
               }`}>
                 {video.duration}
               </div>
+
+              {/* Inline Play Button */}
+              <button
+                onClick={() => handlePlayInline(video)}
+                className="absolute top-2 right-2 w-8 h-8 bg-shield-blue/90 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              >
+                <Play className="w-4 h-4 text-white ml-0.5" />
+              </button>
             </div>
 
             {/* Content */}
@@ -226,7 +252,7 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
               {/* Actions */}
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200/20">
                 <button
-                  onClick={() => handleVideoClick(video)}
+                  onClick={() => handlePlayInline(video)}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     theme === 'dark'
                       ? 'bg-shield-blue/20 text-shield-blue hover:bg-shield-blue/30'
@@ -234,7 +260,19 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
                   }`}
                 >
                   <Play size={14} />
-                  <span>Watch</span>
+                  <span>Play</span>
+                </button>
+                
+                <button
+                  onClick={() => handleVideoClick(video)}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-shield-blue/20 text-shield-blue hover:bg-shield-blue/30'
+                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                  }`}
+                >
+                  <Maximize2 size={14} />
+                  <span>Fullscreen</span>
                 </button>
                 
                 <button
@@ -262,6 +300,97 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
           <Play className="w-12 h-12 mx-auto mb-3 opacity-50" />
           <p>No relevant videos found for this topic.</p>
           <p className="text-sm mt-1">Try rephrasing your question or check back later.</p>
+        </div>
+      )}
+
+      {/* Video Modal */}
+      {showVideoModal && selectedVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={closeVideoModal}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative z-10 w-full max-w-4xl mx-auto">
+            <div className={`rounded-xl overflow-hidden shadow-2xl ${
+              theme === 'dark' ? 'bg-shield-gray border border-gray-700' : 'bg-white border border-gray-200'
+            }`}>
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-700/30">
+                <div className="flex-1 min-w-0">
+                  <h3 className={`text-lg font-semibold truncate ${
+                    theme === 'dark' ? 'text-shield-white' : 'text-gray-900'
+                  }`}>
+                    {selectedVideo.title}
+                  </h3>
+                  <p className={`text-sm mt-1 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    {selectedVideo.channel} • {selectedVideo.duration}
+                  </p>
+                </div>
+                <button
+                  onClick={closeVideoModal}
+                  className={`p-2 rounded-lg hover:bg-gray-700/30 transition-colors ${
+                    theme === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              {/* Video Player */}
+              <div className="relative w-full aspect-video bg-black">
+                <iframe
+                  src={getYouTubeEmbedUrl(selectedVideo.url)}
+                  title={selectedVideo.title}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+              
+              {/* Video Info */}
+              <div className="p-4">
+                <p className={`text-sm leading-relaxed ${
+                  theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  {selectedVideo.description}
+                </p>
+                
+                {/* Additional Actions */}
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-700/30">
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      theme === 'dark' ? 'bg-shield-blue/20 text-shield-blue' : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {Math.round(selectedVideo.relevance * 100)}% relevant
+                    </span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {selectedVideo.source}
+                    </span>
+                  </div>
+                  
+                  <button
+                    onClick={() => window.open(selectedVideo.url, '_blank', 'noopener,noreferrer')}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      theme === 'dark'
+                        ? 'bg-shield-blue/20 text-shield-blue hover:bg-shield-blue/30'
+                        : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                    }`}
+                  >
+                    <ExternalLink size={14} />
+                    <span>Open on YouTube</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
