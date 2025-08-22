@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useAuth } from '../lib/auth-context';
 
 export default function TestYouTubeAPI() {
-  const { user, authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [testResults, setTestResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
