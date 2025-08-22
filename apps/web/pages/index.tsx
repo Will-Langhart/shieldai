@@ -803,7 +803,11 @@ export default function Home() {
           {user && (
             <button
               onClick={() => setShowSidebar(!showSidebar)}
-              className={`fixed top-1/2 left-4 z-40 p-2 rounded-lg transition-colors transform -translate-y-1/2 md:left-4 ${
+              className={`fixed top-1/2 z-40 p-2 rounded-lg transition-all duration-300 transform -translate-y-1/2 ${
+                showSidebar 
+                  ? 'left-80' // Position outside sidebar when open
+                  : 'left-4'  // Position on left when closed
+              } ${
                 resolvedTheme === 'dark'
                   ? 'bg-shield-gray/80 border border-gray-700/50 text-shield-white hover:bg-shield-gray/60'
                   : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 shadow-lg'

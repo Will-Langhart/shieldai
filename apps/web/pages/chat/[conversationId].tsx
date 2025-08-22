@@ -445,10 +445,14 @@ export default function ConversationPage() {
               console.log('Sidebar toggle clicked, current state:', showSidebar);
               setShowSidebar(!showSidebar);
             }}
-            className="fixed top-1/2 left-4 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-colors transform -translate-y-1/2"
+            className={`fixed top-1/2 z-40 p-2 bg-shield-gray/80 border border-gray-700/50 rounded-lg text-shield-white hover:bg-shield-gray/60 transition-all duration-300 transform -translate-y-1/2 ${
+              showSidebar 
+                ? 'left-80' // Position outside sidebar when open
+                : 'left-4'  // Position on left when closed
+            }`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showSidebar ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showSidebar ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} />
             </svg>
           </button>
         )}
