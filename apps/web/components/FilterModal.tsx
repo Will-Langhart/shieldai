@@ -13,7 +13,7 @@ export interface FilterOptions {
   startDate?: string;
   endDate?: string;
   topic: string;
-  responseMode: 'all' | 'fast' | 'accurate';
+  responseMode: 'all' | 'gentle' | 'scholarly' | 'debate';
   sortBy: 'date' | 'title' | 'length';
   sortOrder: 'asc' | 'desc';
 }

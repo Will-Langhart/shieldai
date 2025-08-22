@@ -15,7 +15,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-    CREATE TYPE response_mode AS ENUM ('fast', 'accurate');
+    CREATE TYPE response_mode AS ENUM ('gentle', 'scholarly', 'debate');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;

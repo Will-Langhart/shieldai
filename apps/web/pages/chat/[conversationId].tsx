@@ -27,7 +27,7 @@ export default function ConversationPage() {
   const { user, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
+  const [currentMode, setCurrentMode] = useState<'gentle' | 'scholarly' | 'debate'>('gentle');
   const [showSidebar, setShowSidebar] = useState(false);
   const [conversationTitle, setConversationTitle] = useState<string>('');
   const [showBibleModal, setShowBibleModal] = useState(false);

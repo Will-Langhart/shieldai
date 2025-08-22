@@ -15,7 +15,7 @@ export interface Message {
   conversation_id: string;
   content: string;
   role: 'user' | 'assistant';
-  mode?: 'fast' | 'accurate';
+  mode?: 'gentle' | 'scholarly' | 'debate';
   created_at: string;
   relevant_videos?: any[];
   bible_verses?: any[];
@@ -92,7 +92,7 @@ export class ClientService {
     conversationId: string,
     content: string,
     role: 'user' | 'assistant',
-    mode?: 'fast' | 'accurate'
+    mode?: 'gentle' | 'scholarly' | 'debate'
   ): Promise<Message> {
     const sessionToken = await this.getSessionToken();
     

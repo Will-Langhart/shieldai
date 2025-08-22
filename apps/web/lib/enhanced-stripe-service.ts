@@ -19,13 +19,17 @@ export interface SubscriptionTier {
 
 export interface SubscriptionLimits {
   daily_conversations?: number;
-  daily_accurate_mode?: number;
+  daily_gentle_mode?: number;
+  daily_scholarly_mode?: number;
+  daily_debate_mode?: number;
   daily_bible_searches?: number;
   daily_exports?: number;
   monthly_notes?: number;
   monthly_api_calls?: number;
   monthly_church_searches?: number;
-  accurate_mode_enabled: boolean;
+  gentle_mode_enabled: boolean;
+  scholarly_mode_enabled: boolean;
+  debate_mode_enabled: boolean;
   advanced_bible_search: boolean;
   cross_references_enabled: boolean;
   collaboration_enabled: boolean;
@@ -37,7 +41,9 @@ export interface SubscriptionLimits {
 
 export interface UsageMetrics {
   conversations_today: number;
-  accurate_mode_today: number;
+  gentle_mode_today: number;
+  scholarly_mode_today: number;
+  debate_mode_today: number;
   bible_searches_today: number;
   exports_today: number;
   notes_this_month: number;
@@ -84,13 +90,17 @@ export class EnhancedStripeService extends StripeService {
           features: plan.features || [],
           limits: {
             daily_conversations: planLimits?.daily_conversations,
-            daily_accurate_mode: planLimits?.daily_accurate_mode,
+            daily_gentle_mode: planLimits?.daily_gentle_mode,
+            daily_scholarly_mode: planLimits?.daily_scholarly_mode,
+            daily_debate_mode: planLimits?.daily_debate_mode,
             daily_bible_searches: planLimits?.daily_bible_searches,
             daily_exports: planLimits?.daily_exports,
             monthly_notes: planLimits?.monthly_notes,
             monthly_api_calls: planLimits?.monthly_api_calls,
             monthly_church_searches: planLimits?.monthly_church_searches,
-            accurate_mode_enabled: planLimits?.accurate_mode_enabled || false,
+            gentle_mode_enabled: planLimits?.gentle_mode_enabled || false,
+            scholarly_mode_enabled: planLimits?.scholarly_mode_enabled || false,
+            debate_mode_enabled: planLimits?.debate_mode_enabled || false,
             advanced_bible_search: planLimits?.advanced_bible_search || false,
             cross_references_enabled: planLimits?.cross_references_enabled || false,
             collaboration_enabled: planLimits?.collaboration_enabled || false,
@@ -131,7 +141,9 @@ export class EnhancedStripeService extends StripeService {
       console.error('Error fetching current usage:', error);
       return {
         conversations_today: 0,
-        accurate_mode_today: 0,
+        gentle_mode_today: 0,
+        scholarly_mode_today: 0,
+        debate_mode_today: 0,
         bible_searches_today: 0,
         exports_today: 0,
         notes_this_month: 0,
@@ -144,7 +156,7 @@ export class EnhancedStripeService extends StripeService {
   // Increment usage metric
   static async incrementUsage(
     userId: string, 
-    metricType: 'conversation' | 'accurate_mode' | 'bible_search' | 'note_created' | 'export' | 'api_call' | 'church_search',
+    metricType: 'conversation' | 'gentle_mode' | 'scholarly_mode' | 'debate_mode' | 'bible_search' | 'note_created' | 'export' | 'api_call' | 'church_search',
     increment: number = 1
   ): Promise<void> {
     try {
@@ -219,27 +231,63 @@ export class EnhancedStripeService extends StripeService {
           }
           break;
 
-        case 'accurate_mode':
-          if (!limits.accurate_mode_enabled) {
+        case 'gentle_mode':
+          // Gentle mode is always available
+          result = {
+            allowed: true,
+            current_tier: planName
+          };
+          if (incrementUsage) {
+            await this.incrementUsage(userId, 'gentle_mode');
+          }
+          break;
+
+        case 'scholarly_mode':
+          if (!limits.scholarly_mode_enabled) {
+            result = {
+              allowed: false,
+              upgrade_required: true,
+              current_tier: planName,
+              required_tier: 'student'
+            };
+          } else if (limits.daily_scholarly_mode !== null) {
+            const remaining = limits.daily_scholarly_mode - usage.scholarly_mode_today;
+            result = {
+              allowed: remaining > 0,
+              remaining: Math.max(0, remaining),
+              limit: limits.daily_scholarly_mode,
+              upgrade_required: remaining <= 0,
+              current_tier: planName,
+              required_tier: remaining <= 0 ? 'student' : undefined
+            };
+
+            if (incrementUsage && result.allowed) {
+              await this.incrementUsage(userId, 'scholarly_mode');
+            }
+          }
+          break;
+
+        case 'debate_mode':
+          if (!limits.debate_mode_enabled) {
             result = {
               allowed: false,
               upgrade_required: true,
               current_tier: planName,
               required_tier: 'scholar'
             };
-          } else if (limits.daily_accurate_mode !== null) {
-            const remaining = limits.daily_accurate_mode - usage.accurate_mode_today;
+          } else if (limits.daily_debate_mode !== null) {
+            const remaining = limits.daily_debate_mode - usage.debate_mode_today;
             result = {
               allowed: remaining > 0,
               remaining: Math.max(0, remaining),
-              limit: limits.daily_accurate_mode,
+              limit: limits.daily_debate_mode,
               upgrade_required: remaining <= 0,
               current_tier: planName,
               required_tier: remaining <= 0 ? 'scholar' : undefined
             };
 
             if (incrementUsage && result.allowed) {
-              await this.incrementUsage(userId, 'accurate_mode');
+              await this.incrementUsage(userId, 'debate_mode');
             }
           }
           break;

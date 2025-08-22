@@ -29,7 +29,7 @@ export default function UserSettings({ isOpen, onClose }: UserSettingsProps) {
     theme: 'dark',
     notifications: true,
     autoSave: true,
-    defaultMode: 'fast',
+    defaultMode: 'gentle',
     language: 'en',
     bibleDefaultVersion: 'de4e12af7f28f599-02', // NIV
     bibleSearchHistory: true,

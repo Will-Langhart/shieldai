@@ -109,7 +109,7 @@ Visit `http://localhost:3001` to see Shield AI in action!
    ```bash
    curl -X POST http://localhost:3001/api/chat \
      -H "Content-Type: application/json" \
-     -d '{"message": "What is the problem of evil?", "mode": "fast"}'
+     -d '{"message": "What is the problem of evil?", "mode": "gentle"}'
    ```
 
 3. **Check the UI:**

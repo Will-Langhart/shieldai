@@ -4,7 +4,7 @@
 -- Create custom types
 CREATE TYPE user_role AS ENUM ('user', 'admin');
 CREATE TYPE message_role AS ENUM ('user', 'assistant');
-CREATE TYPE response_mode AS ENUM ('fast', 'accurate');
+CREATE TYPE response_mode AS ENUM ('gentle', 'scholarly', 'debate');
 
 -- Users table (extends Supabase auth.users)
 CREATE TABLE IF NOT EXISTS public.users (

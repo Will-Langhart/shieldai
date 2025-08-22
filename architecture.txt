@@ -140,13 +140,13 @@ shieldai/
 **Features**:
 - Text input with placeholder
 - Microphone button for voice input (future)
-- Mode toggle (Fast/Accurate) with sparkles icon
+- Mode toggle (Gentle/Scholarly/Debate) with sparkles icon
 - Send button with loading states
 - Backdrop blur and glassmorphism effects
 
 **Key Props**:
 - `onSubmit`: Function to handle message submission
-- `mode`: Current AI mode ('fast' | 'accurate')
+- `mode`: Current AI mode ('gentle' | 'scholarly' | 'debate')
 - `onModeChange`: Function to change AI mode
 - `isLoading`: Boolean for loading state
 
@@ -251,7 +251,7 @@ shieldai/
 ```typescript
 {
   message: string,
-  mode: 'fast' | 'accurate',
+  mode: 'gentle' | 'scholarly' | 'debate',
   sessionId?: string,
   conversationId?: string,
   userId?: string
@@ -366,7 +366,7 @@ shieldai/
 - `conversation_id`: UUID (Foreign Key)
 - `content`: TEXT
 - `role`: VARCHAR ('user' | 'assistant')
-- `mode`: VARCHAR ('fast' | 'accurate')
+- `mode`: VARCHAR ('gentle' | 'scholarly' | 'debate')
 - `created_at`: TIMESTAMP
 - `embedding`: VECTOR (Pinecone)
 

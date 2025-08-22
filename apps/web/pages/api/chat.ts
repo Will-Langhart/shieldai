@@ -40,7 +40,7 @@ export default async function handler(
   }
 
   try {
-    const { message, mode = 'fast', sessionId = 'default', conversationId, stream, bibleVersion } = req.body || {};
+    const { message, mode = 'gentle', sessionId = 'default', conversationId, stream, bibleVersion } = req.body || {};
     const shouldStream = Boolean(stream) || req.query.stream === '1' || req.query.stream === 'true';
 
     if (!message) {
@@ -99,7 +99,7 @@ export default async function handler(
       if (!featureAccess.allowed) {
         return res.status(403).json({ 
           error: 'Feature not available',
-          message: `${mode === 'accurate' ? 'GPT-4 Accurate mode' : 'AI conversations'} not available on your current plan`,
+          message: `${mode === 'scholarly' ? 'GPT-4 Scholarly mode' : mode === 'debate' ? 'GPT-4 Debate mode' : 'AI conversations'} not available on your current plan`,
           upgrade_required: featureAccess.upgrade_required,
           current_tier: featureAccess.current_tier,
           required_tier: featureAccess.required_tier,
@@ -280,13 +280,13 @@ Please reference relevant previous discussions when appropriate and maintain con
     }
 
     // Use different models and settings based on mode and subscription
-    let model = mode === 'fast' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
-    let maxTokens = mode === 'fast' ? 2000 : 4000; // Increased token limits
-    let temperature = mode === 'fast' ? 0.7 : 0.8;
+    let model = mode === 'gentle' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
+    let maxTokens = mode === 'gentle' ? 2000 : 4000; // Increased token limits for scholarly/debate modes
+    let temperature = mode === 'gentle' ? 0.7 : 0.8;
 
     // Check if user has access to advanced models
     const advancedModelAccess = await SubscriptionMiddleware.checkApiFeatureAccess(user.id, 'advanced_ai_models');
-    if (!advancedModelAccess.allowed && mode === 'accurate') {
+    if (!advancedModelAccess.allowed && (mode === 'scholarly' || mode === 'debate')) {
       // Fallback to basic model for users without premium
       model = 'gpt-3.5-turbo';
       maxTokens = 800;

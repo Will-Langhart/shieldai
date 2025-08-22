@@ -60,7 +60,7 @@ export default function Home() {
   const [messagesPageSize] = useState(50);
   const [messagesTotal, setMessagesTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentMode, setCurrentMode] = useState<'fast' | 'accurate'>('fast');
+  const [currentMode, setCurrentMode] = useState<'gentle' | 'scholarly' | 'debate'>('gentle');
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -998,7 +998,7 @@ export default function Home() {
                                 {message.timestamp && new Date(message.timestamp).toLocaleTimeString()}
                                 {message.mode && (
                                   <span className="ml-2">
-                                    • {message.mode === 'fast' ? '⚡' : '🎯'} {message.mode}
+                                    • {message.mode === 'gentle' ? '🤝' : message.mode === 'scholarly' ? '📚' : '⚔️'} {message.mode}
                                   </span>
                                 )}
                               </p>

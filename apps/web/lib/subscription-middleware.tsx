@@ -124,12 +124,15 @@ export class SubscriptionMiddleware {
   }
 
   // Specific feature checkers for common use cases
-  static async checkChatAccess(userId: string, mode: 'fast' | 'accurate' = 'fast'): Promise<FeatureCheckResult> {
+  static async checkChatAccess(userId: string, mode: 'gentle' | 'scholarly' | 'debate' = 'gentle'): Promise<FeatureCheckResult> {
     const featureGate = this.createFeatureGate(userId);
     
-    if (mode === 'accurate') {
-      return await featureGate.checkFeature('accurate_mode', true);
+    if (mode === 'scholarly') {
+      return await featureGate.checkFeature('scholarly_mode', true);
+    } else if (mode === 'debate') {
+      return await featureGate.checkFeature('debate_mode', true);
     } else {
+      // gentle mode is always available
       return await featureGate.checkFeature('ai_conversation', true);
     }
   }
@@ -165,12 +168,17 @@ export class SubscriptionMiddleware {
   }
 
   // Usage tracking helpers
-  static async trackConversation(userId: string, mode: 'fast' | 'accurate' = 'fast'): Promise<void> {
+  static async trackConversation(userId: string, mode: 'gentle' | 'scholarly' | 'debate' = 'gentle'): Promise<void> {
     const featureGate = this.createFeatureGate(userId);
     await featureGate.incrementUsage('conversation');
     
-    if (mode === 'accurate') {
-      await featureGate.incrementUsage('accurate_mode');
+    if (mode === 'scholarly') {
+      await featureGate.incrementUsage('scholarly_mode');
+    } else if (mode === 'debate') {
+      await featureGate.incrementUsage('debate_mode');
+    } else {
+      // gentle mode
+      await featureGate.incrementUsage('gentle_mode');
     }
   }
 

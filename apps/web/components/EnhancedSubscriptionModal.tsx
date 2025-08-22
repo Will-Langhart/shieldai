@@ -303,7 +303,9 @@ const EnhancedSubscriptionModal: React.FC<EnhancedSubscriptionModalProps> = ({
                     )}
                     {plan.limits.daily_accurate_mode && (
                       <div className="text-xs text-shield-gray">
-                        {plan.limits.daily_accurate_mode} accurate mode/day
+                        {plan.limits.daily_gentle_mode} gentle mode/day
+                {plan.limits.daily_scholarly_mode && ` • ${plan.limits.daily_scholarly_mode} scholarly mode/day`}
+                {plan.limits.daily_debate_mode && ` • ${plan.limits.daily_debate_mode} debate mode/day`}
                       </div>
                     )}
                     {plan.limits.monthly_notes && (

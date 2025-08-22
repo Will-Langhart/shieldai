@@ -3,8 +3,8 @@ import { Mic, Zap, ChevronDown, Volume2, Send, Sparkles, BookOpen } from 'lucide
 
 interface InputBarProps {
   onSubmit: (message: string) => void;
-  mode: 'fast' | 'accurate';
-  onModeChange: (mode: 'fast' | 'accurate') => void;
+  mode: 'gentle' | 'scholarly' | 'debate';
+  onModeChange: (mode: 'gentle' | 'scholarly' | 'debate') => void;
   isLoading?: boolean;
   disabled?: boolean;
   theme?: 'light' | 'dark';
@@ -80,14 +80,21 @@ const InputBar: React.FC<InputBarProps> = ({ onSubmit, mode, onModeChange, isLoa
                 ? 'text-gray-400' 
                 : theme === 'dark' ? 'text-shield-white' : 'text-gray-700'
             }`}>
-              {mode === 'fast' ? 'Fast' : 'Accurate'}
+              {mode === 'gentle' ? '🤝 Gentle' : mode === 'scholarly' ? '📚 Scholarly' : '⚔️ Debate'}
             </span>
             <button
               type="button"
               disabled={disabled}
               onClick={() => {
                 console.log('Mode toggle clicked, current mode:', mode);
-                onModeChange(mode === 'fast' ? 'accurate' : 'fast');
+                // Cycle through the three modes
+                if (mode === 'gentle') {
+                  onModeChange('scholarly');
+                } else if (mode === 'scholarly') {
+                  onModeChange('debate');
+                } else {
+                  onModeChange('gentle');
+                }
               }}
               style={{ position: 'relative', zIndex: 20, pointerEvents: 'auto' }}
               className={`p-1 rounded transition-all duration-200 ${

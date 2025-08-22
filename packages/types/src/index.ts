@@ -5,7 +5,7 @@ export interface ApiHealth {
 
 export interface ChatMessagePayload {
   message: string;
-  mode?: 'fast' | 'accurate';
+  mode?: 'gentle' | 'scholarly' | 'debate';
   sessionId?: string;
   conversationId?: string;
 }

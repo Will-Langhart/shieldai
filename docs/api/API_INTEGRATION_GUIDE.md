@@ -162,7 +162,7 @@ node scripts/verify-api-integration.js
 curl -X POST http://localhost:3001/api/chat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{"message": "Hello", "mode": "fast"}'
+  -d '{"message": "Hello", "mode": "gentle"}'
 ```
 
 #### Check Bible API
