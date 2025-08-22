@@ -60,8 +60,34 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
   };
 
   const getYouTubeEmbedUrl = (url: string) => {
-    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
-    return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1` : url;
+    // Handle different YouTube URL formats
+    let videoId = null;
+    
+    // youtube.com/watch?v=VIDEO_ID
+    const watchMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+    if (watchMatch) {
+      videoId = watchMatch[1];
+    }
+    
+    // youtube.com/embed/VIDEO_ID
+    const embedMatch = url.match(/youtube\.com\/embed\/([^&\n?#]+)/);
+    if (embedMatch) {
+      videoId = embedMatch[1];
+    }
+    
+    // youtube.com/v/VIDEO_ID
+    const vMatch = url.match(/youtube\.com\/v\/([^&\n?#]+)/);
+    if (vMatch) {
+      videoId = vMatch[1];
+    }
+    
+    if (videoId) {
+      // Use enhanced embed parameters for better compatibility
+      return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+    }
+    
+    // Fallback to original URL if we can't parse it
+    return url;
   };
 
   const formatDate = (dateString: string) => {
@@ -146,10 +172,17 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
                 src={video.thumbnail || '/placeholder-video.jpg'}
                 alt={video.title}
                 className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105"
+                loading="lazy"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
+                  console.warn(`Failed to load thumbnail for video: ${video.title}`, video.thumbnail);
                   target.src = '/placeholder-video.jpg';
                 }}
+                onLoad={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.opacity = '1';
+                }}
+                style={{ opacity: 0 }}
               />
               
               {/* Play Button Overlay */}
@@ -350,7 +383,22 @@ const VideoDisplay: React.FC<VideoDisplayProps> = ({
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
+                  onError={(e) => {
+                    console.error('Video iframe failed to load:', e);
+                  }}
                 />
+                {/* Fallback message if video fails */}
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white hidden" id="video-fallback">
+                  <div className="text-center">
+                    <p className="mb-2">Video unavailable</p>
+                    <button
+                      onClick={() => window.open(selectedVideo.url, '_blank', 'noopener,noreferrer')}
+                      className="px-4 py-2 bg-shield-blue rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      Watch on YouTube
+                    </button>
+                  </div>
+                </div>
               </div>
               
               {/* Video Info */}

@@ -78,6 +78,31 @@ export class VideoService {
   }
 
   /**
+   * Get detailed information for multiple videos
+   */
+  private static async getVideoDetails(videoIds: string[]): Promise<any[]> {
+    if (!this.YOUTUBE_API_KEY || videoIds.length === 0) {
+      return [];
+    }
+
+    try {
+      const videoResponse = await axios.get(this.YOUTUBE_VIDEO_URL, {
+        params: {
+          part: 'snippet,contentDetails,statistics',
+          id: videoIds.join(','),
+          key: this.YOUTUBE_API_KEY
+        },
+        timeout: 10000
+      });
+
+      return videoResponse.data.items || [];
+    } catch (error) {
+      console.error('Failed to get video details:', error);
+      return [];
+    }
+  }
+
+  /**
    * Search YouTube for relevant videos
    */
   private static async searchYouTube(query: string, maxResults: number): Promise<VideoResult[]> {
@@ -99,41 +124,40 @@ export class VideoService {
           relevanceLanguage: 'en',
           regionCode: 'US',
           key: this.YOUTUBE_API_KEY
-        }
+        },
+        timeout: 10000 // 10 second timeout
       });
 
-      const searchResults = searchResponse.data.items || [];
-      
-      if (searchResults.length === 0) {
+      if (!searchResponse.data || !searchResponse.data.items) {
+        console.warn('YouTube API returned no results, using fallback');
         return this.fallbackVideoSearch(query, maxResults);
       }
 
-      // Get detailed video information
-      const videoIds = searchResults.map((item: any) => item.id.videoId).join(',');
-      const videoResponse = await axios.get(this.YOUTUBE_VIDEO_URL, {
-        params: {
-          part: 'snippet,contentDetails,statistics',
-          id: videoIds,
-          key: this.YOUTUBE_API_KEY
-        }
+      // Get video details for duration and other metadata
+      const videoIds = searchResponse.data.items.map((item: any) => item.id.videoId);
+      const videoDetails = await this.getVideoDetails(videoIds);
+
+      // Combine search results with video details
+      const videos: VideoResult[] = searchResponse.data.items.map((item: any, index: number) => {
+        const details = videoDetails.find((v: any) => v.id === item.id.videoId);
+        return {
+          id: item.id.videoId,
+          title: item.snippet.title,
+          description: item.snippet.description,
+          thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || '/placeholder-video.jpg',
+          url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+          duration: details?.contentDetails?.duration ? this.formatDuration(details.contentDetails.duration) : 'Unknown',
+          channel: item.snippet.channelTitle,
+          publishedAt: item.snippet.publishedAt,
+          relevance: 0.8 - (index * 0.1), // Start with high relevance and decrease
+          source: 'youtube' as const
+        };
       });
 
-      const videoDetails = videoResponse.data.items || [];
-      
-      return videoDetails.map((video: any) => ({
-        id: video.id,
-        title: video.snippet.title,
-        description: video.snippet.description,
-        thumbnail: video.snippet.thumbnails?.high?.url || video.snippet.thumbnails?.medium?.url || '',
-        url: `https://www.youtube.com/watch?v=${video.id}`,
-        duration: this.formatDuration(video.contentDetails?.duration || ''),
-        channel: video.snippet.channelTitle,
-        publishedAt: video.snippet.publishedAt,
-        relevance: 0.8, // Will be recalculated
-        source: 'youtube' as const
-      }));
+      return videos;
     } catch (error) {
-      console.error('YouTube API error:', error);
+      console.error('YouTube API search failed:', error);
+      console.warn('Falling back to mock video search');
       return this.fallbackVideoSearch(query, maxResults);
     }
   }
