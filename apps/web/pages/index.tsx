@@ -6,7 +6,7 @@ import InputBar from '../components/InputBar';
 import ConversationHistory from '../components/ConversationHistory';
 import MessageActions from '../components/MessageActions';
 import MessageRenderer from '../components/MessageRenderer';
-import VideoDisplay from '../components/VideoDisplay';
+import { EnhancedVideoDisplay } from '../components/EnhancedVideoDisplay';
 import { VideoResult } from '../lib/video-service';
 import EnhancedSubscriptionModal from '../components/EnhancedSubscriptionModal';
 import PlanPicker from '../components/PlanPicker';
@@ -984,14 +984,9 @@ export default function Home() {
                                 {/* Video Display for AI responses */}
                                 {message.role === 'assistant' && message.relevantVideos && message.relevantVideos.length > 0 && (
                                   <div className="mt-4">
-                                    <VideoDisplay
+                                    <EnhancedVideoDisplay
                                       videos={message.relevantVideos}
-                                      theme={resolvedTheme}
-                                      onVideoSelect={(video) => {
-                                        console.log('Video selected:', video);
-                                        // You can implement custom video handling here
-                                      }}
-                                      showScripture={true}
+                                      className="mt-4"
                                     />
                                   </div>
                                 )}

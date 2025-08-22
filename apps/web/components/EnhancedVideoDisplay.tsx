@@ -1,17 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Maximize2, Play, ExternalLink, AlertTriangle, Info, Target, Heart, BookOpen } from 'lucide-react';
+import { VideoResult } from '../lib/video-service';
 
-export interface EnhancedVideoResult {
-  id: string;
-  title: string;
-  description: string;
-  thumbnail: string;
-  url: string;
-  duration: string;
-  channel: string;
-  publishedAt: string;
-  relevance: number;
-  source: 'youtube' | 'vimeo' | 'other';
+export interface EnhancedVideoResult extends VideoResult {
   topics?: string[];
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
   targetAudience?: 'seeker' | 'believer' | 'scholar' | 'general';
@@ -19,7 +10,7 @@ export interface EnhancedVideoResult {
 }
 
 interface EnhancedVideoDisplayProps {
-  videos: EnhancedVideoResult[];
+  videos: (VideoResult | EnhancedVideoResult)[];
   title?: string;
   subtitle?: string;
   className?: string;
@@ -31,7 +22,7 @@ export const EnhancedVideoDisplay: React.FC<EnhancedVideoDisplayProps> = ({
   subtitle,
   className = ""
 }) => {
-  const [selectedVideo, setSelectedVideo] = useState<EnhancedVideoResult | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<(VideoResult | EnhancedVideoResult) | null>(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [videoAvailability, setVideoAvailability] = useState<Map<string, boolean>>(new Map());
   const [checkingAvailability, setCheckingAvailability] = useState(false);
@@ -62,7 +53,7 @@ export const EnhancedVideoDisplay: React.FC<EnhancedVideoDisplayProps> = ({
     }
   };
 
-  const handlePlayInline = (video: EnhancedVideoResult) => {
+  const handlePlayInline = (video: VideoResult | EnhancedVideoResult) => {
     setSelectedVideo(video);
     setShowVideoModal(true);
     setIframeError(false);

@@ -5,7 +5,7 @@ import InputBar from '../../components/InputBar';
 import ConversationHistory from '../../components/ConversationHistory';
 import MessageActions from '../../components/MessageActions';
 import MemoryInsights from '../../components/MemoryInsights';
-import VideoDisplay from '../../components/VideoDisplay';
+import { EnhancedVideoDisplay } from '../../components/EnhancedVideoDisplay';
 import { useAuth } from '../../lib/auth-context';
 import { ClientService } from '../../lib/client-service';
 import { supabase } from '../../lib/supabase';
@@ -556,14 +556,9 @@ export default function ConversationPage() {
                         })()}
                         {message.relevantVideos && message.relevantVideos.length > 0 ? (
                           <div className="mt-4">
-                            <VideoDisplay
+                            <EnhancedVideoDisplay
                               videos={message.relevantVideos}
-                              theme={theme}
-                              onVideoSelect={(video) => {
-                                console.log('Video selected:', video);
-                                // You can implement custom video handling here
-                              }}
-                              showScripture={true}
+                              className="mt-4"
                             />
                           </div>
                         ) : (

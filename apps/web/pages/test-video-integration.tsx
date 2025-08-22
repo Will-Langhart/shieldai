@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
-import VideoDisplay from '../components/VideoDisplay';
+import { EnhancedVideoDisplay } from '../components/EnhancedVideoDisplay';
 import { VideoClientService } from '../lib/video-client-service';
 import { VideoResult } from '../lib/video-service';
 
@@ -110,14 +110,9 @@ export default function TestVideoIntegration() {
                 <h2 className="text-xl font-semibold mb-4">Video Display Test</h2>
                 
                 {searchResults.length > 0 ? (
-                  <VideoDisplay
+                  <EnhancedVideoDisplay
                     videos={searchResults}
-                    theme="dark"
-                    onVideoSelect={(video) => {
-                      console.log('Video selected:', video);
-                      alert(`Selected: ${video.title}`);
-                    }}
-                    showScripture={true}
+                    className="mt-4"
                   />
                 ) : (
                   <div className="text-center py-12 text-gray-400">
