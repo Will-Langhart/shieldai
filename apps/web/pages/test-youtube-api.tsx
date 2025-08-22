@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useAuth } from '../lib/auth-context';
 
 export default function TestYouTubeAPI() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [testResults, setTestResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export default function TestYouTubeAPI() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await user.getIdToken())}`
+          'Authorization': `Bearer ${session?.access_token || ''}`
         },
         body: JSON.stringify({
           query: 'Christian apologetics evidence',
@@ -37,7 +37,7 @@ export default function TestYouTubeAPI() {
       // Test database schema
       const dbResponse = await fetch('/api/test-db-schema', {
         headers: {
-          'Authorization': `Bearer ${(await user.getIdToken())}`
+          'Authorization': `Bearer ${session?.access_token || ''}`
         }
       });
 
@@ -72,7 +72,7 @@ export default function TestYouTubeAPI() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await user.getIdToken())}`
+          'Authorization': `Bearer ${session?.access_token || ''}`
         },
         body: JSON.stringify({
           message: 'What is the evidence for Christianity?',
@@ -87,7 +87,7 @@ export default function TestYouTubeAPI() {
 
       const chatResults = await response.json();
       
-      setTestResults(prev => ({
+      setTestResults((prev: any) => ({
         ...prev,
         chatAPI: chatResults,
         chatTimestamp: new Date().toISOString()
@@ -158,9 +158,9 @@ export default function TestYouTubeAPI() {
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-semibold mb-4">👤 User Info</h2>
               <div className="space-y-2 text-sm">
-                <p><strong>ID:</strong> {user.uid}</p>
+                <p><strong>ID:</strong> {user.id}</p>
                 <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Email Verified:</strong> {user.emailVerified ? 'Yes' : 'No'}</p>
+                <p><strong>Email Verified:</strong> {user.email_confirmed_at ? 'Yes' : 'No'}</p>
               </div>
             </div>
           </div>
