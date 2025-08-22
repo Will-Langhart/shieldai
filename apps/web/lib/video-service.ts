@@ -71,28 +71,45 @@ export class VideoService {
    */
   static async searchRelevantVideos(params: VideoSearchParams): Promise<VideoResult[]> {
     try {
+      console.log('🔍 VideoService.searchRelevantVideos called with params:', {
+        query: params.query,
+        maxResults: params.maxResults,
+        hasUserContext: !!params.userContext,
+        hasAiResponse: !!params.aiResponse,
+        youtubeApiKey: this.YOUTUBE_API_KEY ? `${this.YOUTUBE_API_KEY.substring(0, 10)}...` : 'MISSING'
+      });
+      
       const { query, maxResults = 5, relevanceThreshold = 0.6, includeScripture = true, userContext, aiResponse } = params;
       
       // Generate intelligent search strategy based on context
       const searchStrategy = this.generateSearchStrategy(query, userContext, aiResponse);
+      console.log('📋 Generated search strategy:', searchStrategy);
       
       // Execute multi-query search strategy
       const allResults = await this.executeSearchStrategy(searchStrategy, maxResults);
+      console.log('🎬 Search strategy executed, found results:', allResults.length);
       
       // Enhanced ranking with context awareness
       const rankedResults = this.rankVideosWithContext(allResults, query, userContext, aiResponse, relevanceThreshold);
+      console.log('⭐ Ranked results:', rankedResults.length);
       
       // Add scripture context if requested
       if (includeScripture) {
         await this.addScriptureContext(rankedResults, query, aiResponse);
+        console.log('📖 Scripture context added');
       }
       
       // Add metadata for better user experience
       await this.enhanceVideoMetadata(rankedResults, userContext);
+      console.log('🔧 Video metadata enhanced');
       
-      return rankedResults.slice(0, maxResults);
+      const finalResults = rankedResults.slice(0, maxResults);
+      console.log('✅ Final video results:', finalResults.length, 'videos');
+      
+      return finalResults;
     } catch (error) {
-      console.error('Error searching videos:', error);
+      console.error('❌ Error in searchRelevantVideos:', error);
+      console.log('🔄 Falling back to intelligent fallback videos');
       return this.getIntelligentFallbackVideos(params);
     }
   }
@@ -308,44 +325,61 @@ export class VideoService {
   }
 
   /**
-   * Execute the search strategy with multiple queries
+   * Execute the search strategy with primary and secondary queries
    */
   private static async executeSearchStrategy(
     strategy: VideoSearchStrategy, 
     maxResults: number
   ): Promise<VideoResult[]> {
-    const allResults: VideoResult[] = [];
+    console.log('🎯 executeSearchStrategy called:', {
+      strategy,
+      maxResults
+    });
     
     try {
-      // Execute primary query
+      // Execute primary search
+      console.log('🔍 Executing primary search with query:', strategy.primaryQuery);
       const primaryResults = await this.searchYouTubeWithFilters(
         strategy.primaryQuery, 
-        Math.ceil(maxResults * 0.6), 
+        maxResults, 
         strategy.filters
       );
-      allResults.push(...primaryResults);
+      console.log('✅ Primary search completed, found:', primaryResults.length, 'videos');
       
-      // Execute secondary queries if we need more results
-      if (allResults.length < maxResults) {
-        for (const secondaryQuery of strategy.secondaryQueries) {
-          if (allResults.length >= maxResults) break;
-          
-          const secondaryResults = await this.searchYouTubeWithFilters(
-            secondaryQuery,
-            Math.ceil((maxResults - allResults.length) / strategy.secondaryQueries.length),
+      // Execute secondary searches
+      const secondaryResults: VideoResult[] = [];
+      for (const secondaryQuery of strategy.secondaryQueries) {
+        console.log('🔍 Executing secondary search with query:', secondaryQuery);
+        try {
+          const results = await this.searchYouTubeWithFilters(
+            secondaryQuery, 
+            Math.ceil(maxResults / 2), 
             strategy.filters
           );
-          allResults.push(...secondaryResults);
+          secondaryResults.push(...results);
+          console.log('✅ Secondary search completed for:', secondaryQuery, 'found:', results.length, 'videos');
+        } catch (error) {
+          console.warn('⚠️ Secondary search failed for:', secondaryQuery, error);
         }
       }
       
-      // Remove duplicates based on video ID
+      // Combine and remove duplicates
+      const allResults = [...primaryResults, ...secondaryResults];
+      console.log('🔄 Combined results before deduplication:', allResults.length);
+      
       const uniqueResults = this.removeDuplicateVideos(allResults);
+      console.log('✨ Unique results after deduplication:', uniqueResults.length);
       
       return uniqueResults;
     } catch (error) {
-      console.error('Error executing search strategy:', error);
-      return [];
+      console.error('❌ executeSearchStrategy failed:', error);
+      // Fallback to basic search
+      console.log('🔄 Falling back to basic search');
+      return this.searchYouTubeWithFilters(
+        strategy.primaryQuery, 
+        maxResults, 
+        { duration: 'medium' }
+      );
     }
   }
 
@@ -357,19 +391,23 @@ export class VideoService {
     maxResults: number, 
     filters: VideoSearchStrategy['filters']
   ): Promise<VideoResult[]> {
-    console.log('YouTube API key check:', { 
-      hasKey: !!this.YOUTUBE_API_KEY, 
-      keyLength: this.YOUTUBE_API_KEY ? this.YOUTUBE_API_KEY.length : 0,
-      keyPreview: this.YOUTUBE_API_KEY ? `${this.YOUTUBE_API_KEY.substring(0, 10)}...` : 'none'
+    console.log('🎬 searchYouTubeWithFilters called:', {
+      query,
+      maxResults,
+      filters,
+      hasApiKey: !!this.YOUTUBE_API_KEY,
+      apiKeyLength: this.YOUTUBE_API_KEY ? this.YOUTUBE_API_KEY.length : 0,
+      apiKeyPreview: this.YOUTUBE_API_KEY ? `${this.YOUTUBE_API_KEY.substring(0, 10)}...` : 'none',
+      searchUrl: this.YOUTUBE_SEARCH_URL
     });
     
     if (!this.YOUTUBE_API_KEY) {
-      console.warn('YouTube API key not configured, using fallback search');
+      console.warn('⚠️ YouTube API key not configured, using fallback search');
       return this.fallbackVideoSearch(query, maxResults);
     }
 
     try {
-      console.log('Making YouTube API request with filters:', { 
+      console.log('🚀 Making YouTube API request with filters:', { 
         url: this.YOUTUBE_SEARCH_URL, 
         query, 
         maxResults, 
@@ -389,6 +427,11 @@ export class VideoService {
         key: this.YOUTUBE_API_KEY
       };
       
+      console.log('🔧 Search parameters built:', {
+        ...searchParams,
+        key: searchParams.key ? `${searchParams.key.substring(0, 10)}...` : 'none'
+      });
+      
       // Apply duration filter
       if (filters.duration === 'short') {
         searchParams.videoDuration = 'short'; // Under 4 minutes
@@ -405,6 +448,7 @@ export class VideoService {
       
       while (retryCount <= maxRetries) {
         try {
+          console.log(`🔄 YouTube API attempt ${retryCount + 1}/${maxRetries + 1}`);
           searchResponse = await axios.get(this.YOUTUBE_SEARCH_URL, {
             params: searchParams,
             timeout: 15000, // Increased timeout
@@ -413,14 +457,22 @@ export class VideoService {
               'Accept': 'application/json'
             }
           });
+          console.log('✅ YouTube API request successful:', {
+            status: searchResponse.status,
+            statusText: searchResponse.statusText,
+            hasData: !!searchResponse.data,
+            itemsCount: searchResponse.data?.items?.length || 0
+          });
           break; // Success, exit retry loop
         } catch (error: any) {
           retryCount++;
-          console.warn(`YouTube API attempt ${retryCount} failed:`, {
+          console.warn(`❌ YouTube API attempt ${retryCount} failed:`, {
             status: error.response?.status,
             statusText: error.response?.statusText,
             message: error.message,
-            code: error.code
+            code: error.code,
+            isNetworkError: !error.response,
+            isTimeout: error.code === 'ECONNABORTED'
           });
           
           if (retryCount > maxRetries) {
@@ -429,7 +481,7 @@ export class VideoService {
           
           // Wait before retry (exponential backoff)
           const waitTime = Math.pow(2, retryCount) * 1000;
-          console.log(`Waiting ${waitTime}ms before retry...`);
+          console.log(`⏳ Waiting ${waitTime}ms before retry...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }

@@ -1,3 +1,4 @@
+
 -- Add video storage capabilities to messages table
 -- This migration adds columns to store video data and scripture references
 
