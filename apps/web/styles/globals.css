@@ -234,13 +234,19 @@ body {
   overflow: hidden;
 }
 
-/* Set light theme as default */
+/* Set dark theme as default */
 html[data-theme="light"] body {
   color: var(--shield-white);
   background: var(--shield-black);
 }
 
 html[data-theme="dark"] body {
+  color: var(--shield-white);
+  background: var(--shield-black);
+}
+
+/* Default to dark theme when no theme is specified */
+html:not([data-theme]) body {
   color: var(--shield-white);
   background: var(--shield-black);
 }

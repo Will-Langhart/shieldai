@@ -8,6 +8,7 @@ import MessageActions from '../components/MessageActions';
 import MessageRenderer from '../components/MessageRenderer';
 import { EnhancedVideoDisplay } from '../components/EnhancedVideoDisplay';
 import { VideoResult } from '../lib/video-service';
+import DevLoggingDashboard from '../components/DevLoggingDashboard';
 import EnhancedSubscriptionModal from '../components/EnhancedSubscriptionModal';
 import PlanPicker from '../components/PlanPicker';
 
@@ -84,8 +85,8 @@ export default function Home() {
   const [newPlanDescription, setNewPlanDescription] = useState('');
   const [newPlanDuration, setNewPlanDuration] = useState<number | ''>('');
   const [selectedVerseForNote, setSelectedVerseForNote] = useState<{ reference: string; text: string } | null>(null);
-  const [theme, setTheme] = useState<Theme>('light');
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<Theme>('dark');
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('dark');
   const [currentLanguage, setCurrentLanguage] = useState<string>('en');
   const [currentMobileSection, setCurrentMobileSection] = useState<'chat' | 'bible' | 'church' | 'mood' | 'settings'>('chat');
   
@@ -181,7 +182,7 @@ export default function Home() {
 
   // Theme and Language management
   useEffect(() => {
-    const savedTheme = localStorage.getItem('shieldai-theme') as Theme || 'light';
+    const savedTheme = localStorage.getItem('shieldai-theme') as Theme || 'dark';
     const savedLanguage = localStorage.getItem('shieldai-language') || 'en';
     setTheme(savedTheme);
     setCurrentLanguage(savedLanguage);
@@ -405,9 +406,9 @@ export default function Home() {
       // If we have a current conversation ID, try to load its messages
       if (currentConversationId) {
         try {
-          const messages = await ClientService.getMessages(currentConversationId);
-          if (messages.length > 0) {
-            const formattedMessages = messages.map((msg: any) => ({
+          const result = await ClientService.getMessages(currentConversationId);
+          if (result.items && result.items.length > 0) {
+            const formattedMessages = result.items.map((msg: any) => ({
               id: msg.id || `loaded_${msg.created_at}_${Math.random().toString(36).substr(2, 9)}`,
               role: msg.role,
               content: msg.content,
@@ -432,22 +433,24 @@ export default function Home() {
       const mostRecentConversation = conversations[0];
       if (mostRecentConversation) {
         try {
-          const messages = await ClientService.getMessages(mostRecentConversation.id);
-          const formattedMessages = messages.map((msg: any) => ({
-            id: msg.id || `loaded_${msg.created_at}_${Math.random().toString(36).substr(2, 9)}`,
-            role: msg.role,
-            content: msg.content,
-            timestamp: msg.created_at,
-            mode: msg.mode,
-            isStreaming: false, // Ensure loaded messages are not streaming
-            relevantVideos: msg.relevant_videos || [],
-            bibleVerses: msg.bible_verses || []
-          }));
-          console.log('Loading most recent conversation with isStreaming=false:', formattedMessages.length);
-          setMessages(formattedMessages);
-          setCurrentConversationId(mostRecentConversation.id);
-          // Scroll to bottom after loading messages
-          setTimeout(() => scrollToBottom('auto'), 100);
+          const result = await ClientService.getMessages(mostRecentConversation.id);
+          if (result.items && result.items.length > 0) {
+            const formattedMessages = result.items.map((msg: any) => ({
+              id: msg.id || `loaded_${msg.created_at}_${Math.random().toString(36).substr(2, 9)}`,
+              role: msg.role,
+              content: msg.content,
+              timestamp: msg.created_at,
+              mode: msg.mode,
+              isStreaming: false, // Ensure loaded messages are not streaming
+              relevantVideos: msg.relevant_videos || [],
+              bibleVerses: msg.bible_verses || []
+            }));
+            console.log('Loading most recent conversation with isStreaming=false:', formattedMessages.length);
+            setMessages(formattedMessages);
+            setCurrentConversationId(mostRecentConversation.id);
+            // Scroll to bottom after loading messages
+            setTimeout(() => scrollToBottom('auto'), 100);
+          }
         } catch (error) {
           console.error('Error loading messages for most recent conversation:', error);
         }
@@ -1403,6 +1406,9 @@ export default function Home() {
         selectedVersion={selectedVersion || undefined}
         theme={resolvedTheme}
       />
+
+      {/* Development Logging Dashboard - Only visible in development */}
+      <DevLoggingDashboard />
     </>
   );
 } 

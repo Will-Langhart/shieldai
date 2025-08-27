@@ -13,7 +13,7 @@ const appConfig: ExpoConfig = {
   splash: {
     image: './assets/images/splash-icon.png',
     resizeMode: 'contain',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
   },
   ios: {
     supportsTablet: true,
@@ -22,7 +22,7 @@ const appConfig: ExpoConfig = {
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/images/adaptive-icon.png',
-      backgroundColor: '#ffffff',
+      backgroundColor: '#000000',
     },
     package: 'com.shieldai.app',
     permissions: [],
