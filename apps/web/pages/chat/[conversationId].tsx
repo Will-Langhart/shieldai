@@ -64,10 +64,10 @@ export default function ConversationPage() {
   const loadConversation = async (convId: string) => {
     try {
       console.log('Loading conversation:', convId);
-      const messages = await ClientService.getMessages(convId);
+      const messagesResponse = await ClientService.getMessages(convId);
       // Note: We don't have getConversation in ClientService, so we'll skip the title for now
       
-      setMessages(messages.map((msg: any) => ({
+      setMessages((messagesResponse.items || []).map((msg: any) => ({
         role: msg.role,
         content: msg.content,
         timestamp: msg.created_at,
@@ -76,7 +76,7 @@ export default function ConversationPage() {
         bibleVerses: msg.bible_verses || []
       })));
       
-      console.log('Loaded conversation with', messages.length, 'messages');
+      console.log('Loaded conversation with', (messagesResponse.items || []).length, 'messages');
     } catch (error) {
       console.error('Error loading conversation:', error);
       router.push('/');
