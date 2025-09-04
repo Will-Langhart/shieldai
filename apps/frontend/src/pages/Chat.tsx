@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, Clock, Settings, Mic, Send, ChevronRight, Menu, X } from 'lucide-react'
 import { chatService } from '../services/chatService'
+import { Conversation } from '../types/chat'
 
 interface Message {
   id: string
@@ -21,6 +22,9 @@ export function Chat() {
   const [loading, setLoading] = useState(false)
   const [selectedMode, setSelectedMode] = useState<'basic' | 'medium' | 'advanced'>('medium')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [currentConversationId, setCurrentConversationId] = useState<string | undefined>()
+  const [streamingMessage, setStreamingMessage] = useState<string>('')
   const [chatTopics] = useState<ChatTopic[]>([
     { id: '1', title: 'hi', timestamp: new Date() }
   ])
@@ -32,7 +36,7 @@ export function Chat() {
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, streamingMessage])
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || loading) return
@@ -48,17 +52,44 @@ export function Chat() {
     const currentMessage = inputMessage
     setInputMessage('')
     setLoading(true)
+    setStreamingMessage('')
 
     try {
-      // Use the RAG-enabled chat service
-      const assistantMessage = await chatService.sendMessage(
-        currentMessage,
-        undefined, // conversationId - will be created if needed
-        selectedMode,
-        false // stream - set to true for streaming responses
-      )
+      // Create or get conversation ID
+      let conversationId = currentConversationId
+      if (!conversationId) {
+        const newConversation = await chatService.createConversation(
+          currentMessage.length > 50 ? currentMessage.substring(0, 50) + '...' : currentMessage
+        )
+        conversationId = newConversation.id
+        setCurrentConversationId(conversationId)
+        setConversations(prev => [newConversation, ...prev])
+      }
 
-      setMessages(prev => [...prev, assistantMessage])
+      // Use streaming chat service
+      await chatService.sendStreamingMessage(
+        currentMessage,
+        conversationId,
+        selectedMode,
+        (chunk: string) => {
+          setStreamingMessage(prev => prev + chunk)
+        },
+        (fullMessage: Message) => {
+          setMessages(prev => [...prev, fullMessage])
+          setStreamingMessage('')
+        },
+        (error: Error) => {
+          console.error('Error sending message:', error)
+          const errorMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            content: "I apologize, but I'm having trouble processing your request right now. Please try again in a moment.",
+            role: 'assistant',
+            timestamp: new Date()
+          }
+          setMessages(prev => [...prev, errorMessage])
+          setStreamingMessage('')
+        }
+      )
     } catch (error) {
       console.error('Error sending message:', error)
       const errorMessage: Message = {
@@ -83,7 +114,31 @@ export function Chat() {
   const handleNewTopic = () => {
     setMessages([])
     setInputMessage('')
+    setCurrentConversationId(undefined)
+    setStreamingMessage('')
   }
+
+  const loadConversation = async (conversationId: string) => {
+    try {
+      const conversationMessages = await chatService.getConversation(conversationId)
+      setMessages(conversationMessages)
+    } catch (error) {
+      console.error('Error loading conversation:', error)
+    }
+  }
+
+  // Load conversations on component mount
+  useEffect(() => {
+    const loadConversations = async () => {
+      try {
+        const conversationsList = await chatService.getConversations()
+        setConversations(conversationsList)
+      } catch (error) {
+        console.error('Error loading conversations:', error)
+      }
+    }
+    loadConversations()
+  }, [])
 
   return (
     <div className="min-h-screen bg-[#1A1D24] flex">
@@ -123,27 +178,33 @@ export function Chat() {
           </button>
         </div>
 
-        {/* Previous Topics */}
+        {/* Conversations */}
         <div className="flex-1 px-4">
           {!sidebarCollapsed && (
             <div className="flex items-center space-x-2 mb-4">
               <Clock className="w-4 h-4 text-[#E0E0E0]" />
-              <h3 className="text-[#E0E0E0] font-medium">Previous Topics</h3>
+              <h3 className="text-[#E0E0E0] font-medium">Conversations</h3>
             </div>
           )}
           <div className="space-y-2">
-            {chatTopics.map((topic) => (
+            {conversations.map((conversation) => (
               <button
-                key={topic.id}
-                className={`w-full text-left ${sidebarCollapsed ? 'px-2' : 'px-3'} py-2 text-[#E0E0E0] hover:bg-[#2C303A] rounded-lg transition-colors`}
-                title={sidebarCollapsed ? topic.title : undefined}
+                key={conversation.id}
+                className={`w-full text-left ${sidebarCollapsed ? 'px-2' : 'px-3'} py-2 text-[#E0E0E0] hover:bg-[#2C303A] rounded-lg transition-colors ${
+                  currentConversationId === conversation.id ? 'bg-[#2C303A]' : ''
+                }`}
+                title={sidebarCollapsed ? conversation.title : undefined}
+                onClick={() => {
+                  setCurrentConversationId(conversation.id)
+                  loadConversation(conversation.id)
+                }}
               >
                 {sidebarCollapsed ? (
                   <div className="w-6 h-6 bg-[#2C303A] rounded flex items-center justify-center">
-                    <span className="text-xs font-medium">{topic.title.charAt(0).toUpperCase()}</span>
+                    <span className="text-xs font-medium">{conversation.title.charAt(0).toUpperCase()}</span>
                   </div>
                 ) : (
-                  topic.title
+                  conversation.title
                 )}
               </button>
             ))}
@@ -196,7 +257,7 @@ export function Chat() {
                     className={`max-w-2xl px-4 py-3 rounded-lg ${
                       message.role === 'user'
                         ? 'bg-blue-600 text-white'
-                        : 'bg-[#2C303A] text-[#E0E0E0]'
+                        : 'text-[#E0E0E0]'
                     }`}
                   >
                     <p className="text-sm leading-relaxed">{message.content}</p>
@@ -204,9 +265,21 @@ export function Chat() {
                 </div>
               ))}
               
-              {loading && (
+              {/* Streaming message */}
+              {streamingMessage && (
                 <div className="flex justify-start">
-                  <div className="bg-[#2C303A] text-[#E0E0E0] px-4 py-3 rounded-lg">
+                  <div className="max-w-2xl px-4 py-3 rounded-lg text-[#E0E0E0]">
+                    <p className="text-sm leading-relaxed">
+                      {streamingMessage}
+                      <span className="animate-pulse">|</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {loading && !streamingMessage && (
+                <div className="flex justify-start">
+                  <div className="text-[#E0E0E0] px-4 py-3 rounded-lg">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-[#E0E0E0] rounded-full animate-bounce"></div>
                       <div className="w-2 h-2 bg-[#E0E0E0] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>

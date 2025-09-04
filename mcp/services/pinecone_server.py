@@ -116,7 +116,7 @@ class PineconeMCPServer(BaseMCPServer):
             raise
     
     @retry_async(max_retries=3, delay=1.0)
-    async def search(self, query_text: str, top_k: Optional[int] = None) -> Dict[str, Any]:
+    async def search(self, query_text: str, top_k: Optional[int] = None, filter_dict: Optional[Dict] = None) -> Dict[str, Any]:
         """Search for similar vectors."""
         self._validate_connection()
         
@@ -129,7 +129,7 @@ class PineconeMCPServer(BaseMCPServer):
                 vector=[0.0] * self.dimension,  # Placeholder vector
                 top_k=top_k,
                 include_metadata=True,
-                filter=query.get("filter")
+                filter=filter_dict
             )
             
             return {
@@ -170,8 +170,9 @@ class PineconeMCPServer(BaseMCPServer):
         
         query_text = query.get("text", "")
         top_k = query.get("top_k", self.top_k)
+        filter_dict = query.get("filter")
         
-        return await self.search(query_text, top_k)
+        return await self.search(query_text, top_k, filter_dict)
     
     async def _upsert(self, query: Dict[str, Any]) -> Dict[str, Any]:
         """Internal upsert method."""

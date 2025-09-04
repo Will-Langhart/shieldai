@@ -56,13 +56,24 @@ async def test_servers():
                     'total_vectors': stats.get('total_vector_count', 0)
                 }
             elif name == 'supabase':
-                # Test basic query
-                test_query = {'type': 'test_connection'}
-                await server.query(test_query)
-                results[name] = {
-                    'status': 'success',
-                    'connection': 'ok'
-                }
+                # Test basic query - just check if we can query a simple table
+                test_query = {'type': 'select', 'table': 'conversations', 'limit': 1}
+                try:
+                    await server.query(test_query)
+                    results[name] = {
+                        'status': 'success',
+                        'connection': 'ok'
+                    }
+                except Exception as e:
+                    # If conversations table doesn't exist, that's ok for testing
+                    if 'relation "conversations" does not exist' in str(e):
+                        results[name] = {
+                            'status': 'success',
+                            'connection': 'ok',
+                            'note': 'Connected but conversations table not found (expected)'
+                        }
+                    else:
+                        raise
             
             await server.cleanup()
             logger.info(f"{name} server test completed successfully")
