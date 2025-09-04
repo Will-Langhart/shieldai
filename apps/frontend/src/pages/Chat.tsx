@@ -237,62 +237,67 @@ export function Chat() {
         </div>
 
         {/* Chat Content */}
-        <div className="flex-1 flex flex-col items-center justify-center p-8">
-          {/* Central Logo */}
-          <div className="mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-4xl">S</span>
-            </div>
-          </div>
-
-          {/* Messages Area */}
-          {messages.length > 0 && (
-            <div className="w-full max-w-4xl mb-8 space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+        <div className={`flex-1 flex flex-col ${messages.length > 0 ? 'justify-between' : 'items-center justify-center'} p-8`}>
+          {messages.length === 0 ? (
+            <>
+              {/* Central Logo - only show when no messages */}
+              <div className="mb-8">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-4xl">S</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Messages Area - when there are messages */}
+              <div className="w-full max-w-4xl space-y-4 overflow-y-auto flex-1">
+                {messages.map((message) => (
                   <div
-                    className={`max-w-2xl px-4 py-3 rounded-lg ${
-                      message.role === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-[#E0E0E0]'
-                    }`}
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <p className="text-sm leading-relaxed">{message.content}</p>
-                  </div>
-                </div>
-              ))}
-              
-              {/* Streaming message */}
-              {streamingMessage && (
-                <div className="flex justify-start">
-                  <div className="max-w-2xl px-4 py-3 rounded-lg text-[#E0E0E0]">
-                    <p className="text-sm leading-relaxed">
-                      {streamingMessage}
-                      <span className="animate-pulse">|</span>
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              {loading && !streamingMessage && (
-                <div className="flex justify-start">
-                  <div className="text-[#E0E0E0] px-4 py-3 rounded-lg">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-[#E0E0E0] rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-[#E0E0E0] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-[#E0E0E0] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div
+                      className={`max-w-2xl px-4 py-3 rounded-lg ${
+                        message.role === 'user'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-[#E0E0E0]'
+                      }`}
+                    >
+                      <p className="text-sm leading-relaxed">{message.content}</p>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                ))}
+                
+                {/* Streaming message */}
+                {streamingMessage && (
+                  <div className="flex justify-start">
+                    <div className="max-w-2xl px-4 py-3 rounded-lg text-[#E0E0E0]">
+                      <p className="text-sm leading-relaxed">
+                        {streamingMessage}
+                        <span className="animate-pulse">|</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {loading && !streamingMessage && (
+                  <div className="flex justify-start">
+                    <div className="text-[#E0E0E0] px-4 py-3 rounded-lg">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-[#E0E0E0] rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-[#E0E0E0] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-[#E0E0E0] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </>
           )}
 
-          {/* Input Section */}
-          <div className="w-full max-w-4xl">
+          {/* Input Section - always at bottom */}
+          <div className={`w-full max-w-4xl ${messages.length > 0 ? 'mt-8' : ''}`}>
             {/* Message Input */}
             <div className="relative mb-4">
               <input

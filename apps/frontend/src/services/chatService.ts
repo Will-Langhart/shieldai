@@ -237,13 +237,14 @@ export class ChatService {
       return data;
     } catch (error) {
       console.error('Error creating conversation:', error);
-      // Return a mock conversation for now
-      return {
-        id: Date.now().toString(),
+      // Return a mock conversation for testing
+      const mockConversation = {
+        id: `conv-${Date.now()}`,
         title: title || 'New Conversation',
-        created_at: new Date(),
-        updated_at: new Date()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
+      return mockConversation;
     }
   }
 

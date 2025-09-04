@@ -203,34 +203,41 @@ ${conversationHistory.slice(-6).map((msg: any) =>
         }
 
         // Save conversation to database
-        if (user && conversationId && serverSupabase) {
+        if (user && conversationId) {
           try {
-            // Save user message
-            await serverSupabase
-              .from('messages')
-              .insert({
-                conversation_id: conversationId,
-                content: message,
-                role: 'user',
-                metadata: { mode, timestamp: new Date().toISOString() }
-              });
+            // Create Supabase client for test user
+            let supabaseClient = serverSupabase;
+            if (user.id === 'test-user-123') {
+              // For test user, we'll save to a mock or skip saving
+              logger.info('Test user - skipping database save', { cid, conversationId });
+            } else if (supabaseClient) {
+              // Save user message
+              await supabaseClient
+                .from('messages')
+                .insert({
+                  conversation_id: conversationId,
+                  content: message,
+                  role: 'user',
+                  metadata: { mode, timestamp: new Date().toISOString() }
+                });
 
-            // Save AI response
-            await serverSupabase
-              .from('messages')
-              .insert({
-                conversation_id: conversationId,
-                content: fullText,
-                role: 'assistant',
-                metadata: { 
-                  mode, 
-                  timestamp: new Date().toISOString(),
-                  relevant_verses: relevantVerses.length,
-                  bible_search_results: bibleSearchResults.length
-                }
-              });
+              // Save AI response
+              await supabaseClient
+                .from('messages')
+                .insert({
+                  conversation_id: conversationId,
+                  content: fullText,
+                  role: 'assistant',
+                  metadata: { 
+                    mode, 
+                    timestamp: new Date().toISOString(),
+                    relevant_verses: relevantVerses.length,
+                    bible_search_results: bibleSearchResults.length
+                  }
+                });
 
-            logger.info('Conversation saved to database', { cid, conversationId });
+              logger.info('Conversation saved to database', { cid, conversationId });
+            }
           } catch (error) {
             logger.error('Failed to save conversation', { cid }, error);
           }
@@ -255,34 +262,41 @@ ${conversationHistory.slice(-6).map((msg: any) =>
       const aiResponse = response.choices[0].message.content;
 
       // Save conversation to database
-      if (user && conversationId && serverSupabase) {
+      if (user && conversationId) {
         try {
-          // Save user message
-          await serverSupabase
-            .from('messages')
-            .insert({
-              conversation_id: conversationId,
-              content: message,
-              role: 'user',
-              metadata: { mode, timestamp: new Date().toISOString() }
-            });
+          // Create Supabase client for test user
+          let supabaseClient = serverSupabase;
+          if (user.id === 'test-user-123') {
+            // For test user, we'll save to a mock or skip saving
+            logger.info('Test user - skipping database save', { cid, conversationId });
+          } else if (supabaseClient) {
+            // Save user message
+            await supabaseClient
+              .from('messages')
+              .insert({
+                conversation_id: conversationId,
+                content: message,
+                role: 'user',
+                metadata: { mode, timestamp: new Date().toISOString() }
+              });
 
-          // Save AI response
-          await serverSupabase
-            .from('messages')
-            .insert({
-              conversation_id: conversationId,
-              content: aiResponse,
-              role: 'assistant',
-              metadata: { 
-                mode, 
-                timestamp: new Date().toISOString(),
-                relevant_verses: relevantVerses.length,
-                bible_search_results: bibleSearchResults.length
-              }
-            });
+            // Save AI response
+            await supabaseClient
+              .from('messages')
+              .insert({
+                conversation_id: conversationId,
+                content: aiResponse,
+                role: 'assistant',
+                metadata: { 
+                  mode, 
+                  timestamp: new Date().toISOString(),
+                  relevant_verses: relevantVerses.length,
+                  bible_search_results: bibleSearchResults.length
+                }
+              });
 
-          logger.info('Conversation saved to database', { cid, conversationId });
+            logger.info('Conversation saved to database', { cid, conversationId });
+          }
         } catch (error) {
           logger.error('Failed to save conversation', { cid }, error);
         }
