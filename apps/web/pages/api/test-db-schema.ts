@@ -43,6 +43,25 @@ export default async function handler(
     const hasRelevantVideos = tableInfo?.some(col => col.column_name === 'relevant_videos');
     const hasBibleVerses = tableInfo?.some(col => col.column_name === 'bible_verses');
     const hasVideoMetadata = tableInfo?.some(col => col.column_name === 'video_metadata');
+    const hasMode = tableInfo?.some(col => col.column_name === 'mode');
+
+    // Check if response_mode enum exists
+    let enumTest = null;
+    try {
+      const { data: enumData, error: enumError } = await serverSupabase
+        .from('pg_type')
+        .select('typname')
+        .eq('typname', 'response_mode')
+        .single();
+
+      if (enumError) {
+        enumTest = { exists: false, error: enumError.message };
+      } else {
+        enumTest = { exists: true, typeName: enumData?.typname };
+      }
+    } catch (enumQueryError: any) {
+      enumTest = { exists: false, error: enumQueryError.message };
+    }
 
     // Try to insert a test message to see if the columns work
     let insertTest = null;
@@ -103,6 +122,8 @@ export default async function handler(
         hasRelevantVideos,
         hasBibleVerses,
         hasVideoMetadata,
+        hasMode,
+        enumTest,
         insertTest,
         conversations: conversations || [],
         conversationsError: convsError?.message || null

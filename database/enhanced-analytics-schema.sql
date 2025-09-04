@@ -192,3 +192,9 @@ CREATE POLICY "Service role can insert metadata" ON message_metadata
   FOR INSERT WITH CHECK (true);
 
 
+
+
+
+
+
+

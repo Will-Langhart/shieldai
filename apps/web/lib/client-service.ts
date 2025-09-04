@@ -49,10 +49,10 @@ export class ClientService {
   }
 
   // Get messages for a specific conversation
-  static async getMessages(conversationId: string): Promise<Message[]> {
+  static async getMessages(conversationId: string, page: number = 1, pageSize: number = 50): Promise<{ items: Message[]; total: number; page: number; pageSize: number; }> {
     const sessionToken = await this.getSessionToken();
     
-    const response = await fetch(`/api/messages?conversationId=${conversationId}`, {
+    const response = await fetch(`/api/messages?conversationId=${conversationId}&page=${page}&pageSize=${pageSize}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

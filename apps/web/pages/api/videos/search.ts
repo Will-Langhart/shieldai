@@ -15,7 +15,7 @@ export default async function handler(
   }
 
   try {
-    const { query, maxResults = 5, relevanceThreshold = 0.6, includeScripture = true } = req.body || {};
+    const { query, maxResults = 5, relevanceThreshold = 0.05, includeScripture = true } = req.body || {};
 
     if (!query) {
       logger.warn('Missing query parameter', { cid });

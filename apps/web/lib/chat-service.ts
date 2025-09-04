@@ -160,7 +160,7 @@ export class ChatService {
     conversationId: string,
     content: string,
     role: 'user' | 'assistant',
-    mode?: 'fast' | 'accurate',
+    mode?: 'gentle' | 'scholarly' | 'debate',
     supabaseClient?: SupabaseClient,
     relevantVideos?: any[],
     bibleVerses?: any[],
@@ -175,7 +175,7 @@ export class ChatService {
         conversation_id: conversationId,
         content,
         role,
-        mode,
+        mode: mode, // Fixed: use correct column name from schema
         relevant_videos: relevantVideos || [],
         bible_verses: bibleVerses || [],
         video_metadata: videoMetadata || {}
@@ -208,7 +208,7 @@ export class ChatService {
           conversationId,
           user.id,
           embedding,
-          { mode }
+          { mode: mode }
         );
         console.log('Stored message embedding in Pinecone');
       }
@@ -305,7 +305,7 @@ export class ChatService {
   // Save the current conversation state
   static async saveConversationState(
     sessionId: string,
-    messages: Array<{ role: 'user' | 'assistant'; content: string; mode?: 'fast' | 'accurate' }>,
+    messages: Array<{ role: 'user' | 'assistant'; content: string; mode?: 'gentle' | 'scholarly' | 'debate' }>,
     supabaseClient?: SupabaseClient
   ): Promise<void> {
     try {
