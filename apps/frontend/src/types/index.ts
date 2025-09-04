@@ -4,6 +4,17 @@ export * from './bible'
 export * from './chat'
 export * from './church'
 
+// User Types
+export interface User {
+  id: string
+  email: string
+  name: string
+  avatar?: string
+  created_at: Date
+  updated_at: Date
+  subscription?: Subscription
+}
+
 // Common component types
 export interface PageProps {
   className?: string

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Search, BookOpen, ChevronRight } from 'lucide-react'
-import { apiService } from '../services/api'
+import { apiService, BibleVerse } from '../services/api'
 
 export function Bible() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState([])
+  const [searchResults, setSearchResults] = useState<BibleVerse[]>([])
   const [selectedBook, setSelectedBook] = useState('')
   const [selectedChapter, setSelectedChapter] = useState(1)
   const [verses, setVerses] = useState('')

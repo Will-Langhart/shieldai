@@ -8,11 +8,9 @@ export class ChurchService {
   async searchChurches(searchForm: ChurchSearchForm): Promise<Church[]> {
     const response = await apiService.searchChurches(
       searchForm.location,
-      searchForm.radius,
-      searchForm.denomination,
-      searchForm.service_day
+      searchForm.radius
     )
-    return response.data.churches
+    return response.churches
   }
 
   /**
@@ -20,7 +18,7 @@ export class ChurchService {
    */
   async getChurchById(churchId: string): Promise<Church> {
     const response = await apiService.getChurchById(churchId)
-    return response.data
+    return response
   }
 
   /**
@@ -32,7 +30,7 @@ export class ChurchService {
     radius: number = 10
   ): Promise<Church[]> {
     const response = await apiService.getNearbyChurches(latitude, longitude, radius)
-    return response.data.churches
+    return response.churches
   }
 
   /**
@@ -40,15 +38,15 @@ export class ChurchService {
    */
   async getChurchesByDenomination(denomination: string): Promise<Church[]> {
     const response = await apiService.getChurchesByDenomination(denomination)
-    return response.data.churches
+    return response.churches
   }
 
   /**
    * Get popular churches
    */
-  async getPopularChurches(limit: number = 10): Promise<Church[]> {
-    const response = await apiService.getPopularChurches(limit)
-    return response.data.churches
+  async getPopularChurches(_limit: number = 10): Promise<Church[]> {
+    const response = await apiService.getPopularChurches()
+    return response.churches
   }
 
   /**
@@ -56,7 +54,7 @@ export class ChurchService {
    */
   async getChurchReviews(churchId: string): Promise<any[]> {
     const response = await apiService.getChurchReviews(churchId)
-    return response.data.reviews
+    return response.reviews
   }
 
   /**
@@ -75,7 +73,7 @@ export class ChurchService {
    */
   async getChurchServiceTimes(churchId: string): Promise<any[]> {
     const response = await apiService.getChurchServiceTimes(churchId)
-    return response.data.service_times
+    return response.service_times
   }
 }
 

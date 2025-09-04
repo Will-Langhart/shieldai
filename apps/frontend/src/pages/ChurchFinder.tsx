@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MapPin, Search, Phone, Globe, Clock, Users } from 'lucide-react'
+import { MapPin, Search, Phone, Globe, Clock } from 'lucide-react'
 
 interface Church {
   id: string

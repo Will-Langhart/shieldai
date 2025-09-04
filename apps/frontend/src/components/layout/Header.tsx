@@ -13,7 +13,7 @@ const Header: React.FC = () => {
   ]
 
   return (
-    <header className="bg-[#1A1D24] border-b border-[#2C303A]">
+     <header className="bg-[#1A1D24] border-b border-[#2C303A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}

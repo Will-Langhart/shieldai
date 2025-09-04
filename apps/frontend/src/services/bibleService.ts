@@ -12,7 +12,7 @@ export class BibleService {
     verseEnd?: number
   ): Promise<BibleVerse> {
     const response = await apiService.getBibleVerses(book, chapter, verseStart, verseEnd)
-    return response.data
+    return response
   }
 
   /**
@@ -20,7 +20,7 @@ export class BibleService {
    */
   async searchBible(query: string, limit: number = 10): Promise<BibleSearchResult> {
     const response = await apiService.searchBible(query, limit)
-    return response.data
+    return response
   }
 
   /**
@@ -28,7 +28,7 @@ export class BibleService {
    */
   async getBooks(): Promise<BibleBook[]> {
     const response = await apiService.getBibleBooks()
-    return response.data.books
+    return response.books
   }
 
   /**
@@ -36,7 +36,7 @@ export class BibleService {
    */
   async getChapters(book: string): Promise<BibleChapter[]> {
     const response = await apiService.getBibleChapters(book)
-    return response.data.chapters
+    return response.chapters
   }
 
   /**

@@ -11,7 +11,6 @@ export interface BibleSearchProps {
 
 const BibleSearch: React.FC<BibleSearchProps> = ({
   onSearch,
-  loading = false,
   className
 }) => {
   const [query, setQuery] = useState('')

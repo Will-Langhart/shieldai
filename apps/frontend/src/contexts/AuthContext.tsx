@@ -53,7 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuth()
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, _password: string) => {
     try {
       setIsLoading(true)
       // TODO: Implement actual login API call
@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('user_data')
   }
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, _password: string, name: string) => {
     try {
       setIsLoading(true)
       // TODO: Implement actual registration API call

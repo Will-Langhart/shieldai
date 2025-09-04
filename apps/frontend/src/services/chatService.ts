@@ -7,7 +7,7 @@ export class ChatService {
    */
   async sendMessage(message: string, conversationId?: string): Promise<ChatMessage> {
     const response = await apiService.sendChatMessage(message, conversationId)
-    return response.data
+    return response
   }
 
   /**
@@ -15,7 +15,7 @@ export class ChatService {
    */
   async getConversation(conversationId: string): Promise<ChatMessage[]> {
     const response = await apiService.getConversation(conversationId)
-    return response.data.messages
+    return response.messages
   }
 
   /**
@@ -23,15 +23,15 @@ export class ChatService {
    */
   async getConversations(): Promise<Conversation[]> {
     const response = await apiService.getConversations()
-    return response.data.conversations
+    return response.conversations
   }
 
   /**
    * Create a new conversation
    */
   async createConversation(title?: string): Promise<Conversation> {
-    const response = await apiService.createConversation(title)
-    return response.data
+    const response = await apiService.createConversation(title || 'New Conversation')
+    return response
   }
 
   /**
@@ -46,15 +46,15 @@ export class ChatService {
    */
   async updateConversationTitle(conversationId: string, title: string): Promise<Conversation> {
     const response = await apiService.updateConversationTitle(conversationId, title)
-    return response.data
+    return response
   }
 
   /**
    * Get conversation suggestions based on context
    */
-  async getSuggestions(context?: string): Promise<string[]> {
-    const response = await apiService.getChatSuggestions(context)
-    return response.data.suggestions
+  async getSuggestions(_context?: string): Promise<string[]> {
+    const response = await apiService.getChatSuggestions()
+    return response.suggestions
   }
 }
 
