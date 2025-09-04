@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, Clock, Settings, Mic, Send, ChevronRight, Menu, X } from 'lucide-react'
+import { chatService } from '../services/chatService'
 
 interface Message {
   id: string
@@ -44,23 +45,29 @@ export function Chat() {
     }
 
     setMessages(prev => [...prev, userMessage])
+    const currentMessage = inputMessage
     setInputMessage('')
     setLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "I understand you're asking about: \"" + inputMessage + "\". As your Christian AI assistant, I'm here to help with biblical guidance and spiritual questions. How else can I assist you in your spiritual journey?",
-        role: 'assistant',
-        timestamp: new Date()
-      }
+      // Use the RAG-enabled chat service
+      const assistantMessage = await chatService.sendMessage(
+        currentMessage,
+        undefined, // conversationId - will be created if needed
+        selectedMode,
+        false // stream - set to true for streaming responses
+      )
 
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
       console.error('Error sending message:', error)
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I apologize, but I'm having trouble processing your request right now. Please try again in a moment.",
+        role: 'assistant',
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, errorMessage])
     } finally {
       setLoading(false)
     }

@@ -3,11 +3,66 @@ import { ChatMessage, Conversation } from '../types/chat'
 
 export class ChatService {
   /**
-   * Send a chat message
+   * Send a chat message with RAG (Retrieval-Augmented Generation)
    */
-  async sendMessage(message: string, conversationId?: string): Promise<ChatMessage> {
-    const response = await apiService.sendChatMessage(message, conversationId)
-    return response
+  async sendMessage(message: string, conversationId?: string, mode: string = 'gentle', stream: boolean = false): Promise<ChatMessage> {
+    try {
+      const response = await fetch('/api/chat-rag', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          message,
+          conversationId,
+          mode,
+          stream
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      if (stream) {
+        // Handle streaming response
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('No response body reader available');
+        }
+
+        let fullText = '';
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          fullText += chunk;
+        }
+
+        return {
+          id: Date.now().toString(),
+          content: fullText,
+          role: 'assistant',
+          timestamp: new Date()
+        };
+      } else {
+        // Handle non-streaming response
+        const data = await response.json();
+        return {
+          id: Date.now().toString(),
+          content: data.response,
+          role: 'assistant',
+          timestamp: new Date()
+        };
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw error;
+    }
   }
 
   /**
