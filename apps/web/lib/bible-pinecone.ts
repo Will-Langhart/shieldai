@@ -46,19 +46,26 @@ export class BiblePineconeService {
   private static async initializePinecone() {
     const apiKey = process.env.PINECONE_API_KEY || '';
     if (!apiKey) {
-      throw new Error('Missing Pinecone configuration. Ensure PINECONE_API_KEY is set.');
+      console.warn('Missing Pinecone configuration. RAG features will be disabled.');
+      return null;
     }
 
-    // Get the index host from the API
-    const response = await fetch('https://api.pinecone.io/indexes', {
-      headers: {
-        'Api-Key': apiKey,
-        'Content-Type': 'application/json'
-      }
-    });
+    try {
+      // Get the index host from the API
+      const response = await fetch('https://api.pinecone.io/indexes', {
+        headers: {
+          'Api-Key': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
 
-    if (!response.ok) {
-      throw new Error(`Failed to get indexes: ${response.status}`);
+      if (!response.ok) {
+        console.warn(`Pinecone API error: ${response.status}. RAG features will be disabled.`);
+        return null;
+      }
+    } catch (error) {
+      console.warn('Pinecone connection failed. RAG features will be disabled.', error);
+      return null;
     }
 
     const data = await response.json();
@@ -187,7 +194,13 @@ export class BiblePineconeService {
     }
   ): Promise<BibleSearchResult[]> {
     try {
-      const { apiKey, indexHost } = await this.initializePinecone();
+      const pineconeConfig = await this.initializePinecone();
+      if (!pineconeConfig) {
+        console.warn('Pinecone not available, returning empty search results');
+        return [];
+      }
+      
+      const { apiKey, indexHost } = pineconeConfig;
       
       // Match target index dimension
       const queryVec = this.targetDim === 1536 ? queryEmbedding : EmbeddingService.convertTo1024Dimensions(queryEmbedding);

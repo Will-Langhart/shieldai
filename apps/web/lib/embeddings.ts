@@ -1,14 +1,24 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openai: OpenAI | null = null;
+
+const getOpenAI = () => {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+};
 
 export class EmbeddingService {
   // Generate embedding for a text using OpenAI
   static async generateEmbedding(text: string): Promise<number[]> {
     try {
-      const response = await openai.embeddings.create({
+      const response = await getOpenAI().embeddings.create({
         model: 'text-embedding-3-small', // Updated to use text-embedding-3-small for 1536 dimensions
         input: text,
       });
@@ -23,7 +33,7 @@ export class EmbeddingService {
   // Generate embeddings for multiple texts
   static async generateEmbeddings(texts: string[]): Promise<number[][]> {
     try {
-      const response = await openai.embeddings.create({
+      const response = await getOpenAI().embeddings.create({
         model: 'text-embedding-3-small', // Updated to use text-embedding-3-small for 1536 dimensions
         input: texts,
       });

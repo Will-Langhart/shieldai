@@ -164,21 +164,35 @@ export class ChatService {
     supabaseClient?: SupabaseClient,
     relevantVideos?: any[],
     bibleVerses?: any[],
-    videoMetadata?: any
+    videoMetadata?: any,
+    user?: any
   ): Promise<Message> {
     const client = supabaseClient || supabase;
     console.log('Adding message to conversation:', conversationId, 'role:', role, 'content length:', content.length);
+    
+    // Get the current user - either from parameter or from client
+    let currentUser = user;
+    if (!currentUser) {
+      const { data: { user: authUser } } = await client.auth.getUser();
+      currentUser = authUser;
+    }
+    if (!currentUser) {
+      throw new Error('No authenticated user found');
+    }
     
     const { data, error } = await client
       .from('messages')
       .insert({
         conversation_id: conversationId,
+        user_id: currentUser.id,
         content,
         role,
-        mode: mode, // Fixed: use correct column name from schema
-        relevant_videos: relevantVideos || [],
-        bible_verses: bibleVerses || [],
-        video_metadata: videoMetadata || {}
+        mode: mode,
+        metadata: {
+          relevant_videos: relevantVideos || [],
+          bible_verses: bibleVerses || [],
+          video_metadata: videoMetadata || {}
+        }
       })
       .select()
       .single();

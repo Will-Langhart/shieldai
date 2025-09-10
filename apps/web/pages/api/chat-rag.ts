@@ -5,11 +5,22 @@ import { logger, withCorrelationId } from '../../lib/logger';
 import { bibleService } from '../../lib/bible-service';
 import { BiblePineconeService } from '../../lib/bible-pinecone';
 import { EmbeddingService } from '../../lib/embeddings';
+import { conversationStorage } from '../../lib/conversation-storage';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client lazily
+let openai: OpenAI | null = null;
+
+const getOpenAI = () => {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+};
 
 export default async function handler(
   req: NextApiRequest,
@@ -39,10 +50,10 @@ export default async function handler(
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       
-      // For testing with 'test-token', create a mock user
+      // Check for test token first
       if (token === 'test-token') {
         user = {
-          id: 'test-user-123',
+          id: '550e8400-e29b-41d4-a716-446655440000',
           email: 'test@example.com',
           name: 'Test User'
         };
@@ -71,7 +82,7 @@ export default async function handler(
     let relevantVerses: any[] = [];
     try {
       // Generate embedding for the user's message
-      const embeddingResponse = await openai.embeddings.create({
+      const embeddingResponse = await getOpenAI().embeddings.create({
         model: 'text-embedding-3-small',
         input: message
       });
@@ -103,21 +114,22 @@ export default async function handler(
       // Continue without Bible API results
     }
 
-    // Step 3: Get conversation history from Supabase
+    // Step 3: Create conversation if none exists
+    let currentConversationId = conversationId;
+    if (!currentConversationId && user) {
+      const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
+      const conversation = conversationStorage.createConversation(user.id, title);
+      currentConversationId = conversation.id;
+      logger.info('Created conversation in storage', { cid, conversationId: currentConversationId, title });
+    }
+
+    // Step 4: Get conversation history from storage
     let conversationHistory: any[] = [];
     try {
-      if (conversationId && serverSupabase) {
-        const { data: messages, error } = await serverSupabase
-          .from('messages')
-          .select('*')
-          .eq('conversation_id', conversationId)
-          .order('created_at', { ascending: true })
-          .limit(10);
-        
-        if (!error && messages) {
-          conversationHistory = messages;
-          logger.debug('Conversation history retrieved', { cid, count: conversationHistory.length });
-        }
+      if (currentConversationId) {
+        const messages = conversationStorage.getMessages(currentConversationId);
+        conversationHistory = messages.slice(-10); // Get last 10 messages
+        logger.debug('Conversation history retrieved from storage', { cid, count: conversationHistory.length });
       }
     } catch (error) {
       logger.error('Failed to get conversation history', { cid }, error);
@@ -186,7 +198,7 @@ ${conversationHistory.slice(-6).map((msg: any) =>
       let fullText = '';
 
       try {
-        const streamResp = await openai.chat.completions.create({
+        const streamResp = await getOpenAI().chat.completions.create({
           model: model,
           max_tokens: maxTokens,
           temperature: temperature,
@@ -202,42 +214,33 @@ ${conversationHistory.slice(-6).map((msg: any) =>
           }
         }
 
-        // Save conversation to database
-        if (user && conversationId) {
+        // Save conversation to storage
+        if (user && currentConversationId) {
           try {
-            // Create Supabase client for test user
-            let supabaseClient = serverSupabase;
-            if (user.id === 'test-user-123') {
-              // For test user, we'll save to a mock or skip saving
-              logger.info('Test user - skipping database save', { cid, conversationId });
-            } else if (supabaseClient) {
-              // Save user message
-              await supabaseClient
-                .from('messages')
-                .insert({
-                  conversation_id: conversationId,
-                  content: message,
-                  role: 'user',
-                  metadata: { mode, timestamp: new Date().toISOString() }
-                });
+            // Save user message
+            conversationStorage.addMessage(
+              currentConversationId,
+              user.id,
+              message,
+              'user',
+              { mode, timestamp: new Date().toISOString() }
+            );
 
-              // Save AI response
-              await supabaseClient
-                .from('messages')
-                .insert({
-                  conversation_id: conversationId,
-                  content: fullText,
-                  role: 'assistant',
-                  metadata: { 
-                    mode, 
-                    timestamp: new Date().toISOString(),
-                    relevant_verses: relevantVerses.length,
-                    bible_search_results: bibleSearchResults.length
-                  }
-                });
+            // Save AI response
+            conversationStorage.addMessage(
+              currentConversationId,
+              user.id,
+              fullText,
+              'assistant',
+              { 
+                mode, 
+                timestamp: new Date().toISOString(),
+                relevant_verses: relevantVerses.length,
+                bible_search_results: bibleSearchResults.length
+              }
+            );
 
-              logger.info('Conversation saved to database', { cid, conversationId });
-            }
+            logger.info('Conversation saved to storage', { cid, conversationId: currentConversationId });
           } catch (error) {
             logger.error('Failed to save conversation', { cid }, error);
           }
@@ -252,7 +255,7 @@ ${conversationHistory.slice(-6).map((msg: any) =>
       }
     } else {
       // Non-streaming response
-      const response = await openai.chat.completions.create({
+      const response = await getOpenAI().chat.completions.create({
         model: model,
         max_tokens: maxTokens,
         temperature: temperature,
@@ -261,42 +264,33 @@ ${conversationHistory.slice(-6).map((msg: any) =>
 
       const aiResponse = response.choices[0].message.content;
 
-      // Save conversation to database
-      if (user && conversationId) {
+      // Save conversation to storage
+      if (user && currentConversationId) {
         try {
-          // Create Supabase client for test user
-          let supabaseClient = serverSupabase;
-          if (user.id === 'test-user-123') {
-            // For test user, we'll save to a mock or skip saving
-            logger.info('Test user - skipping database save', { cid, conversationId });
-          } else if (supabaseClient) {
-            // Save user message
-            await supabaseClient
-              .from('messages')
-              .insert({
-                conversation_id: conversationId,
-                content: message,
-                role: 'user',
-                metadata: { mode, timestamp: new Date().toISOString() }
-              });
+          // Save user message
+          conversationStorage.addMessage(
+            currentConversationId,
+            user.id,
+            message,
+            'user',
+            { mode, timestamp: new Date().toISOString() }
+          );
 
-            // Save AI response
-            await supabaseClient
-              .from('messages')
-              .insert({
-                conversation_id: conversationId,
-                content: aiResponse,
-                role: 'assistant',
-                metadata: { 
-                  mode, 
-                  timestamp: new Date().toISOString(),
-                  relevant_verses: relevantVerses.length,
-                  bible_search_results: bibleSearchResults.length
-                }
-              });
+          // Save AI response
+          conversationStorage.addMessage(
+            currentConversationId,
+            user.id,
+            aiResponse,
+            'assistant',
+            { 
+              mode, 
+              timestamp: new Date().toISOString(),
+              relevant_verses: relevantVerses.length,
+              bible_search_results: bibleSearchResults.length
+            }
+          );
 
-            logger.info('Conversation saved to database', { cid, conversationId });
-          }
+          logger.info('Conversation saved to storage', { cid, conversationId: currentConversationId });
         } catch (error) {
           logger.error('Failed to save conversation', { cid }, error);
         }
@@ -314,7 +308,7 @@ ${conversationHistory.slice(-6).map((msg: any) =>
         response: aiResponse,
         mode: mode,
         timestamp: new Date().toISOString(),
-        conversationId: conversationId,
+        conversationId: currentConversationId,
         context: {
           relevant_verses: relevantVerses,
           bible_search_results: bibleSearchResults,

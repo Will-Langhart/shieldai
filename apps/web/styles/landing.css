@@ -1,0 +1,168 @@
+/* Landing Page Smooth Color Transitions */
+
+.landing-section {
+  position: relative;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.landing-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  z-index: -1;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth gradient transitions */
+.gradient-transition {
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  transition: background-position 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Scroll-based color blending */
+.scroll-blend {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced section transitions */
+.section-transition {
+  position: relative;
+  overflow: hidden;
+}
+
+.section-transition::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(59, 130, 246, 0.3) 50%, 
+    transparent 100%);
+  opacity: 0;
+  transition: opacity 0.8s ease-in-out;
+}
+
+.section-transition:hover::after {
+  opacity: 1;
+}
+
+/* Smooth color fade between sections */
+.color-fade {
+  background: linear-gradient(180deg, 
+    rgba(26, 29, 36, 0.8) 0%, 
+    rgba(30, 33, 40, 0.6) 50%, 
+    rgba(44, 48, 58, 0.4) 100%);
+  backdrop-filter: blur(1px);
+}
+
+/* Enhanced scroll-based effects */
+.scroll-enhanced {
+  will-change: transform, filter;
+  transform: translateZ(0);
+}
+
+/* Smooth section blending */
+.section-blend {
+  background-blend-mode: multiply;
+  transition: background-blend-mode 0.8s ease-in-out;
+}
+
+/* Dynamic color transitions */
+.dynamic-color {
+  transition: background-color 1s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced scroll-based color blending */
+.scroll-color-blend {
+  background-attachment: fixed;
+  background-size: 100% 200%;
+  transition: background-position 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Parallax effect for better visual flow */
+.parallax-bg {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Smooth color interpolation */
+.color-interpolation {
+  background-blend-mode: multiply;
+  transition: background-blend-mode 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced section transitions with better performance */
+.enhanced-transition {
+  contain: layout style paint;
+  will-change: transform, filter;
+}
+
+/* Fade in animation for question rotator */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+/* Firefox scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+}
+
+/* Responsive color adjustments */
+@media (max-width: 768px) {
+  .landing-section {
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .gradient-transition {
+    background-attachment: scroll;
+  }
+  
+  .scroll-color-blend {
+    background-attachment: scroll;
+  }
+  
+  /* Smaller scrollbar on mobile */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+}

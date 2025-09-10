@@ -1,323 +1,64 @@
-import React, { useState } from 'react';
-import { Search, Filter, Settings, User, LogOut, MessageSquare, Heart, MapPin, BookOpen, Shield, Sparkles } from 'lucide-react';
-import LanguageSelector from './LanguageSelector';
-import { useAuth } from '../lib/auth-context';
-import AuthModal from './AuthModal';
-import UserSettings from './UserSettings';
-import FilterModal, { FilterOptions } from './FilterModal';
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { Shield, BookOpen, MessageCircle, MapPin } from 'lucide-react'
+// Using simple className concatenation instead of clsx
 
-interface HeaderProps {
-  onMenuClick?: () => void;
-  showSidebar?: boolean;
-  theme?: 'light' | 'dark';
-  onThemeToggle?: () => void;
-  themeIcon?: React.ReactNode;
-  onMoodVerseClick?: () => void;
-  onChurchFinderClick?: () => void;
-  onBibleSearchClick?: () => void;
-  onApologeticsBibleClick?: () => void;
-  onNotesManagerClick?: () => void;
-  onStudyPlansClick?: () => void;
-  currentLanguage?: string;
-  onLanguageChange?: (language: string) => void;
+export function Header() {
+  const router = useRouter()
+  const location = { pathname: router.pathname }
+  
+  const navItems = [
+    { path: '/', label: 'Home', icon: Shield },
+    { path: '/bible', label: 'Bible', icon: BookOpen },
+    { path: '/chat', label: 'Chat', icon: MessageCircle },
+    { path: '/churches', label: 'Churches', icon: MapPin },
+  ]
+  
+  return (
+    <header className="bg-[#1A1D24] shadow-sm border-b border-[#2C303A] relative z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center">
+            <Link href="/" className="flex items-center space-x-2">
+              <Shield className="h-8 w-8 text-blue-400" />
+              <span className="text-xl font-bold text-[#E0E0E0]">Shield AI</span>
+            </Link>
+          </div>
+          
+          <nav className="hidden md:flex space-x-8">
+            {navItems.map((item) => {
+              const Icon = item.icon
+              const isActive = location.pathname === item.path
+              
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    isActive
+                      ? 'text-blue-400 bg-blue-400/10'
+                      : 'text-[#9CA3AF] hover:text-[#E0E0E0] hover:bg-[#2C303A]'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </Link>
+              )
+            })}
+          </nav>
+          
+          <div className="md:hidden">
+            <button className="text-gray-600 hover:text-gray-900">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+  )
 }
 
-const Header: React.FC<HeaderProps> = ({ 
-  onMenuClick, 
-  showSidebar, 
-  theme = 'light', 
-  onThemeToggle, 
-  themeIcon, 
-  onMoodVerseClick,
-  onChurchFinderClick,
-  onBibleSearchClick,
-  onApologeticsBibleClick,
-  onNotesManagerClick,
-  onStudyPlansClick,
-  currentLanguage = 'en',
-  onLanguageChange
-}) => {
-  const { user, signOut } = useAuth();
-  // Debug logging
-  console.log('Header render - user:', user?.email, 'onNotesManagerClick:', !!onNotesManagerClick);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [filterModalOpen, setFilterModalOpen] = useState(false);
-  const [currentFilters, setCurrentFilters] = useState<FilterOptions>({
-    dateRange: 'all',
-    topic: '',
-    responseMode: 'all',
-    sortBy: 'date',
-    sortOrder: 'desc'
-  });
-  
 
-  const handleSignIn = () => {
-    setAuthMode('signin');
-    setAuthModalOpen(true);
-  };
 
-  const handleSignUp = () => {
-    setAuthMode('signup');
-    setAuthModalOpen(true);
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
-
-  const handleApplyFilters = (filters: FilterOptions) => {
-    setCurrentFilters(filters);
-    // TODO: Apply filters to conversation list
-    console.log('Applied filters:', filters);
-  };
-
-  return (
-    <>
-      <header className={`flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b backdrop-blur-sm transition-colors duration-300 mobile-header ${
-        theme === 'dark' 
-          ? 'border-gray-800/50 bg-shield-black/50' 
-          : 'border-gray-200 bg-white/50'
-      }`}>
-        {/* Left side - Logo */}
-        <div className="flex items-center space-x-2">
-          <img src="/logo.png" alt="Shield AI Logo" className="w-10 h-10 sm:w-14 sm:h-14" />
-          <span className={`font-semibold text-lg sm:text-xl ${
-            theme === 'dark' ? 'text-shield-white' : 'text-gray-900'
-          }`}>Shield AI</span>
-        </div>
-
-        {/* Right side - Navigation and buttons */}
-        <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
-          {/* Show navigation buttons only when user is authenticated */}
-          {user ? (
-            <>
-              {/* Theme Toggle */}
-              <button
-                onClick={onThemeToggle}
-                className={`p-2 rounded-xl transition-all duration-200 group ${
-                  theme === 'dark' 
-                    ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                title="Toggle theme"
-              >
-                {themeIcon}
-              </button>
-
-              {/* Mood Verse System */}
-              <button
-                onClick={onMoodVerseClick}
-                className={`p-2 rounded-xl transition-all duration-200 group ${
-                  theme === 'dark' 
-                    ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                title="Mood-based Bible Verses"
-              >
-                <Heart className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              </button>
-
-              {/* Church Finder */}
-              <button
-                onClick={onChurchFinderClick}
-                className={`p-2 rounded-xl transition-all duration-200 group ${
-                  theme === 'dark' 
-                    ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                title="Find Local Churches"
-              >
-                <MapPin className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              </button>
-
-              {/* Enhanced Bible Study Suite */}
-              <button
-                onClick={onBibleSearchClick}
-                className={`p-2 rounded-xl transition-all duration-200 group ${
-                  theme === 'dark'
-                    ? 'text-shield-white hover:bg-shield-light-gray/50'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                title="Bible Study Suite - Search, Compare, Study"
-              >
-                <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              </button>
-
-              {/* Apologetics Bible Study */}
-              <button
-                onClick={onApologeticsBibleClick}
-                className={`p-2 rounded-xl transition-all duration-200 group ${
-                  theme === 'dark'
-                    ? 'text-shield-white hover:bg-shield-light-gray/50'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                title="Apologetics Bible Study - Curated verses for defending the faith"
-              >
-                <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              </button>
-
-              {/* Study Plans */}
-              {onStudyPlansClick && (
-                <button
-                  onClick={onStudyPlansClick}
-                  className={`p-2 rounded-xl transition-all duration-200 group ${
-                    theme === 'dark'
-                      ? 'text-shield-white hover:bg-shield-light-gray/50'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                  title="Study Plans"
-                >
-                  <Sparkles className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                </button>
-              )}
-
-              {/* Language Selector */}
-              {onLanguageChange && (
-                <LanguageSelector
-                  currentLanguage={currentLanguage}
-                  onLanguageChange={onLanguageChange}
-                  theme={theme}
-                  compact={true}
-                />
-              )}
-
-              {/* Icons - Hide search on mobile for space */}
-              <button className={`p-2 rounded-xl transition-all duration-200 group hidden md:block ${
-                theme === 'dark' 
-                  ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`} title="Search">
-                <Search size={20} className="group-hover:scale-110 transition-transform" />
-              </button>
-              <button 
-                onClick={() => setFilterModalOpen(true)}
-                className={`p-2 rounded-xl transition-all duration-200 group ${
-                  theme === 'dark' 
-                    ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`} 
-                title="Filter conversations"
-              >
-                <Filter size={20} className="group-hover:scale-110 transition-transform" />
-              </button>
-              {onNotesManagerClick && (
-                <button 
-                  onClick={() => {
-                    onNotesManagerClick();
-                  }}
-                  className={`p-2 rounded-xl transition-all duration-200 group ${
-                    theme === 'dark' 
-                      ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`} 
-                  title="Bible Study Notes - Manage your study notes and insights"
-                >
-                  <MessageSquare size={20} className="group-hover:scale-110 transition-transform" />
-                </button>
-              )}
-              <button 
-                onClick={() => setSettingsModalOpen(true)}
-                className={`p-2 rounded-xl transition-all duration-200 group ${
-                  theme === 'dark' 
-                    ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`} 
-                title="User settings"
-              >
-                <Settings size={20} className="group-hover:scale-110 transition-transform" />
-              </button>
-            </>
-          ) : (
-            /* Show only theme toggle for unauthenticated users */
-            <button
-              onClick={onThemeToggle}
-              className={`p-2 rounded-xl transition-all duration-200 group ${
-                theme === 'dark' 
-                  ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-              title="Toggle theme"
-            >
-              {themeIcon}
-            </button>
-          )}
-
-          {/* Buttons */}
-          {user ? (
-            <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
-              <div className="hidden md:flex items-center space-x-2">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  theme === 'dark' ? 'bg-shield-blue' : 'bg-blue-600'
-                }`}>
-                  <User size={16} className="text-white" />
-                </div>
-                <span className={`text-sm font-medium ${
-                  theme === 'dark' ? 'text-shield-white' : 'text-gray-900'
-                }`}>
-                  {user.email}
-                </span>
-              </div>
-              <button
-                onClick={handleSignOut}
-                className={`p-2 rounded-xl transition-all duration-200 group ${
-                  theme === 'dark' 
-                    ? 'text-shield-white hover:bg-shield-light-gray/50' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                title="Sign Out"
-              >
-                <LogOut size={18} className="group-hover:scale-110 transition-transform" />
-              </button>
-            </div>
-          ) : (
-            <>
-              <button
-                onClick={handleSignIn}
-                className={`hidden md:block px-4 py-2 border rounded-full transition-all duration-200 ${
-                  theme === 'dark'
-                    ? 'text-shield-white border-gray-600/50 hover:bg-shield-light-gray/50'
-                    : 'text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Sign in
-              </button>
-              <button
-                onClick={handleSignUp}
-                className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
-                  theme === 'dark'
-                    ? 'bg-shield-blue text-shield-white hover:bg-shield-blue/90'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                Sign up
-              </button>
-            </>
-          )}
-        </div>
-      </header>
-
-      {/* Modals */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        mode={authMode}
-      />
-
-      <UserSettings
-        isOpen={settingsModalOpen}
-        onClose={() => setSettingsModalOpen(false)}
-      />
-
-      <FilterModal
-        isOpen={filterModalOpen}
-        onClose={() => setFilterModalOpen(false)}
-        onApplyFilters={handleApplyFilters}
-        currentFilters={currentFilters}
-      />
-    </>
-  );
-};
-
-export default Header; 

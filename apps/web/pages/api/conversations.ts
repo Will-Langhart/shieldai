@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { logger, withCorrelationId } from '../../lib/logger';
+import { conversationStorage } from '../../lib/conversation-storage';
 
 export default async function handler(
   req: NextApiRequest,
@@ -19,18 +20,17 @@ export default async function handler(
       const token = authHeader.substring(7);
       let serverSupabase;
       
+      logger.info('Conversations API - token received', { cid, token: token.substring(0, 10) + '...', tokenLength: token.length });
+      
       if (token === 'test-token') {
-        // Mock data for testing
-        return res.status(200).json({
-          conversations: [
-            {
-              id: 'test-conv-1',
-              title: 'Test Conversation',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }
-          ]
-        });
+        logger.info('Using test token path', { cid });
+        
+        // Use in-memory storage for test user
+        const testUserId = '550e8400-e29b-41d4-a716-446655440000';
+        const conversations = conversationStorage.getConversations(testUserId);
+        
+        logger.info('Retrieved conversations from storage', { cid, count: conversations.length });
+        return res.status(200).json({ conversations });
       }
 
       serverSupabase = createServerSupabaseClient(token);
@@ -77,14 +77,12 @@ export default async function handler(
       let userId;
 
       if (token === 'test-token') {
-        // Mock conversation for testing
-        const mockConversation = {
-          id: `test-conv-${Date.now()}`,
-          title,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        return res.status(201).json(mockConversation);
+        // Use in-memory storage for test user
+        const testUserId = '550e8400-e29b-41d4-a716-446655440000';
+        const conversation = conversationStorage.createConversation(testUserId, title);
+        
+        logger.info('Created conversation in storage', { cid, conversationId: conversation.id, title });
+        return res.status(201).json(conversation);
       }
 
       serverSupabase = createServerSupabaseClient(token);

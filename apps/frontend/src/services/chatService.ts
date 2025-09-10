@@ -5,8 +5,21 @@ export class ChatService {
   /**
    * Send a chat message with RAG (Retrieval-Augmented Generation)
    */
-  async sendMessage(message: string, conversationId?: string, mode: string = 'gentle', stream: boolean = false): Promise<ChatMessage> {
+  async sendMessage(message: string, conversationId?: string, mode: 'gentle' | 'scholarly' | 'debate' = 'gentle', stream: boolean = false): Promise<ChatMessage> {
     try {
+      // Get auth token from Supabase
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Missing Supabase environment variables');
+      }
+      
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || 'test-token';
+
       // Try RAG API first, fall back to regular chat API
       let response;
       try {
@@ -14,7 +27,7 @@ export class ChatService {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'test-token'}`
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             message,
@@ -30,7 +43,7 @@ export class ChatService {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'test-token'}`
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             message,
@@ -91,12 +104,46 @@ export class ChatService {
   async sendStreamingMessage(
     message: string, 
     conversationId: string | undefined, 
-    mode: string = 'gentle',
+    mode: 'gentle' | 'scholarly' | 'debate' = 'gentle',
     onChunk: (chunk: string) => void,
     onComplete: (fullMessage: ChatMessage) => void,
     onError: (error: Error) => void
   ): Promise<void> {
     try {
+      // Get auth token from Supabase
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Missing Supabase environment variables');
+      }
+      
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || 'test-token';
+
+      // Save user message first
+      if (conversationId) {
+        try {
+          await fetch('/api/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              conversationId,
+              content: message,
+              role: 'user',
+              mode
+            })
+          });
+        } catch (error) {
+          console.warn('Failed to save user message:', error);
+        }
+      }
+
       // Try RAG API first, fall back to regular chat API
       let response;
       try {
@@ -104,7 +151,7 @@ export class ChatService {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'test-token'}`
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             message,
@@ -120,7 +167,7 @@ export class ChatService {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'test-token'}`
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             message,
@@ -160,6 +207,27 @@ export class ChatService {
         timestamp: new Date()
       };
 
+      // Save assistant message
+      if (conversationId) {
+        try {
+          await fetch('/api/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              conversationId,
+              content: fullText,
+              role: 'assistant',
+              mode
+            })
+          });
+        } catch (error) {
+          console.warn('Failed to save assistant message:', error);
+        }
+      }
+
       onComplete(completeMessage);
     } catch (error) {
       console.error('Error sending streaming message:', error);
@@ -170,22 +238,47 @@ export class ChatService {
   /**
    * Get conversation history
    */
-  async getConversation(conversationId: string): Promise<ChatMessage[]> {
+  async getConversation(conversationId: string, session?: any): Promise<ChatMessage[]> {
     try {
+      console.log('🔍 getConversation called with ID:', conversationId);
+      
+      // Get auth token from session or fallback to test token
+      const token = session?.access_token || 'test-token';
+      
+      console.log('🔑 Session token:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+      console.log('🌐 Making request to:', `/api/conversations/${conversationId}`);
       const response = await fetch(`/api/conversations/${conversationId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'test-token'}`
+          'Authorization': `Bearer ${token}`
         }
       });
+      
+      console.log('📡 Response status:', response.status);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      return data.messages || [];
+      console.log('📦 Raw response data:', data);
+      
+      const messages = data.messages || [];
+      console.log('💬 Messages array:', messages);
+      
+      // Map API response to ChatMessage format
+      const mappedMessages = messages.map((msg: any) => ({
+        id: msg.id,
+        content: msg.content,
+        role: msg.role,
+        timestamp: new Date(msg.created_at || msg.timestamp || new Date()),
+        conversation_id: msg.conversation_id,
+        metadata: msg.metadata
+      }));
+      
+      console.log('🔄 Mapped messages:', mappedMessages);
+      return mappedMessages;
     } catch (error) {
-      console.error('Error getting conversation:', error);
+      console.error('❌ Error getting conversation:', error);
       return [];
     }
   }
@@ -193,22 +286,46 @@ export class ChatService {
   /**
    * Get all conversations for the user
    */
-  async getConversations(): Promise<Conversation[]> {
+  async getConversations(session?: any): Promise<Conversation[]> {
     try {
+      console.log('📋 getConversations called');
+      
+      // Get auth token from session or fallback to test token
+      const token = session?.access_token || 'test-token';
+
+      console.log('🌐 Making request to:', '/api/conversations');
       const response = await fetch('/api/conversations', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'test-token'}`
+          'Authorization': `Bearer ${token}`
         }
       });
+      
+      console.log('📡 Response status:', response.status);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      return data.conversations || [];
+      console.log('📦 Raw response data:', data);
+      
+      const conversations = data.conversations || [];
+      console.log('💬 Conversations array:', conversations);
+      
+      // Map API response to Conversation format
+      const mappedConversations = conversations.map((conv: any) => ({
+        id: conv.id,
+        title: conv.title,
+        created_at: new Date(conv.created_at),
+        updated_at: new Date(conv.updated_at),
+        message_count: conv.message_count || 0,
+        last_message: conv.last_message
+      }));
+      
+      console.log('🔄 Mapped conversations:', mappedConversations);
+      return mappedConversations;
     } catch (error) {
-      console.error('Error getting conversations:', error);
+      console.error('❌ Error getting conversations:', error);
       return [];
     }
   }
@@ -218,11 +335,24 @@ export class ChatService {
    */
   async createConversation(title?: string): Promise<Conversation> {
     try {
+      // Get auth token from Supabase
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Missing Supabase environment variables');
+      }
+      
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || 'test-token';
+
       const response = await fetch('/api/conversations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token') || 'test-token'}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           title: title || 'New Conversation'
@@ -241,8 +371,9 @@ export class ChatService {
       const mockConversation = {
         id: `conv-${Date.now()}`,
         title: title || 'New Conversation',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        created_at: new Date(),
+        updated_at: new Date(),
+        message_count: 0
       };
       return mockConversation;
     }

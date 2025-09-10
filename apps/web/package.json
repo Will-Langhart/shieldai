@@ -2,13 +2,15 @@
   "name": "@shieldai/web",
   "version": "0.1.0",
   "private": true,
+  "description": "Shield AI - AI-powered Bible study platform (Full-stack Next.js app)",
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "next lint",
     "test": "echo 'No tests yet' && exit 0",
-    "test:ci": "echo 'No tests yet' && exit 0"
+    "test:ci": "echo 'No tests yet' && exit 0",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@langchain/openai": "^0.0.14",
@@ -18,18 +20,21 @@
     "@supabase/supabase-js": "^2.53.0",
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
+    "clsx": "^2.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "langchain": "^0.1.0",
-    "lucide-react": "^0.292.0",
+    "lucide-react": "^0.294.0",
     "next": "14.0.0",
     "openai": "^4.20.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "stripe": "^14.10.0"
+    "react-router-dom": "^6.20.1",
+    "stripe": "^14.10.0",
+    "tailwind-merge": "^2.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -38,11 +43,19 @@
     "@types/node": "^20.8.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.51.0",
     "eslint-config-next": "14.0.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.4",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
     "typescript": "^5.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

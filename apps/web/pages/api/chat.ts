@@ -15,10 +15,20 @@ import { EmbeddingService } from '../../lib/embeddings';
 import { VideoService } from '../../lib/video-service';
 import { logger, withCorrelationId, devLogger } from '../../lib/logger';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client lazily
+let openai: OpenAI | null = null;
+
+const getOpenAI = () => {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+};
 
 // In-memory conversation store (for development/testing)
 const conversationStore = new Map<string, Array<{ role: 'system' | 'user' | 'assistant'; content: string }>>();
@@ -367,7 +377,7 @@ Please mention these relevant videos in your response and explain how they can h
 
       try {
         logger.info('Streaming start', { cid, model, maxTokens, temperature });
-        const streamResp = await openai.chat.completions.create({
+        const streamResp = await getOpenAI().chat.completions.create({
           model: model,
           max_tokens: maxTokens,
           temperature: temperature,
@@ -607,7 +617,7 @@ Please mention these relevant videos in your response and explain how they can h
     }
 
     // Fallback: non-streaming response
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: model,
       max_tokens: maxTokens,
       temperature: temperature,

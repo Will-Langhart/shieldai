@@ -3,34 +3,36 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*",
-    "apps/mobile"
+    "packages/*"
   ],
   "packageManager": "npm@10",
   "scripts": {
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:mcp\"",
     "dev:web": "npm run dev --workspace apps/web",
-    "dev:web:logging": "./scripts/dev-with-logging.sh",
+    "dev:web:logging": "./tools/scripts/development/dev-with-logging.sh",
     "build:web": "npm run build --workspace apps/web",
     "start:web": "npm run start --workspace apps/web",
     "lint:web": "npm run lint --workspace apps/web",
-    "dev:frontend": "npm run dev --workspace apps/frontend",
-    "build:frontend": "npm run build --workspace apps/frontend",
-    "preview:frontend": "npm run preview --workspace apps/frontend",
-    "lint:frontend": "npm run lint --workspace apps/frontend",
     "dev:mobile": "npm run start --workspace apps/mobile || (echo 'Mobile app not yet created' && exit 0)",
-    "dev:backend": "python app.py",
-    "start:backend": "gunicorn -c gunicorn.conf.py app:app",
-    "install:backend": "pip install -r requirements.txt",
-    "favicon": "node scripts/generate-favicon.js",
-    "sync-domain": "./scripts/sync-vercel-domain.sh",
+    "dev:mcp": "cd tools/mcp && python run_servers.py",
+    "start:mcp": "cd tools/mcp && gunicorn -c gunicorn.conf.py run_servers:app",
+    "install:mcp": "cd tools/mcp && pip install -r requirements.txt",
+    "favicon": "node tools/scripts/development/generate-favicon.js",
+    "sync-domain": "./tools/scripts/deployment/sync-vercel-domain.sh",
     "deploy": "vercel --prod && npm run sync-domain",
-    "configure-vercel": "./scripts/configure-vercel.sh",
-    "setup-vercel": "./scripts/setup-vercel-git-integration.sh",
+    "configure-vercel": "./tools/scripts/deployment/configure-vercel.sh",
+    "setup-vercel": "./tools/scripts/deployment/setup-vercel-git-integration.sh",
     "deploy-auto": "vercel --prod && npm run sync-domain",
     "deploy-branch": "vercel --prod --yes && npm run sync-domain",
+    "db:migrate": "node tools/scripts/database/run-migration.sh",
+    "db:seed": "node tools/scripts/database/seed-database.js",
+    "test": "npm run test --workspace apps/web",
+    "lint": "npm run lint:web",
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
     "postinstall": "echo Monorepo bootstrap complete"
   },
   "devDependencies": {
-    "sharp": "^0.33.0"
+    "sharp": "^0.33.0",
+    "concurrently": "^8.2.2"
   }
 }

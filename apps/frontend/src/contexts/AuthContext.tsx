@@ -1,123 +1,134 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { User } from '../types'
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createClient, User, Session } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+console.log('🔧 Supabase config - URL:', supabaseUrl ? 'SET' : 'NOT SET');
+console.log('🔧 Supabase config - Key:', supabaseAnonKey ? 'SET' : 'NOT SET');
+
+// Create a mock client if environment variables are missing
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
+
+console.log('🔧 Supabase client:', supabase ? 'CREATED' : 'NULL (using mock)');
 
 interface AuthContextType {
-  user: User | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
-  logout: () => void
-  register: (email: string, password: string, name: string) => Promise<void>
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
-}
+  return context;
+};
 
 interface AuthProviderProps {
-  children: ReactNode
+  children: React.ReactNode;
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on mount
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('auth_token')
-        if (token) {
-          // TODO: Validate token with backend
-          // For now, just check if token exists
-          const userData = localStorage.getItem('user_data')
-          if (userData) {
-            setUser(JSON.parse(userData))
-          }
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error)
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('user_data')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    checkAuth()
-  }, [])
-
-  const login = async (email: string, _password: string) => {
-    try {
-      setIsLoading(true)
-      // TODO: Implement actual login API call
-      const mockUser: User = {
-        id: '1',
-        email,
-        name: 'User',
-        created_at: new Date(),
-        updated_at: new Date()
-      }
+    if (!supabase) {
+      // Set a mock user for development when Supabase is not configured
+      const mockUser = {
+        id: '550e8400-e29b-41d4-a716-446655440001',
+        email: 'test@example.com',
+        user_metadata: { name: 'Test User' }
+      } as User;
+      console.log('🔧 Using mock user for development:', mockUser);
+      setUser(mockUser);
+      setLoading(false);
       
-      setUser(mockUser)
-      localStorage.setItem('auth_token', 'mock_token')
-      localStorage.setItem('user_data', JSON.stringify(mockUser))
-    } catch (error) {
-      console.error('Login failed:', error)
-      throw error
-    } finally {
-      setIsLoading(false)
+      // Set test token for API calls
+      localStorage.setItem('auth_token', 'test-token');
+      return;
     }
-  }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user_data')
-  }
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-  const register = async (email: string, _password: string, name: string) => {
-    try {
-      setIsLoading(true)
-      // TODO: Implement actual registration API call
-      const mockUser: User = {
-        id: '1',
-        email,
-        name,
-        created_at: new Date(),
-        updated_at: new Date()
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
+    if (!supabase) {
+      return { error: new Error('Supabase not configured') };
+    }
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
+  };
+
+  const signUp = async (email: string, password: string) => {
+    if (!supabase) {
+      return { error: new Error('Supabase not configured') };
+    }
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/email-confirm`
       }
-      
-      setUser(mockUser)
-      localStorage.setItem('auth_token', 'mock_token')
-      localStorage.setItem('user_data', JSON.stringify(mockUser))
-    } catch (error) {
-      console.error('Registration failed:', error)
-      throw error
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    });
+    return { error };
+  };
 
-  const value: AuthContextType = {
+  const signOut = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    if (!supabase) {
+      return { error: new Error('Supabase not configured') };
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/email-confirm`
+    });
+    return { error };
+  };
+
+  const value = {
     user,
-    isAuthenticated: !!user,
-    isLoading,
-    login,
-    logout,
-    register
-  }
+    session,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    resetPassword,
+  };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
-
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

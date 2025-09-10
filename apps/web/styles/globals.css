@@ -2,114 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Enhanced Message Formatting - Cleaner, more spacious */
-.message-content {
-  @apply leading-relaxed max-w-none;
+/* Custom CSS variables for theming */
+:root {
+  --color-primary: #3B82F6;
+  --color-secondary: #6B7280;
+  --color-accent: #F59E0B;
+  --color-background: #FFFFFF;
+  --color-surface: #F9FAFB;
+  --color-text: #111827;
+  --color-text-secondary: #6B7280;
 }
 
-.message-content h1,
-.message-content h2,
-.message-content h3,
-.message-content h4,
-.message-content h5,
-.message-content h6 {
-  @apply font-semibold mt-4 mb-2;
+.dark {
+  --color-primary: #60A5FA;
+  --color-secondary: #9CA3AF;
+  --color-accent: #FBBF24;
+  --color-background: #111827;
+  --color-surface: #1F2937;
+  --color-text: #F9FAFB;
+  --color-text-secondary: #D1D5DB;
 }
 
-.message-content h1 { @apply text-2xl; }
-.message-content h2 { @apply text-xl; }
-.message-content h3 { @apply text-lg; }
-.message-content h4 { @apply text-base; }
-
-.message-content p {
-  @apply mb-3 last:mb-0;
+/* Base styles */
+* {
+  box-sizing: border-box;
 }
 
-.message-content blockquote {
-  @apply border-l-4 border-gray-300 pl-4 italic my-3;
+html {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.dark .message-content blockquote {
-  @apply border-gray-600;
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.message-content ul,
-.message-content ol {
-  @apply ml-4 mb-3 space-y-1;
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
 }
 
-.message-content ul {
-  @apply list-disc;
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
 }
 
-.message-content ol {
-  @apply list-decimal;
+::-webkit-scrollbar-thumb {
+  background: var(--color-secondary);
+  border-radius: 4px;
 }
 
-.message-content li {
-  @apply leading-relaxed;
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
 }
 
-.message-content strong {
-  @apply font-semibold;
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
-.message-content em {
-  @apply italic;
+/* Selection styles */
+::selection {
+  background-color: var(--color-primary);
+  color: white;
 }
 
-.message-content code {
-  @apply bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-sm font-mono;
+/* Custom utility classes */
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.message-content pre {
-  @apply bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto my-3;
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.message-content pre code {
-  @apply bg-transparent p-0;
+.dark .glass {
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.message-content a {
-  @apply text-blue-600 dark:text-blue-400 hover:underline;
-}
-
-.message-content table {
-  @apply w-full border-collapse my-3;
-}
-
-.message-content th,
-.message-content td {
-  @apply border border-gray-300 dark:border-gray-600 px-3 py-2 text-left;
-}
-
-.message-content th {
-  @apply bg-gray-100 dark:bg-gray-800 font-semibold;
-}
-
-/* Code Block Syntax Highlighting */
-.syntax-keyword {
-  @apply text-purple-600 dark:text-purple-400 font-medium;
-}
-
-.syntax-string {
-  @apply text-green-600 dark:text-green-400;
-}
-
-.syntax-comment {
-  @apply text-gray-500 dark:text-gray-400 italic;
-}
-
-.syntax-number {
-  @apply text-orange-600 dark:text-orange-400;
-}
-
-.syntax-function {
-  @apply text-blue-600 dark:text-blue-400;
-}
-
-/* Consolidated Animation System - Single source of truth */
-@keyframes fadeInUp {
+/* Animation keyframes */
+@keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);
@@ -120,496 +105,33 @@
   }
 }
 
-@keyframes pulse-glow {
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
   0%, 100% {
-    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.6);
-  }
-}
-
-@keyframes progress-shift {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-@keyframes loadingDots {
-  0%, 80%, 100% {
-    transform: scale(0.8);
-    opacity: 0.5;
-  }
-  40% {
-    transform: scale(1);
     opacity: 1;
   }
-}
-
-/* Single Animation Classes - No duplicates */
-.fade-in-up {
-  animation: fadeInUp 0.3s ease-out;
-}
-
-.pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.enhanced-progress {
-  background: linear-gradient(90deg, 
-    #3b82f6 0%, 
-    #1d4ed8 25%, 
-    #3b82f6 50%, 
-    #1d4ed8 75%, 
-    #3b82f6 100%
-  );
-  background-size: 200% 100%;
-  animation: progress-shift 2s ease-in-out infinite;
-}
-
-.loading-dot {
-  animation: loadingDots 1.4s infinite ease-in-out both;
-}
-
-.loading-dot:nth-child(1) { animation-delay: -0.32s; }
-.loading-dot:nth-child(2) { animation-delay: -0.16s; }
-.loading-dot:nth-child(3) { animation-delay: 0s; }
-
-/* Enhanced Scrollbars for Message Areas */
-.message-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.message-scrollbar::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-gray-800 rounded-full;
-}
-
-.message-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 dark:bg-gray-600 rounded-full hover:bg-gray-500 dark:hover:bg-gray-500;
-}
-
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-:root {
-  --shield-black: #0a0a0a;
-  --shield-gray: #1a1a1a;
-  --shield-light-gray: #2a2a2a;
-  --shield-blue: #3b82f6;
-  --shield-white: #ffffff;
-}
-
-/* Light theme variables */
-[data-theme="light"] {
-  --shield-black: #ffffff;
-  --shield-gray: #f8fafc;
-  --shield-light-gray: #f1f5f9;
-  --shield-blue: #3b82f6;
-  --shield-white: #1e293b;
-}
-
-/* Dark theme variables */
-[data-theme="dark"] {
-  --shield-black: #0a0a0a;
-  --shield-gray: #1a1a1a;
-  --shield-light-gray: #2a2a2a;
-  --shield-blue: #3b82f6;
-  --shield-white: #ffffff;
-}
-
-html {
-  max-width: 100vw;
-  overflow-x: hidden;
-  height: 100vh;
-}
-
-body {
-  color: var(--shield-white);
-  background: var(--shield-black);
-  transition: color 0.3s ease, background-color 0.3s ease;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* Set dark theme as default */
-html[data-theme="light"] body {
-  color: var(--shield-white);
-  background: var(--shield-black);
-}
-
-html[data-theme="dark"] body {
-  color: var(--shield-white);
-  background: var(--shield-black);
-}
-
-/* Default to dark theme when no theme is specified */
-html:not([data-theme]) body {
-  color: var(--shield-white);
-  background: var(--shield-black);
-}
-
-/* CRITICAL: Global clickability fixes */
-.touch-button {
-  pointer-events: auto !important;
-}
-
-.touch-button * {
-  pointer-events: auto !important;
-}
-
-.touch-button button,
-.touch-button input,
-.touch-button [role="button"] {
-  pointer-events: auto !important;
-  cursor: pointer;
-  position: relative;
-  z-index: 10;
-}
-
-.touch-button input[type="text"] {
-  cursor: text !important;
-  pointer-events: auto !important;
-  position: relative;
-  z-index: 10;
-}
-
-/* Mobile-specific improvements */
-@media (max-width: 640px) {
-  /* Prevent horizontal scrolling */
-  html, body {
-    overflow-x: hidden;
-  }
-  
-  /* Improve touch targets */
-  button, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  
-  /* Better text readability on mobile */
-  p, span, div {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-  }
-  
-  /* Improve input field on mobile */
-  input, textarea {
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
-
-  /* Mobile-specific spacing */
-  .mobile-padding {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  /* Mobile-optimized message bubbles */
-  .message-bubble-mobile {
-    max-width: calc(100vw - 2rem);
-    margin: 0.5rem 0;
-  }
-
-  /* Mobile-friendly sidebar */
-  .mobile-sidebar {
-    width: 100vw;
-    max-width: 320px;
-  }
-
-  /* Mobile input bar */
-  .mobile-input-bar {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom));
-  }
-
-  /* Mobile header */
-  .mobile-header {
-    padding-top: env(safe-area-inset-top);
-  }
-
-  /* Touch-friendly buttons */
-  .touch-button {
-    min-height: 48px;
-    min-width: 48px;
-    padding: 12px;
-  }
-
-  /* CRITICAL: Ensure all elements are clickable */
-  .touch-button * {
-    pointer-events: auto !important;
-  }
-
-  .touch-button button,
-  .touch-button input,
-  .touch-button [role="button"] {
-    pointer-events: auto !important;
-    cursor: pointer;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    position: relative;
-    z-index: 10;
-  }
-
-  /* Ensure all interactive elements are clickable */
-  .touch-button button,
-  .touch-button input,
-  .touch-button [role="button"] {
-    cursor: pointer;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-
-  /* Enhanced touch targets for mobile */
-  .touch-button button {
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Prevent text selection on interactive elements */
-  .touch-button button:active,
-  .touch-button input:active {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-
-  /* Ensure input field is properly clickable */
-  .touch-button input[type="text"] {
-    cursor: text;
-    user-select: text;
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    -ms-user-select: text;
-    touch-action: manipulation;
-  }
-
-  /* Enhanced focus states for accessibility */
-  .touch-button button:focus-visible,
-  .touch-button input:focus-visible {
-    outline: 2px solid var(--shield-blue);
-    outline-offset: 2px;
-  }
-
-  /* Ensure proper cursor states */
-  .touch-button button:not(:disabled) {
-    cursor: pointer;
-  }
-
-  .touch-button button:disabled {
-    cursor: not-allowed;
-  }
-
-  /* Enhanced hover states for better UX */
-  .touch-button button:not(:disabled):hover {
-    transform: translateY(-1px);
-    transition: transform 0.2s ease;
-  }
-
-  /* Active state feedback */
-  .touch-button button:not(:disabled):active {
-    transform: translateY(0px);
-    transition: transform 0.1s ease;
-  }
-
-  /* Mobile-optimized modals */
-  .mobile-modal {
-    margin: 1rem;
-    max-height: calc(100vh - 2rem);
-    border-radius: 1rem;
-  }
-
-  /* Mobile navigation */
-  .mobile-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--shield-black);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 0.5rem 1rem;
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-    z-index: 50;
-  }
-
-  /* Mobile gesture areas */
-  .swipe-area {
-    touch-action: pan-y;
-  }
-
-  /* Mobile-optimized scrollbars */
-  ::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  /* Mobile text sizing */
-  .mobile-text-sm {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
-
-  .mobile-text-base {
-    font-size: 1rem;
-    line-height: 1.5rem;
-  }
-
-  .mobile-text-lg {
-    font-size: 1.125rem;
-    line-height: 1.75rem;
-  }
-
-  /* Mobile spacing utilities */
-  .mobile-space-y-2 > * + * {
-    margin-top: 0.5rem;
-  }
-
-  .mobile-space-y-4 > * + * {
-    margin-top: 1rem;
-  }
-
-  .mobile-px-4 {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .mobile-py-4 {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
+  50% {
+    opacity: 0.5;
   }
 }
 
-/* Tablet optimizations */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .tablet-padding {
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
-  }
-
-  .tablet-sidebar {
-    width: 280px;
-  }
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
 }
 
-/* Safe area support for notched devices */
-@supports (padding: max(0px)) {
-  .safe-area-top {
-    padding-top: max(1rem, env(safe-area-inset-top));
-  }
-
-  .safe-area-bottom {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom));
-  }
-
-  .safe-area-left {
-    padding-left: max(1rem, env(safe-area-inset-left));
-  }
-
-  .safe-area-right {
-    padding-right: max(1rem, env(safe-area-inset-right));
-  }
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-} 
-
-/* Enhanced subtle scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  background: transparent;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-  transition: background 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-/* Firefox scrollbar */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-
-/* Ensure proper overflow handling */
-#__next {
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* Theme transition utilities */
-.theme-transition {
-  transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
-}
-
-/* Light theme specific styles */
-[data-theme="light"] {
-  color-scheme: light;
-}
-
-[data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-}
-
-[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="light"] * {
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
-}
-
-/* Dark theme specific styles */
-[data-theme="dark"] {
-  color-scheme: dark;
-}
-
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-[data-theme="dark"] * {
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-}
-
-/* Favicon transparency support */
-link[rel="icon"],
-link[rel="shortcut icon"],
-link[rel="apple-touch-icon"] {
-  background: transparent !important;
-}
-
-/* Force transparent backgrounds for favicon elements */
-[rel="icon"],
-[rel="shortcut icon"] {
-  background-color: transparent !important;
-  background-image: none !important;
-} 

@@ -1,0 +1,2 @@
+# This file ensures the metrics directory is tracked by git
+# Metrics files will be ignored but the directory structure is preserved
