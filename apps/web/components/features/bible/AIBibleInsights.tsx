@@ -14,7 +14,11 @@ import {
   Share2,
   Bookmark,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Save,
+  Download,
+  Star,
+  Tag
 } from 'lucide-react'
 import { AIDiagnostics } from './AIDiagnostics'
 
@@ -49,10 +53,10 @@ interface AIInsights {
   }>
   studyQuestions: Array<{
     question: string
-    type: 'reflection' | 'application' | 'theological'
+    category: string
   }>
   historicalContext: string
-  theologicalSignificance: string
+  theologicalMeaning: string
   practicalApplication: string
   prayerPoints: string[]
 }
@@ -66,91 +70,123 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
   const [insights, setInsights] = useState<AIInsights | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'explanation' | 'themes' | 'questions' | 'context' | 'application'>('explanation')
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['explanation']))
   const [showDiagnostics, setShowDiagnostics] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [savedInsights, setSavedInsights] = useState<any[]>([])
 
-  // Generate AI insights when passage changes
+  // Load saved insights for this passage
   useEffect(() => {
     if (passage) {
-      generateInsights()
+      loadSavedInsights()
     }
-  }, [passage, version])
+  }, [passage])
+
+  const loadSavedInsights = async () => {
+    try {
+      const authToken = await getAuthToken()
+      const response = await fetch(`/api/ai-insights/by-passage?passage_reference=${encodeURIComponent(passage.reference)}&bible_version=${version}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setSavedInsights(data.insights || [])
+      }
+    } catch (error) {
+      console.error('Failed to load saved insights:', error)
+    }
+  }
+
+  const getAuthToken = async (): Promise<string> => {
+    try {
+      const { data: { session } } = await import('../../../lib/supabase').then(m => m.supabase.auth.getSession())
+      return session?.access_token || 'test-token'
+    } catch (error) {
+      return 'test-token'
+    }
+  }
 
   const generateInsights = async () => {
     setLoading(true)
     setError(null)
 
     try {
-      // Get authentication token
-      let authToken = 'test-token' // Default to test token for now
-      
-      try {
-        // Try to get the actual session token
-        const { data: { session } } = await import('../../../lib/supabase').then(m => m.supabase.auth.getSession())
-        if (session?.access_token) {
-          authToken = session.access_token
-        }
-      } catch (authError) {
-        console.log('Using test token for AI insights')
-      }
+      const authToken = await getAuthToken()
 
       const response = await fetch('/api/bible/ai-insights', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          passage: passage,
-          version: version
+          passage_reference: passage.reference,
+          passage_text: passage.text,
+          bible_version: version
         })
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('AI insights API error:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData
-        })
-        throw new Error(errorData.error || `Failed to generate AI insights (${response.status}: ${response.statusText})`)
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate insights')
       }
 
       const data = await response.json()
       setInsights(data.insights)
-    } catch (err) {
-      console.error('AI insights error:', err)
-      
-      // Provide fallback insights if AI fails
-      const fallbackInsights: AIInsights = {
-        explanation: `This passage from ${passage.reference} contains important biblical truth. While AI analysis is temporarily unavailable, this scripture speaks to God's love and grace.`,
-        keyThemes: ['Faith', 'Love', 'Grace', 'Salvation', 'Hope'],
-        crossReferences: [],
-        studyQuestions: [
-          {
-            question: 'What is the main message of this passage?',
-            type: 'reflection'
-          },
-          {
-            question: 'How does this passage apply to your life today?',
-            type: 'application'
-          }
-        ],
-        historicalContext: 'This passage was written in the context of Jesus\' ministry and teachings.',
-        theologicalSignificance: 'This passage reveals important aspects of God\'s character and plan for salvation.',
-        practicalApplication: 'Consider how this passage can guide your daily walk with God.',
-        prayerPoints: [
-          'Thank God for His love and grace',
-          'Ask for understanding of this passage',
-          'Pray for application in your life'
-        ]
-      }
-      
-      setInsights(fallbackInsights)
-      setError('AI analysis temporarily unavailable - showing basic insights')
+      setIsSaved(false)
+    } catch (error) {
+      console.error('Error generating insights:', error)
+      setError(error instanceof Error ? error.message : 'Failed to generate insights')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const saveInsights = async () => {
+    if (!insights) return
+
+    setSaving(true)
+    try {
+      const authToken = await getAuthToken()
+
+      const response = await fetch('/api/ai-insights/save', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          passage_reference: passage.reference,
+          passage_text: passage.text,
+          bible_version: version,
+          explanation: insights.explanation,
+          key_themes: insights.keyThemes,
+          cross_references: insights.crossReferences,
+          study_questions: insights.studyQuestions,
+          historical_context: insights.historicalContext,
+          theological_meaning: insights.theologicalMeaning,
+          practical_application: insights.practicalApplication,
+          prayer_points: insights.prayerPoints
+        })
+      })
+
+      if (response.ok) {
+        setIsSaved(true)
+        await loadSavedInsights() // Reload saved insights
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save insights')
+      }
+    } catch (error) {
+      console.error('Error saving insights:', error)
+      setError(error instanceof Error ? error.message : 'Failed to save insights')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -166,36 +202,94 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    // You could add a toast notification here
   }
 
-  const shareInsight = (type: string, content: string) => {
-    if (navigator.share) {
-      navigator.share({
-        title: `${passage.reference} - AI Insight: ${type}`,
-        text: content,
-        url: window.location.href
-      })
-    } else {
-      copyToClipboard(content)
-    }
+  if (showDiagnostics) {
+    return <AIDiagnostics onClose={() => setShowDiagnostics(false)} />
   }
 
-  if (loading) {
-    return (
-      <div className="mt-8 p-6 bg-[#1A1D24] rounded-lg">
-        <div className="flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-400 mr-3" />
-          <span className="text-[#9CA3AF]">Generating AI insights...</span>
+  return (
+    <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6 mt-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <Brain className="h-6 w-6 text-blue-400" />
+          <h3 className="text-xl font-semibold text-[#E0E0E0]">AI Bible Insights</h3>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          {!insights && !loading && (
+            <button
+              onClick={generateInsights}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <Brain className="h-4 w-4" />
+              <span>Generate Insights</span>
+            </button>
+          )}
+          
+          {insights && !isSaved && (
+            <button
+              onClick={saveInsights}
+              disabled={saving}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              <span>{saving ? 'Saving...' : 'Save Insights'}</span>
+            </button>
+          )}
+          
+          {isSaved && (
+            <div className="flex items-center space-x-2 text-green-400">
+              <Bookmark className="h-4 w-4" />
+              <span>Saved</span>
+            </div>
+          )}
         </div>
       </div>
-    )
-  }
 
-  if (error) {
-    return (
-      <div className="mt-8 p-6 bg-[#1A1D24] rounded-lg">
-        <div className="text-center">
+      {/* Saved Insights Section */}
+      {savedInsights.length > 0 && (
+        <div className="mb-6 p-4 bg-[#2C303A] rounded-lg">
+          <h4 className="text-lg font-medium text-[#E0E0E0] mb-3 flex items-center">
+            <Bookmark className="h-5 w-5 text-yellow-400 mr-2" />
+            Previously Saved Insights ({savedInsights.length})
+          </h4>
+          <div className="space-y-3">
+            {savedInsights.map((saved, index) => (
+              <div key={saved.id} className="p-3 bg-[#1A1D24] rounded border border-[#3A404B]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-[#9CA3AF]">
+                    {new Date(saved.created_at).toLocaleDateString()}
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    {saved.is_favorite && <Star className="h-4 w-4 text-yellow-400" />}
+                    {saved.tags?.length > 0 && (
+                      <div className="flex items-center space-x-1">
+                        <Tag className="h-3 w-3 text-blue-400" />
+                        <span className="text-xs text-blue-400">{saved.tags.length} tags</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[#E0E0E0] text-sm line-clamp-2">
+                  {saved.explanation}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="h-12 w-12 text-blue-400 animate-spin mb-4" />
+          <div className="text-blue-400 mb-2">Generating AI insights...</div>
+          <div className="text-sm text-[#9CA3AF]">This may take a few moments</div>
+        </div>
+      )}
+
+      {error && (
+        <div className="flex flex-col items-center justify-center py-12">
           <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
           <div className="text-red-400 mb-2">Failed to load AI insights</div>
           <div className="text-sm text-[#9CA3AF] mb-4">{error}</div>
@@ -212,134 +306,72 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
               className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
             >
               <AlertTriangle className="h-4 w-4" />
-              <span>Diagnose</span>
+              <span>Diagnostics</span>
             </button>
           </div>
         </div>
-      </div>
-    )
-  }
+      )}
 
-  if (!insights) {
-    return null
-  }
-
-  return (
-    <div className="mt-8 space-y-6">
-      {/* AI Insights Header */}
-      <div className="bg-[#1A1D24] rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <Brain className="h-6 w-6 text-blue-400" />
-            <h3 className="text-xl font-semibold">AI-Powered Bible Study</h3>
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => copyToClipboard(JSON.stringify(insights, null, 2))}
-              className="p-2 text-[#9CA3AF] hover:text-blue-400 transition-colors"
-              title="Copy all insights"
-            >
-              <Copy className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => shareInsight('Study Insights', insights.explanation)}
-              className="p-2 text-[#9CA3AF] hover:text-blue-400 transition-colors"
-              title="Share insights"
-            >
-              <Share2 className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setShowDiagnostics(true)}
-              className="p-2 text-[#9CA3AF] hover:text-yellow-400 transition-colors"
-              title="Run diagnostics"
-            >
-              <AlertTriangle className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {[
-            { id: 'explanation', label: 'Explanation', icon: BookOpen },
-            { id: 'themes', label: 'Key Themes', icon: Lightbulb },
-            { id: 'questions', label: 'Study Questions', icon: MessageCircle },
-            { id: 'context', label: 'Historical Context', icon: Search },
-            { id: 'application', label: 'Application', icon: Heart }
-          ].map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id as any)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                activeTab === id
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-[#2C303A] text-[#9CA3AF] hover:bg-[#3A404B] hover:text-white'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
+      {insights && (
         <div className="space-y-6">
-          {/* Explanation Tab */}
-          {activeTab === 'explanation' && (
-            <div className="space-y-4">
-              <div className="prose prose-invert max-w-none">
-                <h4 className="text-lg font-semibold mb-3 flex items-center">
-                  <BookOpen className="h-5 w-5 mr-2 text-blue-400" />
-                  AI Explanation
-                </h4>
-                <p className="text-[#E5E7EB] leading-relaxed">
-                  {insights.explanation}
-                </p>
+          {/* Explanation */}
+          <div className="border border-[#2C303A] rounded-lg">
+            <button
+              onClick={() => toggleSection('explanation')}
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <BookOpen className="h-5 w-5 text-blue-400" />
+                <span className="font-medium text-[#E0E0E0]">Explanation</span>
               </div>
-              
-              {insights.theologicalSignificance && (
-                <div className="bg-[#2C303A] p-4 rounded-lg">
-                  <h5 className="font-semibold text-blue-400 mb-2 flex items-center">
-                    <Cross className="h-4 w-4 mr-2" />
-                    Theological Significance
-                  </h5>
-                  <p className="text-[#E5E7EB] text-sm leading-relaxed">
-                    {insights.theologicalSignificance}
-                  </p>
-                </div>
+              {expandedSections.has('explanation') ? (
+                <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+              ) : (
+                <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
               )}
-            </div>
-          )}
-
-          {/* Key Themes Tab */}
-          {activeTab === 'themes' && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold mb-3 flex items-center">
-                <Lightbulb className="h-5 w-5 mr-2 text-blue-400" />
-                Key Themes
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {insights.keyThemes.map((theme, index) => (
-                  <div key={index} className="bg-[#2C303A] p-3 rounded-lg">
-                    <span className="text-blue-400 font-medium">{theme}</span>
-                  </div>
-                ))}
+            </button>
+            {expandedSections.has('explanation') && (
+              <div className="p-4 border-t border-[#2C303A]">
+                <p className="text-[#E0E0E0] leading-relaxed">{insights.explanation}</p>
+                <button
+                  onClick={() => copyToClipboard(insights.explanation)}
+                  className="mt-3 flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  <Copy className="h-4 w-4" />
+                  <span className="text-sm">Copy</span>
+                </button>
               </div>
+            )}
+          </div>
 
-              {/* Cross References */}
-              {insights.crossReferences.length > 0 && (
-                <div className="mt-6">
-                  <h5 className="font-semibold text-blue-400 mb-3 flex items-center">
-                    <Search className="h-4 w-4 mr-2" />
-                    Related Passages
-                  </h5>
-                  <div className="space-y-3">
-                    {insights.crossReferences.map((ref, index) => (
-                      <div key={index} className="bg-[#2C303A] p-3 rounded-lg">
-                        <div className="font-medium text-blue-400 mb-1">{ref.reference}</div>
-                        <p className="text-[#E5E7EB] text-sm mb-2">{ref.text}</p>
-                        <p className="text-[#9CA3AF] text-xs">{ref.relevance}</p>
-                      </div>
+          {/* Key Themes */}
+          {insights.keyThemes.length > 0 && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('themes')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Lightbulb className="h-5 w-5 text-yellow-400" />
+                  <span className="font-medium text-[#E0E0E0]">Key Themes</span>
+                  <span className="text-sm text-[#9CA3AF]">({insights.keyThemes.length})</span>
+                </div>
+                {expandedSections.has('themes') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('themes') && (
+                <div className="p-4 border-t border-[#2C303A]">
+                  <div className="flex flex-wrap gap-2">
+                    {insights.keyThemes.map((theme, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm"
+                      >
+                        {theme}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -347,97 +379,182 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
             </div>
           )}
 
-          {/* Study Questions Tab */}
-          {activeTab === 'questions' && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold mb-3 flex items-center">
-                <MessageCircle className="h-5 w-5 mr-2 text-blue-400" />
-                Study Questions
-              </h4>
-              <div className="space-y-4">
-                {insights.studyQuestions.map((question, index) => (
-                  <div key={index} className="bg-[#2C303A] p-4 rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center mb-2">
-                          <span className={`px-2 py-1 rounded text-xs font-medium mr-3 ${
-                            question.type === 'reflection' 
-                              ? 'bg-purple-600 text-white' 
-                              : question.type === 'application'
-                              ? 'bg-green-600 text-white'
-                              : 'bg-orange-600 text-white'
-                          }`}>
-                            {question.type.charAt(0).toUpperCase() + question.type.slice(1)}
+          {/* Cross References */}
+          {insights.crossReferences.length > 0 && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('crossrefs')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Cross className="h-5 w-5 text-green-400" />
+                  <span className="font-medium text-[#E0E0E0]">Cross References</span>
+                  <span className="text-sm text-[#9CA3AF]">({insights.crossReferences.length})</span>
+                </div>
+                {expandedSections.has('crossrefs') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('crossrefs') && (
+                <div className="p-4 border-t border-[#2C303A] space-y-3">
+                  {insights.crossReferences.map((ref, index) => (
+                    <div key={index} className="p-3 bg-[#1A1D24] rounded border border-[#3A404B]">
+                      <div className="font-medium text-blue-400 mb-1">{ref.reference}</div>
+                      <p className="text-[#E0E0E0] text-sm mb-2">{ref.text}</p>
+                      <p className="text-[#9CA3AF] text-xs">{ref.relevance}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Study Questions */}
+          {insights.studyQuestions.length > 0 && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('questions')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <MessageCircle className="h-5 w-5 text-purple-400" />
+                  <span className="font-medium text-[#E0E0E0]">Study Questions</span>
+                  <span className="text-sm text-[#9CA3AF]">({insights.studyQuestions.length})</span>
+                </div>
+                {expandedSections.has('questions') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('questions') && (
+                <div className="p-4 border-t border-[#2C303A] space-y-3">
+                  {insights.studyQuestions.map((question, index) => (
+                    <div key={index} className="p-3 bg-[#1A1D24] rounded border border-[#3A404B]">
+                      <div className="flex items-start space-x-3">
+                        <span className="text-purple-400 font-medium text-sm mt-1">{index + 1}.</span>
+                        <div className="flex-1">
+                          <p className="text-[#E0E0E0] mb-1">{question.question}</p>
+                          <span className="text-xs text-[#9CA3AF] bg-purple-900 px-2 py-1 rounded">
+                            {question.category}
                           </span>
                         </div>
-                        <p className="text-[#E5E7EB]">{question.question}</p>
                       </div>
-                      <button
-                        onClick={() => copyToClipboard(question.question)}
-                        className="ml-3 p-1 text-[#9CA3AF] hover:text-blue-400 transition-colors"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </button>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Historical Context Tab */}
-          {activeTab === 'context' && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold mb-3 flex items-center">
-                <Search className="h-5 w-5 mr-2 text-blue-400" />
-                Historical Context
-              </h4>
-              <div className="prose prose-invert max-w-none">
-                <p className="text-[#E5E7EB] leading-relaxed">
-                  {insights.historicalContext}
-                </p>
-              </div>
+          {/* Historical Context */}
+          {insights.historicalContext && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('history')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Search className="h-5 w-5 text-orange-400" />
+                  <span className="font-medium text-[#E0E0E0]">Historical Context</span>
+                </div>
+                {expandedSections.has('history') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('history') && (
+                <div className="p-4 border-t border-[#2C303A]">
+                  <p className="text-[#E0E0E0] leading-relaxed">{insights.historicalContext}</p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Application Tab */}
-          {activeTab === 'application' && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold mb-3 flex items-center">
-                <Heart className="h-5 w-5 mr-2 text-blue-400" />
-                Practical Application
-              </h4>
-              <div className="prose prose-invert max-w-none">
-                <p className="text-[#E5E7EB] leading-relaxed mb-4">
-                  {insights.practicalApplication}
-                </p>
-              </div>
+          {/* Theological Meaning */}
+          {insights.theologicalMeaning && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('theology')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Heart className="h-5 w-5 text-red-400" />
+                  <span className="font-medium text-[#E0E0E0]">Theological Meaning</span>
+                </div>
+                {expandedSections.has('theology') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('theology') && (
+                <div className="p-4 border-t border-[#2C303A]">
+                  <p className="text-[#E0E0E0] leading-relaxed">{insights.theologicalMeaning}</p>
+                </div>
+              )}
+            </div>
+          )}
 
-              {/* Prayer Points */}
-              {insights.prayerPoints.length > 0 && (
-                <div className="bg-[#2C303A] p-4 rounded-lg">
-                  <h5 className="font-semibold text-blue-400 mb-3 flex items-center">
-                    <Cross className="h-4 w-4 mr-2" />
-                    Prayer Points
-                  </h5>
-                  <ul className="space-y-2">
-                    {insights.prayerPoints.map((point, index) => (
-                      <li key={index} className="text-[#E5E7EB] text-sm flex items-start">
-                        <span className="text-blue-400 mr-2">•</span>
-                        {point}
-                      </li>
-                    ))}
-                  </ul>
+          {/* Practical Application */}
+          {insights.practicalApplication && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('application')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Lightbulb className="h-5 w-5 text-green-400" />
+                  <span className="font-medium text-[#E0E0E0]">Practical Application</span>
+                </div>
+                {expandedSections.has('application') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('application') && (
+                <div className="p-4 border-t border-[#2C303A]">
+                  <p className="text-[#E0E0E0] leading-relaxed">{insights.practicalApplication}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Prayer Points */}
+          {insights.prayerPoints.length > 0 && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('prayer')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Heart className="h-5 w-5 text-pink-400" />
+                  <span className="font-medium text-[#E0E0E0]">Prayer Points</span>
+                  <span className="text-sm text-[#9CA3AF]">({insights.prayerPoints.length})</span>
+                </div>
+                {expandedSections.has('prayer') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('prayer') && (
+                <div className="p-4 border-t border-[#2C303A] space-y-2">
+                  {insights.prayerPoints.map((point, index) => (
+                    <div key={index} className="flex items-start space-x-3">
+                      <span className="text-pink-400 font-medium text-sm mt-1">{index + 1}.</span>
+                      <p className="text-[#E0E0E0] text-sm">{point}</p>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           )}
         </div>
-      </div>
-
-      {/* Diagnostics Modal */}
-      {showDiagnostics && (
-        <AIDiagnostics onClose={() => setShowDiagnostics(false)} />
       )}
     </div>
   )
