@@ -122,29 +122,108 @@
   animation: fadeIn 0.5s ease-in-out;
 }
 
-/* Custom Scrollbar Styling */
+/* Custom Scrollbar Styling - Complete Transparency */
 ::-webkit-scrollbar {
   width: 8px;
+  background: transparent !important;
+  -webkit-appearance: none;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent !important;
+  border: none !important;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.3) !important;
   border-radius: 4px;
   transition: background 0.3s ease;
+  border: none !important;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.5) !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-track-piece {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-track-piece:start {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-track-piece:end {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-button {
+  display: none !important;
 }
 
 /* Firefox scrollbar styling */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+}
+
+/* Force complete transparency on all elements */
+html, body, * {
+  scrollbar-gutter: stable;
+}
+
+/* Override any inherited scrollbar styles */
+*::-webkit-scrollbar {
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+/* Force the scrollbar area to match the page background */
+html {
+  background: #1A1D24 !important;
+}
+
+body {
+  background: #1A1D24 !important;
+}
+
+/* Additional scrollbar area styling */
+::-webkit-scrollbar-track:horizontal {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-track:vertical {
+  background: transparent !important;
+}
+
+/* Ensure no default browser styling interferes */
+::-webkit-scrollbar-track:active {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-track:hover {
+  background: transparent !important;
+}
+
+/* Hide scrollbar utility class */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
 }
 
 /* Responsive color adjustments */

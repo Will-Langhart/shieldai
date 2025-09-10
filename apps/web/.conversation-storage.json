@@ -62,6 +62,13 @@
       "created_at": "2025-09-10T16:47:13.462Z",
       "updated_at": "2025-09-10T16:47:16.405Z",
       "user_id": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "conv-1757538010082-hh4jbzmzs": {
+      "id": "conv-1757538010082-hh4jbzmzs",
+      "title": "hiiii",
+      "created_at": "2025-09-10T21:00:10.082Z",
+      "updated_at": "2025-09-10T21:00:11.616Z",
+      "user_id": "550e8400-e29b-41d4-a716-446655440000"
     }
   },
   "messages": {
@@ -342,6 +349,34 @@
           "bible_search_results": 0
         }
       }
+    ],
+    "conv-1757538010082-hh4jbzmzs": [
+      {
+        "id": "msg-1757538011615-26bkgjw34",
+        "conversation_id": "conv-1757538010082-hh4jbzmzs",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "hiiii",
+        "role": "user",
+        "created_at": "2025-09-10T21:00:11.615Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-10T21:00:11.615Z"
+        }
+      },
+      {
+        "id": "msg-1757538011616-a25wtrnrg",
+        "conversation_id": "conv-1757538010082-hh4jbzmzs",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "Hello! How can I assist you today with any questions you have about Christianity, the Bible, or faith?",
+        "role": "assistant",
+        "created_at": "2025-09-10T21:00:11.616Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-10T21:00:11.616Z",
+          "relevant_verses": 0,
+          "bible_search_results": 0
+        }
+      }
     ]
   },
   "userConversations": {
@@ -354,7 +389,8 @@
       "conv-1757291467691-qnkuzvvco",
       "conv-1757292542571-xt9tftaad",
       "conv-1757292926166-gizwguhvp",
-      "conv-1757522833462-h1h6t19xc"
+      "conv-1757522833462-h1h6t19xc",
+      "conv-1757538010082-hh4jbzmzs"
     ]
   }
 }

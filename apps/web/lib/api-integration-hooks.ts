@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './auth-context';
-import { useBible } from '../contexts/bible-context';
 
 // Types for API responses
 export interface BibleSearchResult {
@@ -410,7 +409,6 @@ export function useSubscriptionAPI() {
 // Hook for Chat API integration
 export function useChatAPI() {
   const { user } = useAuth();
-  const { selectedVersion } = useBible();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -438,8 +436,7 @@ export function useChatAPI() {
           message,
           conversationId,
           mode,
-          developerMode: user?.email === 'langhartcw@gmail.com',
-          bibleVersion: selectedVersion
+          developerMode: user?.email === 'langhartcw@gmail.com'
         })
       });
 

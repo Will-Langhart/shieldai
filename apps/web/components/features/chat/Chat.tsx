@@ -273,7 +273,7 @@ export function Chat() {
         </div>
 
         {/* Conversations */}
-        <div className="flex-1 overflow-y-auto px-4">
+        <div className="flex-1 overflow-y-auto px-4 scrollbar-hide">
           <div className="space-y-2">
             {filteredConversations.map((conversation) => (
               <div

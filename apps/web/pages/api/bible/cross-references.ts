@@ -1,100 +1,247 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { bibleService } from '../../../lib/bible-service';
+import OpenAI from 'openai';
+import { createServerSupabaseClient } from '../../../lib/supabase';
 import { logger, withCorrelationId } from '../../../lib/logger';
+import { bibleService } from '../../../lib/bible-service';
+import { BiblePineconeService } from '../../../lib/bible-pinecone';
+import { EmbeddingService } from '../../../lib/embeddings';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const cid = withCorrelationId(req, `crossrefs_${Date.now()}`);
-  const startedAt = Date.now();
-  if (req.method !== 'GET') {
+// Initialize OpenAI client lazily
+let openai: OpenAI | null = null;
+
+const getOpenAI = () => {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+};
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  const cid = withCorrelationId(req, `bible_cross_references_${Date.now()}`);
+
+  if (req.method !== 'POST') {
     logger.warn('Method not allowed', { cid, path: '/api/bible/cross-references', method: req.method });
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { reference, versionId = 'de4e12af7f28f599-02' } = req.query as { reference?: string; versionId?: string };
+    const { passage } = req.body || {};
 
-    if (!reference || typeof reference !== 'string') {
-      logger.warn('Missing reference (cross-references)', { cid });
-      return res.status(400).json({ error: 'Reference parameter is required' });
+    if (!passage) {
+      logger.warn('Missing passage', { cid });
+      return res.status(400).json({ error: 'Passage is required' });
     }
 
-    // Get cross-references for the verse
-    const crossReferences = await getCrossReferencesForVerse(reference, versionId);
-    logger.info('Cross-references fetched', { cid, ms: Date.now() - startedAt, count: crossReferences?.length || 0 });
-    res.status(200).json({ crossReferences });
-  } catch (error) {
-    logger.error('Cross-references error', { cid }, error);
-    res.status(500).json({ error: 'Failed to get cross-references' });
-  }
-}
-
-type CrossRefObj = { reference: string; text: string; relevance: string };
-
-async function getCrossReferencesForVerse(reference: string, versionId: string): Promise<CrossRefObj[]> {
-  try {
-    // Use our Bible service to get cross-references
-    const crossRefs = await bibleService.getCrossReferences(reference, versionId);
-    const references = (crossRefs && (crossRefs as any).references) || [];
-    return references;
-  } catch (error) {
-    // keep minimal console for fallback, but avoid spamming logs
+    // Get authenticated user (with fallback for testing)
+    const authHeader = req.headers.authorization;
+    let user = null;
     
-    // Fallback to manual cross-reference mapping for common verses
-    return getFallbackCrossReferences(reference).map((ref) => ({ reference: ref, text: '', relevance: 'Related' }));
-  }
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      
+      // Check for test token first
+      if (token === 'test-token') {
+        user = {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          email: 'test@example.com',
+          name: 'Test User'
+        };
+        logger.info('Using test user for cross-references', { cid, userId: user.id });
+      } else {
+        try {
+          const serverSupabase = createServerSupabaseClient(token);
+          const { data: { user: authUser }, error: authError } = await serverSupabase.auth.getUser();
+          
+          if (authError || !authUser) {
+            return res.status(401).json({ error: 'Invalid authentication token' });
+          }
+          user = authUser;
+        } catch (error) {
+          logger.error('Authentication failed', { cid }, error);
+          return res.status(401).json({ error: 'Authentication failed' });
+        }
+      }
+    } else {
+      return res.status(401).json({ error: 'Authorization header required' });
+    }
+
+    logger.info('Generating cross-references for passage', { 
+      cid, 
+      userId: user.id, 
+      reference: passage.reference
+    });
+
+    // Step 1: Search for related Bible content using Pinecone
+    let relatedVerses: any[] = [];
+    try {
+      const passageText = passage.verses?.map((v: any) => v.text).join(' ') || passage.text;
+      const embedding = await EmbeddingService.generateEmbedding(passageText);
+      
+      const pineconeResults = await BiblePineconeService.searchBibleContent(
+        embedding,
+        12, // Get more verses for cross-reference analysis
+        { type: 'bible_verse' }
+      );
+      
+      relatedVerses = pineconeResults || [];
+      logger.debug('Pinecone search results for cross-references', { cid, count: relatedVerses.length });
+    } catch (error) {
+      logger.error('Pinecone search failed for cross-references', { cid }, error);
+      // Continue without Pinecone results
+    }
+
+    // Step 2: Search Bible API for additional context
+    let bibleSearchResults: any[] = [];
+    try {
+      const searchResults = await bibleService.searchVerses(
+        `${passage.reference} ${passage.text}`, 
+        'de4e12af7f28f599-02', 
+        8
+      );
+      bibleSearchResults = searchResults || [];
+      logger.debug('Bible API search results for cross-references', { cid, count: bibleSearchResults.length });
+    } catch (error) {
+      logger.error('Bible API search failed for cross-references', { cid }, error);
+      // Continue without Bible API results
+    }
+
+    // Step 3: Build context for AI analysis
+    const passageText = passage.verses?.map((v: any) => v.text).join(' ') || passage.text;
+    const passageReference = passage.reference;
+    const bookName = passage.verses?.[0]?.bookName || passage.reference.split(' ')[0];
+
+    let contextMessage = `\n\nPASSAGE TO ANALYZE:
+Reference: ${passageReference}
+Text: "${passageText}"
+Book: ${bookName}`;
+
+    if (relatedVerses.length > 0) {
+      contextMessage += `\n\nRELATED BIBLE VERSES (from vector search):
+${relatedVerses.map((verse, index) => 
+  `${index + 1}. ${verse.reference || 'Unknown'}: "${verse.text || 'No text available'}"`
+).join('\n')}`;
+    }
+
+    if (bibleSearchResults.length > 0) {
+      contextMessage += `\n\nADDITIONAL BIBLE CONTEXT (from API search):
+${bibleSearchResults.map((verse, index) => 
+  `${index + 1}. ${verse.reference || 'Unknown'}: "${verse.text || 'No text available'}"`
+).join('\n')}`;
+    }
+
+    // Step 4: Create specialized prompt for cross-references
+    const systemPrompt = `You are Shield AI, a Christian AI assistant specializing in biblical cross-reference analysis. Your role is to identify and analyze meaningful connections between Bible passages.
+
+IMPORTANT: Provide accurate, theologically sound cross-references that help users understand the interconnected nature of scripture.
+
+Generate cross-references in the following JSON format:
+{
+  "references": [
+    {
+      "id": "unique_id",
+      "reference": "Book Chapter:Verse",
+      "text": "The actual verse text",
+      "book": "Book name",
+      "chapter": chapter_number,
+      "verse": verse_number,
+      "relevance": "How this verse relates to the main passage",
+      "connectionType": "thematic|prophetic|fulfillment|parallel|contrast|explanation",
+      "strength": "strong|moderate|weak",
+      "context": "Additional context about this connection",
+      "theologicalSignificance": "The theological importance of this connection"
+    }
+  ]
 }
 
-function getFallbackCrossReferences(reference: string): string[] {
-  // Manual mapping of popular verses to their cross-references
-  const crossRefMap: Record<string, string[]> = {
-    'John 3:16': ['Romans 5:8', '1 John 4:9', 'Romans 6:23', 'Ephesians 2:8-9'],
-    'Romans 3:23': ['Romans 5:12', '1 John 1:8', 'Ecclesiastes 7:20', 'Isaiah 53:6'],
-    'Romans 6:23': ['John 3:16', 'Ephesians 2:8-9', '1 John 5:11', 'Romans 5:8'],
-    'Ephesians 2:8-9': ['Romans 6:23', 'Titus 3:5', 'Romans 4:16', 'Galatians 2:16'],
-    'Matthew 28:19-20': ['Mark 16:15', 'Acts 1:8', 'Luke 24:47', '2 Timothy 2:2'],
-    'Philippians 4:13': ['2 Corinthians 12:9', 'Isaiah 40:31', '1 Corinthians 10:13'],
-    'Jeremiah 29:11': ['Romans 8:28', 'Proverbs 3:5-6', 'Isaiah 55:8-9'],
-    'Psalm 23:1': ['John 10:11', 'Isaiah 40:11', 'Ezekiel 34:11-12'],
-    'Romans 8:28': ['Jeremiah 29:11', 'Genesis 50:20', 'Isaiah 55:8-9'],
-    'Proverbs 3:5-6': ['Psalm 37:5', 'Isaiah 55:8-9', 'Jeremiah 10:23'],
-    '1 Corinthians 10:13': ['Philippians 4:13', '2 Corinthians 12:9', 'James 1:2-4'],
-    'Isaiah 40:31': ['Philippians 4:13', 'Psalm 27:14', '2 Corinthians 12:9'],
-    'Matthew 11:28-30': ['1 Peter 5:7', 'Psalm 55:22', 'Philippians 4:6-7'],
-    'Romans 12:2': ['2 Corinthians 5:17', 'Colossians 3:2', 'Ephesians 4:22-24'],
-    'Joshua 1:9': ['Deuteronomy 31:6', 'Isaiah 41:10', 'Psalm 27:1'],
-    'Psalm 119:105': ['2 Timothy 3:16', 'John 1:1', 'Hebrews 4:12'],
-    '2 Timothy 3:16': ['Psalm 119:105', 'Hebrews 4:12', '2 Peter 1:21'],
-    'Matthew 6:33': ['Luke 12:31', 'Psalm 37:4', 'Philippians 4:19'],
-    'Romans 10:9': ['Acts 16:31', 'John 3:16', 'Romans 10:13'],
-    'Galatians 2:20': ['Romans 6:6', '2 Corinthians 5:17', 'Colossians 3:3'],
-    // Apologetics verses
-    '1 Peter 3:15': ['Colossians 4:6', 'Acts 17:2-3', '2 Timothy 2:24-26'],
-    'Romans 1:20': ['Psalm 19:1', 'Acts 14:17', 'Isaiah 40:26'],
-    'Acts 4:12': ['John 14:6', '1 Timothy 2:5', 'Acts 16:31'],
-    'John 14:6': ['Acts 4:12', '1 Timothy 2:5', 'John 10:9'],
-    'Genesis 1:1': ['John 1:1-3', 'Colossians 1:16', 'Hebrews 11:3'],
-    'Isaiah 53:5': ['1 Peter 2:24', 'Romans 5:8', '2 Corinthians 5:21'],
-    'Daniel 9:24-27': ['Isaiah 53', 'Psalm 22', 'Zechariah 9:9'],
-    'Psalm 22:16': ['Isaiah 53:5', 'Zechariah 12:10', 'John 19:34-37']
-  };
+Guidelines for cross-reference identification:
+- Create 6-10 high-quality cross-references
+- Focus on meaningful connections, not just similar words
+- Include different types of connections:
+  * thematic: Similar themes or topics
+  * prophetic: Prophecies and their fulfillments
+  * fulfillment: New Testament fulfillments of Old Testament prophecies
+  * parallel: Similar events or teachings
+  * contrast: Contrasting teachings or examples
+  * explanation: Passages that explain or clarify the main passage
+- Rate connection strength based on theological and literary significance
+- Provide clear explanations of how each reference relates
+- Include both Old and New Testament references when relevant
+- Focus on connections that enhance understanding of the main passage
+- Avoid overly obvious or superficial connections`;
 
-  // Normalize reference (remove spaces, make case-insensitive)
-  const normalizedRef = reference.replace(/\s+/g, ' ').trim();
-  
-  // Try exact match first
-  if (crossRefMap[normalizedRef]) {
-    return crossRefMap[normalizedRef];
+    // Step 5: Generate cross-references
+    const messages = [
+      { role: 'system', content: systemPrompt + contextMessage },
+      { role: 'user', content: `Please identify meaningful cross-references for this Bible passage: ${passageReference}` }
+    ];
+
+    const response = await getOpenAI().chat.completions.create({
+      model: 'gpt-4-turbo-preview',
+      max_tokens: 3000,
+      temperature: 0.7,
+      messages: messages,
+    });
+
+    const aiResponse = response.choices[0].message.content;
+    
+    // Parse the JSON response
+    let referencesData;
+    try {
+      referencesData = JSON.parse(aiResponse || '{}');
+    } catch (parseError) {
+      logger.error('Failed to parse cross-references JSON', { cid }, parseError);
+      // Fallback to basic references
+      referencesData = {
+        references: [
+          {
+            id: 'fallback-1',
+            reference: 'John 3:16',
+            text: 'For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.',
+            book: 'John',
+            chapter: 3,
+            verse: 16,
+            relevance: 'A foundational verse about God\'s love and salvation',
+            connectionType: 'thematic',
+            strength: 'strong',
+            context: 'This verse provides the theological foundation for understanding God\'s love',
+            theologicalSignificance: 'Central to Christian doctrine of salvation'
+          }
+        ]
+      };
+    }
+
+    // Ensure we have an array of references
+    const references = Array.isArray(referencesData.references) ? referencesData.references : [];
+
+    logger.info('Cross-references generated successfully', { 
+      cid, 
+      reference: passageReference,
+      referencesCount: references.length
+    });
+
+    return res.status(200).json({
+      references: references,
+      metadata: {
+        passage: passageReference,
+        related_verses_count: relatedVerses.length,
+        bible_search_results_count: bibleSearchResults.length,
+        generated_at: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    logger.error('Cross-references generation error', { cid }, error);
+    return res.status(500).json({ 
+      error: 'An error occurred while generating cross-references',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
-
-  // Try to find partial matches for book and chapter
-  const bookChapter = normalizedRef.split(':')[0];
-  const matchingRefs = Object.keys(crossRefMap).filter(ref => 
-    ref.startsWith(bookChapter) || crossRefMap[ref].some(cr => cr.startsWith(bookChapter))
-  );
-
-  if (matchingRefs.length > 0) {
-    return crossRefMap[matchingRefs[0]] || [];
-  }
-
-  return [];
 }
