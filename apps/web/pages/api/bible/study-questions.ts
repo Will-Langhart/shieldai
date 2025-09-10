@@ -101,12 +101,12 @@ export default async function handler(
     // Step 2: Search Bible API for additional context
     let bibleSearchResults: any[] = [];
     try {
-      const searchResults = await bibleService.searchVerses(
+      const searchResults = await bibleService.searchBible(
         `${passage.reference} ${passage.text}`, 
         'de4e12af7f28f599-02', 
         4
       );
-      bibleSearchResults = searchResults || [];
+      bibleSearchResults = searchResults?.passages || [];
       logger.debug('Bible API search results for study questions', { cid, count: bibleSearchResults.length });
     } catch (error) {
       logger.error('Bible API search failed for study questions', { cid }, error);
@@ -167,8 +167,8 @@ Guidelines for question creation:
 
     // Step 5: Generate study questions
     const messages = [
-      { role: 'system', content: systemPrompt + contextMessage },
-      { role: 'user', content: `Please generate comprehensive study questions for this Bible passage: ${passageReference}` }
+      { role: 'system' as const, content: systemPrompt + contextMessage },
+      { role: 'user' as const, content: `Please generate comprehensive study questions for this Bible passage: ${passageReference}` }
     ];
 
     const response = await getOpenAI().chat.completions.create({

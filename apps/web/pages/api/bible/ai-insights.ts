@@ -104,12 +104,12 @@ export default async function handler(
     // Step 2: Search Bible API for additional context
     let bibleSearchResults: any[] = [];
     try {
-      const searchResults = await bibleService.searchVerses(
+      const searchResults = await bibleService.searchBible(
         `${passage.reference} ${passage.text}`, 
         version || 'de4e12af7f28f599-02', 
         5
       );
-      bibleSearchResults = searchResults || [];
+      bibleSearchResults = searchResults?.passages || [];
       logger.debug('Bible API search results for insights', { cid, count: bibleSearchResults.length });
     } catch (error) {
       logger.error('Bible API search failed for insights', { cid }, error);
@@ -181,8 +181,8 @@ Guidelines:
 
     // Step 5: Generate AI insights
     const messages = [
-      { role: 'system', content: systemPrompt + contextMessage },
-      { role: 'user', content: `Please analyze this Bible passage and provide comprehensive insights: ${passageReference}` }
+      { role: 'system' as const, content: systemPrompt + contextMessage },
+      { role: 'user' as const, content: `Please analyze this Bible passage and provide comprehensive insights: ${passageReference}` }
     ];
 
     const response = await getOpenAI().chat.completions.create({

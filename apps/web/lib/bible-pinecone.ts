@@ -63,19 +63,19 @@ export class BiblePineconeService {
         console.warn(`Pinecone API error: ${response.status}. RAG features will be disabled.`);
         return null;
       }
+
+      const data = await response.json();
+      const shieldaiIndex = data.indexes.find((idx: any) => idx.name === 'shieldai');
+      
+      if (!shieldaiIndex) {
+        throw new Error('shieldai index not found');
+      }
+
+      return { apiKey, indexHost: shieldaiIndex.host };
     } catch (error) {
       console.warn('Pinecone connection failed. RAG features will be disabled.', error);
       return null;
     }
-
-    const data = await response.json();
-    const shieldaiIndex = data.indexes.find((idx: any) => idx.name === 'shieldai');
-    
-    if (!shieldaiIndex) {
-      throw new Error('shieldai index not found');
-    }
-
-    return { apiKey, indexHost: shieldaiIndex.host };
   }
 
   // Generate namespace for Bible chapter (e.g., "genesis_1", "john_3")
@@ -102,7 +102,13 @@ export class BiblePineconeService {
     embedding: number[]
   ): Promise<void> {
     try {
-      const { apiKey, indexHost } = await this.initializePinecone();
+      const pineconeConfig = await this.initializePinecone();
+      if (!pineconeConfig) {
+        console.warn('Pinecone not initialized. Skipping verse storage.');
+        return;
+      }
+      
+      const { apiKey, indexHost } = pineconeConfig;
       
       // Match target index dimension
       const values = this.targetDim === 1536 ? embedding : EmbeddingService.convertTo1024Dimensions(embedding);
@@ -150,7 +156,13 @@ export class BiblePineconeService {
     embeddings: number[][]
   ): Promise<void> {
     try {
-      const { apiKey, indexHost } = await this.initializePinecone();
+      const pineconeConfig = await this.initializePinecone();
+      if (!pineconeConfig) {
+        console.warn('Pinecone not initialized. Skipping chapter storage.');
+        return;
+      }
+      
+      const { apiKey, indexHost } = pineconeConfig;
       const chapterNamespace = this.generateChapterNamespace(book, chapter);
       
       const vectors: BibleVector[] = verses.map((verse, index) => {
@@ -259,7 +271,13 @@ export class BiblePineconeService {
     topK: number = 5
   ): Promise<BibleSearchResult[]> {
     try {
-      const { apiKey, indexHost } = await this.initializePinecone();
+      const pineconeConfig = await this.initializePinecone();
+      if (!pineconeConfig) {
+        console.warn('Pinecone not initialized. Returning empty search results.');
+        return [];
+      }
+      
+      const { apiKey, indexHost } = pineconeConfig;
       
       const queryVec = this.targetDim === 1536 ? queryEmbedding : EmbeddingService.convertTo1024Dimensions(queryEmbedding);
       const chapterNamespace = this.generateChapterNamespace(book, chapter);
@@ -306,7 +324,13 @@ export class BiblePineconeService {
   // Get all Bible namespaces (chapters)
   static async getBibleNamespaces(): Promise<string[]> {
     try {
-      const { apiKey, indexHost } = await this.initializePinecone();
+      const pineconeConfig = await this.initializePinecone();
+      if (!pineconeConfig) {
+        console.warn('Pinecone not initialized. Returning empty namespaces.');
+        return [];
+      }
+      
+      const { apiKey, indexHost } = pineconeConfig;
       
       const response = await fetch(`https://${indexHost}/describe_index_stats`, {
         method: 'GET',

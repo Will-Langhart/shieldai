@@ -11,6 +11,8 @@ import {
   Settings,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   Zap,
   Menu,
@@ -23,7 +25,7 @@ import { EnhancedBibleNavigation } from './EnhancedBibleNavigation'
 import { BibleBreadcrumbs } from './BibleBreadcrumbs'
 import { QuickNavigation } from './QuickNavigation'
 import { MobileBibleNavigation } from './MobileBibleNavigation'
-import { useBibleNavigation } from '../../hooks/useBibleNavigation'
+import { useBibleNavigation } from '../../../hooks/useBibleNavigation'
 
 interface BiblePassage {
   id: string
@@ -202,8 +204,8 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
     }
   }
 
-  const handleAddFavorite = (note?: string) => {
-    addToFavorites(note)
+  const handleAddFavorite = (passage?: any) => {
+    addToFavorites(passage?.note)
   }
 
   const handleRemoveFavorite = (id: string) => {

@@ -5,8 +5,20 @@ interface AIDiagnosticsProps {
   onClose: () => void
 }
 
+interface TestResult {
+  name: string
+  status: 'pass' | 'fail' | 'error'
+  message: string
+  details?: any
+}
+
+interface DiagnosticsResults {
+  timestamp: string
+  tests: TestResult[]
+}
+
 export function AIDiagnostics({ onClose }: AIDiagnosticsProps) {
-  const [diagnostics, setDiagnostics] = useState<any>(null)
+  const [diagnostics, setDiagnostics] = useState<DiagnosticsResults | null>(null)
   const [isRunning, setIsRunning] = useState(false)
 
   const runDiagnostics = async () => {
@@ -14,7 +26,7 @@ export function AIDiagnostics({ onClose }: AIDiagnosticsProps) {
     setDiagnostics(null)
 
     try {
-      const results = {
+      const results: DiagnosticsResults = {
         timestamp: new Date().toISOString(),
         tests: []
       }
