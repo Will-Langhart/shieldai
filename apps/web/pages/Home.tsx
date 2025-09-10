@@ -63,6 +63,8 @@ export function Home() {
   const [scrollY, setScrollY] = useState(0)
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     const handleScroll = () => setScrollY(window.scrollY)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
@@ -74,7 +76,8 @@ export function Home() {
   
   // Calculate section-specific color adjustments
   const getSectionColor = (sectionIndex: number) => {
-    const sectionProgress = Math.max(0, Math.min(1, (scrollY - sectionIndex * window.innerHeight) / window.innerHeight))
+    const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800
+    const sectionProgress = Math.max(0, Math.min(1, (scrollY - sectionIndex * windowHeight) / windowHeight))
     return {
       brightness: 1 + sectionProgress * 0.1,
       saturation: 1 + sectionProgress * 0.2,
