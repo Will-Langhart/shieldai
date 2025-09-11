@@ -52,6 +52,9 @@ export default async function handler(
       return res.status(400).json({ error: 'Passage is required' });
     }
 
+    // Debug logging
+    logger.info('Passage data received', { cid, passageData, body: req.body });
+
     // Get authenticated user (with fallback for testing)
     const authHeader = req.headers.authorization;
     let user = null;
@@ -88,15 +91,15 @@ export default async function handler(
     logger.info('Generating AI insights for passage', { 
       cid, 
       userId: user.id, 
-      reference: passage.reference,
-      version: version 
+      reference: passageData.reference,
+      version: passageData.version 
     });
 
     // Step 1: Search for related Bible content using Pinecone
     let relatedVerses: any[] = [];
     try {
       // Generate embedding for the passage text
-      const passageText = passage.verses?.map((v: any) => v.text).join(' ') || passage.text;
+      const passageText = passageData.verses?.map((v: any) => v.text).join(' ') || passageData.text;
       const embedding = await EmbeddingService.generateEmbedding(passageText);
       
       // Search for related Bible content
@@ -117,8 +120,8 @@ export default async function handler(
     let bibleSearchResults: any[] = [];
     try {
       const searchResults = await bibleService.searchBible(
-        `${passage.reference} ${passage.text}`, 
-        version || 'de4e12af7f28f599-02', 
+        `${passageData.reference} ${passageData.text}`, 
+        passageData.version || 'de4e12af7f28f599-02', 
         5
       );
       bibleSearchResults = searchResults?.passages || [];
