@@ -161,6 +161,8 @@ ${bibleSearchResults.map((verse, index) =>
 
 IMPORTANT: Always ground your responses in biblical truth and provide accurate, helpful analysis. Use the provided context to give comprehensive insights.
 
+CRITICAL: You MUST respond with ONLY valid JSON in the exact format specified below. Do not include any markdown formatting, code blocks, or additional text. Your response must be parseable JSON.
+
 Analyze the provided Bible passage and generate insights in the following JSON format:
 {
   "explanation": "A clear, comprehensive explanation of what this passage means, including key concepts and themes",
@@ -212,12 +214,43 @@ Guidelines:
     // Parse the JSON response
     let insights;
     try {
-      insights = JSON.parse(aiResponse || '{}');
-    } catch (parseError) {
-      logger.error('Failed to parse AI insights JSON', { cid }, parseError);
-      // Fallback to a basic structure
+      // Clean the response - remove markdown code blocks if present
+      let cleanedResponse = aiResponse || '{}';
+      
+      // Remove markdown code blocks and extra whitespace
+      cleanedResponse = cleanedResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      
+      // Try to find JSON object in the response
+      const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanedResponse = jsonMatch[0];
+      }
+      
+      insights = JSON.parse(cleanedResponse);
+      
+      // Validate that we have the required fields and they are not empty
+      if (!insights.explanation || typeof insights.explanation !== 'string') {
+        throw new Error('Missing or invalid explanation field');
+      }
+      
+      // Ensure all required fields exist with proper defaults
       insights = {
-        explanation: aiResponse || 'Unable to generate insights at this time.',
+        explanation: insights.explanation || 'Unable to generate insights at this time.',
+        keyThemes: Array.isArray(insights.keyThemes) ? insights.keyThemes : [],
+        crossReferences: Array.isArray(insights.crossReferences) ? insights.crossReferences : [],
+        studyQuestions: Array.isArray(insights.studyQuestions) ? insights.studyQuestions : [],
+        historicalContext: insights.historicalContext || 'Historical context not available.',
+        theologicalSignificance: insights.theologicalSignificance || 'Theological significance not available.',
+        practicalApplication: insights.practicalApplication || 'Practical application not available.',
+        prayerPoints: Array.isArray(insights.prayerPoints) ? insights.prayerPoints : []
+      };
+      
+    } catch (parseError) {
+      logger.error('Failed to parse AI insights JSON', { cid, error: parseError.message, rawResponse: aiResponse?.substring(0, 200) });
+      
+      // Fallback to a basic structure - don't include raw response in explanation
+      insights = {
+        explanation: 'Unable to generate insights at this time. Please try again.',
         keyThemes: ['Faith', 'Love', 'Hope'],
         crossReferences: [],
         studyQuestions: [],
