@@ -33,10 +33,22 @@ export default async function handler(
   }
 
   try {
-    const { passage, version } = req.body || {};
+    const { passage, version, passage_reference, passage_text, bible_version } = req.body || {};
 
-    if (!passage) {
-      logger.warn('Missing passage', { cid });
+    // Handle both old format (passage object) and new format (separate fields)
+    let passageData;
+    if (passage) {
+      // Old format
+      passageData = passage;
+    } else if (passage_reference && passage_text) {
+      // New format
+      passageData = {
+        reference: passage_reference,
+        text: passage_text,
+        version: bible_version || version
+      };
+    } else {
+      logger.warn('Missing passage data', { cid, body: req.body });
       return res.status(400).json({ error: 'Passage is required' });
     }
 
@@ -117,15 +129,15 @@ export default async function handler(
     }
 
     // Step 3: Build comprehensive context for AI analysis
-    const passageText = passage.verses?.map((v: any) => v.text).join(' ') || passage.text;
-    const passageReference = passage.reference;
-    const bookName = passage.verses?.[0]?.bookName || passage.reference.split(' ')[0];
-    const chapterNumber = passage.verses?.[0]?.chapterNumber || 1;
+    const passageText = passageData.verses?.map((v: any) => v.text).join(' ') || passageData.text;
+    const passageReference = passageData.reference;
+    const bookName = passageData.verses?.[0]?.bookName || passageData.reference.split(' ')[0];
+    const chapterNumber = passageData.verses?.[0]?.chapterNumber || 1;
 
     let contextMessage = `\n\nPASSAGE TO ANALYZE:
 Reference: ${passageReference}
 Text: "${passageText}"
-Version: ${passage.version?.name || 'Unknown'}`;
+Version: ${passageData.version?.name || 'Unknown'}`;
 
     if (relatedVerses.length > 0) {
       contextMessage += `\n\nRELATED BIBLE VERSES (from vector search):
