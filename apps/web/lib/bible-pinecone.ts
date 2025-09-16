@@ -63,19 +63,19 @@ export class BiblePineconeService {
         console.warn(`Pinecone API error: ${response.status}. RAG features will be disabled.`);
         return null;
       }
+
+      const data = await response.json();
+      const shieldaiIndex = data.indexes.find((idx: any) => idx.name === 'shieldai');
+    
+      if (!shieldaiIndex) {
+        throw new Error('shieldai index not found');
+      }
+
+      return { apiKey, indexHost: shieldaiIndex.host };
     } catch (error) {
       console.warn('Pinecone connection failed. RAG features will be disabled.', error);
       return null;
     }
-
-    const data = await response.json();
-    const shieldaiIndex = data.indexes.find((idx: any) => idx.name === 'shieldai');
-    
-    if (!shieldaiIndex) {
-      throw new Error('shieldai index not found');
-    }
-
-    return { apiKey, indexHost: shieldaiIndex.host };
   }
 
   // Generate namespace for Bible chapter (e.g., "genesis_1", "john_3")

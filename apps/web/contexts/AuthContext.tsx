@@ -49,7 +49,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const mockUser = {
         id: '550e8400-e29b-41d4-a716-446655440001',
         email: 'test@example.com',
-        user_metadata: { name: 'Test User' }
+        user_metadata: { name: 'Test User' },
+        app_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString()
       } as User;
       console.log('🔧 Using mock user for development:', mockUser);
       setUser(mockUser);

@@ -11,6 +11,8 @@ import {
   Settings,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   Zap,
   Menu,
@@ -23,7 +25,17 @@ import { EnhancedBibleNavigation } from './EnhancedBibleNavigation'
 import { BibleBreadcrumbs } from './BibleBreadcrumbs'
 import { QuickNavigation } from './QuickNavigation'
 import { MobileBibleNavigation } from './MobileBibleNavigation'
-import { useBibleNavigation } from '../../hooks/useBibleNavigation'
+import { useBibleNavigation } from '@/hooks/useBibleNavigation'
+
+interface FavoritePassage {
+  id: string
+  reference: string
+  book: string
+  chapter: number
+  verse?: number
+  note?: string
+  addedAt: Date
+}
 
 interface BiblePassage {
   id: string
@@ -202,8 +214,23 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
     }
   }
 
-  const handleAddFavorite = (note?: string) => {
-    addToFavorites(note)
+  const handleAddFavorite = (passage: FavoritePassage) => {
+    addToFavorites(passage.note)
+  }
+
+  const handleAddFavoriteWithNote = (note?: string) => {
+    if (currentPassage) {
+      const favorite: FavoritePassage = {
+        id: `${currentPassage.reference}-${Date.now()}`,
+        reference: currentPassage.reference,
+        book: currentPassage.reference.split(' ')[0],
+        chapter: parseInt(currentPassage.reference.split(' ')[1]?.split(':')[0] || '1'),
+        verse: currentPassage.reference.includes(':') ? parseInt(currentPassage.reference.split(':')[1]) : undefined,
+        note: note || '',
+        addedAt: new Date()
+      }
+      handleAddFavorite(favorite)
+    }
   }
 
   const handleRemoveFavorite = (id: string) => {
@@ -372,7 +399,20 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
                       {currentPassage?.version?.name || 'King James Version'}
                     </div>
                     <button
-                      onClick={() => handleAddFavorite()}
+                      onClick={() => {
+                        if (currentPassage) {
+                          const favorite: FavoritePassage = {
+                            id: `${currentPassage.reference}-${Date.now()}`,
+                            reference: currentPassage.reference,
+                            book: currentPassage.reference.split(' ')[0],
+                            chapter: parseInt(currentPassage.reference.split(' ')[1]?.split(':')[0] || '1'),
+                            verse: currentPassage.reference.includes(':') ? parseInt(currentPassage.reference.split(':')[1]) : undefined,
+                            note: '',
+                            addedAt: new Date()
+                          }
+                          handleAddFavorite(favorite)
+                        }
+                      }}
                       disabled={isCurrentPassageFavorited()}
                       className="p-2 text-[#9CA3AF] hover:text-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Add to favorites"
@@ -501,7 +541,7 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
         onAIFeature={handleAIFeature}
         history={history}
         favorites={favorites}
-        onAddFavorite={handleAddFavorite}
+        onAddFavorite={handleAddFavoriteWithNote}
         onRemoveFavorite={handleRemoveFavorite}
         onClearHistory={clearHistory}
         onClearFavorites={clearFavorites}
