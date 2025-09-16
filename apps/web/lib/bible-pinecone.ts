@@ -66,7 +66,7 @@ export class BiblePineconeService {
 
       const data = await response.json();
       const shieldaiIndex = data.indexes.find((idx: any) => idx.name === 'shieldai');
-      
+    
       if (!shieldaiIndex) {
         throw new Error('shieldai index not found');
       }
@@ -158,7 +158,7 @@ export class BiblePineconeService {
     try {
       const pineconeConfig = await this.initializePinecone();
       if (!pineconeConfig) {
-        console.warn('Pinecone not initialized. Skipping chapter storage.');
+        console.warn('Pinecone not initialized. Skipping batch verse storage.');
         return;
       }
       
@@ -273,7 +273,7 @@ export class BiblePineconeService {
     try {
       const pineconeConfig = await this.initializePinecone();
       if (!pineconeConfig) {
-        console.warn('Pinecone not initialized. Returning empty search results.');
+        console.warn('Pinecone not initialized. Skipping chapter search.');
         return [];
       }
       

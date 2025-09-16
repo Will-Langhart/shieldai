@@ -101,6 +101,11 @@ export function Chat() {
     return () => clearInterval(interval)
   }, [])
 
+  // Debug: Log current placeholder text
+  useEffect(() => {
+    console.log('🔍 DEBUG: Current placeholder text:', JSON.stringify(apologeticsQuestions[currentPlaceholderIndex]))
+  }, [currentPlaceholderIndex])
+
   // Load conversations on mount
   useEffect(() => {
     loadConversations()
@@ -153,12 +158,19 @@ export function Chat() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return
 
+    console.log('🔍 DEBUG: handleSendMessage called with inputMessage:', JSON.stringify(inputMessage))
+    console.log('🔍 DEBUG: inputMessage length:', inputMessage.length)
+    console.log('🔍 DEBUG: inputMessage trimmed:', JSON.stringify(inputMessage.trim()))
+
+    const userMessageId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: userMessageId,
       content: inputMessage,
       role: 'user',
       timestamp: new Date().toISOString()
     }
+
+    console.log('🔍 DEBUG: Created userMessage:', JSON.stringify(userMessage))
 
     setMessages(prev => [...prev, userMessage])
     setInputMessage('')
@@ -168,16 +180,18 @@ export function Chat() {
       console.log('💬 Sending streaming message:', inputMessage)
       
       // Create a placeholder for the assistant's response
-      const assistantMessageId = Date.now().toString()
+      const assistantMessageId = `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       let assistantMessageAdded = false
       
       // Use streaming message
+      console.log('🔍 DEBUG: About to call sendStreamingMessage with inputMessage:', JSON.stringify(inputMessage))
       await chatService.sendStreamingMessage(
         inputMessage,
         currentConversationId || undefined,
         selectedMode,
         // onChunk: Update the assistant message as chunks arrive
         (chunk: string) => {
+          console.log('🔍 DEBUG: Received chunk for assistant:', JSON.stringify(chunk))
           if (!assistantMessageAdded) {
             // Add the assistant message only when we receive the first chunk
             const assistantMessage: Message = {
@@ -186,10 +200,15 @@ export function Chat() {
               role: 'assistant',
               timestamp: new Date().toISOString()
             }
-            setMessages(prev => [...prev, assistantMessage])
+            console.log('🔍 DEBUG: Creating new assistant message:', JSON.stringify(assistantMessage))
+            setMessages(prev => {
+              console.log('🔍 DEBUG: Current messages before adding assistant:', prev.map(m => ({ id: m.id, role: m.role, content: m.content.substring(0, 50) + '...' })))
+              return [...prev, assistantMessage]
+            })
             assistantMessageAdded = true
           } else {
             // Update the existing message
+            console.log('🔍 DEBUG: Updating existing assistant message with chunk')
             setMessages(prev => prev.map(msg => 
               msg.id === assistantMessageId 
                 ? { ...msg, content: msg.content + chunk }
@@ -349,7 +368,10 @@ export function Chat() {
                       <input
                         type="text"
                         value={inputMessage}
-                        onChange={(e) => setInputMessage(e.target.value)}
+                        onChange={(e) => {
+                          console.log('🔍 DEBUG: Input onChange triggered with value:', JSON.stringify(e.target.value))
+                          setInputMessage(e.target.value)
+                        }}
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                         className="w-full bg-transparent text-[#E0E0E0] placeholder-transparent focus:outline-none text-base"
                         disabled={isLoading}
@@ -432,7 +454,10 @@ export function Chat() {
                   <input
                     type="text"
                     value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
+                    onChange={(e) => {
+                      console.log('🔍 DEBUG: Second input onChange triggered with value:', JSON.stringify(e.target.value))
+                      setInputMessage(e.target.value)
+                    }}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     className="w-full bg-transparent text-[#E0E0E0] placeholder-transparent focus:outline-none text-base"
                     disabled={isLoading}

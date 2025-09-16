@@ -5,7 +5,6 @@ import { logger, withCorrelationId } from '../../../lib/logger';
 import { bibleService } from '../../../lib/bible-service';
 import { BiblePineconeService } from '../../../lib/bible-pinecone';
 import { EmbeddingService } from '../../../lib/embeddings';
-import { InsightsPineconeService } from '../../../lib/insights-pinecone';
 
 // Initialize OpenAI client lazily
 let openai: OpenAI | null = null;
@@ -34,27 +33,12 @@ export default async function handler(
   }
 
   try {
-    const { passage, version, passage_reference, passage_text, bible_version } = req.body || {};
+    const { passage, version } = req.body || {};
 
-    // Handle both old format (passage object) and new format (separate fields)
-    let passageData;
-    if (passage) {
-      // Old format
-      passageData = passage;
-    } else if (passage_reference && passage_text) {
-      // New format
-      passageData = {
-        reference: passage_reference,
-        text: passage_text,
-        version: bible_version || version
-      };
-    } else {
-      logger.warn('Missing passage data', { cid, body: req.body });
+    if (!passage) {
+      logger.warn('Missing passage', { cid });
       return res.status(400).json({ error: 'Passage is required' });
     }
-
-    // Debug logging
-    logger.info('Passage data received', { cid, passageData, body: req.body });
 
     // Get authenticated user (with fallback for testing)
     const authHeader = req.headers.authorization;
@@ -66,7 +50,7 @@ export default async function handler(
       // Check for test token first
       if (token === 'test-token') {
         user = {
-          id: '550e8400-e29b-41d4-a716-446655440001',
+          id: '550e8400-e29b-41d4-a716-446655440000',
           email: 'test@example.com',
           name: 'Test User'
         };
@@ -92,15 +76,15 @@ export default async function handler(
     logger.info('Generating AI insights for passage', { 
       cid, 
       userId: user.id, 
-      reference: passageData.reference,
-      version: passageData.version 
+      reference: passage.reference,
+      version: version 
     });
 
     // Step 1: Search for related Bible content using Pinecone
     let relatedVerses: any[] = [];
     try {
       // Generate embedding for the passage text
-      const passageText = passageData.verses?.map((v: any) => v.text).join(' ') || passageData.text;
+      const passageText = passage.verses?.map((v: any) => v.text).join(' ') || passage.text;
       const embedding = await EmbeddingService.generateEmbedding(passageText);
       
       // Search for related Bible content
@@ -117,36 +101,12 @@ export default async function handler(
       // Continue without Pinecone results
     }
 
-    // Step 1.5: Search for similar AI insights from other users
-    let similarInsights: any[] = [];
-    try {
-      const passageText = passageData.verses?.map((v: any) => v.text).join(' ') || passageData.text;
-      const similarResults = await InsightsPineconeService.searchSimilarInsights(
-        passageText,
-        user.id,
-        {
-          includeShared: true,
-          topK: 5,
-          minScore: 0.6,
-          filters: {
-            bible_version: passageData.version?.id || passageData.version
-          }
-        }
-      );
-      
-      similarInsights = similarResults || [];
-      logger.debug('Similar insights found', { cid, count: similarInsights.length });
-    } catch (error) {
-      logger.error('Similar insights search failed', { cid }, error);
-      // Continue without similar insights
-    }
-
     // Step 2: Search Bible API for additional context
     let bibleSearchResults: any[] = [];
     try {
       const searchResults = await bibleService.searchBible(
-        `${passageData.reference} ${passageData.text}`, 
-        passageData.version || 'de4e12af7f28f599-02', 
+        version || 'de4e12af7f28f599-02',
+        `${passage.reference} ${passage.text}`, 
         5
       );
       bibleSearchResults = searchResults?.passages || [];
@@ -157,15 +117,15 @@ export default async function handler(
     }
 
     // Step 3: Build comprehensive context for AI analysis
-    const passageText = passageData.verses?.map((v: any) => v.text).join(' ') || passageData.text;
-    const passageReference = passageData.reference;
-    const bookName = passageData.verses?.[0]?.bookName || passageData.reference.split(' ')[0];
-    const chapterNumber = passageData.verses?.[0]?.chapterNumber || 1;
+    const passageText = passage.verses?.map((v: any) => v.text).join(' ') || passage.text;
+    const passageReference = passage.reference;
+    const bookName = passage.verses?.[0]?.bookName || passage.reference.split(' ')[0];
+    const chapterNumber = passage.verses?.[0]?.chapterNumber || 1;
 
     let contextMessage = `\n\nPASSAGE TO ANALYZE:
 Reference: ${passageReference}
 Text: "${passageText}"
-Version: ${passageData.version?.name || 'Unknown'}`;
+Version: ${passage.version?.name || 'Unknown'}`;
 
     if (relatedVerses.length > 0) {
       contextMessage += `\n\nRELATED BIBLE VERSES (from vector search):
@@ -181,30 +141,10 @@ ${bibleSearchResults.map((verse, index) =>
 ).join('\n')}`;
     }
 
-    if (similarInsights.length > 0) {
-      contextMessage += `\n\nSIMILAR AI INSIGHTS (from other users):
-${similarInsights.map((insight, index) => 
-  `${index + 1}. ${insight.passage_reference}: "${insight.explanation.substring(0, 200)}..." (Themes: ${insight.key_themes.join(', ')})`
-).join('\n')}`;
-    }
-
     // Step 4: Create specialized prompts for different types of analysis
     const systemPrompt = `You are Shield AI, a Christian AI assistant specializing in biblical analysis and study. Your role is to provide comprehensive, biblically-grounded insights about scripture passages.
 
 IMPORTANT: Always ground your responses in biblical truth and provide accurate, helpful analysis. Use the provided context to give comprehensive insights.
-
-ENHANCED CONTEXT: You have access to:
-- Related Bible verses from vector search
-- Additional Bible context from API search  
-- Similar AI insights from other users studying the same or related passages
-
-Use the similar insights to:
-- Build upon existing analysis and avoid repetition
-- Identify unique angles or perspectives not covered by others
-- Reference common themes while providing fresh insights
-- Learn from the theological depth and practical applications others have found
-
-CRITICAL: You MUST respond with ONLY valid JSON in the exact format specified below. Do not include any markdown formatting, code blocks, or additional text. Your response must be parseable JSON.
 
 Analyze the provided Bible passage and generate insights in the following JSON format:
 {
@@ -220,46 +160,13 @@ Analyze the provided Bible passage and generate insights in the following JSON f
   "studyQuestions": [
     {
       "question": "A thoughtful question for reflection or study",
-      "category": "reflection|application|theological"
+      "type": "reflection|application|theological"
     }
   ],
   "historicalContext": "Historical and cultural context that helps understand this passage",
-  "theologicalMeaning": "The theological importance and meaning of this passage",
+  "theologicalSignificance": "The theological importance and meaning of this passage",
   "practicalApplication": "How this passage applies to modern Christian life",
-  "prayerPoints": ["prayer point 1", "prayer point 2", "prayer point 3"],
-  "apologeticsPoints": [
-    {
-      "point": "A specific apologetic argument or defense point from this passage",
-      "category": "defense|evidence|reasoning|testimony",
-      "strength": "strong|moderate|foundational"
-    }
-  ],
-  "defenseQuestions": [
-    {
-      "question": "A question that helps defend or explain this passage to skeptics",
-      "category": "historical|logical|moral|existential",
-      "difficulty": "beginner|intermediate|advanced"
-    }
-  ],
-  "evidenceTypes": [
-    {
-      "type": "historical|archaeological|prophetic|scientific|logical",
-      "description": "Description of the evidence this passage provides",
-      "relevance": "How this evidence supports Christian faith"
-    }
-  ],
-  "commonObjections": [
-    {
-      "objection": "A common objection or question about this passage",
-      "response": "A thoughtful, biblical response to the objection",
-      "scripture": "Relevant scripture that supports the response"
-    }
-  ],
-  "faithBuilding": {
-    "encouragement": "Encouraging message for believers from this passage",
-    "promises": ["promise 1", "promise 2", "promise 3"],
-    "applications": ["application 1", "application 2", "application 3"]
-  }
+  "prayerPoints": ["prayer point 1", "prayer point 2", "prayer point 3"]
 }
 
 Guidelines:
@@ -270,22 +177,12 @@ Guidelines:
 - Make historical context informative but concise
 - Focus on practical application for believers
 - Include 2-4 prayer points based on the passage
-- Always reference scripture and maintain biblical accuracy
-
-SHIELD AI APOLOGETICS FEATURES:
-- Include 3-5 apologetics points that defend or support Christian faith
-- Provide 2-4 defense questions that help believers respond to skeptics
-- Identify 2-3 types of evidence this passage provides (historical, archaeological, prophetic, scientific, logical)
-- Address 2-3 common objections with thoughtful, biblical responses
-- Include faith-building encouragement, promises, and practical applications
-- Focus on strengthening believers' confidence in Scripture and Christian doctrine
-- Provide evidence-based arguments that can be used in apologetic conversations
-- Maintain theological accuracy while being accessible to different levels of understanding`;
+- Always reference scripture and maintain biblical accuracy`;
 
     // Step 5: Generate AI insights
-    const messages = [
-      { role: 'system' as const, content: systemPrompt + contextMessage },
-      { role: 'user' as const, content: `Please analyze this Bible passage and provide comprehensive insights: ${passageReference}` }
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: systemPrompt + contextMessage },
+      { role: 'user', content: `Please analyze this Bible passage and provide comprehensive insights: ${passageReference}` }
     ];
 
     const response = await getOpenAI().chat.completions.create({
@@ -300,43 +197,12 @@ SHIELD AI APOLOGETICS FEATURES:
     // Parse the JSON response
     let insights;
     try {
-      // Clean the response - remove markdown code blocks if present
-      let cleanedResponse = aiResponse || '{}';
-      
-      // Remove markdown code blocks and extra whitespace
-      cleanedResponse = cleanedResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      
-      // Try to find JSON object in the response
-      const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        cleanedResponse = jsonMatch[0];
-      }
-      
-      insights = JSON.parse(cleanedResponse);
-      
-      // Validate that we have the required fields and they are not empty
-      if (!insights.explanation || typeof insights.explanation !== 'string') {
-        throw new Error('Missing or invalid explanation field');
-      }
-      
-      // Ensure all required fields exist with proper defaults
-      insights = {
-        explanation: insights.explanation || 'Unable to generate insights at this time.',
-        keyThemes: Array.isArray(insights.keyThemes) ? insights.keyThemes : [],
-        crossReferences: Array.isArray(insights.crossReferences) ? insights.crossReferences : [],
-        studyQuestions: Array.isArray(insights.studyQuestions) ? insights.studyQuestions : [],
-        historicalContext: insights.historicalContext || 'Historical context not available.',
-        theologicalSignificance: insights.theologicalSignificance || 'Theological significance not available.',
-        practicalApplication: insights.practicalApplication || 'Practical application not available.',
-        prayerPoints: Array.isArray(insights.prayerPoints) ? insights.prayerPoints : []
-      };
-      
+      insights = JSON.parse(aiResponse || '{}');
     } catch (parseError) {
-      logger.error('Failed to parse AI insights JSON', { cid, error: parseError instanceof Error ? parseError.message : String(parseError), rawResponse: aiResponse?.substring(0, 200) });
-      
-      // Fallback to a basic structure - don't include raw response in explanation
+      logger.error('Failed to parse AI insights JSON', { cid }, parseError);
+      // Fallback to a basic structure
       insights = {
-        explanation: 'Unable to generate insights at this time. Please try again.',
+        explanation: aiResponse || 'Unable to generate insights at this time.',
         keyThemes: ['Faith', 'Love', 'Hope'],
         crossReferences: [],
         studyQuestions: [],
@@ -361,7 +227,6 @@ SHIELD AI APOLOGETICS FEATURES:
         version: version,
         related_verses_count: relatedVerses.length,
         bible_search_results_count: bibleSearchResults.length,
-        similar_insights_count: similarInsights.length,
         generated_at: new Date().toISOString()
       }
     });

@@ -102,8 +102,8 @@ export default async function handler(
     let bibleSearchResults: any[] = [];
     try {
       const searchResults = await bibleService.searchBible(
+        'de4e12af7f28f599-02',
         `${passage.reference} ${passage.text}`, 
-        'de4e12af7f28f599-02', 
         4
       );
       bibleSearchResults = searchResults?.passages || [];
@@ -166,9 +166,9 @@ Guidelines for question creation:
 - Avoid yes/no questions; prefer open-ended, thought-provoking questions`;
 
     // Step 5: Generate study questions
-    const messages = [
-      { role: 'system' as const, content: systemPrompt + contextMessage },
-      { role: 'user' as const, content: `Please generate comprehensive study questions for this Bible passage: ${passageReference}` }
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: systemPrompt + contextMessage },
+      { role: 'user', content: `Please generate comprehensive study questions for this Bible passage: ${passageReference}` }
     ];
 
     const response = await getOpenAI().chat.completions.create({

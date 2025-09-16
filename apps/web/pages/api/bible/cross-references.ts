@@ -102,8 +102,8 @@ export default async function handler(
     let bibleSearchResults: any[] = [];
     try {
       const searchResults = await bibleService.searchBible(
+        'de4e12af7f28f599-02',
         `${passage.reference} ${passage.text}`, 
-        'de4e12af7f28f599-02', 
         8
       );
       bibleSearchResults = searchResults?.passages || [];
@@ -178,9 +178,9 @@ Guidelines for cross-reference identification:
 - Avoid overly obvious or superficial connections`;
 
     // Step 5: Generate cross-references
-    const messages = [
-      { role: 'system' as const, content: systemPrompt + contextMessage },
-      { role: 'user' as const, content: `Please identify meaningful cross-references for this Bible passage: ${passageReference}` }
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+      { role: 'system', content: systemPrompt + contextMessage },
+      { role: 'user', content: `Please identify meaningful cross-references for this Bible passage: ${passageReference}` }
     ];
 
     const response = await getOpenAI().chat.completions.create({

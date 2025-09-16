@@ -37,6 +37,10 @@ export default async function handler(
   try {
     const { message, conversationId, mode = 'gentle', stream = false } = req.body || {};
 
+    console.log('🔍 DEBUG: chat-rag API received message:', JSON.stringify(message))
+    console.log('🔍 DEBUG: chat-rag API received conversationId:', conversationId)
+    console.log('🔍 DEBUG: chat-rag API received mode:', mode)
+
     if (!message) {
       logger.warn('Missing message', { cid });
       return res.status(400).json({ error: 'Message is required' });
@@ -106,7 +110,7 @@ export default async function handler(
     // Step 2: Search Bible API for additional context
     let bibleSearchResults: any[] = [];
     try {
-      const searchResults = await bibleService.searchBible(message, 'de4e12af7f28f599-02', 5);
+      const searchResults = await bibleService.searchBible('de4e12af7f28f599-02', message, 5);
       bibleSearchResults = searchResults?.passages || [];
       logger.debug('Bible API search results', { cid, count: bibleSearchResults.length });
     } catch (error) {
@@ -264,11 +268,6 @@ ${conversationHistory.slice(-6).map((msg: any) =>
 
       const aiResponse = response.choices[0].message.content;
 
-      if (!aiResponse) {
-        logger.error('Empty AI response received', { cid });
-        return res.status(500).json({ error: 'Empty response from AI' });
-      }
-
       // Save conversation to storage
       if (user && currentConversationId) {
         try {
@@ -285,7 +284,7 @@ ${conversationHistory.slice(-6).map((msg: any) =>
           conversationStorage.addMessage(
             currentConversationId,
             user.id,
-            aiResponse,
+            aiResponse || 'I apologize, but I was unable to generate a response at this time.',
             'assistant',
             { 
               mode, 

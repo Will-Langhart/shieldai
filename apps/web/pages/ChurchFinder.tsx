@@ -241,4 +241,4 @@ export function ChurchFinder() {
   )
 }
 
-export default ChurchFinder;
+export default ChurchFinder
