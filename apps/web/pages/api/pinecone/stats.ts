@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { Pinecone } from '@pinecone-database/pinecone';
 
 export default async function handler(
   req: NextApiRequest,
@@ -10,16 +9,55 @@ export default async function handler(
   }
 
   try {
-    const pc = new Pinecone({
-      apiKey: process.env.PINECONE_API_KEY || '',
-      environment: process.env.PINECONE_ENVIRONMENT || 'us-east-1',
-    });
-    const index = pc.index(process.env.PINECONE_INDEX_NAME || 'shieldai');
+    const apiKey = process.env.PINECONE_API_KEY;
+    const indexName = process.env.PINECONE_INDEX_NAME || 'shieldai';
 
-    const stats = await index.describeIndexStats();
+    if (!apiKey) {
+      return res.status(400).json({ error: 'PINECONE_API_KEY not set' });
+    }
+
+    // First, get the index host
+    const indexesResponse = await fetch('https://api.pinecone.io/indexes', {
+      headers: {
+        'Api-Key': apiKey,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!indexesResponse.ok) {
+      throw new Error(`Failed to get indexes: ${indexesResponse.status}`);
+    }
+
+    const indexesData = await indexesResponse.json();
+    const shieldaiIndex = indexesData.indexes?.find((idx: any) => idx.name === indexName);
+    
+    if (!shieldaiIndex) {
+      return res.status(404).json({ 
+        success: false, 
+        error: `Index '${indexName}' not found`,
+        availableIndexes: indexesData.indexes?.map((idx: any) => idx.name) || []
+      });
+    }
+
+    // Get index stats using the host
+    const statsResponse = await fetch(`https://${shieldaiIndex.host}/describe_index_stats`, {
+      method: 'POST',
+      headers: {
+        'Api-Key': apiKey,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!statsResponse.ok) {
+      throw new Error(`Failed to get stats: ${statsResponse.status}`);
+    }
+
+    const stats = await statsResponse.json();
 
     return res.status(200).json({
       success: true,
+      indexName,
+      indexHost: shieldaiIndex.host,
       stats,
     });
   } catch (error) {

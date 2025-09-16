@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '../../../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import { logger, withCorrelationId } from '../../../lib/logger';
+import { InsightsPineconeService } from '../../../lib/insights-pinecone';
 
 // Service role client that bypasses RLS
 const createServiceClient = () => {
@@ -144,6 +145,39 @@ export default async function handler(
       user_id: user.id, 
       passage_reference 
     });
+
+    // Store insight in Pinecone for enhanced search and recommendations
+    try {
+      await InsightsPineconeService.storeAIInsight({
+        id: savedInsight.id,
+        user_id: user.id,
+        passage_reference: savedInsight.passage_reference,
+        passage_text: savedInsight.passage_text,
+        bible_version: savedInsight.bible_version,
+        explanation: savedInsight.explanation,
+        key_themes: savedInsight.key_themes,
+        cross_references: savedInsight.cross_references,
+        study_questions: savedInsight.study_questions,
+        historical_context: savedInsight.historical_context,
+        theological_meaning: savedInsight.theological_meaning,
+        practical_application: savedInsight.practical_application,
+        prayer_points: savedInsight.prayer_points,
+        ai_model: savedInsight.ai_model,
+        is_favorite: savedInsight.is_favorite,
+        is_shared: savedInsight.is_shared,
+        tags: savedInsight.tags,
+        notes: savedInsight.notes
+      });
+      
+      logger.info('AI insight stored in Pinecone', { 
+        cid, 
+        insight_id: savedInsight.id, 
+        user_id: user.id 
+      });
+    } catch (pineconeError) {
+      logger.error('Failed to store insight in Pinecone', { cid, error: pineconeError });
+      // Don't fail the request if Pinecone storage fails
+    }
 
     res.status(201).json({
       success: true,

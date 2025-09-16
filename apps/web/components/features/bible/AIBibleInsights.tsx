@@ -18,7 +18,28 @@ import {
   Save,
   Download,
   Star,
-  Tag
+  Tag,
+  Shield,
+  Target,
+  Users,
+  Award,
+  ThumbsUp,
+  ThumbsDown,
+  Send,
+  Edit,
+  Trash2,
+  Zap,
+  Sparkles,
+  Eye,
+  Clock,
+  TrendingUp,
+  MessageSquare,
+  PenTool,
+  Calendar,
+  Image,
+  Palette,
+  Wand2,
+  X
 } from 'lucide-react'
 import { AIDiagnostics } from './AIDiagnostics'
 
@@ -59,6 +80,32 @@ interface AIInsights {
   theologicalMeaning: string
   practicalApplication: string
   prayerPoints: string[]
+  // Shield AI Apologetics Features
+  apologeticsPoints: Array<{
+    point: string
+    category: 'defense' | 'evidence' | 'reasoning' | 'testimony'
+    strength: 'strong' | 'moderate' | 'foundational'
+  }>
+  defenseQuestions: Array<{
+    question: string
+    category: string
+    difficulty: 'beginner' | 'intermediate' | 'advanced'
+  }>
+  evidenceTypes: Array<{
+    type: 'historical' | 'archaeological' | 'prophetic' | 'scientific' | 'logical'
+    description: string
+    relevance: string
+  }>
+  commonObjections: Array<{
+    objection: string
+    response: string
+    scripture: string
+  }>
+  faithBuilding: {
+    encouragement: string
+    promises: string[]
+    applications: string[]
+  }
 }
 
 interface AIBibleInsightsProps {
@@ -75,6 +122,35 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
   const [isSaved, setIsSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [savedInsights, setSavedInsights] = useState<any[]>([])
+  
+  // Response and interaction states
+  const [responses, setResponses] = useState<any[]>([])
+  const [interactions, setInteractions] = useState<any[]>([])
+  const [showResponseForm, setShowResponseForm] = useState(false)
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false)
+  const [newResponse, setNewResponse] = useState({
+    text: '',
+    type: 'comment' as 'comment' | 'question' | 'prayer' | 'reflection' | 'application' | 'correction' | 'appreciation',
+    is_helpful: null as boolean | null,
+    rating: undefined as number | undefined
+  })
+  const [newFeedback, setNewFeedback] = useState({
+    content_quality: undefined as number | undefined,
+    theological_accuracy: undefined as number | undefined,
+    practical_helpfulness: undefined as number | undefined,
+    clarity: undefined as number | undefined,
+    relevance: undefined as number | undefined,
+    overall_rating: undefined as number | undefined,
+    feedback_text: '',
+    suggestions: ''
+  })
+  const [currentInsightId, setCurrentInsightId] = useState<string | null>(null)
+  
+  // Image generation states
+  const [generatedImage, setGeneratedImage] = useState<any>(null)
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const [imageError, setImageError] = useState<string | null>(null)
+  const [showImageModal, setShowImageModal] = useState(false)
 
   // Load saved insights for this passage
   useEffect(() => {
@@ -211,6 +287,175 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
     navigator.clipboard.writeText(text)
   }
 
+  // Response and interaction functions
+  const loadResponses = async (insightId: string) => {
+    try {
+      const authToken = await getAuthToken()
+      const response = await fetch(`/api/ai-insights/responses?insight_id=${insightId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setResponses(data.responses || [])
+      }
+    } catch (error) {
+      console.error('Error loading responses:', error)
+    }
+  }
+
+  const loadInteractions = async (insightId: string) => {
+    try {
+      const authToken = await getAuthToken()
+      const response = await fetch(`/api/ai-insights/interactions?insight_id=${insightId}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setInteractions(data.interactions || [])
+      }
+    } catch (error) {
+      console.error('Error loading interactions:', error)
+    }
+  }
+
+  const submitResponse = async () => {
+    if (!newResponse.text.trim() || !currentInsightId) return
+
+    try {
+      const authToken = await getAuthToken()
+      const response = await fetch('/api/ai-insights/responses', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          insight_id: currentInsightId,
+          response_text: newResponse.text,
+          response_type: newResponse.type,
+          is_helpful: newResponse.is_helpful,
+          rating: newResponse.rating
+        })
+      })
+
+      if (response.ok) {
+        await loadResponses(currentInsightId)
+        setNewResponse({ text: '', type: 'comment', is_helpful: null, rating: undefined })
+        setShowResponseForm(false)
+      }
+    } catch (error) {
+      console.error('Error submitting response:', error)
+    }
+  }
+
+  const submitFeedback = async () => {
+    if (!currentInsightId) return
+
+    try {
+      const authToken = await getAuthToken()
+      const response = await fetch('/api/ai-insights/feedback', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          insight_id: currentInsightId,
+          ...newFeedback
+        })
+      })
+
+      if (response.ok) {
+        setNewFeedback({
+          content_quality: undefined,
+          theological_accuracy: undefined,
+          practical_helpfulness: undefined,
+          clarity: undefined,
+          relevance: undefined,
+          overall_rating: undefined,
+          feedback_text: '',
+          suggestions: ''
+        })
+        setShowFeedbackForm(false)
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error)
+    }
+  }
+
+  const handleInteraction = async (interactionType: string) => {
+    if (!currentInsightId) return
+
+    try {
+      const authToken = await getAuthToken()
+      const response = await fetch('/api/ai-insights/interactions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          insight_id: currentInsightId,
+          interaction_type: interactionType
+        })
+      })
+
+      if (response.ok) {
+        await loadInteractions(currentInsightId)
+      }
+    } catch (error) {
+      console.error('Error handling interaction:', error)
+    }
+  }
+
+  const generateImage = async () => {
+    if (!insights) return
+
+    setIsGeneratingImage(true)
+    setImageError(null)
+
+    try {
+      const authToken = await getAuthToken()
+      
+      const response = await fetch('/api/ai-insights/generate-image', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          passage_reference: passage.reference,
+          passage_text: passage.text,
+          insight_text: insights.explanation,
+          key_themes: insights.keyThemes || [],
+          style: 'biblical'
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate image')
+      }
+
+      const data = await response.json()
+      setGeneratedImage(data.image)
+      setShowImageModal(true)
+    } catch (error) {
+      console.error('Error generating image:', error)
+      setImageError(error instanceof Error ? error.message : 'Failed to generate image')
+    } finally {
+      setIsGeneratingImage(false)
+    }
+  }
+
   if (showDiagnostics) {
     return <AIDiagnostics onClose={() => setShowDiagnostics(false)} />
   }
@@ -289,9 +534,19 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
       {loading && (
         <div className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="h-12 w-12 text-blue-400 animate-spin mb-4" />
-          <div className="text-blue-400 mb-2">Generating AI insights...</div>
-          <div className="text-sm text-[#9CA3AF]">This may take a few moments</div>
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Brain className="h-6 w-6 text-blue-600 animate-pulse" />
+            </div>
+          </div>
+          <div className="text-blue-400 mb-2 font-medium">Generating AI insights...</div>
+          <div className="text-sm text-[#9CA3AF] mb-4">Analyzing scripture with AI-powered understanding</div>
+          <div className="flex space-x-1">
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
         </div>
       )}
 
@@ -321,6 +576,187 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
       {insights && (
         <div className="space-y-6">
+          {/* Shield AI Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-4 text-white">
+            <div className="flex items-center space-x-3 mb-2">
+              <Shield className="h-6 w-6" />
+              <h3 className="text-lg font-semibold">Shield AI Apologetics Insights</h3>
+            </div>
+            <p className="text-blue-100 text-sm">
+              Defending faith through Scripture • Building understanding • Strengthening belief
+            </p>
+          </div>
+
+          {/* Interaction Bar */}
+          <div className="bg-[#2C303A] rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => handleInteraction('like')}
+                  className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                >
+                  <ThumbsUp className="h-4 w-4" />
+                  <span>Helpful</span>
+                </button>
+                
+                <button
+                  onClick={() => setShowResponseForm(!showResponseForm)}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span>Respond</span>
+                </button>
+                
+                <button
+                  onClick={() => setShowFeedbackForm(!showFeedbackForm)}
+                  className="flex items-center space-x-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                  <Award className="h-4 w-4" />
+                  <span>Rate</span>
+                </button>
+                
+                <button
+                  onClick={generateImage}
+                  disabled={isGeneratingImage || !insights}
+                  className="flex items-center space-x-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+                >
+                  {isGeneratingImage ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Image className="h-4 w-4" />
+                  )}
+                  <span>{isGeneratingImage ? 'Generating...' : 'Generate Image'}</span>
+                </button>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-[#9CA3AF]">
+                  {responses.length} responses • {interactions.length} interactions
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Response Form */}
+          {showResponseForm && (
+            <div className="bg-[#2C303A] rounded-lg p-4 border border-[#3A404B]">
+              <h4 className="text-lg font-medium text-[#E0E0E0] mb-3">Share Your Response</h4>
+              <div className="space-y-3">
+                <select
+                  value={newResponse.type}
+                  onChange={(e) => setNewResponse(prev => ({ ...prev, type: e.target.value as any }))}
+                  className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="comment">💬 Comment</option>
+                  <option value="question">❓ Question</option>
+                  <option value="prayer">🙏 Prayer</option>
+                  <option value="reflection">🤔 Reflection</option>
+                  <option value="application">💡 Application</option>
+                  <option value="correction">✏️ Correction</option>
+                  <option value="appreciation">❤️ Appreciation</option>
+                </select>
+                
+                <textarea
+                  value={newResponse.text}
+                  onChange={(e) => setNewResponse(prev => ({ ...prev, text: e.target.value }))}
+                  placeholder="Share your thoughts on this passage..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={newResponse.is_helpful === true}
+                        onChange={(e) => setNewResponse(prev => ({ ...prev, is_helpful: e.target.checked ? true : null }))}
+                        className="rounded border-[#3A404B] bg-[#1A1D24] text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-sm text-[#E0E0E0]">Helpful</span>
+                    </label>
+                    
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-[#9CA3AF]">Rating:</span>
+                      <div className="flex space-x-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => setNewResponse(prev => ({ ...prev, rating: star }))}
+                            className={`text-lg ${newResponse.rating && star <= newResponse.rating ? 'text-yellow-400' : 'text-[#9CA3AF]'}`}
+                          >
+                            ⭐
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={submitResponse}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    <Send className="h-4 w-4" />
+                    <span>Submit</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Feedback Form */}
+          {showFeedbackForm && (
+            <div className="bg-[#2C303A] rounded-lg p-4 border border-[#3A404B]">
+              <h4 className="text-lg font-medium text-[#E0E0E0] mb-3">Rate This Insight</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { key: 'content_quality', label: 'Content Quality', icon: <BookOpen className="h-4 w-4" /> },
+                  { key: 'theological_accuracy', label: 'Theological Accuracy', icon: <Cross className="h-4 w-4" /> },
+                  { key: 'practical_helpfulness', label: 'Practical Helpfulness', icon: <Target className="h-4 w-4" /> },
+                  { key: 'clarity', label: 'Clarity', icon: <Eye className="h-4 w-4" /> },
+                  { key: 'relevance', label: 'Relevance', icon: <Zap className="h-4 w-4" /> },
+                  { key: 'overall_rating', label: 'Overall Rating', icon: <Award className="h-4 w-4" /> }
+                ].map(({ key, label, icon }) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      {icon}
+                      <span className="text-sm text-[#E0E0E0]">{label}</span>
+                    </div>
+                    <div className="flex space-x-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          onClick={() => setNewFeedback(prev => ({ ...prev, [key]: star }))}
+                          className={`text-lg ${newFeedback[key as keyof typeof newFeedback] && star <= (newFeedback[key as keyof typeof newFeedback] as number) ? 'text-yellow-400' : 'text-[#9CA3AF]'}`}
+                        >
+                          ⭐
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-4 space-y-3">
+                <textarea
+                  value={newFeedback.feedback_text}
+                  onChange={(e) => setNewFeedback(prev => ({ ...prev, feedback_text: e.target.value }))}
+                  placeholder="Additional feedback (optional)"
+                  rows={2}
+                  className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                
+                <button
+                  onClick={submitFeedback}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                >
+                  <Award className="h-4 w-4" />
+                  <span>Submit Rating</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Explanation */}
           <div className="border border-[#2C303A] rounded-lg">
             <button
@@ -561,6 +997,337 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
               )}
             </div>
           )}
+
+          {/* Shield AI Apologetics Features */}
+          {insights.apologeticsPoints && insights.apologeticsPoints.length > 0 && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('apologetics')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Shield className="h-5 w-5 text-blue-400" />
+                  <span className="font-medium text-[#E0E0E0]">Apologetics Points</span>
+                  <span className="text-sm text-[#9CA3AF]">({insights.apologeticsPoints.length})</span>
+                </div>
+                {expandedSections.has('apologetics') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('apologetics') && (
+                <div className="p-4 border-t border-[#2C303A] space-y-3">
+                  {insights.apologeticsPoints.map((point, index) => (
+                    <div key={index} className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            point.category === 'defense' ? 'bg-red-600 text-white' :
+                            point.category === 'evidence' ? 'bg-green-600 text-white' :
+                            point.category === 'reasoning' ? 'bg-blue-600 text-white' :
+                            'bg-purple-600 text-white'
+                          }`}>
+                            {point.category}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            point.strength === 'strong' ? 'bg-yellow-600 text-white' :
+                            point.strength === 'moderate' ? 'bg-orange-600 text-white' :
+                            'bg-gray-600 text-white'
+                          }`}>
+                            {point.strength}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-[#E0E0E0] text-sm">{point.point}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Defense Questions */}
+          {insights.defenseQuestions && insights.defenseQuestions.length > 0 && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('defense')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Target className="h-5 w-5 text-green-400" />
+                  <span className="font-medium text-[#E0E0E0]">Defense Questions</span>
+                  <span className="text-sm text-[#9CA3AF]">({insights.defenseQuestions.length})</span>
+                </div>
+                {expandedSections.has('defense') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('defense') && (
+                <div className="p-4 border-t border-[#2C303A] space-y-3">
+                  {insights.defenseQuestions.map((question, index) => (
+                    <div key={index} className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="px-2 py-1 bg-blue-600 text-white rounded-full text-xs font-medium">
+                            {question.category}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            question.difficulty === 'beginner' ? 'bg-green-600 text-white' :
+                            question.difficulty === 'intermediate' ? 'bg-yellow-600 text-white' :
+                            'bg-red-600 text-white'
+                          }`}>
+                            {question.difficulty}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-[#E0E0E0] text-sm">{question.question}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Evidence Types */}
+          {insights.evidenceTypes && insights.evidenceTypes.length > 0 && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('evidence')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Search className="h-5 w-5 text-purple-400" />
+                  <span className="font-medium text-[#E0E0E0]">Evidence Types</span>
+                  <span className="text-sm text-[#9CA3AF]">({insights.evidenceTypes.length})</span>
+                </div>
+                {expandedSections.has('evidence') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('evidence') && (
+                <div className="p-4 border-t border-[#2C303A] space-y-3">
+                  {insights.evidenceTypes.map((evidence, index) => (
+                    <div key={index} className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          evidence.type === 'historical' ? 'bg-orange-600 text-white' :
+                          evidence.type === 'archaeological' ? 'bg-brown-600 text-white' :
+                          evidence.type === 'prophetic' ? 'bg-purple-600 text-white' :
+                          evidence.type === 'scientific' ? 'bg-blue-600 text-white' :
+                          'bg-green-600 text-white'
+                        }`}>
+                          {evidence.type}
+                        </span>
+                      </div>
+                      <p className="text-[#E0E0E0] text-sm mb-2">{evidence.description}</p>
+                      <p className="text-[#9CA3AF] text-xs">{evidence.relevance}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Common Objections */}
+          {insights.commonObjections && insights.commonObjections.length > 0 && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('objections')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
+                  <span className="font-medium text-[#E0E0E0]">Common Objections</span>
+                  <span className="text-sm text-[#9CA3AF]">({insights.commonObjections.length})</span>
+                </div>
+                {expandedSections.has('objections') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('objections') && (
+                <div className="p-4 border-t border-[#2C303A] space-y-4">
+                  {insights.commonObjections.map((objection, index) => (
+                    <div key={index} className="bg-[#1A1D24] rounded-lg p-4 border border-[#3A404B]">
+                      <div className="mb-3">
+                        <h4 className="text-sm font-medium text-red-400 mb-2">Objection:</h4>
+                        <p className="text-[#E0E0E0] text-sm">{objection.objection}</p>
+                      </div>
+                      <div className="mb-3">
+                        <h4 className="text-sm font-medium text-green-400 mb-2">Response:</h4>
+                        <p className="text-[#E0E0E0] text-sm">{objection.response}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-blue-400 mb-2">Scripture:</h4>
+                        <p className="text-[#E0E0E0] text-sm">{objection.scripture}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Faith Building */}
+          {insights.faithBuilding && (
+            <div className="border border-[#2C303A] rounded-lg">
+              <button
+                onClick={() => toggleSection('faith')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Heart className="h-5 w-5 text-pink-400" />
+                  <span className="font-medium text-[#E0E0E0]">Faith Building</span>
+                </div>
+                {expandedSections.has('faith') ? (
+                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                )}
+              </button>
+              {expandedSections.has('faith') && (
+                <div className="p-4 border-t border-[#2C303A] space-y-4">
+                  <div className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                    <h4 className="text-sm font-medium text-pink-400 mb-2">Encouragement:</h4>
+                    <p className="text-[#E0E0E0] text-sm">{insights.faithBuilding.encouragement}</p>
+                  </div>
+                  
+                  {insights.faithBuilding.promises && insights.faithBuilding.promises.length > 0 && (
+                    <div className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                      <h4 className="text-sm font-medium text-yellow-400 mb-2">Promises:</h4>
+                      <ul className="space-y-1">
+                        {insights.faithBuilding.promises.map((promise, index) => (
+                          <li key={index} className="flex items-start space-x-2">
+                            <span className="text-yellow-400 font-medium text-sm mt-1">•</span>
+                            <span className="text-[#E0E0E0] text-sm">{promise}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {insights.faithBuilding.applications && insights.faithBuilding.applications.length > 0 && (
+                    <div className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                      <h4 className="text-sm font-medium text-green-400 mb-2">Applications:</h4>
+                      <ul className="space-y-1">
+                        {insights.faithBuilding.applications.map((application, index) => (
+                          <li key={index} className="flex items-start space-x-2">
+                            <span className="text-green-400 font-medium text-sm mt-1">•</span>
+                            <span className="text-[#E0E0E0] text-sm">{application}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Image Generation Modal */}
+      {showImageModal && generatedImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <Palette className="h-6 w-6 text-indigo-400" />
+                <div>
+                  <h3 className="text-lg font-semibold text-[#E0E0E0]">Generated Image</h3>
+                  <p className="text-sm text-[#9CA3AF]">{passage.reference}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowImageModal(false)}
+                className="text-[#9CA3AF] hover:text-white transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="relative">
+                <img
+                  src={generatedImage.url}
+                  alt={`Visual representation of ${passage.reference}`}
+                  className="w-full rounded-lg shadow-lg"
+                />
+                <div className="absolute top-4 right-4">
+                  <div className="bg-black bg-opacity-50 rounded-lg p-2">
+                    <Wand2 className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+              </div>
+
+              {generatedImage.revisedPrompt && (
+                <div className="p-4 bg-[#2C303A] rounded-lg">
+                  <h4 className="text-sm font-medium text-[#E0E0E0] mb-2">Generated from:</h4>
+                  <p className="text-sm text-[#9CA3AF] italic">"{generatedImage.revisedPrompt}"</p>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => {
+                    const link = document.createElement('a')
+                    link.href = generatedImage.url
+                    link.download = `bible-image-${passage.reference.replace(/\s+/g, '-')}.png`
+                    link.click()
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Download</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedImage.url)
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                >
+                  <Copy className="h-4 w-4" />
+                  <span>Copy URL</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const shareData = {
+                      title: `Bible Image - ${passage.reference}`,
+                      text: `Visual representation of ${passage.reference}`,
+                      url: generatedImage.url
+                    }
+                    if (navigator.share) {
+                      navigator.share(shareData)
+                    } else {
+                      navigator.clipboard.writeText(`${shareData.text}\n\n${shareData.url}`)
+                    }
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span>Share</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Error Display */}
+      {imageError && (
+        <div className="mt-4 p-3 bg-red-900/20 border border-red-500/50 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="h-4 w-4 text-red-400" />
+            <p className="text-red-400 text-sm">{imageError}</p>
+          </div>
         </div>
       )}
     </div>

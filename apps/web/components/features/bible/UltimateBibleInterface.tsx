@@ -21,6 +21,8 @@ import {
 import { AIBibleInsights } from './AIBibleInsights'
 import { AIStudyQuestions } from './AIStudyQuestions'
 import { AICrossReferences } from './AICrossReferences'
+import { InsightsHistory } from './InsightsHistory'
+import { SmartTextSelection } from './SmartTextSelection'
 import { EnhancedBibleNavigation } from './EnhancedBibleNavigation'
 import { BibleBreadcrumbs } from './BibleBreadcrumbs'
 import { QuickNavigation } from './QuickNavigation'
@@ -54,7 +56,7 @@ interface UltimateBibleInterfaceProps {
 }
 
 export function UltimateBibleInterface({ onVerseSelect, initialPassage }: UltimateBibleInterfaceProps) {
-  const [activeTab, setActiveTab] = useState<'bible' | 'insights' | 'questions' | 'crossrefs'>('bible')
+  const [activeTab, setActiveTab] = useState<'bible' | 'insights' | 'questions' | 'crossrefs' | 'history'>('bible')
   const [currentPassage, setCurrentPassage] = useState<BiblePassage | null>(initialPassage || null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -89,7 +91,8 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
     { id: 'bible', label: 'Bible Text', icon: BookOpen, color: 'text-blue-400' },
     { id: 'insights', label: 'AI Insights', icon: Brain, color: 'text-purple-400' },
     { id: 'questions', label: 'Study Questions', icon: MessageCircle, color: 'text-green-400' },
-    { id: 'crossrefs', label: 'Cross-References', icon: Link, color: 'text-orange-400' }
+    { id: 'crossrefs', label: 'Cross-References', icon: Link, color: 'text-orange-400' },
+    { id: 'history', label: 'Insights History', icon: Settings, color: 'text-gray-400' }
   ]
 
   // Load passage when navigation state changes
@@ -394,28 +397,38 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
                     <div className="text-red-400">{error}</div>
                   </div>
                 ) : currentPassage ? (
-                  <div className="prose prose-invert max-w-none">
-                    <div className="text-lg leading-relaxed">
-                      {currentPassage.verses && currentPassage.verses.length > 0 ? (
-                        currentPassage.verses.map((verse, index) => (
-                          <p key={verse.id || index} className="mb-4">
-                            <span className="text-blue-400 font-semibold mr-2">{verse.verseNumber}.</span>
-                            <span 
-                              className="cursor-pointer hover:bg-blue-900/20 px-1 rounded transition-colors"
-                              onClick={() => handleVerseClick(verse)}
-                              title="Click to use in chat"
-                            >
-                              {verse.text}
-                            </span>
-                          </p>
-                        ))
-                      ) : (
-                        <div className="text-center py-8">
-                          <p className="text-[#9CA3AF]">No verses found for this passage</p>
-                        </div>
-                      )}
+                  <SmartTextSelection 
+                    passage={currentPassage}
+                    onInsightGenerated={(insight) => {
+                      console.log('Generated insight from text selection:', insight)
+                    }}
+                    onImageGenerated={(image) => {
+                      console.log('Generated image from text selection:', image)
+                    }}
+                  >
+                    <div className="prose prose-invert max-w-none">
+                      <div className="text-lg leading-relaxed">
+                        {currentPassage.verses && currentPassage.verses.length > 0 ? (
+                          currentPassage.verses.map((verse, index) => (
+                            <p key={verse.id || index} className="mb-4" data-verse={verse.verseNumber}>
+                              <span className="text-blue-400 font-semibold mr-2">{verse.verseNumber}.</span>
+                              <span 
+                                className="cursor-pointer hover:bg-blue-900/20 px-1 rounded transition-colors select-text"
+                                onClick={() => handleVerseClick(verse)}
+                                title="Click to use in chat or select text for AI analysis"
+                              >
+                                {verse.text}
+                              </span>
+                            </p>
+                          ))
+                        ) : (
+                          <div className="text-center py-8">
+                            <p className="text-[#9CA3AF]">No verses found for this passage</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </SmartTextSelection>
                 ) : (
                   <div className="text-center py-12">
                     <BookOpen className="h-16 w-16 text-[#9CA3AF] mx-auto mb-4" />
@@ -461,6 +474,17 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
                       currentPassage.version?.name
                     )
                   }
+                }}
+              />
+            )}
+
+            {/* Insights History Tab */}
+            {activeTab === 'history' && (
+              <InsightsHistory 
+                onInsightSelect={(insight) => {
+                  // Navigate to the passage from the insight
+                  navigateTo(insight.passage_reference, insight.bible_version)
+                  setActiveTab('insights')
                 }}
               />
             )}
