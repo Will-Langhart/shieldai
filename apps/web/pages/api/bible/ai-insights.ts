@@ -104,9 +104,9 @@ export default async function handler(
     // Step 2: Search Bible API for additional context
     let bibleSearchResults: any[] = [];
     try {
-      const searchResults = await bibleService.searchVerses(
+      const searchResults = await bibleService.searchBible(
+        version || 'de4e12af7f28f599-02',
         `${passage.reference} ${passage.text}`, 
-        version || 'de4e12af7f28f599-02', 
         5
       );
       bibleSearchResults = searchResults || [];
