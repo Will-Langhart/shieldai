@@ -69,6 +69,41 @@
       "created_at": "2025-09-10T21:00:10.082Z",
       "updated_at": "2025-09-10T21:00:11.616Z",
       "user_id": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "conv-1758052995962-m306ox0jh": {
+      "id": "conv-1758052995962-m306ox0jh",
+      "title": "hiiii",
+      "created_at": "2025-09-16T20:03:15.962Z",
+      "updated_at": "2025-09-16T20:03:16.842Z",
+      "user_id": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "conv-1758053069277-u2t17adgl": {
+      "id": "conv-1758053069277-u2t17adgl",
+      "title": "hiiii",
+      "created_at": "2025-09-16T20:04:29.277Z",
+      "updated_at": "2025-09-16T20:04:30.110Z",
+      "user_id": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "conv-1758053135198-cyp6rvqnv": {
+      "id": "conv-1758053135198-cyp6rvqnv",
+      "title": "hello",
+      "created_at": "2025-09-16T20:05:35.198Z",
+      "updated_at": "2025-09-16T20:05:36.028Z",
+      "user_id": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "conv-1758053275081-kqugno2br": {
+      "id": "conv-1758053275081-kqugno2br",
+      "title": "Is God real? ",
+      "created_at": "2025-09-16T20:07:55.081Z",
+      "updated_at": "2025-09-16T20:07:58.127Z",
+      "user_id": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "conv-1758053496120-7jftszrne": {
+      "id": "conv-1758053496120-7jftszrne",
+      "title": "Who is Jesus? ",
+      "created_at": "2025-09-16T20:11:36.120Z",
+      "updated_at": "2025-09-16T20:11:40.862Z",
+      "user_id": "550e8400-e29b-41d4-a716-446655440000"
     }
   },
   "messages": {
@@ -377,6 +412,146 @@
           "bible_search_results": 0
         }
       }
+    ],
+    "conv-1758052995962-m306ox0jh": [
+      {
+        "id": "msg-1758052996841-5pse8p2qd",
+        "conversation_id": "conv-1758052995962-m306ox0jh",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "hiiii",
+        "role": "user",
+        "created_at": "2025-09-16T20:03:16.841Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-16T20:03:16.841Z"
+        }
+      },
+      {
+        "id": "msg-1758052996842-y7f79czwl",
+        "conversation_id": "conv-1758052995962-m306ox0jh",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "Hello! How can I assist you today with any questions you may have about Christianity or the Bible?",
+        "role": "assistant",
+        "created_at": "2025-09-16T20:03:16.842Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-16T20:03:16.842Z",
+          "relevant_verses": 0,
+          "bible_search_results": 0
+        }
+      }
+    ],
+    "conv-1758053069277-u2t17adgl": [
+      {
+        "id": "msg-1758053070109-w2asawwdk",
+        "conversation_id": "conv-1758053069277-u2t17adgl",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "hiiii",
+        "role": "user",
+        "created_at": "2025-09-16T20:04:30.109Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-16T20:04:30.109Z"
+        }
+      },
+      {
+        "id": "msg-1758053070110-nhlzdcrl7",
+        "conversation_id": "conv-1758053069277-u2t17adgl",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "Hello! How can I assist you today with questions about Christianity, the Bible, or faith?",
+        "role": "assistant",
+        "created_at": "2025-09-16T20:04:30.110Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-16T20:04:30.110Z",
+          "relevant_verses": 0,
+          "bible_search_results": 0
+        }
+      }
+    ],
+    "conv-1758053135198-cyp6rvqnv": [
+      {
+        "id": "msg-1758053136026-f0d1ntbtv",
+        "conversation_id": "conv-1758053135198-cyp6rvqnv",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "hello",
+        "role": "user",
+        "created_at": "2025-09-16T20:05:36.027Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-16T20:05:36.026Z"
+        }
+      },
+      {
+        "id": "msg-1758053136028-i120opnmy",
+        "conversation_id": "conv-1758053135198-cyp6rvqnv",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "Hello! How can I assist you today with any questions you have about Christianity, the Bible, or faith?",
+        "role": "assistant",
+        "created_at": "2025-09-16T20:05:36.028Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-16T20:05:36.028Z",
+          "relevant_verses": 0,
+          "bible_search_results": 5
+        }
+      }
+    ],
+    "conv-1758053275081-kqugno2br": [
+      {
+        "id": "msg-1758053278126-08u75byjq",
+        "conversation_id": "conv-1758053275081-kqugno2br",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "Is God real? ",
+        "role": "user",
+        "created_at": "2025-09-16T20:07:58.126Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-16T20:07:58.126Z"
+        }
+      },
+      {
+        "id": "msg-1758053278127-4p3kim9me",
+        "conversation_id": "conv-1758053275081-kqugno2br",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "Yes, God is real. The Bible affirms the existence of God in numerous passages. In Psalm 14:1, it says, \"The fool says in his heart, 'There is no God.'\" This verse highlights the understanding that belief in God is foundational to wisdom and understanding. Additionally, in Hebrews 11:6, it says, \"And without faith, it is impossible to please God, because anyone who comes to him must believe that he exists and that he rewards those who earnestly seek him.\" This verse emphasizes the importance of faith in believing in God's existence.\n\nFurthermore, creation itself points to the existence of God. In Romans 1:20, it says, \"For since the creation of the world God's invisible qualities—his eternal power and divine nature—have been clearly seen, being understood from what has been made, so that people are without excuse.\" This verse shows that creation itself testifies to the existence of God.\n\nSo, if you seek God with an open heart and mind, you will find Him. Remember, faith is key in believing in the reality of God.",
+        "role": "assistant",
+        "created_at": "2025-09-16T20:07:58.127Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-16T20:07:58.127Z",
+          "relevant_verses": 0,
+          "bible_search_results": 0
+        }
+      }
+    ],
+    "conv-1758053496120-7jftszrne": [
+      {
+        "id": "msg-1758053500860-7iz186dv2",
+        "conversation_id": "conv-1758053496120-7jftszrne",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "Who is Jesus? ",
+        "role": "user",
+        "created_at": "2025-09-16T20:11:40.860Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-16T20:11:40.860Z"
+        }
+      },
+      {
+        "id": "msg-1758053500862-evzejm4zm",
+        "conversation_id": "conv-1758053496120-7jftszrne",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "Jesus is the Son of God who came to earth in human form to save us from our sins. He is both fully God and fully man, the second person of the Trinity (Father, Son, and Holy Spirit). In the Bible, Jesus is referred to as the Word made flesh (John 1:14) and the Savior of the world (1 John 4:14).\n\nIn John 1:1-3, it says, \"In the beginning was the Word, and the Word was with God, and the Word was God. He was with God in the beginning. Through him all things were made; without him, nothing was made that has been made.\" This passage speaks of Jesus as the Word who was with God and was God from the beginning, emphasizing His divine nature.\n\nFurthermore, in Matthew 1:23, it is prophesied about Jesus, \"The virgin will conceive and give birth to a son, and they will call him Immanuel (which means 'God with us').\" This verse highlights the truth that Jesus, as God with us, came to dwell among humanity to reconcile us to God.\n\nTherefore, Jesus is not only a historical figure but the central figure of Christianity, who offers salvation, redemption, and eternal life to all who believe in Him.",
+        "role": "assistant",
+        "created_at": "2025-09-16T20:11:40.862Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-16T20:11:40.862Z",
+          "relevant_verses": 0,
+          "bible_search_results": 0
+        }
+      }
     ]
   },
   "userConversations": {
@@ -390,7 +565,12 @@
       "conv-1757292542571-xt9tftaad",
       "conv-1757292926166-gizwguhvp",
       "conv-1757522833462-h1h6t19xc",
-      "conv-1757538010082-hh4jbzmzs"
+      "conv-1757538010082-hh4jbzmzs",
+      "conv-1758052995962-m306ox0jh",
+      "conv-1758053069277-u2t17adgl",
+      "conv-1758053135198-cyp6rvqnv",
+      "conv-1758053275081-kqugno2br",
+      "conv-1758053496120-7jftszrne"
     ]
   }
 }

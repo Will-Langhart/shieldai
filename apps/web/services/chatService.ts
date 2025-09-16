@@ -141,6 +141,7 @@ export class ChatService {
       // Try RAG API first, fall back to regular chat API
       let response;
       try {
+        console.log('🔍 DEBUG: Sending to /api/chat-rag with message:', JSON.stringify(message))
         response = await fetch('/api/chat-rag', {
           method: 'POST',
           headers: {

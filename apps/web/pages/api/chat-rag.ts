@@ -37,6 +37,10 @@ export default async function handler(
   try {
     const { message, conversationId, mode = 'gentle', stream = false } = req.body || {};
 
+    console.log('🔍 DEBUG: chat-rag API received message:', JSON.stringify(message))
+    console.log('🔍 DEBUG: chat-rag API received conversationId:', conversationId)
+    console.log('🔍 DEBUG: chat-rag API received mode:', mode)
+
     if (!message) {
       logger.warn('Missing message', { cid });
       return res.status(400).json({ error: 'Message is required' });
