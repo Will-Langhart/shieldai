@@ -457,7 +457,7 @@ export function QuickNavigation({
                     <div className="flex-1 min-w-0">
                       <div className="font-medium">{item.label}</div>
                       <div className="text-sm opacity-75 mt-1">{item.description}</div>
-                      {item.shortcut && (
+                      {'shortcut' in item && item.shortcut && (
                         <div className="text-xs opacity-50 mt-1 flex items-center">
                           <Command className="h-3 w-3 mr-1" />
                           {item.shortcut}
