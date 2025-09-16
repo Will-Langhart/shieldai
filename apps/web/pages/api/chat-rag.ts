@@ -106,8 +106,8 @@ export default async function handler(
     // Step 2: Search Bible API for additional context
     let bibleSearchResults: any[] = [];
     try {
-      const searchResults = await bibleService.searchVerses(message, 'de4e12af7f28f599-02', 5);
-      bibleSearchResults = searchResults || [];
+      const searchResults = await bibleService.searchBible('de4e12af7f28f599-02', message, 5);
+      bibleSearchResults = searchResults?.passages || [];
       logger.debug('Bible API search results', { cid, count: bibleSearchResults.length });
     } catch (error) {
       logger.error('Bible API search failed', { cid }, error);
@@ -280,7 +280,7 @@ ${conversationHistory.slice(-6).map((msg: any) =>
           conversationStorage.addMessage(
             currentConversationId,
             user.id,
-            aiResponse,
+            aiResponse || 'I apologize, but I was unable to generate a response at this time.',
             'assistant',
             { 
               mode, 

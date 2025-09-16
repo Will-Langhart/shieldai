@@ -74,6 +74,9 @@ export function Home() {
   
   // Calculate section-specific color adjustments
   const getSectionColor = (sectionIndex: number) => {
+    if (typeof window === 'undefined') {
+      return { brightness: 1, saturation: 1, hue: 0 }
+    }
     const sectionProgress = Math.max(0, Math.min(1, (scrollY - sectionIndex * window.innerHeight) / window.innerHeight))
     return {
       brightness: 1 + sectionProgress * 0.1,
@@ -472,3 +475,5 @@ export function Home() {
     </div>
   )
 }
+
+export default Home

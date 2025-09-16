@@ -240,3 +240,5 @@ export function ChurchFinder() {
     </div>
   )
 }
+
+export default ChurchFinder

@@ -104,3 +104,5 @@ export function EmailConfirm() {
     </div>
   );
 }
+
+export default EmailConfirm;

@@ -180,7 +180,7 @@ Guidelines:
 - Always reference scripture and maintain biblical accuracy`;
 
     // Step 5: Generate AI insights
-    const messages = [
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: systemPrompt + contextMessage },
       { role: 'user', content: `Please analyze this Bible passage and provide comprehensive insights: ${passageReference}` }
     ];
