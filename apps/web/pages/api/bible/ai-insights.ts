@@ -109,7 +109,7 @@ export default async function handler(
         `${passage.reference} ${passage.text}`, 
         5
       );
-      bibleSearchResults = searchResults || [];
+      bibleSearchResults = searchResults?.passages || [];
       logger.debug('Bible API search results for insights', { cid, count: bibleSearchResults.length });
     } catch (error) {
       logger.error('Bible API search failed for insights', { cid }, error);
