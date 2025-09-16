@@ -16,7 +16,12 @@ export function AIDiagnostics({ onClose }: AIDiagnosticsProps) {
     try {
       const results = {
         timestamp: new Date().toISOString(),
-        tests: []
+        tests: [] as Array<{
+          name: string;
+          status: string;
+          message: string;
+          details?: any;
+        }>
       }
 
       // Test 1: Check if API endpoints are accessible
