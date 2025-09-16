@@ -28,12 +28,7 @@ export function AIDiagnostics({ onClose }: AIDiagnosticsProps) {
     try {
       const results: DiagnosticsResults = {
         timestamp: new Date().toISOString(),
-        tests: [] as Array<{
-          name: string;
-          status: string;
-          message: string;
-          details?: any;
-        }>
+        tests: [] as TestResult[]
       }
 
       // Test 1: Check if API endpoints are accessible
@@ -144,7 +139,7 @@ export function AIDiagnostics({ onClose }: AIDiagnosticsProps) {
     }
   }
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: 'pass' | 'fail' | 'error') => {
     switch (status) {
       case 'pass':
         return <CheckCircle className="h-5 w-5 text-green-400" />
@@ -155,7 +150,7 @@ export function AIDiagnostics({ onClose }: AIDiagnosticsProps) {
     }
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: 'pass' | 'fail' | 'error') => {
     switch (status) {
       case 'pass':
         return 'text-green-400'

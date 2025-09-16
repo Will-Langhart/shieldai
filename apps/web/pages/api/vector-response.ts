@@ -84,7 +84,7 @@ Your role is to:
 
 IMPORTANT: Use the provided context to give more personalized and relevant responses based on the user's conversation history and interests.`;
 
-    const messages = [
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: systemPrompt + context },
       { role: 'user', content: message }
     ];
