@@ -16,7 +16,7 @@ export function EmailConfirm() {
           setStatus('success');
           setMessage('Your email has been confirmed! Redirecting to chat...');
           setTimeout(() => {
-            navigate('/chat');
+            router.push('/chat');
           }, 2000);
           return;
         }
@@ -27,7 +27,7 @@ export function EmailConfirm() {
             setStatus('success');
             setMessage('Your email has been confirmed! Redirecting to chat...');
             setTimeout(() => {
-              navigate('/chat');
+              router.push('/chat');
             }, 2000);
           } else {
             setStatus('error');
@@ -42,7 +42,7 @@ export function EmailConfirm() {
     };
 
     handleEmailConfirmation();
-  }, [user, navigate]);
+  }, [user, router.push]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#1A1D24]">
@@ -67,7 +67,7 @@ export function EmailConfirm() {
             <h2 className="text-2xl font-bold text-[#E0E0E0] mb-4">Email Confirmed!</h2>
             <p className="text-[#9CA3AF] mb-6">{message}</p>
             <button
-              onClick={() => navigate('/chat')}
+              onClick={() => router.push('/chat')}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Go to Chat
@@ -86,13 +86,13 @@ export function EmailConfirm() {
             <p className="text-[#9CA3AF] mb-6">{message}</p>
             <div className="space-y-2">
               <button
-                onClick={() => navigate('/chat')}
+                onClick={() => router.push('/chat')}
                 className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Try Again
               </button>
               <button
-                onClick={() => navigate('/')}
+                onClick={() => router.push('/')}
                 className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
                 Go Home
