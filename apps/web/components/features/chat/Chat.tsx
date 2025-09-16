@@ -354,11 +354,13 @@ export function Chat() {
                         className="w-full bg-transparent text-[#E0E0E0] placeholder-transparent focus:outline-none text-base"
                         disabled={isLoading}
                       />
-                      <div className="absolute inset-0 pointer-events-none">
-                        <span className="text-[#9CA3AF] text-base animate-pulse">
-                          {apologeticsQuestions[currentPlaceholderIndex]}
-                        </span>
-                      </div>
+                      {!inputMessage && (
+                        <div className="absolute inset-0 pointer-events-none">
+                          <span className="text-[#9CA3AF] text-base animate-pulse">
+                            {apologeticsQuestions[currentPlaceholderIndex]}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2 ml-2">
                       <button className="p-2 hover:bg-[#3A404B] rounded-lg transition-colors">
