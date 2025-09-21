@@ -2,6 +2,7 @@
   "buildCommand": "npm run build:web",
   "installCommand": "npm install",
   "outputDirectory": "apps/web/.next",
+  "rootDirectory": "apps/web",
 
   "headers": [
     {
