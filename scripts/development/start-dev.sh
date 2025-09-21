@@ -35,7 +35,7 @@ fi
 
 # Install Python dependencies
 echo "🐍 Installing Python dependencies..."
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
 # Install Node.js dependencies
 echo "📦 Installing Node.js dependencies..."
@@ -47,7 +47,7 @@ cd apps/frontend && npm install && cd ../..
 
 # Start backend in background
 echo "🔧 Starting Python backend server..."
-python app.py &
+python backend/app.py &
 BACKEND_PID=$!
 
 # Wait a moment for backend to start

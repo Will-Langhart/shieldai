@@ -6,47 +6,45 @@ A comprehensive Bible study platform with AI-powered insights, available across 
 
 ```
 shieldai/
-├── 📱 apps/                          # All applications
-│   ├── web/                         # Next.js web app (backend + frontend)
-│   ├── mobile/                      # React Native mobile app
-│   └── frontend/                    # React frontend (legacy)
-├── 🔧 [root backend files]          # Python/FastAPI backend
+├── 📱 apps/                          # Applications
+│   ├── web/                         # Next.js web app (main)
+│   └── mobile/                      # React Native mobile app
+├── 🔧 backend/                      # Backend services
 │   ├── app.py                       # Main FastAPI application
 │   ├── requirements.txt             # Python dependencies
-│   └── gunicorn.conf.py             # Gunicorn configuration
-├── 📦 packages/                     # Shared packages
+│   ├── gunicorn.conf.py             # Gunicorn configuration
+│   ├── mcp/                         # MCP server
+│   └── services/                    # Backend services
+├── 📦 shared/                       # Shared code
 │   ├── ui/                         # Shared UI components
 │   ├── types/                      # Shared TypeScript types
-│   ├── services/                   # Shared business logic
-│   └── config/                     # Shared configurations
-├── 🗄️ database/                     # Database related files
+│   └── services/                   # Shared business logic
+├── 🗄️ database/                     # Database files
 │   ├── migrations/                 # SQL migration files
 │   ├── seeds/                      # Seed data
 │   └── schemas/                    # Schema definitions
-├── 🔧 tools/                       # Development tools
-│   ├── scripts/                    # Development scripts
-│   ├── mcp/                        # MCP server
-│   └── testing/                    # Test utilities
-├── 📚 docs/                        # Documentation
-│   ├── PROJECT_README.md           # Detailed project documentation
-│   ├── architecture.txt            # System architecture
-│   └── [other documentation files]
+├── 🧪 tests/                       # All tests
+│   ├── integration/                # Integration tests
+│   ├── unit/                       # Unit tests
+│   └── e2e/                        # End-to-end tests
+├── 📚 docs/                        # Documentation (flattened)
+│   ├── api.md                      # API documentation
+│   ├── deployment.md               # Deployment guides
+│   ├── features.md                 # Feature documentation
+│   └── setup.md                    # Setup guides
+├── 🛠️ scripts/                     # Development scripts
+│   ├── dev/                        # Development scripts
+│   ├── deploy/                     # Deployment scripts
+│   └── db/                         # Database scripts
 ├── 🎨 assets/                      # Static assets
 ├── 📊 monitoring/                  # Logs and monitoring
-├── 🔐 config/                      # Configuration files
-│   ├── env/                        # Environment files
-│   │   ├── .env.local              # Local environment variables
-│   │   ├── .env.test               # Test environment variables
-│   │   └── .env.*.backup           # Environment file backups
-│   ├── env.example                 # Environment variables template
-│   ├── vercel.json                 # Vercel deployment config
-│   ├── package.json                # Root package.json
-│   ├── package-lock.json           # Package lock file
-│   └── secrets/                    # Secret files (secure)
-├── 🧪 tests/                       # Test files
-│   ├── test_rag_integration.py     # RAG integration tests
-│   └── test-pinecone-*.js          # Pinecone connection tests
-└── 📁 [other directories...]
+└── 🔐 config/                      # Configuration files
+    ├── env/                        # Environment files (gitignored)
+    ├── secrets/                    # Secret files (secure)
+    ├── env.example                 # Environment template
+    ├── vercel.json                 # Vercel config
+    ├── package.json                # Root package.json
+    └── package-lock.json           # Package lock file
 ```
 
 ## 🚀 Quick Start
@@ -107,14 +105,14 @@ shieldai/
 - **Port**: 8081
 - **Tech Stack**: React Native, TypeScript, Expo
 
-### Backend (root files)
+### Backend (`backend/`)
 - **Framework**: Python FastAPI
 - **Features**: Main API server and MCP integration
 - **Port**: 8000
 - **Tech Stack**: Python, FastAPI, Pydantic
-- **Files**: `app.py`, `requirements.txt`, `gunicorn.conf.py`
+- **Files**: `app.py`, `requirements.txt`, `gunicorn.conf.py`, `mcp/`
 
-### MCP Server (`tools/mcp`)
+### MCP Server (`backend/mcp`)
 - **Framework**: Python FastAPI
 - **Features**: Model Context Protocol server
 - **Port**: 8000
