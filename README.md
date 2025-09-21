@@ -18,6 +18,7 @@ shieldai/
 ├── package.json                     # Root package configuration
 ├── package-lock.json                # Package lock file
 ├── README.md                        # Project documentation
+├── requirements.txt                 # Python dependencies
 └── vercel.json                      # Vercel deployment config
 └── src/                             # ALL source code and configuration
     ├── apps/                        # Applications
@@ -353,7 +354,6 @@ shieldai/
     │   ├── mcp_services_supabase_server.py
     │   ├── mcp_tests_init.py
     │   ├── mcp_tests_test_base_server.py
-    │   ├── requirements.txt         # Python dependencies
     │   └── utils.py
     ├── shared/                      # Shared code (flattened)
     │   ├── services/                # Shared services
@@ -475,7 +475,7 @@ shieldai/
 
 ### Prerequisites
 - Node.js 18+
-- Python 3.8+
+- Python 3.8+ (see `requirements.txt` for dependencies)
 - PostgreSQL/Supabase
 - Pinecone account (for vector storage)
 - OpenAI API key
@@ -487,6 +487,9 @@ shieldai/
    git clone https://github.com/Will-Langhart/shieldai.git
    cd shieldai
    npm install
+   
+   # Install Python dependencies
+   pip install -r requirements.txt
    ```
 
 2. **Environment setup**
@@ -548,6 +551,7 @@ shieldai/
 - **Features**: Main API server and MCP integration
 - **Port**: 8000
 - **Tech Stack**: Python, FastAPI, Pydantic, Pinecone, Supabase
+- **Dependencies**: `requirements.txt` (in root directory)
 - **Key Features**:
   - RESTful API endpoints
   - MCP (Model Context Protocol) server
