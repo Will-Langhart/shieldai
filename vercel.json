@@ -1,8 +1,7 @@
 {
-  "buildCommand": "npm run build:web",
+  "buildCommand": "cd apps/web && npm run build",
   "installCommand": "npm install",
   "outputDirectory": "apps/web/.next",
-  "rootDirectory": "apps/web",
 
   "headers": [
     {
