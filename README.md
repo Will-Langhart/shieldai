@@ -9,42 +9,45 @@ shieldai/
 ├── 📱 apps/                          # Applications
 │   ├── web/                         # Next.js web app (main)
 │   └── mobile/                      # React Native mobile app
-├── 🔧 backend/                      # Backend services
-│   ├── app.py                       # Main FastAPI application
-│   ├── requirements.txt             # Python dependencies
-│   ├── gunicorn.conf.py             # Gunicorn configuration
-│   ├── mcp/                         # MCP server
-│   └── services/                    # Backend services
-├── 📦 shared/                       # Shared code
-│   ├── ui/                         # Shared UI components
-│   ├── types/                      # Shared TypeScript types
-│   └── services/                   # Shared business logic
-├── 🗄️ database/                     # Database files
-│   ├── migrations/                 # SQL migration files
-│   ├── seeds/                      # Seed data
-│   └── schemas/                    # Schema definitions
-├── 🧪 tests/                       # All tests
-│   ├── integration/                # Integration tests
-│   ├── unit/                       # Unit tests
-│   └── e2e/                        # End-to-end tests
-├── 📚 docs/                        # Documentation (flattened)
-│   ├── api.md                      # API documentation
-│   ├── deployment.md               # Deployment guides
-│   ├── features.md                 # Feature documentation
-│   └── setup.md                    # Setup guides
-├── 🛠️ scripts/                     # Development scripts
-│   ├── dev/                        # Development scripts
-│   ├── deploy/                     # Deployment scripts
-│   └── db/                         # Database scripts
-├── 🎨 assets/                      # Static assets
-├── 📊 monitoring/                  # Logs and monitoring
-└── 🔐 config/                      # Configuration files
-    ├── env/                        # Environment files (gitignored)
-    ├── secrets/                    # Secret files (secure)
-    ├── env.example                 # Environment template
-    ├── vercel.json                 # Vercel config
-    ├── package.json                # Root package.json
-    └── package-lock.json           # Package lock file
+├── 🔧 src/                          # ALL source code
+│   ├── backend/                     # Backend services
+│   │   ├── app.py                   # Main FastAPI application
+│   │   ├── requirements.txt         # Python dependencies
+│   │   ├── gunicorn.conf.py         # Gunicorn configuration
+│   │   ├── mcp_*.py                 # MCP server files (flattened)
+│   │   └── services/                # Backend services
+│   ├── shared/                      # Shared code (flattened)
+│   │   ├── ui_*.tsx                 # Shared UI components
+│   │   ├── types_*.ts               # Shared TypeScript types
+│   │   ├── services_*.ts            # Shared business logic
+│   │   └── *_package.json           # Package configurations
+│   ├── scripts/                     # All scripts and tests (flattened)
+│   │   ├── tests/                   # Test files
+│   │   │   ├── integration/         # Integration tests
+│   │   │   ├── unit/                # Unit tests
+│   │   │   └── e2e/                 # End-to-end tests
+│   │   ├── logs/                    # Application logs
+│   │   ├── metrics/                 # Performance metrics
+│   │   ├── dev_*.sh                 # Development scripts
+│   │   ├── deploy_*.sh              # Deployment scripts
+│   │   ├── db_*.js                  # Database scripts
+│   │   └── monitor_*.js             # Monitoring scripts
+│   ├── docs/                        # Documentation (flattened)
+│   │   ├── api_*.md                 # API documentation
+│   │   ├── deployment_*.md          # Deployment guides
+│   │   ├── features_*.md            # Feature documentation
+│   │   └── setup_*.md               # Setup guides
+│   └── assets/                      # Static assets
+└── 🔐 config/                       # ALL configuration
+    ├── env/                         # Environment files (gitignored)
+    ├── secrets/                     # Secret files (secure)
+    ├── migrations/                  # Database migrations
+    ├── node_modules/                # Node dependencies
+    ├── venv/                        # Python virtual environment
+    ├── env.example                  # Environment template
+    ├── vercel.json                  # Vercel config
+    ├── package.json                 # Root package.json
+    └── package-lock.json            # Package lock file
 ```
 
 ## 🚀 Quick Start
