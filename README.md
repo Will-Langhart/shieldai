@@ -9,10 +9,52 @@ shieldai/
 ├── .git/                            # Git repository
 ├── .github/                         # GitHub workflows
 ├── .vercel/                         # Vercel deployment cache
+├── .eslintrc.json                   # ESLint configuration
+├── package.json                     # Root package configuration
+├── package-lock.json                # Package lock file
+├── vercel.json                      # Vercel deployment config
+├── README.md                        # Project documentation
 └── src/                             # ALL source code and configuration
     ├── apps/                        # Applications
     │   ├── web/                     # Next.js web app (main)
+    │   │   ├── components/          # React components
+    │   │   │   ├── auth/            # Authentication components
+    │   │   │   ├── common/          # Common UI components
+    │   │   │   ├── features/        # Feature-specific components
+    │   │   │   │   ├── bible/       # Bible study components
+    │   │   │   │   └── chat/        # Chat components
+    │   │   │   ├── layout/          # Layout components
+    │   │   │   └── ui/              # UI components
+    │   │   ├── contexts/            # React contexts
+    │   │   ├── hooks/               # Custom React hooks
+    │   │   ├── lib/                 # Library functions
+    │   │   ├── pages/               # Next.js pages
+    │   │   │   ├── api/             # API routes
+    │   │   │   │   ├── ai-insights/ # AI insights API
+    │   │   │   │   ├── auth/        # Authentication API
+    │   │   │   │   ├── bible/       # Bible API
+    │   │   │   │   ├── churches/    # Church finder API
+    │   │   │   │   ├── memory/      # Memory API
+    │   │   │   │   ├── pinecone/    # Pinecone API
+    │   │   │   │   ├── subscriptions/ # Subscription API
+    │   │   │   │   └── webhooks/    # Webhook handlers
+    │   │   │   └── *.tsx            # Page components
+    │   │   ├── services/            # Service layer
+    │   │   ├── styles/              # CSS styles
+    │   │   ├── types/               # TypeScript types
+    │   │   ├── utils/               # Utility functions
+    │   │   ├── next.config.js       # Next.js configuration
+    │   │   ├── package.json         # Web app dependencies
+    │   │   └── tsconfig.json        # TypeScript configuration
     │   └── mobile/                  # React Native mobile app
+    │       ├── app/                 # App screens
+    │       ├── components/          # Mobile components
+    │       ├── constants/           # App constants
+    │       ├── contexts/            # Mobile contexts
+    │       ├── utils/               # Mobile utilities
+    │       ├── app.config.ts        # Expo configuration
+    │       ├── package.json         # Mobile dependencies
+    │       └── tsconfig.json        # Mobile TypeScript config
     ├── backend/                     # Backend services
     │   ├── app.py                   # Main FastAPI application
     │   ├── requirements.txt         # Python dependencies
@@ -20,9 +62,9 @@ shieldai/
     │   ├── mcp_*.py                 # MCP server files (flattened)
     │   └── services/                # Backend services
     ├── shared/                      # Shared code (flattened)
-    │   ├── ui_*.tsx                 # Shared UI components
-    │   ├── types_*.ts               # Shared TypeScript types
-    │   ├── services_*.ts            # Shared business logic
+    │   ├── ui_index.tsx             # Shared UI components
+    │   ├── types_index.ts           # Shared TypeScript types
+    │   ├── services_index.ts        # Shared business logic
     │   └── *_package.json           # Package configurations
     ├── scripts/                     # All scripts and tests (flattened)
     │   ├── tests/                   # Test files
@@ -41,6 +83,7 @@ shieldai/
     │   ├── features_*.md            # Feature documentation
     │   └── setup_*.md               # Setup guides
     ├── assets/                      # Static assets
+    │   └── themes/                  # Color themes
     └── config/                      # ALL configuration
         ├── env/                     # Environment files (gitignored)
         ├── secrets/                 # Secret files (secure)
