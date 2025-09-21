@@ -6,7 +6,7 @@ interface UserProfileProps {
   onClose: () => void;
 }
 
-export const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
+export const UserProfile= ({ onClose }: UserProfileProps) => {
   const { user, signOut, resetPassword } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);

@@ -1,6 +1,6 @@
 import React from 'react'
 
-const Footer: React.FC = () => {
+const Footer = () => {
   return (
     <footer className="relative bg-gradient-to-t from-[#1A1D24] to-[#2C303A] border-t border-[#2C303A] landing-section section-transition">
       {/* Smooth Transition Overlay */}

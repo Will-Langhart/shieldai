@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { cn } from '../../utils/cn'
 
-const Header: React.FC = () => {
+const Header = () => {
   const router = useRouter()
   const location = { pathname: router.pathname }
 
