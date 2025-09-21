@@ -27,7 +27,7 @@ fi
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
     echo "📝 Creating .env file from template..."
-    cp env.example .env
+    cp config/env.example .env
     echo "⚠️  Please edit .env file with your actual API keys before continuing."
     echo "   Press Enter when ready to continue..."
     read

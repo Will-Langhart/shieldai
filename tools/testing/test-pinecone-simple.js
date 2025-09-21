@@ -1,5 +1,5 @@
 const { Pinecone } = require('@pinecone-database/pinecone');
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: 'config/env/.env.local' });
 
 async function testPineconeSimple() {
   console.log('🧪 Simple Pinecone Connection Test\n');

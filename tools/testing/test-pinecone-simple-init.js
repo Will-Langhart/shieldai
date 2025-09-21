@@ -1,5 +1,5 @@
 const { Pinecone } = require('@pinecone-database/pinecone');
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: 'config/env/.env.local' });
 
 async function testPineconeSimpleInit() {
   console.log('🧪 Pinecone Test with Simple Initialization\n');
@@ -9,7 +9,7 @@ async function testPineconeSimpleInit() {
     const indexName = process.env.PINECONE_INDEX_NAME || 'shieldai';
     
     if (!apiKey) {
-      console.error('❌ PINECONE_API_KEY not set in .env.local');
+      console.error('❌ PINECONE_API_KEY not set in config/env/.env.local');
       return;
     }
     

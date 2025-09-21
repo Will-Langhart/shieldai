@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
 import { EmbeddingService } from '../../lib/embeddings';
+import { PineconeService, SearchResult } from '../../lib/pinecone';
 
 // Initialize OpenAI client
 let openai: OpenAI | null = null;
@@ -16,19 +17,6 @@ const getOpenAI = () => {
   }
   return openai;
 };
-
-// Hardcoded Pinecone API key for now (we'll fix the env issue later)
-const PINECONE_API_KEY = 'pcsk_3MJJaR_EjBt6ktRBUfLAmCTa8DTtQpRBKtwDKB657XofsBYVY6S9aWXxrLCtpvkUGuCULy';
-const SHIELDAI_INDEX_HOST = 'shieldai-smb4qh6.svc.aped-4627-b74a.pinecone.io';
-
-interface VectorSearchResult {
-  id: string;
-  score: number;
-  content: string;
-  role: string;
-  conversationId: string;
-  metadata?: Record<string, any>;
-}
 
 interface VectorResponseRequest {
   message: string;
@@ -60,8 +48,8 @@ export default async function handler(
     const queryEmbedding = await EmbeddingService.generateEmbedding(message);
     console.log('✅ Generated query embedding');
 
-    // Step 2: Search Pinecone for relevant vectors
-    const vectorResults = await searchPineconeVectors(
+    // Step 2: Search Pinecone for relevant vectors using PineconeService
+    const vectorResults = await PineconeService.searchSimilarMessages(
       queryEmbedding,
       userId,
       conversationId,
@@ -179,58 +167,9 @@ IMPORTANT: Use the provided context to give more personalized and relevant respo
   }
 }
 
-// Search Pinecone for relevant vectors
-async function searchPineconeVectors(
-  queryEmbedding: number[],
-  userId: string,
-  conversationId?: string,
-  topK: number = 5
-): Promise<VectorSearchResult[]> {
-  try {
-    // Convert to 1024 dimensions for Pinecone
-    const queryVec = EmbeddingService.convertTo1024Dimensions(queryEmbedding);
-    
-    // Search without filter to find any relevant vectors
-    const response = await fetch(`https://${SHIELDAI_INDEX_HOST}/query`, {
-      method: 'POST',
-      headers: {
-        'Api-Key': PINECONE_API_KEY,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        vector: queryVec,
-        topK: topK,
-        // Search in default namespace for now (existing vectors are there)
-        includeMetadata: true,
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Pinecone query failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    const results = (data.matches || [])
-      .filter((match: any) => (match.score || 0) >= 0.18) // Minimum similarity threshold
-      .map((match: any) => ({
-        id: match.id,
-        score: match.score || 0,
-        content: String(match.metadata?.content || ''),
-        role: String(match.metadata?.role || 'user'),
-        conversationId: String(match.metadata?.conversationId || ''),
-        metadata: match.metadata,
-      }));
-
-    return results;
-  } catch (error) {
-    console.error('Error searching Pinecone vectors:', error);
-    return [];
-  }
-}
 
 // Build context from vector search results
-function buildContextFromVectors(vectors: VectorSearchResult[], currentMessage: string): string {
+function buildContextFromVectors(vectors: SearchResult[], currentMessage: string): string {
   if (vectors.length === 0) {
     return '\n\nNo relevant conversation history found.';
   }

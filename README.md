@@ -10,6 +10,10 @@ shieldai/
 │   ├── web/                         # Next.js web app (backend + frontend)
 │   ├── mobile/                      # React Native mobile app
 │   └── frontend/                    # React frontend (legacy)
+├── 🔧 [root backend files]          # Python/FastAPI backend
+│   ├── app.py                       # Main FastAPI application
+│   ├── requirements.txt             # Python dependencies
+│   └── gunicorn.conf.py             # Gunicorn configuration
 ├── 📦 packages/                     # Shared packages
 │   ├── ui/                         # Shared UI components
 │   ├── types/                      # Shared TypeScript types
@@ -24,9 +28,25 @@ shieldai/
 │   ├── mcp/                        # MCP server
 │   └── testing/                    # Test utilities
 ├── 📚 docs/                        # Documentation
+│   ├── PROJECT_README.md           # Detailed project documentation
+│   ├── architecture.txt            # System architecture
+│   └── [other documentation files]
 ├── 🎨 assets/                      # Static assets
 ├── 📊 monitoring/                  # Logs and monitoring
-└── 🔐 config/                      # Configuration files
+├── 🔐 config/                      # Configuration files
+│   ├── env/                        # Environment files
+│   │   ├── .env.local              # Local environment variables
+│   │   ├── .env.test               # Test environment variables
+│   │   └── .env.*.backup           # Environment file backups
+│   ├── env.example                 # Environment variables template
+│   ├── vercel.json                 # Vercel deployment config
+│   ├── package.json                # Root package.json
+│   ├── package-lock.json           # Package lock file
+│   └── secrets/                    # Secret files (secure)
+├── 🧪 tests/                       # Test files
+│   ├── test_rag_integration.py     # RAG integration tests
+│   └── test-pinecone-*.js          # Pinecone connection tests
+└── 📁 [other directories...]
 ```
 
 ## 🚀 Quick Start
@@ -48,8 +68,9 @@ shieldai/
 
 2. **Environment setup**
    ```bash
-   cp config/env/.env.example .env
+   cp config/env.example .env
    # Configure your environment variables
+   # Additional env files are in config/env/
    ```
 
 3. **Database setup**
@@ -86,6 +107,13 @@ shieldai/
 - **Port**: 8081
 - **Tech Stack**: React Native, TypeScript, Expo
 
+### Backend (root files)
+- **Framework**: Python FastAPI
+- **Features**: Main API server and MCP integration
+- **Port**: 8000
+- **Tech Stack**: Python, FastAPI, Pydantic
+- **Files**: `app.py`, `requirements.txt`, `gunicorn.conf.py`
+
 ### MCP Server (`tools/mcp`)
 - **Framework**: Python FastAPI
 - **Features**: Model Context Protocol server
@@ -121,11 +149,20 @@ Test data and initial setup scripts are in `database/seeds/`.
 - **Architecture**: `docs/architecture/` - System architecture
 - **Deployment**: `docs/deployment/` - Deployment guides
 - **Features**: `docs/features/` - Feature documentation
+- **Project Details**: `docs/PROJECT_README.md` - Comprehensive project documentation
 
 ## 🔧 Configuration
 
-- **Environment**: `config/env/` - Environment files
-- **Secrets**: `config/secrets/` - Secret templates
+- **Environment**: `config/env.example` - Environment variables template
+- **Environment Files**: `config/env/` - Local, test, and backup environment files
+- **Secrets**: `config/secrets/` - Secret files (secure storage)
+- **Deployment**: `config/vercel.json` - Vercel configuration
+
+## 🧪 Testing
+
+- **Integration Tests**: `tests/test_rag_integration.py` - RAG system tests
+- **Connection Tests**: `tests/test-pinecone-*.js` - Database connection tests
+- **Test Utilities**: `tools/testing/` - Additional test utilities
 
 ## 🚀 Deployment
 
@@ -155,3 +192,7 @@ This project is licensed under the MIT License.
 ## 🤝 Support
 
 For support, email support@shieldai.com or join our Discord community.
+
+---
+
+*For detailed project documentation, see [docs/PROJECT_README.md](docs/PROJECT_README.md)*

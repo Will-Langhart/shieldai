@@ -104,6 +104,13 @@
       "created_at": "2025-09-16T20:11:36.120Z",
       "updated_at": "2025-09-16T20:11:40.862Z",
       "user_id": "550e8400-e29b-41d4-a716-446655440000"
+    },
+    "conv-1758073323700-1d05xzepa": {
+      "id": "conv-1758073323700-1d05xzepa",
+      "title": "what evidence supports the resurection",
+      "created_at": "2025-09-17T01:42:03.700Z",
+      "updated_at": "2025-09-17T01:42:06.016Z",
+      "user_id": "550e8400-e29b-41d4-a716-446655440000"
     }
   },
   "messages": {
@@ -552,6 +559,34 @@
           "bible_search_results": 0
         }
       }
+    ],
+    "conv-1758073323700-1d05xzepa": [
+      {
+        "id": "msg-1758073326016-vm58jzyah",
+        "conversation_id": "conv-1758073323700-1d05xzepa",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "what evidence supports the resurection",
+        "role": "user",
+        "created_at": "2025-09-17T01:42:06.016Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-17T01:42:06.015Z"
+        }
+      },
+      {
+        "id": "msg-1758073326016-65lsa15u1",
+        "conversation_id": "conv-1758073323700-1d05xzepa",
+        "user_id": "550e8400-e29b-41d4-a716-446655440000",
+        "content": "The resurrection of Jesus Christ is a foundational belief of the Christian faith. The evidence supporting the resurrection comes from multiple sources, including the accounts in the Bible, the historical record, and the transformation of the disciples.\n\nIn the Bible, the resurrection of Jesus is described in detail in all four Gospels: Matthew 28, Mark 16, Luke 24, and John 20-21. These accounts provide eyewitness testimony of Jesus' resurrection, his appearances to his disciples, and his interactions with them after rising from the dead.\n\nHistorically, the empty tomb of Jesus is significant evidence supporting the resurrection. The fact that Jesus' body was not found in the tomb where he was buried is a crucial aspect of the resurrection narrative. This empty tomb was confirmed by both friends and foes of Jesus, as seen in Matthew 28:11-15.\n\nFurthermore, the transformation of the disciples after the resurrection is compelling evidence. The fearful and discouraged disciples who deserted Jesus before his crucifixion became bold proclaimers of the Gospel after witnessing his resurrection. Their transformation, as seen in Acts 4:13, is evidence of the reality of the resurrection.\n\nUltimately, the resurrection of Jesus is a central tenet of the Christian faith. As the Apostle Paul writes in 1 Corinthians 15:17, \"And if Christ has not been raised, your faith is futile; you are still in your sins.\" The resurrection is foundational to the Christian belief in salvation and eternal life through Jesus Christ.",
+        "role": "assistant",
+        "created_at": "2025-09-17T01:42:06.016Z",
+        "metadata": {
+          "mode": "gentle",
+          "timestamp": "2025-09-17T01:42:06.016Z",
+          "relevant_verses": 0,
+          "bible_search_results": 0
+        }
+      }
     ]
   },
   "userConversations": {
@@ -570,7 +605,8 @@
       "conv-1758053069277-u2t17adgl",
       "conv-1758053135198-cyp6rvqnv",
       "conv-1758053275081-kqugno2br",
-      "conv-1758053496120-7jftszrne"
+      "conv-1758053496120-7jftszrne",
+      "conv-1758073323700-1d05xzepa"
     ]
   }
 }

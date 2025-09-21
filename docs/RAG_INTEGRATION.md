@@ -131,7 +131,7 @@ python mcp/run_servers.py
 ### 2. Test RAG Integration
 ```bash
 cd /path/to/shieldai
-python test_rag_integration.py
+python tests/test_rag_integration.py
 ```
 
 ### 3. Test Frontend

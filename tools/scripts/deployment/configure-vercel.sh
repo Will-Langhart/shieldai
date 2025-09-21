@@ -8,7 +8,7 @@ set -e
 echo "🔧 Configuring Vercel for automatic domain linking..."
 
 # Check if we're in the right directory
-if [ ! -f "vercel.json" ]; then
+if [ ! -f "config/vercel.json" ]; then
     echo "❌ Error: This script must be run from the project root directory"
     exit 1
 fi

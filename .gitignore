@@ -24,6 +24,10 @@ out/
 .env.test.local
 .env.production.local
 
+# Environment files directory (contains sensitive data)
+config/env/
+!config/env/.gitkeep
+
 # Logs
 logs/
 *.log

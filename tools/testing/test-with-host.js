@@ -6,7 +6,7 @@ async function testWithHost() {
 
   try {
     // Read .env.local directly
-    const envLocalPath = '.env.local';
+    const envLocalPath = 'config/env/.env.local';
     if (!fs.existsSync(envLocalPath)) {
       throw new Error('.env.local file not found');
     }

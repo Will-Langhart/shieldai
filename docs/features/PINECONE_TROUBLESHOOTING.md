@@ -65,10 +65,10 @@ Run these test scripts to find the correct configuration:
 
 ```bash
 # Test with us-east-1-aws
-node scripts/test-pinecone-correct-env.js
+node tests/test-pinecone-connection.js
 
 # Test with us-east-1
-node scripts/test-pinecone-simple.js
+node tests/test-pinecone-simple.js
 
 # Test with direct index access
 node scripts/test-index-direct.js
@@ -78,7 +78,7 @@ node scripts/test-index-direct.js
 
 ### **Fix 1: Update Environment Variables**
 
-Update your `.env.local` file:
+Update your `config/env/.env.local` file:
 
 ```bash
 # Try this format first
@@ -122,12 +122,12 @@ curl -H "Api-Key: YOUR_API_KEY" \
 
 ### **Test 3: Local Script**
 ```bash
-node scripts/test-pinecone-correct-env.js
+node tests/test-pinecone-connection.js
 ```
 
 ## 📋 **Environment Variable Checklist**
 
-Make sure these are set correctly in your `.env.local`:
+Make sure these are set correctly in your `config/env/.env.local`:
 
 ```bash
 PINECONE_API_KEY=pcsk_6La4fD_KxUwby6c62E93h7pPAdgjhSG5szTKgqh9Pych3nSwCPVx1Ze5mFEzuFixbqszw1
