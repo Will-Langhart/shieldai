@@ -35,9 +35,23 @@ export default async function handler(
   try {
     const { passage, version } = req.body || {};
 
+    // Debug logging to see what we're receiving
+    logger.info('AI insights request body', { 
+      cid, 
+      hasPassage: !!passage, 
+      passageKeys: passage ? Object.keys(passage) : [],
+      passageReference: passage?.reference,
+      version 
+    });
+
     if (!passage) {
       logger.warn('Missing passage', { cid });
       return res.status(400).json({ error: 'Passage is required' });
+    }
+
+    if (!passage.reference) {
+      logger.warn('Missing passage reference', { cid, passage });
+      return res.status(400).json({ error: 'Passage reference is required' });
     }
 
     // Get authenticated user (with fallback for testing)

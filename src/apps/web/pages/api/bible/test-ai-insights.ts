@@ -9,6 +9,11 @@ export default async function handler(
   }
 
   try {
+    // Construct the base URL properly for server-side fetch
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000';
+    const baseUrl = `${protocol}://${host}`;
+
     // Test the AI insights API with a simple passage
     const testPassage = {
       id: 'test-passage',
@@ -31,7 +36,7 @@ export default async function handler(
       }
     };
 
-    const response = await fetch(`${req.headers.host?.startsWith('http') ? '' : 'http://localhost:3000'}/api/bible/ai-insights`, {
+    const response = await fetch(`${baseUrl}/api/bible/ai-insights`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
