@@ -191,6 +191,13 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
     setLoading(true)
     setError(null)
 
+    // Check if we have a valid passage before making the request
+    if (!passage || !passage.reference) {
+      setError('Please select a Bible passage first')
+      setLoading(false)
+      return
+    }
+
     try {
       const authToken = await getAuthToken()
 
@@ -201,9 +208,8 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          passage_reference: passage.reference,
-          passage_text: passage.text,
-          bible_version: version
+          passage: passage,
+          version: version
         })
       })
 
@@ -472,10 +478,20 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
           {!insights && !loading && (
             <button
               onClick={generateInsights}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              disabled={!passage || !passage.reference}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                !passage || !passage.reference
+                  ? 'bg-gray-600 cursor-not-allowed text-gray-400'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
             >
               <Brain className="h-4 w-4" />
-              <span>Generate Insights</span>
+              <span>
+                {!passage || !passage.reference 
+                  ? 'Select a passage first' 
+                  : 'Generate Insights'
+                }
+              </span>
             </button>
           )}
           

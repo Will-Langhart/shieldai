@@ -35,11 +35,10 @@ export default async function handler(
   try {
     const { passage, version } = req.body || {};
 
-    // Debug logging to see what we're receiving
-    logger.info('AI insights request body', { 
+    // Log the request for monitoring
+    logger.info('AI insights request', { 
       cid, 
       hasPassage: !!passage, 
-      passageKeys: passage ? Object.keys(passage) : [],
       passageReference: passage?.reference,
       version 
     });
