@@ -214,7 +214,7 @@ export class ChatService {
     try {
       const { data: { user } } = await client.auth.getUser();
       if (user) {
-        const embedding = await EmbeddingService.generateEmbedding(content);
+        const embedding = await EmbeddingService.generateEmbeddingForIndex(content);
         await PineconeService.storeMessage(
           data.id,
           content,
@@ -373,7 +373,7 @@ export class ChatService {
   ): Promise<Array<{ content: string; role: string; score: number }>> {
     try {
       const client = supabaseClient || supabase;
-      const embedding = await EmbeddingService.generateEmbedding(query);
+      const embedding = await EmbeddingService.generateEmbeddingForIndex(query);
       const results = await PineconeService.searchSimilarMessages(
         embedding,
         userId,

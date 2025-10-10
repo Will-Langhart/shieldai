@@ -208,7 +208,7 @@ export default async function handler(
     let bibleVectorResults: any[] = [];
     try {
       // Generate embedding for the user's message
-      const messageEmbedding = await EmbeddingService.generateEmbedding(message);
+      const messageEmbedding = await EmbeddingService.generateEmbeddingForIndex(message);
       
       // Search for relevant Bible content across all namespaces
       const results = await BiblePineconeService.searchBibleContent(

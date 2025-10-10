@@ -151,9 +151,21 @@ export function SmartTextSelection({ passage, onInsightGenerated, onImageGenerat
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          passage_reference: selectedText.reference,
-          passage_text: selectedText.text,
-          bible_version: passage.version.id
+          passage: {
+            id: selectedText.id || 'unknown',
+            reference: selectedText.reference,
+            text: selectedText.text,
+            verses: [{
+              id: selectedText.id || 'unknown',
+              text: selectedText.text,
+              reference: selectedText.reference,
+              verseNumber: selectedText.verseNumber || 1,
+              chapterNumber: selectedText.chapterNumber || 1,
+              bookName: selectedText.bookName || 'Unknown'
+            }],
+            version: passage.version
+          },
+          version: passage.version.id
         })
       })
 

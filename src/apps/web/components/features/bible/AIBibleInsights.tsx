@@ -187,6 +187,28 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
     }
   }
 
+  const testWithMockData = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/bible/test-ai-insights-response')
+      
+      if (!response.ok) {
+        throw new Error('Failed to load test insights')
+      }
+
+      const data = await response.json()
+      setInsights(data.insights)
+      setIsSaved(false)
+    } catch (error) {
+      console.error('Error loading test insights:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load test insights')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const generateInsights = async () => {
     setLoading(true)
     setError(null)
@@ -226,7 +248,29 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
       }
 
       const data = await response.json()
-      setInsights(data.insights)
+      
+      // Handle case where insights might be a JSON string instead of an object
+      let parsedInsights = data.insights
+      if (typeof parsedInsights === 'string') {
+        try {
+          parsedInsights = JSON.parse(parsedInsights)
+        } catch (parseError) {
+          console.error('Failed to parse insights JSON string:', parseError)
+          // If it's still a string, create a basic structure
+          parsedInsights = {
+            explanation: parsedInsights,
+            keyThemes: [],
+            crossReferences: [],
+            studyQuestions: [],
+            historicalContext: '',
+            theologicalMeaning: '',
+            practicalApplication: '',
+            prayerPoints: []
+          }
+        }
+      }
+      
+      setInsights(parsedInsights)
       setIsSaved(false)
     } catch (error) {
       console.error('Error generating insights:', error)
@@ -253,14 +297,14 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
           passage_reference: passage.reference,
           passage_text: passage.text,
           bible_version: version,
-          explanation: insights.explanation,
-          key_themes: insights.keyThemes,
-          cross_references: insights.crossReferences,
-          study_questions: insights.studyQuestions,
-          historical_context: insights.historicalContext,
-          theological_meaning: insights.theologicalMeaning,
-          practical_application: insights.practicalApplication,
-          prayer_points: insights.prayerPoints
+          explanation: insights.explanation || '',
+          key_themes: insights.keyThemes || [],
+          cross_references: insights.crossReferences || [],
+          study_questions: insights.studyQuestions || [],
+          historical_context: insights.historicalContext || '',
+          theological_meaning: insights.theologicalMeaning || '',
+          practical_application: insights.practicalApplication || '',
+          prayer_points: insights.prayerPoints || []
         })
       })
 
@@ -269,7 +313,8 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
         await loadSavedInsights() // Reload saved insights
       } else {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to save insights')
+        console.error('Save error details:', errorData)
+        throw new Error(errorData.error || errorData.details || 'Failed to save insights')
       }
     } catch (error) {
       console.error('Error saving insights:', error)
@@ -476,23 +521,33 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
         
         <div className="flex items-center space-x-2">
           {!insights && !loading && (
-            <button
-              onClick={generateInsights}
-              disabled={!passage || !passage.reference}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                !passage || !passage.reference
-                  ? 'bg-gray-600 cursor-not-allowed text-gray-400'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-            >
-              <Brain className="h-4 w-4" />
-              <span>
-                {!passage || !passage.reference 
-                  ? 'Select a passage first' 
-                  : 'Generate Insights'
-                }
-              </span>
-            </button>
+            <>
+              <button
+                onClick={generateInsights}
+                disabled={!passage || !passage.reference}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                  !passage || !passage.reference
+                    ? 'bg-gray-600 cursor-not-allowed text-gray-400'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+              >
+                <Brain className="h-4 w-4" />
+                <span>
+                  {!passage || !passage.reference 
+                    ? 'Select a passage first' 
+                    : 'Generate Insights'
+                  }
+                </span>
+              </button>
+              
+              <button
+                onClick={testWithMockData}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+              >
+                <Brain className="h-4 w-4" />
+                <span>Test with Mock Data</span>
+              </button>
+            </>
           )}
           
           {insights && !isSaved && (
@@ -791,9 +846,18 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
             </button>
             {expandedSections.has('explanation') && (
               <div className="p-4 border-t border-[#2C303A]">
-                <p className="text-[#E0E0E0] leading-relaxed">{insights.explanation}</p>
+                <p className="text-[#E0E0E0] leading-relaxed">
+                  {typeof insights.explanation === 'string' 
+                    ? insights.explanation 
+                    : JSON.stringify(insights.explanation, null, 2)
+                  }
+                </p>
                 <button
-                  onClick={() => copyToClipboard(insights.explanation)}
+                  onClick={() => copyToClipboard(
+                    typeof insights.explanation === 'string' 
+                      ? insights.explanation 
+                      : JSON.stringify(insights.explanation, null, 2)
+                  )}
                   className="mt-3 flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors"
                 >
                   <Copy className="h-4 w-4" />
@@ -804,7 +868,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
           </div>
 
           {/* Key Themes */}
-          {insights.keyThemes.length > 0 && (
+          {insights.keyThemes && Array.isArray(insights.keyThemes) && insights.keyThemes.length > 0 && (
             <div className="border border-[#2C303A] rounded-lg">
               <button
                 onClick={() => toggleSection('themes')}
@@ -839,7 +903,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
           )}
 
           {/* Cross References */}
-          {insights.crossReferences.length > 0 && (
+          {insights.crossReferences && Array.isArray(insights.crossReferences) && insights.crossReferences.length > 0 && (
             <div className="border border-[#2C303A] rounded-lg">
               <button
                 onClick={() => toggleSection('crossrefs')}
@@ -871,7 +935,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
           )}
 
           {/* Study Questions */}
-          {insights.studyQuestions.length > 0 && (
+          {insights.studyQuestions && Array.isArray(insights.studyQuestions) && insights.studyQuestions.length > 0 && (
             <div className="border border-[#2C303A] rounded-lg">
               <button
                 onClick={() => toggleSection('questions')}
@@ -984,7 +1048,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
           )}
 
           {/* Prayer Points */}
-          {insights.prayerPoints.length > 0 && (
+          {insights.prayerPoints && Array.isArray(insights.prayerPoints) && insights.prayerPoints.length > 0 && (
             <div className="border border-[#2C303A] rounded-lg">
               <button
                 onClick={() => toggleSection('prayer')}

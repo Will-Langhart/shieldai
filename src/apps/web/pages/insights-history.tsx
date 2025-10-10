@@ -2,7 +2,7 @@ import React from 'react'
 import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { Header } from '../components/Header'
-import { InsightsHistory } from '../components/features/bible/InsightsHistory'
+import { EnhancedInsightsQuery } from '../components/features/bible/EnhancedInsightsQuery'
 
 interface InsightsHistoryPageProps {
   userId?: string
@@ -29,7 +29,7 @@ export default function InsightsHistoryPage({ userId }: InsightsHistoryPageProps
             </p>
           </div>
           
-          <InsightsHistory userId={userId} />
+          <EnhancedInsightsQuery userId={userId} />
         </main>
       </div>
     </>

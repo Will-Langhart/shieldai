@@ -347,7 +347,7 @@ export class PineconeService {
   ): Promise<SearchResult[]> {
     try {
       const topK = options?.topK || this.defaultTopK;
-      const queryEmbedding = await EmbeddingService.generateEmbedding(queryText);
+      const queryEmbedding = await EmbeddingService.generateEmbeddingForIndex(queryText, this.targetDim);
       const dense = await this.searchSimilarMessages(queryEmbedding, userId, options?.conversationId, topK * 2);
 
       // Simple re-ranking: boost if the content includes any query token

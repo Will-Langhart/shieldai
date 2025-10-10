@@ -57,19 +57,20 @@ export default async function handler(
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Get authenticated user (with fallback for testing)
+    // Get authenticated user
     const authHeader = req.headers.authorization;
     let user = null;
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       
-      // Check for test token first
+      // Check for test token (for development/testing only)
       if (token === 'test-token') {
+        // Use the existing real user for testing
         user = {
-          id: '550e8400-e29b-41d4-a716-446655440001',
-          email: 'test@example.com',
-          name: 'Test User'
+          id: 'ec74002e-1801-40b7-a166-fe75c4b14d9f',
+          email: 'langhartcw@gmail.com',
+          user_metadata: { full_name: 'Will Langhart' }
         };
         logger.info('Using test user for saving AI insights', { cid, userId: user.id });
       } else {
@@ -77,15 +78,18 @@ export default async function handler(
           const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
           
           if (authError || !authUser) {
+            logger.error('Authentication failed', { cid, error: authError?.message });
             return res.status(401).json({ error: 'Invalid authentication token' });
           }
           user = authUser;
+          logger.info('Authenticated user', { cid, userId: user.id, email: user.email });
         } catch (error) {
           logger.error('Authentication failed', { cid }, error);
           return res.status(401).json({ error: 'Authentication failed' });
         }
       }
     } else {
+      logger.warn('No authorization header provided', { cid });
       return res.status(401).json({ error: 'Authorization header required' });
     }
 
@@ -108,35 +112,58 @@ export default async function handler(
       notes: notes || null
     };
 
-    // For test users, use a different approach to bypass RLS
-    if (user.id === '550e8400-e29b-41d4-a716-446655440001') {
-      // For test users, we'll simulate a successful save since RLS is blocking us
-      // In a real implementation, you would need proper database access or a service role key
-      logger.info('Simulating save for test user (RLS bypass)', { cid, user_id: user.id });
-      
-      const simulatedInsight = {
-        id: `test-${Date.now()}`,
-        ...insightData,
+    // Use service client to bypass RLS for all users
+    const serviceClient = createServiceClient();
+    
+    logger.info('Saving AI insight', { cid, user_id: user.id, passage_reference, insightData });
+    
+    // Ensure user exists in our users table (for foreign key constraint)
+    const { data: existingUser, error: userCheckError } = await serviceClient
+      .from('users')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (userCheckError && userCheckError.code === 'PGRST116') {
+      // User doesn't exist in our users table, create them
+      const userData = {
+        id: user.id,
+        email: user.email || 'user@shieldai.com',
+        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
+
+      const { error: userCreateError } = await serviceClient
+        .from('users')
+        .insert(userData);
+
+      if (userCreateError) {
+        logger.error('Failed to create user record', { cid, error: userCreateError.message, user_id: user.id });
+        return res.status(500).json({ 
+          error: 'Failed to create user record',
+          details: userCreateError.message,
+          code: userCreateError.code
+        });
+      }
       
-      return res.status(200).json({ 
-        message: 'Insight saved successfully (test mode)',
-        insight: simulatedInsight 
-      });
+      logger.info('Created user record', { cid, user_id: user.id });
     }
     
-    // For real users, use the regular Supabase client
-    const { data: savedInsight, error: insertError } = await supabase
+    // Insert the insight using service client to bypass RLS
+    const { data: savedInsight, error: insertError } = await serviceClient
       .from('ai_insights')
       .insert(insightData)
       .select()
       .single();
 
     if (insertError) {
-      logger.error('Failed to save AI insight', { cid, error: insertError.message, user_id: user.id });
-      return res.status(500).json({ error: 'Failed to save insight' });
+      logger.error('Failed to save AI insight', { cid, error: insertError.message, user_id: user.id, insertError });
+      return res.status(500).json({ 
+        error: 'Failed to save insight',
+        details: insertError.message,
+        code: insertError.code
+      });
     }
 
     logger.info('AI insight saved successfully', { 

@@ -136,7 +136,7 @@ export function Home() {
               Advanced AI Christian Apologetics Agent
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold text-[#E0E0E0] mb-6 leading-tight">
+            <h1 className="text-6xl md:text-8xl font-bold text-[#E0E0E0] mb-6 leading-tight">
               Welcome to{' '}
               <span className="bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
                 Shield AI
@@ -178,21 +178,6 @@ export function Home() {
               </Link>
             </div>
             
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-400 mb-2">10K+</div>
-                <div className="text-[#9CA3AF]">Active Users</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-400 mb-2">50K+</div>
-                <div className="text-[#9CA3AF]">Scriptures Studied</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-400 mb-2">99%</div>
-                <div className="text-[#9CA3AF]">User Satisfaction</div>
-              </div>
-            </div>
           </div>
         </div>
         
@@ -302,140 +287,7 @@ export function Home() {
         <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-b from-transparent to-[#2A2E3A] pointer-events-none opacity-60"></div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="landing-section section-transition scroll-enhanced enhanced-transition py-24 relative" style={{
-        background: `linear-gradient(180deg, 
-          #262A36 0%, 
-          #2A2E3A 50%, 
-          #2E323E 100%)`
-      }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-[#E0E0E0] mb-6">
-              What Our Users Say
-            </h2>
-            <p className="text-xl text-[#9CA3AF] max-w-3xl mx-auto">
-              Join thousands of Christians who have enhanced their spiritual journey with Shield AI.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-[#1A1D24] border border-[#3A404B] rounded-2xl p-8">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <blockquote className="text-[#E0E0E0] mb-6 italic">
-                "Shield AI has transformed my daily Bible study. The AI insights help me understand 
-                scripture in ways I never thought possible."
-              </blockquote>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-white font-bold">SM</span>
-                </div>
-                <div>
-                  <div className="font-semibold text-[#E0E0E0]">Sarah Mitchell</div>
-                  <div className="text-[#9CA3AF] text-sm">Pastor, Grace Community</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-[#1A1D24] border border-[#3A404B] rounded-2xl p-8">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <blockquote className="text-[#E0E0E0] mb-6 italic">
-                "The church finder helped me discover an amazing community just 5 minutes from my home. 
-                I'm so grateful for this tool!"
-              </blockquote>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-white font-bold">MJ</span>
-                </div>
-                <div>
-                  <div className="font-semibold text-[#E0E0E0]">Michael Johnson</div>
-                  <div className="text-[#9CA3AF] text-sm">Software Engineer</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-[#1A1D24] border border-[#3A404B] rounded-2xl p-8">
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                ))}
-              </div>
-              <blockquote className="text-[#E0E0E0] mb-6 italic">
-                "As a youth pastor, Shield AI helps me prepare engaging lessons and answer tough 
-                questions from my students with biblical accuracy."
-              </blockquote>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-white font-bold">EL</span>
-                </div>
-                <div>
-                  <div className="font-semibold text-[#E0E0E0]">Emily Lopez</div>
-                  <div className="text-[#9CA3AF] text-sm">Youth Pastor</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Smooth Transition Overlay */}
-        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-b from-transparent to-[#2E323E] pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-b from-transparent to-[#323640] pointer-events-none opacity-60"></div>
-      </section>
 
-      {/* Scripture of the Day Section */}
-      <section className="landing-section section-transition scroll-enhanced enhanced-transition py-24 relative" style={{
-        background: `linear-gradient(135deg, 
-          #2E323E 0%, 
-          #323640 50%, 
-          #2C303A 100%)`
-      }}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-600/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-8">
-            <Heart className="w-4 h-4 mr-2" />
-            Daily Inspiration
-          </div>
-          
-          <h2 className="text-4xl md:text-5xl font-bold text-[#E0E0E0] mb-12">
-            Scripture of the Day
-          </h2>
-          
-          <div className="bg-[#2C303A] border border-[#3A404B] rounded-3xl p-12 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-            <Quote className="w-16 h-16 text-blue-400/20 absolute top-8 left-8" />
-            <Quote className="w-16 h-16 text-blue-400/20 absolute bottom-8 right-8 rotate-180" />
-            
-            <blockquote className="text-2xl md:text-3xl text-[#E0E0E0] font-serif italic mb-8 leading-relaxed relative z-10">
-              "For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, 
-              to give you hope and a future."
-            </blockquote>
-            
-            <cite className="text-xl text-blue-400 font-semibold">Jeremiah 29:11</cite>
-            
-            <div className="mt-8">
-              <Link
-                href="/bible"
-                className="inline-flex items-center space-x-2 text-[#9CA3AF] hover:text-blue-400 transition-colors"
-              >
-                <BookOpen className="w-5 h-5" />
-                <span>Read more in Bible Study</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-        
-        {/* Smooth Transition Overlay */}
-        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-b from-transparent to-[#2C303A] pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-full h-16 bg-gradient-to-b from-transparent to-[#1A1D24] pointer-events-none opacity-60"></div>
-      </section>
 
       {/* CTA Section */}
       <section className="landing-section section-transition scroll-enhanced enhanced-transition py-24 relative" style={{

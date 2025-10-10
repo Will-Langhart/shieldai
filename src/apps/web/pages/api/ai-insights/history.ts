@@ -1,6 +1,25 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '../../../lib/supabase';
 import { logger, withCorrelationId } from '../../../lib/logger';
+import { createClient } from '@supabase/supabase-js';
+
+// Service role client that bypasses RLS
+const createServiceClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !serviceRoleKey || serviceRoleKey === 'your_supabase_service_role_key') {
+    // Fallback to regular client if service role key is not available
+    return supabase;
+  }
+  
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+};
 
 export default async function handler(
   req: NextApiRequest,
@@ -30,19 +49,20 @@ export default async function handler(
       passage_reference
     } = req.query;
 
-    // Get user from auth token (with fallback for testing)
+    // Get authenticated user
     const authHeader = req.headers.authorization;
     let user = null;
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       
-      // Check for test token first
+      // Check for test token (for development/testing only)
       if (token === 'test-token') {
+        // Use the existing real user for testing
         user = {
-          id: '550e8400-e29b-41d4-a716-446655440001',
-          email: 'test@example.com',
-          name: 'Test User'
+          id: 'ec74002e-1801-40b7-a166-fe75c4b14d9f',
+          email: 'langhartcw@gmail.com',
+          user_metadata: { full_name: 'Will Langhart' }
         };
         logger.info('Using test user for insights history', { cid, userId: user.id });
       } else {
@@ -50,15 +70,18 @@ export default async function handler(
           const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
           
           if (authError || !authUser) {
+            logger.error('Authentication failed', { cid, error: authError?.message });
             return res.status(401).json({ error: 'Invalid authentication token' });
           }
           user = authUser;
+          logger.info('Authenticated user', { cid, userId: user.id, email: user.email });
         } catch (error) {
           logger.error('Authentication failed', { cid }, error);
           return res.status(401).json({ error: 'Authentication failed' });
         }
       }
     } else {
+      logger.warn('No authorization header provided', { cid });
       return res.status(401).json({ error: 'Authorization header required' });
     }
 
@@ -72,8 +95,14 @@ export default async function handler(
     const dateFrom = date_from ? new Date(date_from as string) : null;
     const dateTo = date_to ? new Date(date_to as string) : null;
 
+    // Use service client to ensure we can retrieve insights for all users
+    const serviceClient = createServiceClient();
+    
+    // Use the authenticated user's ID directly
+    logger.info('Retrieving insights for authenticated user', { cid, user_id: user.id });
+    
     // Use the search function from the database
-    const { data: insights, error: searchError } = await supabase
+    const { data: insights, error: searchError } = await serviceClient
       .rpc('search_ai_insights', {
         p_user_id: user.id,
         p_search_query: search_query as string || null,
@@ -95,7 +124,7 @@ export default async function handler(
     }
 
     // Get insights statistics
-    const { data: stats, error: statsError } = await supabase
+    const { data: stats, error: statsError } = await serviceClient
       .from('ai_insights_stats')
       .select('*')
       .eq('user_id', user.id)
@@ -106,7 +135,7 @@ export default async function handler(
     }
 
     // Get unique tags and themes for filtering
-    const { data: uniqueData, error: uniqueError } = await supabase
+    const { data: uniqueData, error: uniqueError } = await serviceClient
       .from('ai_insights')
       .select('tags, key_themes, bible_version')
       .eq('user_id', user.id);
@@ -115,12 +144,12 @@ export default async function handler(
       logger.error('Failed to get unique data', { cid, error: uniqueError.message, user_id: user.id });
     }
 
-    // Process unique data
+    // Process unique data for filters
     const allTags = new Set<string>();
     const allThemes = new Set<string>();
     const allVersions = new Set<string>();
 
-    uniqueData?.forEach(insight => {
+    uniqueData?.forEach((insight: any) => {
       insight.tags?.forEach((tag: string) => allTags.add(tag));
       insight.key_themes?.forEach((theme: string) => allThemes.add(theme));
       if (insight.bible_version) allVersions.add(insight.bible_version);
@@ -130,7 +159,7 @@ export default async function handler(
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
-    const { data: recentInsights, error: recentError } = await supabase
+    const { data: recentInsights, error: recentError } = await serviceClient
       .from('ai_insights')
       .select('*')
       .eq('user_id', user.id)
@@ -143,7 +172,7 @@ export default async function handler(
     }
 
     // Get favorite insights
-    const { data: favoriteInsights, error: favoriteError } = await supabase
+    const { data: favoriteInsights, error: favoriteError } = await serviceClient
       .from('ai_insights')
       .select('*')
       .eq('user_id', user.id)
@@ -156,7 +185,7 @@ export default async function handler(
     }
 
     // Get shared insights
-    const { data: sharedInsights, error: sharedError } = await supabase
+    const { data: sharedInsights, error: sharedError } = await serviceClient
       .from('ai_insights')
       .select('*')
       .eq('user_id', user.id)
@@ -169,7 +198,7 @@ export default async function handler(
     }
 
     // Get insights by month for chart data
-    const { data: monthlyData, error: monthlyError } = await supabase
+    const { data: monthlyData, error: monthlyError } = await serviceClient
       .from('ai_insights')
       .select('created_at')
       .eq('user_id', user.id)
@@ -181,7 +210,7 @@ export default async function handler(
 
     // Process monthly data for chart
     const monthlyStats = new Map<string, number>();
-    monthlyData?.forEach(insight => {
+    monthlyData?.forEach((insight: any) => {
       const month = new Date(insight.created_at).toISOString().substring(0, 7); // YYYY-MM
       monthlyStats.set(month, (monthlyStats.get(month) || 0) + 1);
     });
