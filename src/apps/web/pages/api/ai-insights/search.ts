@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { InsightsPineconeService } from '../../../lib/insights-pinecone'
-import { withCorrelationId } from '../../../lib/correlation-id'
+import { withCorrelationId } from '../../../lib/logger'
 import { logger } from '../../../lib/logger'
 import { createClient } from '@supabase/supabase-js'
 

@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { createClient } from '@supabase/supabase-js'
-import { withCorrelationId } from '../../../../lib/correlation-id'
+import { withCorrelationId } from '../../../../lib/logger'
 import { logger } from '../../../../lib/logger'
 
 const supabase = createClient(
