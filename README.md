@@ -50,6 +50,9 @@ shieldai/
     │   │   │   │   │   ├── BibleSearch.tsx
     │   │   │   │   │   ├── EnhancedBibleInterface.tsx
     │   │   │   │   │   ├── EnhancedBibleNavigation.tsx
+    │   │   │   │   │   ├── EnhancedInsightsQuery.tsx
+    │   │   │   │   │   ├── InsightDetailView.tsx
+    │   │   │   │   │   ├── InsightsAnalytics.tsx
     │   │   │   │   │   ├── InsightsHistory.tsx
     │   │   │   │   │   ├── MobileBibleNavigation.tsx
     │   │   │   │   │   ├── QuickNavigation.tsx
@@ -131,11 +134,15 @@ shieldai/
     │   │   ├── pages/               # Next.js pages
     │   │   │   ├── api/             # API routes
     │   │   │   │   ├── ai-insights/ # AI insights API
+    │   │   │   │   │   ├── [id]/      # Dynamic ID routes
+    │   │   │   │   │   │   ├── favorite.ts
+    │   │   │   │   │   │   └── share.ts
     │   │   │   │   │   ├── by-passage-pinecone.ts
     │   │   │   │   │   ├── by-passage.ts
     │   │   │   │   │   ├── delete.ts
     │   │   │   │   │   ├── feedback.ts
     │   │   │   │   │   ├── generate-image.ts
+    │   │   │   │   │   ├── health-check.ts
     │   │   │   │   │   ├── history.ts
     │   │   │   │   │   ├── interactions.ts
     │   │   │   │   │   ├── recommendations.ts
@@ -171,7 +178,6 @@ shieldai/
     │   │   │   │   │   ├── search.ts
     │   │   │   │   │   ├── study-questions.ts
     │   │   │   │   │   ├── suggestions.ts
-    │   │   │   │   │   ├── test-ai-insights.ts
     │   │   │   │   │   └── versions.ts
     │   │   │   │   ├── churches/    # Church finder API
     │   │   │   │   │   └── search.ts
@@ -187,8 +193,7 @@ shieldai/
     │   │   │   │   │   ├── indexes.ts
     │   │   │   │   │   ├── memory.ts
     │   │   │   │   │   ├── seed.ts
-    │   │   │   │   │   ├── stats.ts
-    │   │   │   │   │   └── test-key.ts
+    │   │   │   │   │   └── stats.ts
     │   │   │   │   ├── subscriptions/ # Subscription API
     │   │   │   │   │   ├── cancel.ts
     │   │   │   │   │   ├── check-feature.ts
@@ -216,14 +221,6 @@ shieldai/
     │   │   │   │   ├── geocode/autocomplete.ts
     │   │   │   │   ├── health.ts
     │   │   │   │   ├── messages.ts
-    │   │   │   │   ├── test-api-integration.ts
-    │   │   │   │   ├── test-db-schema.ts
-    │   │   │   │   ├── test-db-simple.ts
-    │   │   │   │   ├── test-enum-exists.ts
-    │   │   │   │   ├── test-env.ts
-    │   │   │   │   ├── test-insert.ts
-    │   │   │   │   ├── test-pinecone.ts
-    │   │   │   │   ├── test-rag.ts
     │   │   │   │   └── vector-response.ts
     │   │   │   ├── ChurchFinder.tsx
     │   │   │   ├── EmailConfirm.tsx

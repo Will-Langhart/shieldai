@@ -488,3 +488,4 @@ export function InsightsAnalytics({ insights, userId }: InsightsAnalyticsProps) 
     </div>
   )
 }
+
