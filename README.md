@@ -18,7 +18,6 @@ shieldai/
 ├── package.json                     # Root package configuration
 ├── package-lock.json                # Package lock file
 ├── README.md                        # Project documentation
-├── requirements.txt                 # Python dependencies
 └── vercel.json                      # Vercel deployment config
 └── src/                             # ALL source code and configuration
     ├── apps/                        # Applications
@@ -325,33 +324,6 @@ shieldai/
     │       ├── package.json         # Mobile dependencies
     │       ├── tailwind.config.js   # Tailwind CSS config
     │       └── tsconfig.json        # TypeScript configuration
-    ├── backend/                     # Backend services
-    │   ├── __init__.py
-    │   ├── app.py                   # Main FastAPI application
-    │   ├── base_server.py
-    │   ├── exceptions.py
-    │   ├── gunicorn.conf.py         # Gunicorn configuration
-    │   ├── mcp_README.md            # MCP documentation
-    │   ├── mcp_backend_mcp_init.py
-    │   ├── mcp_config_init.py
-    │   ├── mcp_config_logging_config.py
-    │   ├── mcp_config_settings.py
-    │   ├── mcp_middleware_auth.py
-    │   ├── mcp_middleware_error_handling.py
-    │   ├── mcp_middleware_init.py
-    │   ├── mcp_middleware_rate_limiting.py
-    │   ├── mcp_run_servers.py
-    │   ├── mcp_schemas_bible_schemas.py
-    │   ├── mcp_schemas_init.py
-    │   ├── mcp_schemas_pinecone_schemas.py
-    │   ├── mcp_schemas_supabase_schemas.py
-    │   ├── mcp_services_bible_api_server.py
-    │   ├── mcp_services_init.py
-    │   ├── mcp_services_pinecone_server.py
-    │   ├── mcp_services_supabase_server.py
-    │   ├── mcp_tests_init.py
-    │   ├── mcp_tests_test_base_server.py
-    │   └── utils.py
     ├── shared/                      # Shared code (flattened)
     │   ├── services/                # Shared services
     │   │   └── tsconfig.json
@@ -471,8 +443,7 @@ shieldai/
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- Python 3.8+ (see `requirements.txt` for dependencies)
+- Node.js 18+ and npm
 - PostgreSQL/Supabase
 - Pinecone account (for vector storage)
 - OpenAI API key
@@ -484,9 +455,6 @@ shieldai/
    git clone https://github.com/Will-Langhart/shieldai.git
    cd shieldai
    npm install
-   
-   # Install Python dependencies
-   pip install -r requirements.txt
    ```
 
 2. **Environment setup**
@@ -509,13 +477,12 @@ shieldai/
 
 4. **Start development servers**
    ```bash
-   # Start all services (web + MCP)
+   # Start development server
    npm run dev
    
    # Or start individually
    npm run dev:web      # Web app (http://localhost:3001)
    npm run dev:mobile   # Mobile app (http://localhost:8081)
-   npm run dev:mcp      # MCP server (http://localhost:8000)
    ```
 
 ## 📱 Applications
@@ -543,18 +510,17 @@ shieldai/
   - Push notifications
   - Cross-platform compatibility
 
-### Backend (`src/backend/`)
-- **Framework**: Python FastAPI
-- **Features**: Main API server and MCP integration
-- **Port**: 8000
-- **Tech Stack**: Python, FastAPI, Pydantic, Pinecone, Supabase
-- **Dependencies**: `requirements.txt` (in root directory)
+### Backend (Next.js API Routes)
+- **Framework**: Next.js API Routes (Serverless)
+- **Features**: Serverless backend functionality
+- **Port**: 3001 (Next.js dev server)
+- **Tech Stack**: TypeScript, Next.js, Supabase, Pinecone, OpenAI
 - **Key Features**:
-  - RESTful API endpoints
-  - MCP (Model Context Protocol) server
-  - Vector database integration
-  - Authentication middleware
+  - RESTful API endpoints in `src/apps/web/pages/api/`
+  - Direct integration with external services
+  - Built-in authentication middleware
   - Rate limiting and error handling
+  - Serverless deployment ready
 
 ## 🗄️ Database
 
@@ -581,10 +547,9 @@ node src/scripts/database_run-migration.sh
 ### Available Scripts
 ```bash
 # Development
-npm run dev                    # Start all services
+npm run dev                    # Start development server
 npm run dev:web               # Web app only
 npm run dev:mobile            # Mobile app only
-npm run dev:mcp               # MCP server only
 npm run dev:web:logging       # Web app with enhanced logging
 
 # Building

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { chatService } from '../../../services/chatService'
 import { useRouter } from 'next/router'
+import { EnhancedMessage } from './EnhancedMessage'
 import { 
   Plus, 
   Search, 
@@ -9,8 +10,10 @@ import {
   ChevronDown, 
   Mic, 
   Square, 
+  Send,
   X,
   MessageSquare,
+  Shield,
   User
 } from 'lucide-react'
 
@@ -18,7 +21,19 @@ interface Message {
   id: string
   content: string
   role: 'user' | 'assistant'
-  timestamp: string
+  created_at: string // Changed from timestamp to created_at for enhanced storage compatibility
+  timestamp?: string // Keep for backward compatibility
+  metadata?: {
+    user_interactions?: {
+      was_copied?: boolean
+      was_shared?: boolean
+      was_bookmarked?: boolean
+      was_rated?: boolean
+      rating?: number
+      feedback?: string
+      reaction?: string
+    }
+  }
 }
 
 interface Conversation {
@@ -136,11 +151,27 @@ export function Chat() {
       console.log('🔍 Received conversation data:', conversationData)
       
       if (conversationData && Array.isArray(conversationData)) {
-        // Convert messages to match component interface
-        const convertedMessages = conversationData.map(msg => ({
-          ...msg,
-          timestamp: typeof msg.timestamp === 'string' ? msg.timestamp : msg.timestamp.toISOString()
-        }))
+        // Convert messages to match component interface with enhanced storage compatibility
+        const convertedMessages: Message[] = conversationData.map((msg: any) => {
+          // Handle timestamp which might be Date, string, or undefined
+          const timestampValue = msg.timestamp instanceof Date 
+            ? msg.timestamp.toISOString() 
+            : (typeof msg.timestamp === 'string' ? msg.timestamp : new Date().toISOString())
+          
+          // Handle created_at which might be string or undefined
+          const createdAtValue = typeof msg.created_at === 'string' 
+            ? msg.created_at 
+            : (msg.created_at instanceof Date ? msg.created_at.toISOString() : timestampValue)
+          
+          return {
+            id: msg.id,
+            content: msg.content,
+            role: msg.role,
+            created_at: createdAtValue,
+            timestamp: timestampValue,
+            metadata: msg.metadata || {}
+          }
+        })
         setMessages(convertedMessages)
         setCurrentConversationId(conversationId)
         console.log('✅ Messages loaded:', convertedMessages.length)
@@ -167,7 +198,9 @@ export function Chat() {
       id: userMessageId,
       content: inputMessage,
       role: 'user',
-      timestamp: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+      metadata: {}
     }
 
     console.log('🔍 DEBUG: Created userMessage:', JSON.stringify(userMessage))
@@ -198,7 +231,9 @@ export function Chat() {
               id: assistantMessageId,
               content: chunk,
               role: 'assistant',
-              timestamp: new Date().toISOString()
+              created_at: new Date().toISOString(),
+              timestamp: new Date().toISOString(),
+              metadata: {}
             }
             console.log('🔍 DEBUG: Creating new assistant message:', JSON.stringify(assistantMessage))
             setMessages(prev => {
@@ -241,7 +276,9 @@ export function Chat() {
         id: Date.now().toString(),
         content: 'Sorry, I encountered an error. Please try again.',
         role: 'assistant',
-        timestamp: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+        metadata: {}
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {
@@ -372,7 +409,12 @@ export function Chat() {
                           console.log('🔍 DEBUG: Input onChange triggered with value:', JSON.stringify(e.target.value))
                           setInputMessage(e.target.value)
                         }}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
                         className="w-full bg-transparent text-[#E0E0E0] placeholder-transparent focus:outline-none text-base"
                         disabled={isLoading}
                       />
@@ -385,11 +427,19 @@ export function Chat() {
                       )}
                     </div>
                     <div className="flex items-center space-x-2 ml-2">
-                      <button className="p-2 hover:bg-[#3A404B] rounded-lg transition-colors">
+                      <button 
+                        onClick={handleSendMessage}
+                        disabled={isLoading || !inputMessage.trim()}
+                        className="p-2 hover:bg-[#3A404B] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <Mic className="h-5 w-5 text-white" />
                       </button>
-                      <button className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
-                        <Square className="h-5 w-5 text-white" />
+                      <button 
+                        onClick={handleSendMessage}
+                        disabled={isLoading || !inputMessage.trim()}
+                        className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Send className="h-5 w-5 text-white" />
                       </button>
                     </div>
                   </div>
@@ -397,47 +447,43 @@ export function Chat() {
               </div>
             </div>
           ) : (
-            <div className="max-w-4xl mx-auto p-4 space-y-6">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-3xl ${message.role === 'user' ? 'order-2' : 'order-1'}`}>
-                    <div className="flex items-start space-x-3">
-                      {message.role === 'assistant' && (
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center flex-shrink-0">
-                          <MessageSquare className="h-5 w-5 text-white" />
-                        </div>
-                      )}
-                      <div className={`${message.role === 'user' ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/25' : 'bg-transparent text-[#E0E0E0]'} rounded-2xl p-4`}>
-                        <p className="text-sm leading-relaxed">{message.content}</p>
-                      </div>
-                      {message.role === 'user' && (
-                        <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="h-5 w-5 text-white" />
-                        </div>
-                      )}
-                    </div>
+            <div className="max-w-5xl mx-auto px-4 py-6">
+              <div className="space-y-0">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className="w-full"
+                  >
+                    <EnhancedMessage
+                      message={{
+                        ...message,
+                        created_at: message.created_at || message.timestamp || new Date().toISOString()
+                      }}
+                      onFeedback={(messageId, feedback) => {
+                        console.log('User feedback received:', { messageId, feedback })
+                      }}
+                    />
                   </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <MessageSquare className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="bg-transparent rounded-2xl p-4">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-[#9CA3AF] rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-[#9CA3AF] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-[#9CA3AF] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                ))}
+                {isLoading && (
+                  <div className="w-full flex justify-start">
+                    <div className="enhanced-message-wrapper assistant">
+                      <div className="message-icon">
+                        <div className="ai-icon-circle">
+                          <Shield className="w-4 h-4 text-blue-400" />
+                        </div>
+                      </div>
+                      <div className="message-bubble assistant-bubble">
+                        <div className="flex space-x-1.5 py-1">
+                          <div className="w-1.5 h-1.5 bg-[#9CA3AF] rounded-full animate-bounce"></div>
+                          <div className="w-1.5 h-1.5 bg-[#9CA3AF] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
+                          <div className="w-1.5 h-1.5 bg-[#9CA3AF] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -471,11 +517,19 @@ export function Chat() {
                   )}
                 </div>
                 <div className="flex items-center space-x-2 ml-2">
-                  <button className="p-2 hover:bg-[#3A404B] rounded-lg transition-colors">
+                  <button 
+                    onClick={handleSendMessage}
+                    disabled={isLoading || !inputMessage.trim()}
+                    className="p-2 hover:bg-[#3A404B] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <Mic className="h-5 w-5 text-white" />
                   </button>
-                  <button className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
-                    <Square className="h-5 w-5 text-white" />
+                  <button 
+                    onClick={handleSendMessage}
+                    disabled={isLoading || !inputMessage.trim()}
+                    className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="h-5 w-5 text-white" />
                   </button>
                 </div>
               </div>

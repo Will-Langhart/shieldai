@@ -302,34 +302,6 @@ shieldai/
 │   │       ├── vite-env.d.ts                 # Vite type definitions
 │   │       └── yarn.lock                     # Yarn lock file
 │   │
-│   ├── backend/                             # Python backend services
-│   │   ├── __init__.py
-│   │   ├── app.py                            # Flask/FastAPI application
-│   │   ├── base_server.py                   # Base server implementation
-│   │   ├── exceptions.py                    # Exception handlers
-│   │   ├── gunicorn.conf.py                 # Gunicorn configuration
-│   │   ├── utils.py                          # Utility functions
-│   │   ├── mcp_README.md                     # MCP documentation
-│   │   ├── mcp_backend_mcp_init.py          # MCP backend initialization
-│   │   ├── mcp_config_init.py               # MCP config initialization
-│   │   ├── mcp_config_logging_config.py     # MCP logging configuration
-│   │   ├── mcp_config_settings.py            # MCP settings
-│   │   ├── mcp_middleware_auth.py            # MCP auth middleware
-│   │   ├── mcp_middleware_error_handling.py  # MCP error handling
-│   │   ├── mcp_middleware_init.py            # MCP middleware initialization
-│   │   ├── mcp_middleware_rate_limiting.py   # MCP rate limiting
-│   │   ├── mcp_run_servers.py                # MCP server runner
-│   │   ├── mcp_schemas_bible_schemas.py      # Bible API schemas
-│   │   ├── mcp_schemas_init.py               # Schema initialization
-│   │   ├── mcp_schemas_pinecone_schemas.py   # Pinecone schemas
-│   │   ├── mcp_schemas_supabase_schemas.py   # Supabase schemas
-│   │   ├── mcp_services_bible_api_server.py  # Bible API server
-│   │   ├── mcp_services_init.py              # Services initialization
-│   │   ├── mcp_services_pinecone_server.py   # Pinecone server
-│   │   ├── mcp_services_supabase_server.py   # Supabase server
-│   │   ├── mcp_tests_init.py                 # Tests initialization
-│   │   └── mcp_tests_test_base_server.py     # Base server tests
-│   │
 │   ├── config/
 │   │   ├── env/                              # Environment configuration
 │   │   │   ├── .env.backup
@@ -504,7 +476,6 @@ shieldai/
 │
 ├── package.json                              # Root package.json
 ├── package-lock.json                         # NPM lock file
-├── requirements.txt                          # Python dependencies
 ├── README.md                                 # Project README
 └── vercel.json                               # Vercel deployment config
 ```
@@ -523,11 +494,11 @@ shieldai/
   - Separate configuration for mobile platform
 
 ### Backend & Services
-- **`src/backend/`**: Python backend with MCP (Model Context Protocol) services
-  - Flask/FastAPI-based server
-  - Separate servers for Bible API, Pinecone, and Supabase
-  - Middleware for auth, error handling, and rate limiting
-  - Comprehensive schema definitions
+- **Next.js API Routes**: Serverless backend functionality
+  - API routes in `src/apps/web/pages/api/`
+  - Direct integration with external services (Supabase, Pinecone, OpenAI)
+  - Built-in middleware for auth, error handling, and rate limiting
+  - TypeScript-based API endpoints
 - **`src/config/`**: Configuration, migrations, and environment files
   - SQL migrations for database schema
   - Environment configuration templates
@@ -586,4 +557,5 @@ shieldai/
   - Development setup scripts
   - Integration test scripts
   - Deployment automation
+
 
