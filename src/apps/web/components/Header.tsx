@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { Shield, BookOpen, MessageCircle, MapPin, Brain } from 'lucide-react'
+import { Shield, BookOpen, MessageCircle, Brain } from 'lucide-react'
 // Using simple className concatenation instead of clsx
 
 export function Header() {
@@ -11,7 +11,6 @@ export function Header() {
     { path: '/', label: 'Home', icon: Shield },
     { path: '/bible', label: 'Bible', icon: BookOpen },
     { path: '/chat', label: 'Chat', icon: MessageCircle },
-    { path: '/churches', label: 'Churches', icon: MapPin },
     { path: '/insights-history', label: 'Insights', icon: Brain },
   ]
   

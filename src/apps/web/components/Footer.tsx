@@ -11,7 +11,7 @@ export function Footer() {
               <span className="text-lg font-bold">Shield AI</span>
             </div>
             <p className="text-gray-400 text-sm">
-              Your Christian AI assistant with Bible integration and church finder capabilities.
+              Your Christian AI assistant with Bible integration and spiritual guidance.
             </p>
           </div>
           
@@ -22,7 +22,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-gray-400">
               <li>Bible Study & Search</li>
               <li>AI Chat Assistant</li>
-              <li>Church Finder</li>
+              <li>Spiritual Insights</li>
               <li>Scripture Integration</li>
             </ul>
           </div>

@@ -197,10 +197,6 @@ export class SubscriptionMiddleware {
     await featureGate.incrementUsage('export');
   }
 
-  static async trackChurchSearch(userId: string): Promise<void> {
-    const featureGate = this.createFeatureGate(userId);
-    await featureGate.incrementUsage('church_search');
-  }
 
   static async trackApiCall(userId: string): Promise<void> {
     const featureGate = this.createFeatureGate(userId);

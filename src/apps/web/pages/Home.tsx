@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, MessageCircle, MapPin, ArrowRight, Star, CheckCircle, Quote, Play, Sparkles, Heart, Zap } from 'lucide-react'
+import { BookOpen, MessageCircle, ArrowRight, Star, CheckCircle, Quote, Play, Sparkles, Heart, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 // Question Rotator Component
@@ -187,13 +187,13 @@ export function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="landing-section section-transition scroll-enhanced enhanced-transition py-24 relative" style={{
+      <section className="landing-section section-transition scroll-enhanced enhanced-transition py-24 relative flex items-center justify-center min-h-screen" style={{
         background: `linear-gradient(180deg, 
           #1E2128 0%, 
           #222530 50%, 
           #262A36 100%)`
       }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-bold text-[#E0E0E0] mb-6">
               Powerful Features
@@ -204,7 +204,8 @@ export function Home() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="flex justify-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
             {/* Bible Study Feature */}
             <div className="group bg-[#2C303A] border border-[#3A404B] rounded-2xl p-8 hover:bg-[#3A404B] hover:border-[#4A505B] transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/10">
               <div className="bg-gradient-to-br from-blue-600 to-blue-700 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
@@ -255,29 +256,6 @@ export function Home() {
               </ul>
             </div>
             
-            {/* Church Finder Feature */}
-            <div className="group bg-[#2C303A] border border-[#3A404B] rounded-2xl p-8 hover:bg-[#3A404B] hover:border-[#4A505B] transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-green-500/10">
-              <div className="bg-gradient-to-br from-green-600 to-green-700 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <MapPin className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-[#E0E0E0] mb-4 text-center">Church Finder</h3>
-              <p className="text-[#9CA3AF] text-center leading-relaxed mb-6">
-                Discover local churches and Christian communities near you with detailed information and reviews.
-              </p>
-              <ul className="space-y-2 text-sm text-[#9CA3AF]">
-                <li className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  Location-based search
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  Service times & details
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
-                  Community reviews
-                </li>
-              </ul>
             </div>
           </div>
         </div>

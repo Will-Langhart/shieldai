@@ -2,7 +2,6 @@
 export * from './api'
 export * from './bible'
 export * from './chat'
-export * from './church'
 
 // User Types
 export interface User {
@@ -95,6 +94,5 @@ export interface SubscriptionPlan {
   limits: {
     messages_per_month: number
     bible_searches_per_month: number
-    church_searches_per_month: number
   }
 }

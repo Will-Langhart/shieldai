@@ -11,7 +11,6 @@ const Header = () => {
     { path: '/', label: 'Home', icon: '🏠' },
     { path: '/bible', label: 'Bible', icon: '📖' },
     { path: '/chat', label: 'Chat', icon: '💬' },
-    { path: '/churches', label: 'Churches', icon: '⛪' },
   ]
 
   return (

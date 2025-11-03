@@ -15,26 +15,6 @@ export interface BibleSearchResult {
   }>;
 }
 
-export interface ChurchLocation {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  zip: string;
-  phone?: string;
-  website?: string;
-  rating?: number;
-  review_count?: number;
-  photos?: string[];
-  types: string[];
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
-  distance?: number;
-  place_id: string;
-}
 
 export interface SubscriptionStatus {
   isInTrial: boolean;
@@ -166,93 +146,6 @@ export function useBibleAPI() {
     getPopularVerses,
     getDailyVerse,
     getVerseSuggestions,
-    loading,
-    error
-  };
-}
-
-// Hook for Church Finder API integration
-export function useChurchFinderAPI() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const findChurchesNearby = useCallback(async (
-    latitude: number, 
-    longitude: number, 
-    radius: number = 5000,
-    denomination?: string
-  ): Promise<ChurchLocation[]> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Use the improved ChurchFinderService that handles both server-side and client-side
-      const { ChurchFinderService } = await import('./church-finder-service');
-      const churches = await ChurchFinderService.findChurchesNearby({
-        latitude,
-        longitude,
-        radius,
-        denomination
-      });
-      
-      return churches;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to find churches';
-      setError(errorMessage);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const getUserLocation = useCallback((): Promise<{lat: number, lng: number} | null> => {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        console.log('❌ Geolocation not supported by browser');
-        resolve(null);
-        return;
-      }
-
-      console.log('📍 Requesting user location...');
-      
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          console.log('✅ Location obtained successfully:', position.coords);
-          console.log(`📍 Coordinates: ${position.coords.latitude}, ${position.coords.longitude}`);
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          console.error('❌ Geolocation error:', error);
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              console.error('❌ Location permission denied by user');
-              break;
-            case error.POSITION_UNAVAILABLE:
-              console.error('❌ Location information unavailable');
-              break;
-            case error.TIMEOUT:
-              console.error('❌ Location request timed out');
-              break;
-            default:
-              console.error('❌ Unknown geolocation error');
-          }
-          resolve(null);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000, // Reduced timeout for faster response
-          maximumAge: 60000 // 1 minute - more recent location
-        }
-      );
-    });
-  }, []);
-
-  return {
-    findChurchesNearby,
-    getUserLocation,
     loading,
     error
   };

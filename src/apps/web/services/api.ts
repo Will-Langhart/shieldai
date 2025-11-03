@@ -55,18 +55,6 @@ export interface BibleSearchResult {
   bible_id: string
 }
 
-export interface Church {
-  id: string
-  name: string
-  address: string
-  phone?: string
-  website?: string
-  denomination: string
-  serviceTimes: string[]
-  distance: number
-  description: string
-}
-
 export interface ChatMessage {
   id: string
   content: string
@@ -174,16 +162,6 @@ class ApiService {
     return response.data
   }
 
-  // Church finder methods (placeholder for future implementation)
-  async searchChurches(location: string, radius: number = 10) {
-    // This would be implemented when the church finder API is ready
-    const response = await api.post('/api/churches/search', {
-      location,
-      radius
-    })
-    return response.data
-  }
-
   // Chat conversation methods
   async getConversation(conversationId: string) {
     const response = await api.get(`/api/conversations/${conversationId}`)
@@ -215,48 +193,6 @@ class ApiService {
     return response.data
   }
 
-  // Church methods
-  async getChurchById(churchId: string) {
-    const response = await api.get(`/api/churches/${churchId}`)
-    return response.data
-  }
-
-  async getNearbyChurches(latitude: number, longitude: number, radius: number = 10) {
-    const response = await api.get('/api/churches/nearby', {
-      params: { latitude, longitude, radius }
-    })
-    return response.data
-  }
-
-  async getChurchesByDenomination(denomination: string) {
-    const response = await api.get('/api/churches/by-denomination', {
-      params: { denomination }
-    })
-    return response.data
-  }
-
-  async getPopularChurches() {
-    const response = await api.get('/api/churches/popular')
-    return response.data
-  }
-
-  async getChurchReviews(churchId: string) {
-    const response = await api.get(`/api/churches/${churchId}/reviews`)
-    return response.data
-  }
-
-  async submitChurchReview(churchId: string, rating: number, comment: string) {
-    const response = await api.post(`/api/churches/${churchId}/reviews`, {
-      rating,
-      comment
-    })
-    return response.data
-  }
-
-  async getChurchServiceTimes(churchId: string) {
-    const response = await api.get(`/api/churches/${churchId}/service-times`)
-    return response.data
-  }
 }
 
 export const apiService = new ApiService()

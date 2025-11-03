@@ -17,7 +17,7 @@ const Footer = () => {
               <span className="text-xl font-bold text-[#E0E0E0]">Shield AI</span>
             </div>
             <p className="text-[#9CA3AF] text-sm max-w-md">
-              Your Christian AI assistant for Bible study, spiritual guidance, and church discovery. 
+              Your Christian AI assistant for Bible study and spiritual guidance. 
               Built with faith and technology to serve the Kingdom.
             </p>
           </div>
@@ -36,11 +36,6 @@ const Footer = () => {
               <li>
                 <a href="/chat" className="text-[#9CA3AF] hover:text-[#E0E0E0] text-sm transition-colors">
                   AI Chat
-                </a>
-              </li>
-              <li>
-                <a href="/churches" className="text-[#9CA3AF] hover:text-[#E0E0E0] text-sm transition-colors">
-                  Find Churches
                 </a>
               </li>
             </ul>

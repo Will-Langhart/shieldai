@@ -240,28 +240,6 @@ class APIVerifier {
     }
   }
 
-  async checkChurchFinderAPI() {
-    this.logInfo('Checking church finder API...');
-    
-    try {
-      const response = await this.makeRequest(`${this.baseUrl}/api/churches/search`, {
-        method: 'POST',
-        body: {
-          latitude: 30.2672,
-          longitude: -97.7431,
-          radius: 5000
-        }
-      });
-      
-      if (response.status === 200) {
-        this.logSuccess('Church finder API: OK');
-      } else {
-        this.logError(`Church finder API: Status ${response.status}`);
-      }
-    } catch (error) {
-      this.logError(`Church finder API: Failed - ${error.message}`);
-    }
-  }
 
   async checkDatabaseConnection() {
     this.logInfo('Checking database connection...');
@@ -349,7 +327,6 @@ class APIVerifier {
     await this.checkAPIIntegration();
     await this.checkBibleAPI();
     await this.checkSubscriptionAPI();
-    await this.checkChurchFinderAPI();
     await this.checkDatabaseConnection();
     await this.checkExternalServices();
 

@@ -123,11 +123,6 @@ export async function searchNotes(query: string, accessToken?: string) {
   return apiFetch(`/api/bible/notes/search?${params}`, 'GET', undefined, buildAuthHeaders({ accessToken }));
 }
 
-// Church Finder
-export async function searchChurches(payload: any, accessToken?: string) {
-  return apiFetch(`/api/churches/search`, 'POST', payload, buildAuthHeaders({ accessToken }));
-}
-
 export async function geocodeAddress(payload: any, accessToken?: string) {
   return apiFetch(`/api/geocode`, 'POST', payload, buildAuthHeaders({ accessToken }));
 }

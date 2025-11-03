@@ -26,7 +26,6 @@ export interface SubscriptionLimits {
   daily_exports?: number;
   monthly_notes?: number;
   monthly_api_calls?: number;
-  monthly_church_searches?: number;
   gentle_mode_enabled: boolean;
   scholarly_mode_enabled: boolean;
   debate_mode_enabled: boolean;
@@ -48,7 +47,6 @@ export interface UsageMetrics {
   exports_today: number;
   notes_this_month: number;
   api_calls_this_month: number;
-  church_searches_this_month: number;
 }
 
 export interface FeatureCheckResult {
@@ -97,7 +95,6 @@ export class EnhancedStripeService extends StripeService {
             daily_exports: planLimits?.daily_exports,
             monthly_notes: planLimits?.monthly_notes,
             monthly_api_calls: planLimits?.monthly_api_calls,
-            monthly_church_searches: planLimits?.monthly_church_searches,
             gentle_mode_enabled: planLimits?.gentle_mode_enabled || false,
             scholarly_mode_enabled: planLimits?.scholarly_mode_enabled || false,
             debate_mode_enabled: planLimits?.debate_mode_enabled || false,
@@ -137,7 +134,6 @@ export class EnhancedStripeService extends StripeService {
         exports_today: usage?.exports_today || 0,
         notes_this_month: usage?.notes_this_month || 0,
         api_calls_this_month: usage?.api_calls_this_month || 0,
-        church_searches_this_month: usage?.church_searches_this_month || 0,
       };
     } catch (error) {
       console.error('Error fetching current usage:', error);
@@ -150,7 +146,6 @@ export class EnhancedStripeService extends StripeService {
         exports_today: 0,
         notes_this_month: 0,
         api_calls_this_month: 0,
-        church_searches_this_month: 0,
       };
     }
   }
@@ -158,7 +153,7 @@ export class EnhancedStripeService extends StripeService {
   // Increment usage metric
   static async incrementUsage(
     userId: string, 
-    metricType: 'conversation' | 'gentle_mode' | 'scholarly_mode' | 'debate_mode' | 'bible_search' | 'note_created' | 'export' | 'api_call' | 'church_search',
+    metricType: 'conversation' | 'gentle_mode' | 'scholarly_mode' | 'debate_mode' | 'bible_search' | 'note_created' | 'export' | 'api_call',
     increment: number = 1
   ): Promise<void> {
     try {

@@ -25,7 +25,6 @@ export default function SettingsScreen() {
     dailyVerse: true,
     motivation: false,
     chatReminders: false,
-    churchReminder: true,
   });
   const [loading, setLoading] = useState(true);
   const { user, signOut, getAccessToken } = useAuth();
@@ -174,20 +173,6 @@ export default function SettingsScreen() {
             value={notifications.chatReminders}
             onValueChange={(value) => 
               setNotifications({ ...notifications, chatReminders: value })
-            }
-          />
-        }
-        showArrow={false}
-      />
-      <SettingRow
-        icon="calendar"
-        title="Church Reminder"
-        subtitle="Weekend service reminders"
-        rightElement={
-          <Switch
-            value={notifications.churchReminder}
-            onValueChange={(value) => 
-              setNotifications({ ...notifications, churchReminder: value })
             }
           />
         }
