@@ -94,20 +94,20 @@ export default function TestInsightsPage() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="min-h-screen bg-[#0F0F0F]">
+      <div className="min-h-screen bg-shield-void">
         <Header />
         
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-[#E0E0E0] mb-2">Test Insights Functionality</h1>
-            <p className="text-[#9CA3AF]">
+            <h1 className="text-3xl font-bold text-shield-fg mb-2">Test Insights Functionality</h1>
+            <p className="text-shield-muted">
               Test the save and retrieve functionality for AI insights
             </p>
           </div>
 
           <div className="space-y-6">
-            <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-[#E0E0E0] mb-4">Database Health Check</h2>
+            <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-shield-fg mb-4">Database Health Check</h2>
               
               <div className="flex space-x-4 mb-4">
                 <button
@@ -170,16 +170,16 @@ export default function TestInsightsPage() {
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="bg-[#2C303A] rounded-lg p-4">
-                      <h4 className="font-medium text-[#E0E0E0] mb-2">Save Result:</h4>
-                      <pre className="text-xs text-[#9CA3AF] overflow-auto">
+                    <div className="bg-shield-panel rounded-lg p-4">
+                      <h4 className="font-medium text-shield-fg mb-2">Save Result:</h4>
+                      <pre className="text-xs text-shield-muted overflow-auto">
                         {JSON.stringify(testResult.save_result, null, 2)}
                       </pre>
                     </div>
 
-                    <div className="bg-[#2C303A] rounded-lg p-4">
-                      <h4 className="font-medium text-[#E0E0E0] mb-2">Retrieve Result:</h4>
-                      <pre className="text-xs text-[#9CA3AF] overflow-auto">
+                    <div className="bg-shield-panel rounded-lg p-4">
+                      <h4 className="font-medium text-shield-fg mb-2">Retrieve Result:</h4>
+                      <pre className="text-xs text-shield-muted overflow-auto">
                         {JSON.stringify(testResult.retrieve_result, null, 2)}
                       </pre>
                     </div>

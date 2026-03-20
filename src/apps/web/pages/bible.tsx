@@ -3,7 +3,7 @@ import { Header } from '../components/Header'
 
 export default function BiblePage() {
   return (
-    <div className="min-h-screen bg-[#1A1D24]">
+    <div className="min-h-screen bg-shield-canvas">
       <Header />
       <Bible />
     </div>

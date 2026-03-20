@@ -2,25 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom CSS variables for theming */
+/* Shield design tokens + theme variables */
 :root {
-  --color-primary: #3B82F6;
-  --color-secondary: #6B7280;
-  --color-accent: #F59E0B;
-  --color-background: #FFFFFF;
-  --color-surface: #F9FAFB;
+  --shield-canvas: #1a1d24;
+  --shield-brand: #46a1e2;
+  --shield-brand-soft: rgba(70, 161, 226, 0.14);
+  --color-primary: #46a1e2;
+  --color-secondary: #6b7280;
+  --color-accent: #e8b44c;
+  --color-background: #ffffff;
+  --color-surface: #f4f6f9;
   --color-text: #111827;
-  --color-text-secondary: #6B7280;
+  --color-text-secondary: #6b7280;
 }
 
 .dark {
-  --color-primary: #60A5FA;
-  --color-secondary: #9CA3AF;
-  --color-accent: #FBBF24;
-  --color-background: #111827;
-  --color-surface: #1F2937;
-  --color-text: #F9FAFB;
-  --color-text-secondary: #D1D5DB;
+  --shield-canvas: #1a1d24;
+  --shield-brand: #5eb0ec;
+  --shield-brand-soft: rgba(94, 176, 236, 0.16);
+  --color-primary: #5eb0ec;
+  --color-secondary: #9ca3af;
+  --color-accent: #f0c45c;
+  --color-background: #1a1d24;
+  --color-surface: #2c303a;
+  --color-text: #e8eaed;
+  --color-text-secondary: #9ca3af;
 }
 
 /* Base styles */
@@ -29,8 +35,7 @@
 }
 
 html {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

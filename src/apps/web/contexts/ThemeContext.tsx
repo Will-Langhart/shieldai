@@ -21,26 +21,26 @@ export const useTheme = () => {
 const lightTheme: Theme = {
   name: 'light',
   colors: {
-    primary: '#3B82F6',
+    primary: '#46A1E2',
     secondary: '#6B7280',
-    accent: '#F59E0B',
-    background: '#FFFFFF',
-    surface: '#F9FAFB',
+    accent: '#E8B44C',
+    background: '#FAFBFC',
+    surface: '#F0F3F7',
     text: '#111827',
-    textSecondary: '#6B7280'
+    textSecondary: '#5C6570'
   }
 }
 
 const darkTheme: Theme = {
   name: 'dark',
   colors: {
-    primary: '#60A5FA',
+    primary: '#5EB0EC',
     secondary: '#9CA3AF',
-    accent: '#FBBF24',
-    background: '#111827',
-    surface: '#1F2937',
-    text: '#F9FAFB',
-    textSecondary: '#D1D5DB'
+    accent: '#F0C45C',
+    background: '#1A1D24',
+    surface: '#2C303A',
+    text: '#E8EAED',
+    textSecondary: '#9CA3AF'
   }
 }
 

@@ -490,11 +490,11 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
 
   if (loading && !statistics) {
     return (
-      <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
+      <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
         <div className="flex flex-col items-center justify-center py-12">
           <Loader2 className="h-12 w-12 text-blue-400 animate-spin mb-4" />
           <div className="text-blue-400 mb-2">Loading insights history...</div>
-          <div className="text-sm text-[#9CA3AF]">This may take a few moments</div>
+          <div className="text-sm text-shield-muted">This may take a few moments</div>
         </div>
       </div>
     )
@@ -502,11 +502,11 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
 
   if (error) {
     return (
-      <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
+      <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
         <div className="flex flex-col items-center justify-center py-12">
           <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
           <div className="text-red-400 mb-2">Failed to load insights history</div>
-          <div className="text-sm text-[#9CA3AF] mb-4">{error}</div>
+          <div className="text-sm text-shield-muted mb-4">{error}</div>
           <button 
             onClick={loadInsightsHistory}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -520,12 +520,12 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
   }
 
   return (
-    <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
+    <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <Brain className="h-6 w-6 text-blue-400" />
-          <h2 className="text-xl font-semibold text-[#E0E0E0]">Insights History</h2>
+          <h2 className="text-xl font-semibold text-shield-fg">Insights History</h2>
         </div>
         
         <div className="flex items-center space-x-2">
@@ -534,7 +534,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
             className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
               showFilters 
                 ? 'bg-blue-600 text-white' 
-                : 'bg-[#2C303A] text-[#E0E0E0] hover:bg-[#3A404B]'
+                : 'bg-shield-panel text-shield-fg hover:bg-shield-elevated'
             }`}
           >
             <SlidersHorizontal className="h-4 w-4" />
@@ -543,7 +543,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
           
           <button
             onClick={loadInsightsHistory}
-            className="flex items-center space-x-2 px-3 py-2 bg-[#2C303A] text-[#E0E0E0] hover:bg-[#3A404B] rounded-lg transition-colors"
+            className="flex items-center space-x-2 px-3 py-2 bg-shield-panel text-shield-fg hover:bg-shield-elevated rounded-lg transition-colors"
           >
             <RefreshCw className="h-4 w-4" />
             <span>Refresh</span>
@@ -553,27 +553,27 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
 
       {/* Filters */}
       {showFilters && (
-        <div className="mb-6 p-4 bg-[#2C303A] rounded-lg">
+        <div className="mb-6 p-4 bg-shield-panel rounded-lg">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Search */}
             <div>
-              <label className="block text-sm font-medium text-[#E0E0E0] mb-2">Search</label>
+              <label className="block text-sm font-medium text-shield-fg mb-2">Search</label>
               <input
                 type="text"
                 value={filters.search_query}
                 onChange={(e) => handleFilterChange('search_query', e.target.value)}
                 placeholder="Search insights..."
-                className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {/* Bible Version */}
             <div>
-              <label className="block text-sm font-medium text-[#E0E0E0] mb-2">Bible Version</label>
+              <label className="block text-sm font-medium text-shield-fg mb-2">Bible Version</label>
               <select
                 value={filters.bible_version}
                 onChange={(e) => handleFilterChange('bible_version', e.target.value)}
-                className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Versions</option>
                 {availableFilters.versions.map(version => (
@@ -584,58 +584,58 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
 
             {/* Passage Reference */}
             <div>
-              <label className="block text-sm font-medium text-[#E0E0E0] mb-2">Passage Reference</label>
+              <label className="block text-sm font-medium text-shield-fg mb-2">Passage Reference</label>
               <input
                 type="text"
                 value={filters.passage_reference}
                 onChange={(e) => handleFilterChange('passage_reference', e.target.value)}
                 placeholder="e.g., John 3:16"
-                className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {/* Date Range */}
             <div>
-              <label className="block text-sm font-medium text-[#E0E0E0] mb-2">From Date</label>
+              <label className="block text-sm font-medium text-shield-fg mb-2">From Date</label>
               <input
                 type="date"
                 value={filters.date_from}
                 onChange={(e) => handleFilterChange('date_from', e.target.value)}
-                className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#E0E0E0] mb-2">To Date</label>
+              <label className="block text-sm font-medium text-shield-fg mb-2">To Date</label>
               <input
                 type="date"
                 value={filters.date_to}
                 onChange={(e) => handleFilterChange('date_to', e.target.value)}
-                className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {/* Status Filters */}
             <div>
-              <label className="block text-sm font-medium text-[#E0E0E0] mb-2">Status</label>
+              <label className="block text-sm font-medium text-shield-fg mb-2">Status</label>
               <div className="space-y-2">
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     checked={filters.is_favorite === true}
                     onChange={(e) => handleFilterChange('is_favorite', e.target.checked ? true : null)}
-                    className="rounded border-[#3A404B] bg-[#1A1D24] text-blue-600 focus:ring-blue-500"
+                    className="rounded border-shield-edge bg-shield-canvas text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm text-[#E0E0E0]">Favorites Only</span>
+                  <span className="text-sm text-shield-fg">Favorites Only</span>
                 </label>
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     checked={filters.is_shared === true}
                     onChange={(e) => handleFilterChange('is_shared', e.target.checked ? true : null)}
-                    className="rounded border-[#3A404B] bg-[#1A1D24] text-blue-600 focus:ring-blue-500"
+                    className="rounded border-shield-edge bg-shield-canvas text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm text-[#E0E0E0]">Shared Only</span>
+                  <span className="text-sm text-shield-fg">Shared Only</span>
                 </label>
               </div>
             </div>
@@ -644,7 +644,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
           <div className="flex items-center justify-between mt-4">
             <button
               onClick={clearFilters}
-              className="px-4 py-2 text-[#9CA3AF] hover:text-[#E0E0E0] transition-colors"
+              className="px-4 py-2 text-shield-muted hover:text-shield-fg transition-colors"
             >
               Clear Filters
             </button>
@@ -659,7 +659,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
       )}
 
       {/* Tabs */}
-      <div className="flex space-x-1 mb-6 bg-[#2C303A] p-1 rounded-lg">
+      <div className="flex space-x-1 mb-6 bg-shield-panel p-1 rounded-lg">
         {tabs.map((tab) => {
           const Icon = tab.icon
           const isActive = activeTab === tab.id
@@ -670,8 +670,8 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
                 isActive
-                  ? 'bg-[#1A1D24] text-[#E0E0E0]'
-                  : 'text-[#9CA3AF] hover:text-[#E0E0E0] hover:bg-[#3A404B]'
+                  ? 'bg-shield-canvas text-shield-fg'
+                  : 'text-shield-muted hover:text-shield-fg hover:bg-shield-elevated'
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -686,41 +686,41 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
         <div className="space-y-6">
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-[#2C303A] rounded-lg p-4">
+            <div className="bg-shield-panel rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-[#9CA3AF]">Total Insights</p>
-                  <p className="text-2xl font-bold text-[#E0E0E0]">{statistics.overview.total_insights}</p>
+                  <p className="text-sm text-shield-muted">Total Insights</p>
+                  <p className="text-2xl font-bold text-shield-fg">{statistics.overview.total_insights}</p>
                 </div>
                 <Brain className="h-8 w-8 text-blue-400" />
               </div>
             </div>
             
-            <div className="bg-[#2C303A] rounded-lg p-4">
+            <div className="bg-shield-panel rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-[#9CA3AF]">Favorites</p>
-                  <p className="text-2xl font-bold text-[#E0E0E0]">{statistics.overview.favorite_insights}</p>
+                  <p className="text-sm text-shield-muted">Favorites</p>
+                  <p className="text-2xl font-bold text-shield-fg">{statistics.overview.favorite_insights}</p>
                 </div>
                 <Star className="h-8 w-8 text-yellow-400" />
               </div>
             </div>
             
-            <div className="bg-[#2C303A] rounded-lg p-4">
+            <div className="bg-shield-panel rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-[#9CA3AF]">Shared</p>
-                  <p className="text-2xl font-bold text-[#E0E0E0]">{statistics.overview.shared_insights}</p>
+                  <p className="text-sm text-shield-muted">Shared</p>
+                  <p className="text-2xl font-bold text-shield-fg">{statistics.overview.shared_insights}</p>
                 </div>
                 <Share2 className="h-8 w-8 text-pink-400" />
               </div>
             </div>
             
-            <div className="bg-[#2C303A] rounded-lg p-4">
+            <div className="bg-shield-panel rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-[#9CA3AF]">Unique Passages</p>
-                  <p className="text-2xl font-bold text-[#E0E0E0]">{statistics.overview.unique_passages}</p>
+                  <p className="text-sm text-shield-muted">Unique Passages</p>
+                  <p className="text-2xl font-bold text-shield-fg">{statistics.overview.unique_passages}</p>
                 </div>
                 <BookOpen className="h-8 w-8 text-green-400" />
               </div>
@@ -729,31 +729,31 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
 
           {/* Engagement Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-[#2C303A] rounded-lg p-4">
+            <div className="bg-shield-panel rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-[#9CA3AF]">Engagement Rate</p>
-                  <p className="text-2xl font-bold text-[#E0E0E0]">{statistics.engagement.engagement_rate}%</p>
+                  <p className="text-sm text-shield-muted">Engagement Rate</p>
+                  <p className="text-2xl font-bold text-shield-fg">{statistics.engagement.engagement_rate}%</p>
                 </div>
                 <Heart className="h-8 w-8 text-red-400" />
               </div>
             </div>
             
-            <div className="bg-[#2C303A] rounded-lg p-4">
+            <div className="bg-shield-panel rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-[#9CA3AF]">Sharing Rate</p>
-                  <p className="text-2xl font-bold text-[#E0E0E0]">{statistics.engagement.sharing_rate}%</p>
+                  <p className="text-sm text-shield-muted">Sharing Rate</p>
+                  <p className="text-2xl font-bold text-shield-fg">{statistics.engagement.sharing_rate}%</p>
                 </div>
                 <Share2 className="h-8 w-8 text-blue-400" />
               </div>
             </div>
             
-            <div className="bg-[#2C303A] rounded-lg p-4">
+            <div className="bg-shield-panel rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-[#9CA3AF]">Activity Rate</p>
-                  <p className="text-2xl font-bold text-[#E0E0E0]">{statistics.engagement.activity_rate}%</p>
+                  <p className="text-sm text-shield-muted">Activity Rate</p>
+                  <p className="text-2xl font-bold text-shield-fg">{statistics.engagement.activity_rate}%</p>
                 </div>
                 <Activity className="h-8 w-8 text-green-400" />
               </div>
@@ -762,25 +762,25 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
 
           {/* Popular Themes and Tags */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-[#2C303A] rounded-lg p-4">
-              <h3 className="text-lg font-medium text-[#E0E0E0] mb-4">Popular Themes</h3>
+            <div className="bg-shield-panel rounded-lg p-4">
+              <h3 className="text-lg font-medium text-shield-fg mb-4">Popular Themes</h3>
               <div className="space-y-2">
                 {statistics.popular_themes.slice(0, 5).map((theme, index) => (
                   <div key={index} className="flex items-center justify-between">
-                    <span className="text-[#E0E0E0]">{theme.theme}</span>
-                    <span className="text-sm text-[#9CA3AF]">{theme.count}</span>
+                    <span className="text-shield-fg">{theme.theme}</span>
+                    <span className="text-sm text-shield-muted">{theme.count}</span>
                   </div>
                 ))}
               </div>
             </div>
             
-            <div className="bg-[#2C303A] rounded-lg p-4">
-              <h3 className="text-lg font-medium text-[#E0E0E0] mb-4">Popular Tags</h3>
+            <div className="bg-shield-panel rounded-lg p-4">
+              <h3 className="text-lg font-medium text-shield-fg mb-4">Popular Tags</h3>
               <div className="space-y-2">
                 {statistics.popular_tags.slice(0, 5).map((tag, index) => (
                   <div key={index} className="flex items-center justify-between">
-                    <span className="text-[#E0E0E0]">{tag.tag}</span>
-                    <span className="text-sm text-[#9CA3AF]">{tag.count}</span>
+                    <span className="text-shield-fg">{tag.tag}</span>
+                    <span className="text-sm text-shield-muted">{tag.count}</span>
                   </div>
                 ))}
               </div>
@@ -793,18 +793,18 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
         <div className="space-y-4">
           {insights.length === 0 ? (
             <div className="text-center py-12">
-              <Brain className="h-12 w-12 text-[#9CA3AF] mx-auto mb-4" />
-              <p className="text-[#9CA3AF]">No insights found</p>
-              <p className="text-sm text-[#9CA3AF] mt-2">Try adjusting your filters or generate some insights first</p>
+              <Brain className="h-12 w-12 text-shield-muted mx-auto mb-4" />
+              <p className="text-shield-muted">No insights found</p>
+              <p className="text-sm text-shield-muted mt-2">Try adjusting your filters or generate some insights first</p>
             </div>
           ) : (
             insights.map((insight) => (
-              <div key={insight.id} className="bg-gradient-to-br from-[#2C303A] to-[#1A1D24] rounded-xl p-6 border border-[#3A404B] hover:border-[#4A505B] transition-all duration-300 shadow-lg">
+              <div key={insight.id} className="bg-gradient-to-br from-shield-panel to-shield-canvas rounded-xl p-6 border border-shield-edge hover:border-shield-edge-strong transition-all duration-300 shadow-lg">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-xl font-semibold text-[#E0E0E0]">
+                      <h3 className="text-xl font-semibold text-shield-fg">
                         {insight.passage_reference}
                       </h3>
                       <div className="flex items-center space-x-2">
@@ -818,7 +818,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-4 text-sm text-[#9CA3AF] mb-3">
+                    <div className="flex items-center space-x-4 text-sm text-shield-muted mb-3">
                       <span className="flex items-center space-x-1">
                         <BookOpen className="h-4 w-4" />
                         <span>{insight.bible_version}</span>
@@ -834,14 +834,14 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                         </span>
                       )}
                     </div>
-                    <p className="text-[#E0E0E0] leading-relaxed">
+                    <p className="text-shield-fg leading-relaxed">
                       {insight.explanation}
                     </p>
                   </div>
                   
                   <button
                     onClick={() => toggleInsightExpansion(insight.id)}
-                    className="p-2 text-[#9CA3AF] hover:text-[#E0E0E0] hover:bg-[#3A404B] rounded-lg transition-colors ml-4"
+                    className="p-2 text-shield-muted hover:text-shield-fg hover:bg-shield-elevated rounded-lg transition-colors ml-4"
                   >
                     {expandedInsights.has(insight.id) ? (
                       <ChevronUp className="h-5 w-5" />
@@ -866,7 +866,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                     {insight.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1 bg-[#3A404B] text-[#E0E0E0] rounded-full text-sm border border-[#4A505B]"
+                        className="px-3 py-1 bg-shield-elevated text-shield-fg rounded-full text-sm border border-shield-edge-strong"
                       >
                         <Tag className="h-3 w-3 inline mr-1" />
                         {tag}
@@ -883,7 +883,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                       className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
                         insight.is_favorite 
                           ? 'bg-yellow-600 text-white' 
-                          : 'bg-[#3A404B] text-[#9CA3AF] hover:bg-yellow-600 hover:text-white'
+                          : 'bg-shield-elevated text-shield-muted hover:bg-yellow-600 hover:text-white'
                       }`}
                     >
                       <Star className="h-4 w-4" />
@@ -892,7 +892,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                     
                     <button
                       onClick={() => handleInteraction(insight.id, 'share')}
-                      className="flex items-center space-x-1 px-3 py-2 bg-[#3A404B] text-[#9CA3AF] hover:bg-pink-600 hover:text-white rounded-lg transition-colors"
+                      className="flex items-center space-x-1 px-3 py-2 bg-shield-elevated text-shield-muted hover:bg-pink-600 hover:text-white rounded-lg transition-colors"
                     >
                       <Share2 className="h-4 w-4" />
                       <span className="text-sm">Share</span>
@@ -900,7 +900,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                     
                     <button
                       onClick={() => setShowResponseForm(showResponseForm === insight.id ? null : insight.id)}
-                      className="flex items-center space-x-1 px-3 py-2 bg-[#3A404B] text-[#9CA3AF] hover:bg-blue-600 hover:text-white rounded-lg transition-colors"
+                      className="flex items-center space-x-1 px-3 py-2 bg-shield-elevated text-shield-muted hover:bg-blue-600 hover:text-white rounded-lg transition-colors"
                     >
                       <MessageCircle className="h-4 w-4" />
                       <span className="text-sm">Respond</span>
@@ -910,7 +910,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => setShowFeedbackForm(showFeedbackForm === insight.id ? null : insight.id)}
-                      className="flex items-center space-x-1 px-3 py-2 bg-[#3A404B] text-[#9CA3AF] hover:bg-green-600 hover:text-white rounded-lg transition-colors"
+                      className="flex items-center space-x-1 px-3 py-2 bg-shield-elevated text-shield-muted hover:bg-green-600 hover:text-white rounded-lg transition-colors"
                     >
                       <Award className="h-4 w-4" />
                       <span className="text-sm">Rate</span>
@@ -920,13 +920,13 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
 
                 {/* Response Form */}
                 {showResponseForm === insight.id && (
-                  <div className="mb-4 p-4 bg-[#1A1D24] rounded-lg border border-[#3A404B]">
-                    <h4 className="text-lg font-medium text-[#E0E0E0] mb-3">Add Your Response</h4>
+                  <div className="mb-4 p-4 bg-shield-canvas rounded-lg border border-shield-edge">
+                    <h4 className="text-lg font-medium text-shield-fg mb-3">Add Your Response</h4>
                     <div className="space-y-3">
                       <select
                         value={newResponse.type}
                         onChange={(e) => setNewResponse(prev => ({ ...prev, type: e.target.value as InsightResponse['response_type'] }))}
-                        className="w-full px-3 py-2 bg-[#2C303A] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="comment">💬 Comment</option>
                         <option value="question">❓ Question</option>
@@ -942,7 +942,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                         onChange={(e) => setNewResponse(prev => ({ ...prev, text: e.target.value }))}
                         placeholder="Share your thoughts..."
                         rows={3}
-                        className="w-full px-3 py-2 bg-[#2C303A] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                       />
                       
                       <div className="flex items-center justify-between">
@@ -952,19 +952,19 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                               type="checkbox"
                               checked={newResponse.is_helpful === true}
                               onChange={(e) => setNewResponse(prev => ({ ...prev, is_helpful: e.target.checked ? true : null }))}
-                              className="rounded border-[#3A404B] bg-[#2C303A] text-green-600 focus:ring-green-500"
+                              className="rounded border-shield-edge bg-shield-panel text-green-600 focus:ring-green-500"
                             />
-                            <span className="text-sm text-[#E0E0E0]">Helpful</span>
+                            <span className="text-sm text-shield-fg">Helpful</span>
                           </label>
                           
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm text-[#9CA3AF]">Rating:</span>
+                            <span className="text-sm text-shield-muted">Rating:</span>
                             <div className="flex space-x-1">
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <button
                                   key={star}
                                   onClick={() => setNewResponse(prev => ({ ...prev, rating: star }))}
-                                  className={`text-lg ${newResponse.rating && star <= newResponse.rating ? 'text-yellow-400' : 'text-[#9CA3AF]'}`}
+                                  className={`text-lg ${newResponse.rating && star <= newResponse.rating ? 'text-yellow-400' : 'text-shield-muted'}`}
                                 >
                                   ⭐
                                 </button>
@@ -987,8 +987,8 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
 
                 {/* Feedback Form */}
                 {showFeedbackForm === insight.id && (
-                  <div className="mb-4 p-4 bg-[#1A1D24] rounded-lg border border-[#3A404B]">
-                    <h4 className="text-lg font-medium text-[#E0E0E0] mb-3">Rate This Insight</h4>
+                  <div className="mb-4 p-4 bg-shield-canvas rounded-lg border border-shield-edge">
+                    <h4 className="text-lg font-medium text-shield-fg mb-3">Rate This Insight</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[
                         { key: 'content_quality', label: 'Content Quality', icon: <BookOpen className="h-4 w-4" /> },
@@ -1001,14 +1001,14 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                         <div key={key} className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             {icon}
-                            <span className="text-sm text-[#E0E0E0]">{label}</span>
+                            <span className="text-sm text-shield-fg">{label}</span>
                           </div>
                           <div className="flex space-x-1">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <button
                                 key={star}
                                 onClick={() => setNewFeedback(prev => ({ ...prev, [key]: star }))}
-                                className={`text-lg ${newFeedback[key as keyof typeof newFeedback] && star <= (newFeedback[key as keyof typeof newFeedback] as number) ? 'text-yellow-400' : 'text-[#9CA3AF]'}`}
+                                className={`text-lg ${newFeedback[key as keyof typeof newFeedback] && star <= (newFeedback[key as keyof typeof newFeedback] as number) ? 'text-yellow-400' : 'text-shield-muted'}`}
                               >
                                 ⭐
                               </button>
@@ -1024,7 +1024,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                         onChange={(e) => setNewFeedback(prev => ({ ...prev, feedback_text: e.target.value }))}
                         placeholder="Additional feedback (optional)"
                         rows={2}
-                        className="w-full px-3 py-2 bg-[#2C303A] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                       />
                       
                       <textarea
@@ -1032,7 +1032,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                         onChange={(e) => setNewFeedback(prev => ({ ...prev, suggestions: e.target.value }))}
                         placeholder="Suggestions for improvement (optional)"
                         rows={2}
-                        className="w-full px-3 py-2 bg-[#2C303A] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                       />
                       
                       <button
@@ -1048,40 +1048,40 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
 
                 {/* Expanded Content */}
                 {expandedInsights.has(insight.id) && (
-                  <div className="mt-6 pt-6 border-t border-[#3A404B] space-y-6">
+                  <div className="mt-6 pt-6 border-t border-shield-edge space-y-6">
                     {insight.historical_context && (
-                      <div className="bg-[#1A1D24] rounded-lg p-4 border border-[#3A404B]">
-                        <h4 className="text-lg font-medium text-[#E0E0E0] mb-3 flex items-center">
+                      <div className="bg-shield-canvas rounded-lg p-4 border border-shield-edge">
+                        <h4 className="text-lg font-medium text-shield-fg mb-3 flex items-center">
                           <Calendar className="h-5 w-5 text-orange-400 mr-2" />
                           Historical Context
                         </h4>
-                        <p className="text-[#9CA3AF] leading-relaxed">{insight.historical_context}</p>
+                        <p className="text-shield-muted leading-relaxed">{insight.historical_context}</p>
                       </div>
                     )}
                     
                     {insight.theological_meaning && (
-                      <div className="bg-[#1A1D24] rounded-lg p-4 border border-[#3A404B]">
-                        <h4 className="text-lg font-medium text-[#E0E0E0] mb-3 flex items-center">
+                      <div className="bg-shield-canvas rounded-lg p-4 border border-shield-edge">
+                        <h4 className="text-lg font-medium text-shield-fg mb-3 flex items-center">
                           <Cross className="h-5 w-5 text-red-400 mr-2" />
                           Theological Meaning
                         </h4>
-                        <p className="text-[#9CA3AF] leading-relaxed">{insight.theological_meaning}</p>
+                        <p className="text-shield-muted leading-relaxed">{insight.theological_meaning}</p>
                       </div>
                     )}
                     
                     {insight.practical_application && (
-                      <div className="bg-[#1A1D24] rounded-lg p-4 border border-[#3A404B]">
-                        <h4 className="text-lg font-medium text-[#E0E0E0] mb-3 flex items-center">
+                      <div className="bg-shield-canvas rounded-lg p-4 border border-shield-edge">
+                        <h4 className="text-lg font-medium text-shield-fg mb-3 flex items-center">
                           <Lightbulb className="h-5 w-5 text-yellow-400 mr-2" />
                           Practical Application
                         </h4>
-                        <p className="text-[#9CA3AF] leading-relaxed">{insight.practical_application}</p>
+                        <p className="text-shield-muted leading-relaxed">{insight.practical_application}</p>
                       </div>
                     )}
                     
                     {insight.prayer_points.length > 0 && (
-                      <div className="bg-[#1A1D24] rounded-lg p-4 border border-[#3A404B]">
-                        <h4 className="text-lg font-medium text-[#E0E0E0] mb-3 flex items-center">
+                      <div className="bg-shield-canvas rounded-lg p-4 border border-shield-edge">
+                        <h4 className="text-lg font-medium text-shield-fg mb-3 flex items-center">
                           <Heart className="h-5 w-5 text-pink-400 mr-2" />
                           Prayer Points
                         </h4>
@@ -1089,7 +1089,7 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
                           {insight.prayer_points.map((point, index) => (
                             <li key={index} className="flex items-start space-x-2">
                               <span className="text-pink-400 font-medium text-sm mt-1">{index + 1}.</span>
-                              <span className="text-[#9CA3AF]">{point}</span>
+                              <span className="text-shield-muted">{point}</span>
                             </li>
                           ))}
                         </ul>
@@ -1116,9 +1116,9 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
       {activeTab === 'analytics' && statistics && (
         <div className="space-y-6">
           {/* Chart Placeholder */}
-          <div className="bg-[#2C303A] rounded-lg p-4">
-            <h3 className="text-lg font-medium text-[#E0E0E0] mb-4">Insights Over Time</h3>
-            <div className="h-64 flex items-center justify-center text-[#9CA3AF]">
+          <div className="bg-shield-panel rounded-lg p-4">
+            <h3 className="text-lg font-medium text-shield-fg mb-4">Insights Over Time</h3>
+            <div className="h-64 flex items-center justify-center text-shield-muted">
               <div className="text-center">
                 <BarChart3 className="h-12 w-12 mx-auto mb-2" />
                 <p>Chart visualization would go here</p>
@@ -1128,13 +1128,13 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
           </div>
 
           {/* Version Usage */}
-          <div className="bg-[#2C303A] rounded-lg p-4">
-            <h3 className="text-lg font-medium text-[#E0E0E0] mb-4">Bible Version Usage</h3>
+          <div className="bg-shield-panel rounded-lg p-4">
+            <h3 className="text-lg font-medium text-shield-fg mb-4">Bible Version Usage</h3>
             <div className="space-y-2">
               {statistics.version_usage.map((version, index) => (
                 <div key={index} className="flex items-center justify-between">
-                  <span className="text-[#E0E0E0]">{version.version}</span>
-                  <span className="text-sm text-[#9CA3AF]">{version.count} insights</span>
+                  <span className="text-shield-fg">{version.version}</span>
+                  <span className="text-sm text-shield-muted">{version.count} insights</span>
                 </div>
               ))}
             </div>
@@ -1146,22 +1146,22 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
         <div className="space-y-4">
           {insights.filter(insight => insight.is_favorite).length === 0 ? (
             <div className="text-center py-12">
-              <Star className="h-12 w-12 text-[#9CA3AF] mx-auto mb-4" />
-              <p className="text-[#9CA3AF]">No favorite insights yet</p>
-              <p className="text-sm text-[#9CA3AF] mt-2">Star insights to add them to your favorites</p>
+              <Star className="h-12 w-12 text-shield-muted mx-auto mb-4" />
+              <p className="text-shield-muted">No favorite insights yet</p>
+              <p className="text-sm text-shield-muted mt-2">Star insights to add them to your favorites</p>
             </div>
           ) : (
             insights.filter(insight => insight.is_favorite).map((insight) => (
-              <div key={insight.id} className="bg-[#2C303A] rounded-lg p-4">
+              <div key={insight.id} className="bg-shield-panel rounded-lg p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h3 className="text-lg font-medium text-[#E0E0E0] mb-1">
+                    <h3 className="text-lg font-medium text-shield-fg mb-1">
                       {insight.passage_reference}
                     </h3>
-                    <p className="text-sm text-[#9CA3AF] mb-2">
+                    <p className="text-sm text-shield-muted mb-2">
                       {insight.bible_version} • {formatDate(insight.created_at)}
                     </p>
-                    <p className="text-[#E0E0E0] line-clamp-2">
+                    <p className="text-shield-fg line-clamp-2">
                       {insight.explanation}
                     </p>
                   </div>
@@ -1177,22 +1177,22 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
         <div className="space-y-4">
           {insights.filter(insight => insight.is_shared).length === 0 ? (
             <div className="text-center py-12">
-              <Share2 className="h-12 w-12 text-[#9CA3AF] mx-auto mb-4" />
-              <p className="text-[#9CA3AF]">No shared insights yet</p>
-              <p className="text-sm text-[#9CA3AF] mt-2">Share insights to make them visible to others</p>
+              <Share2 className="h-12 w-12 text-shield-muted mx-auto mb-4" />
+              <p className="text-shield-muted">No shared insights yet</p>
+              <p className="text-sm text-shield-muted mt-2">Share insights to make them visible to others</p>
             </div>
           ) : (
             insights.filter(insight => insight.is_shared).map((insight) => (
-              <div key={insight.id} className="bg-[#2C303A] rounded-lg p-4">
+              <div key={insight.id} className="bg-shield-panel rounded-lg p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h3 className="text-lg font-medium text-[#E0E0E0] mb-1">
+                    <h3 className="text-lg font-medium text-shield-fg mb-1">
                       {insight.passage_reference}
                     </h3>
-                    <p className="text-sm text-[#9CA3AF] mb-2">
+                    <p className="text-sm text-shield-muted mb-2">
                       {insight.bible_version} • {formatDate(insight.created_at)}
                     </p>
-                    <p className="text-[#E0E0E0] line-clamp-2">
+                    <p className="text-shield-fg line-clamp-2">
                       {insight.explanation}
                     </p>
                   </div>

@@ -45,15 +45,15 @@ export function EmailConfirm() {
   }, [user, router.push]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1A1D24]">
-      <div className="max-w-md w-full bg-[#2C303A] rounded-lg p-8 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-shield-canvas">
+      <div className="max-w-md w-full bg-shield-panel rounded-lg p-8 text-center">
         {status === 'loading' && (
           <>
             <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <h2 className="text-2xl font-bold text-[#E0E0E0] mb-4">Confirming Email...</h2>
-            <p className="text-[#9CA3AF]">Please wait while we confirm your email address.</p>
+            <h2 className="text-2xl font-bold text-shield-fg mb-4">Confirming Email...</h2>
+            <p className="text-shield-muted">Please wait while we confirm your email address.</p>
           </>
         )}
 
@@ -64,8 +64,8 @@ export function EmailConfirm() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-[#E0E0E0] mb-4">Email Confirmed!</h2>
-            <p className="text-[#9CA3AF] mb-6">{message}</p>
+            <h2 className="text-2xl font-bold text-shield-fg mb-4">Email Confirmed!</h2>
+            <p className="text-shield-muted mb-6">{message}</p>
             <button
               onClick={() => router.push('/chat')}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -82,8 +82,8 @@ export function EmailConfirm() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-[#E0E0E0] mb-4">Confirmation Failed</h2>
-            <p className="text-[#9CA3AF] mb-6">{message}</p>
+            <h2 className="text-2xl font-bold text-shield-fg mb-4">Confirmation Failed</h2>
+            <p className="text-shield-muted mb-6">{message}</p>
             <div className="space-y-2">
               <button
                 onClick={() => router.push('/chat')}

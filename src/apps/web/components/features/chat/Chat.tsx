@@ -86,7 +86,7 @@ export function Chat() {
       height="20" 
       viewBox="0 0 20 20" 
       fill="none" 
-      className="text-[#9CA3AF]"
+      className="text-shield-muted"
     >
       <rect 
         x="2" 
@@ -296,14 +296,14 @@ export function Chat() {
   )
 
   return (
-    <div className="flex h-screen bg-[#1A1D24] text-[#E0E0E0]">
+    <div className="flex h-screen bg-shield-canvas text-shield-fg">
       {/* Sidebar */}
-      <div className={`${sidebarCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 overflow-hidden bg-[#2C303A] border-r border-[#3A404B] flex flex-col`}>
+      <div className={`${sidebarCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 overflow-hidden bg-shield-panel border-r border-shield-edge flex flex-col`}>
         <div className="p-4 space-y-4">
           {/* New Chat Button */}
           <button
             onClick={handleNewTopic}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25"
+            className="flex w-full transform items-center space-x-3 rounded-xl bg-gradient-to-r from-shield-brand to-shield-brand-dim px-4 py-3 text-white shadow-shield-glow-sm transition-all duration-200 hover:scale-[1.02] hover:brightness-110 hover:shadow-shield-glow"
           >
             <Plus className="h-5 w-5" />
             <span>New chat</span>
@@ -311,18 +311,18 @@ export function Chat() {
 
           {/* Search Chats */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-shield-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search chats"
-              className="w-full bg-[#1A1D24] border border-[#3A404B] text-[#E0E0E0] placeholder-[#9CA3AF] pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg border border-shield-edge bg-shield-canvas py-2 pl-10 pr-4 text-shield-fg placeholder-shield-muted focus:border-transparent focus:outline-none focus:ring-2 focus:ring-shield-brand"
             />
           </div>
 
           {/* Library Link */}
-          <div className="flex items-center space-x-3 px-4 py-2 text-[#9CA3AF] hover:text-[#E0E0E0] cursor-pointer transition-colors rounded-lg hover:bg-[#3A404B]">
+          <div className="flex items-center space-x-3 px-4 py-2 text-shield-muted hover:text-shield-fg cursor-pointer transition-colors rounded-lg hover:bg-shield-elevated">
             <BookOpen className="h-5 w-5" />
             <span>Library</span>
           </div>
@@ -337,12 +337,12 @@ export function Chat() {
                 onClick={() => loadConversation(conversation.id)}
                 className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                   currentConversationId === conversation.id
-                    ? 'bg-blue-600/20 border border-blue-500/30 text-[#E0E0E0] shadow-lg shadow-blue-500/10'
-                    : 'hover:bg-[#3A404B] text-[#9CA3AF] hover:text-[#E0E0E0] border border-transparent hover:border-[#4A505B]'
+                    ? 'border border-shield-brand/35 bg-shield-brand/15 text-shield-fg shadow-lg shadow-shield-brand/10'
+                    : 'hover:bg-shield-elevated text-shield-muted hover:text-shield-fg border border-transparent hover:border-shield-edge-strong'
                 }`}
               >
                 <div className="font-medium text-sm truncate">{conversation.title}</div>
-                <div className="text-xs text-[#9CA3AF] mt-1">
+                <div className="text-xs text-shield-muted mt-1">
                   {new Date(conversation.updated_at).toLocaleDateString()}
                 </div>
               </div>
@@ -351,41 +351,41 @@ export function Chat() {
         </div>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-[#3A404B]">
+        <div className="p-4 border-t border-shield-edge">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-shield-glow-sm">
               <User className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1">
               <div className="text-sm font-medium">Shield AI</div>
-              <div className="text-xs text-[#9CA3AF]">Plus</div>
+              <div className="text-xs text-shield-muted">Plus</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-gradient-to-br from-[#1A1D24] to-[#2C303A]">
+      <div className="flex-1 flex flex-col bg-gradient-to-br from-shield-canvas to-shield-panel">
         {/* Top Bar */}
-        <div className="flex items-center justify-between p-4 border-b border-[#3A404B] bg-gradient-to-br from-[#1A1D24] to-[#2C303A]">
+        <div className="flex items-center justify-between p-4 border-b border-shield-edge bg-gradient-to-br from-shield-canvas to-shield-panel">
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-2 hover:bg-[#3A404B] rounded-lg transition-colors"
+              className="p-2 hover:bg-shield-elevated rounded-lg transition-colors"
             >
               <SidebarToggleIcon />
             </button>
             <div className="flex items-center space-x-2">
               <h1 
-                className="text-lg font-semibold cursor-pointer bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent hover:from-blue-300 hover:to-blue-500 transition-all duration-200"
+                className="cursor-pointer bg-gradient-to-r from-shield-brand via-sky-300 to-shield-brand-dim bg-clip-text text-lg font-semibold text-transparent transition-all duration-200 hover:brightness-125"
                 onClick={() => router.push('/')}
               >
                 Shield AI
               </h1>
-              <ChevronDown className="h-4 w-4 text-[#9CA3AF]" />
+              <ChevronDown className="h-4 w-4 text-shield-muted" />
             </div>
           </div>
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-shield-glow-sm">
             <User className="h-5 w-5" />
           </div>
         </div>
@@ -395,10 +395,10 @@ export function Chat() {
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
               <div className="text-center w-full">
-                <h2 className="text-2xl font-semibold mb-8 text-[#E0E0E0]">What can I help with?</h2>
+                <h2 className="text-2xl font-semibold mb-8 text-shield-fg">What can I help with?</h2>
                 <div className="relative w-full max-w-3xl mx-auto">
-                  <div className="flex items-center bg-[#2C303A] rounded-2xl px-4 py-3 shadow-lg border border-[#3A404B]">
-                    <button className="p-2 hover:bg-[#3A404B] rounded-lg transition-colors mr-2">
+                  <div className="flex items-center bg-shield-panel rounded-2xl px-4 py-3 shadow-lg border border-shield-edge">
+                    <button className="p-2 hover:bg-shield-elevated rounded-lg transition-colors mr-2">
                       <Plus className="h-5 w-5 text-white" />
                     </button>
                     <div className="flex-1 relative">
@@ -415,12 +415,12 @@ export function Chat() {
                             handleSendMessage();
                           }
                         }}
-                        className="w-full bg-transparent text-[#E0E0E0] placeholder-transparent focus:outline-none text-base"
+                        className="w-full bg-transparent text-shield-fg placeholder-transparent focus:outline-none text-base"
                         disabled={isLoading}
                       />
                       {!inputMessage && (
                         <div className="absolute inset-0 pointer-events-none">
-                          <span className="text-[#9CA3AF] text-base animate-pulse">
+                          <span className="text-shield-muted text-base animate-pulse">
                             {apologeticsQuestions[currentPlaceholderIndex]}
                           </span>
                         </div>
@@ -430,14 +430,14 @@ export function Chat() {
                       <button 
                         onClick={handleSendMessage}
                         disabled={isLoading || !inputMessage.trim()}
-                        className="p-2 hover:bg-[#3A404B] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 hover:bg-shield-elevated rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Mic className="h-5 w-5 text-white" />
                       </button>
                       <button 
                         onClick={handleSendMessage}
                         disabled={isLoading || !inputMessage.trim()}
-                        className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="rounded-lg bg-shield-brand p-2 transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Send className="h-5 w-5 text-white" />
                       </button>
@@ -470,14 +470,14 @@ export function Chat() {
                     <div className="enhanced-message-wrapper assistant">
                       <div className="message-icon">
                         <div className="ai-icon-circle">
-                          <Shield className="w-4 h-4 text-blue-400" />
+                          <Shield className="h-4 w-4 text-shield-brand" />
                         </div>
                       </div>
                       <div className="message-bubble assistant-bubble">
                         <div className="flex space-x-1.5 py-1">
-                          <div className="w-1.5 h-1.5 bg-[#9CA3AF] rounded-full animate-bounce"></div>
-                          <div className="w-1.5 h-1.5 bg-[#9CA3AF] rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
-                          <div className="w-1.5 h-1.5 bg-[#9CA3AF] rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                          <div className="w-1.5 h-1.5 bg-shield-muted rounded-full animate-bounce"></div>
+                          <div className="w-1.5 h-1.5 bg-shield-muted rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
+                          <div className="w-1.5 h-1.5 bg-shield-muted rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
                         </div>
                       </div>
                     </div>
@@ -490,10 +490,10 @@ export function Chat() {
 
         {/* Input Area - Only show when there are messages */}
         {messages.length > 0 && (
-          <div className="p-4 border-t border-[#3A404B] bg-gradient-to-br from-[#1A1D24] to-[#2C303A]">
+          <div className="p-4 border-t border-shield-edge bg-gradient-to-br from-shield-canvas to-shield-panel">
             <div className="max-w-5xl mx-auto">
-              <div className="flex items-center bg-[#1A1D24] rounded-2xl px-4 py-3 shadow-lg border border-[#3A404B]">
-                <button className="p-2 hover:bg-[#3A404B] rounded-lg transition-colors mr-2">
+              <div className="flex items-center bg-shield-canvas rounded-2xl px-4 py-3 shadow-lg border border-shield-edge">
+                <button className="p-2 hover:bg-shield-elevated rounded-lg transition-colors mr-2">
                   <Plus className="h-5 w-5 text-white" />
                 </button>
                 <div className="flex-1 relative">
@@ -505,12 +505,12 @@ export function Chat() {
                       setInputMessage(e.target.value)
                     }}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    className="w-full bg-transparent text-[#E0E0E0] placeholder-transparent focus:outline-none text-base"
+                    className="w-full bg-transparent text-shield-fg placeholder-transparent focus:outline-none text-base"
                     disabled={isLoading}
                   />
                   {!inputMessage && (
                     <div className="absolute inset-0 pointer-events-none">
-                      <span className="text-[#9CA3AF] text-base animate-pulse">
+                      <span className="text-shield-muted text-base animate-pulse">
                         {apologeticsQuestions[currentPlaceholderIndex]}
                       </span>
                     </div>
@@ -520,14 +520,14 @@ export function Chat() {
                   <button 
                     onClick={handleSendMessage}
                     disabled={isLoading || !inputMessage.trim()}
-                    className="p-2 hover:bg-[#3A404B] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 hover:bg-shield-elevated rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Mic className="h-5 w-5 text-white" />
                   </button>
                   <button 
                     onClick={handleSendMessage}
                     disabled={isLoading || !inputMessage.trim()}
-                    className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-lg bg-shield-brand p-2 transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Send className="h-5 w-5 text-white" />
                   </button>

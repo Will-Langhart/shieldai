@@ -264,7 +264,7 @@ export function InsightsAnalytics({ insights, userId }: InsightsAnalyticsProps) 
           </div>
         </div>
         <div className="text-blue-400 mb-2 font-medium">Calculating analytics...</div>
-        <div className="text-sm text-[#9CA3AF]">Processing your insights data</div>
+        <div className="text-sm text-shield-muted">Processing your insights data</div>
       </div>
     )
   }
@@ -274,7 +274,7 @@ export function InsightsAnalytics({ insights, userId }: InsightsAnalyticsProps) 
       <div className="flex flex-col items-center justify-center py-12">
         <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
         <div className="text-red-400 mb-2">Failed to load analytics</div>
-        <div className="text-sm text-[#9CA3AF] mb-4">{error}</div>
+        <div className="text-sm text-shield-muted mb-4">{error}</div>
         <button 
           onClick={calculateAnalytics}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -295,8 +295,8 @@ export function InsightsAnalytics({ insights, userId }: InsightsAnalyticsProps) 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-[#E0E0E0] mb-2">Analytics Dashboard</h2>
-          <p className="text-[#9CA3AF]">Insights into your Bible study journey</p>
+          <h2 className="text-2xl font-bold text-shield-fg mb-2">Analytics Dashboard</h2>
+          <p className="text-shield-muted">Insights into your Bible study journey</p>
         </div>
         
         <div className="flex items-center space-x-4">
@@ -304,7 +304,7 @@ export function InsightsAnalytics({ insights, userId }: InsightsAnalyticsProps) 
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value as any)}
-            className="px-3 py-2 bg-[#2C303A] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
@@ -325,41 +325,41 @@ export function InsightsAnalytics({ insights, userId }: InsightsAnalyticsProps) 
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
+        <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[#9CA3AF] text-sm">Total Insights</p>
-              <p className="text-2xl font-bold text-[#E0E0E0]">{analyticsData.total_insights}</p>
+              <p className="text-shield-muted text-sm">Total Insights</p>
+              <p className="text-2xl font-bold text-shield-fg">{analyticsData.total_insights}</p>
             </div>
             <Brain className="h-8 w-8 text-blue-400" />
           </div>
         </div>
 
-        <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
+        <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[#9CA3AF] text-sm">Favorites</p>
-              <p className="text-2xl font-bold text-[#E0E0E0]">{analyticsData.total_favorites}</p>
+              <p className="text-shield-muted text-sm">Favorites</p>
+              <p className="text-2xl font-bold text-shield-fg">{analyticsData.total_favorites}</p>
             </div>
             <Star className="h-8 w-8 text-yellow-400" />
           </div>
         </div>
 
-        <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
+        <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[#9CA3AF] text-sm">Shared</p>
-              <p className="text-2xl font-bold text-[#E0E0E0]">{analyticsData.total_shared}</p>
+              <p className="text-shield-muted text-sm">Shared</p>
+              <p className="text-2xl font-bold text-shield-fg">{analyticsData.total_shared}</p>
             </div>
             <Share2 className="h-8 w-8 text-green-400" />
           </div>
         </div>
 
-        <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
+        <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[#9CA3AF] text-sm">Avg Rating</p>
-              <p className="text-2xl font-bold text-[#E0E0E0]">
+              <p className="text-shield-muted text-sm">Avg Rating</p>
+              <p className="text-2xl font-bold text-shield-fg">
                 {analyticsData.average_rating.toFixed(1)}
               </p>
             </div>
@@ -369,51 +369,51 @@ export function InsightsAnalytics({ insights, userId }: InsightsAnalyticsProps) 
       </div>
 
       {/* Engagement Metrics */}
-      <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-[#E0E0E0] mb-4">Engagement Metrics</h3>
+      <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-shield-fg mb-4">Engagement Metrics</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
             <Eye className="h-6 w-6 text-blue-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-[#E0E0E0]">{analyticsData.engagement_metrics.total_views}</p>
-            <p className="text-sm text-[#9CA3AF]">Views</p>
+            <p className="text-2xl font-bold text-shield-fg">{analyticsData.engagement_metrics.total_views}</p>
+            <p className="text-sm text-shield-muted">Views</p>
           </div>
           <div className="text-center">
             <Heart className="h-6 w-6 text-red-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-[#E0E0E0]">{analyticsData.engagement_metrics.total_likes}</p>
-            <p className="text-sm text-[#9CA3AF]">Likes</p>
+            <p className="text-2xl font-bold text-shield-fg">{analyticsData.engagement_metrics.total_likes}</p>
+            <p className="text-sm text-shield-muted">Likes</p>
           </div>
           <div className="text-center">
             <Share2 className="h-6 w-6 text-green-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-[#E0E0E0]">{analyticsData.engagement_metrics.total_shares}</p>
-            <p className="text-sm text-[#9CA3AF]">Shares</p>
+            <p className="text-2xl font-bold text-shield-fg">{analyticsData.engagement_metrics.total_shares}</p>
+            <p className="text-sm text-shield-muted">Shares</p>
           </div>
           <div className="text-center">
             <Download className="h-6 w-6 text-purple-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-[#E0E0E0]">{analyticsData.engagement_metrics.total_downloads}</p>
-            <p className="text-sm text-[#9CA3AF]">Downloads</p>
+            <p className="text-2xl font-bold text-shield-fg">{analyticsData.engagement_metrics.total_downloads}</p>
+            <p className="text-sm text-shield-muted">Downloads</p>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Insights by Bible Version */}
-        <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-[#E0E0E0] mb-4 flex items-center">
+        <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-shield-fg mb-4 flex items-center">
             <BookOpen className="h-5 w-5 text-blue-400 mr-2" />
             Insights by Bible Version
           </h3>
           <div className="space-y-3">
             {analyticsData.insights_by_version.map((item, index) => (
               <div key={index} className="flex items-center justify-between">
-                <span className="text-[#E0E0E0]">{item.version}</span>
+                <span className="text-shield-fg">{item.version}</span>
                 <div className="flex items-center space-x-2">
-                  <div className="w-20 bg-[#2C303A] rounded-full h-2">
+                  <div className="w-20 bg-shield-panel rounded-full h-2">
                     <div 
                       className="bg-blue-600 h-2 rounded-full"
                       style={{ width: `${(item.count / analyticsData.insights_by_version[0].count) * 100}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm text-[#9CA3AF] w-8 text-right">{item.count}</span>
+                  <span className="text-sm text-shield-muted w-8 text-right">{item.count}</span>
                 </div>
               </div>
             ))}
@@ -421,23 +421,23 @@ export function InsightsAnalytics({ insights, userId }: InsightsAnalyticsProps) 
         </div>
 
         {/* Top Themes */}
-        <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-[#E0E0E0] mb-4 flex items-center">
+        <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-shield-fg mb-4 flex items-center">
             <Target className="h-5 w-5 text-purple-400 mr-2" />
             Top Themes
           </h3>
           <div className="space-y-3">
             {analyticsData.top_themes.slice(0, 5).map((item, index) => (
               <div key={index} className="flex items-center justify-between">
-                <span className="text-[#E0E0E0] text-sm">{item.theme}</span>
+                <span className="text-shield-fg text-sm">{item.theme}</span>
                 <div className="flex items-center space-x-2">
-                  <div className="w-16 bg-[#2C303A] rounded-full h-2">
+                  <div className="w-16 bg-shield-panel rounded-full h-2">
                     <div 
                       className="bg-purple-600 h-2 rounded-full"
                       style={{ width: `${(item.count / analyticsData.top_themes[0].count) * 100}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm text-[#9CA3AF] w-6 text-right">{item.count}</span>
+                  <span className="text-sm text-shield-muted w-6 text-right">{item.count}</span>
                 </div>
               </div>
             ))}
@@ -447,8 +447,8 @@ export function InsightsAnalytics({ insights, userId }: InsightsAnalyticsProps) 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Tags */}
-        <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-[#E0E0E0] mb-4 flex items-center">
+        <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-shield-fg mb-4 flex items-center">
             <Tag className="h-5 w-5 text-green-400 mr-2" />
             Popular Tags
           </h3>
@@ -465,8 +465,8 @@ export function InsightsAnalytics({ insights, userId }: InsightsAnalyticsProps) 
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-[#E0E0E0] mb-4 flex items-center">
+        <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-shield-fg mb-4 flex items-center">
             <Activity className="h-5 w-5 text-orange-400 mr-2" />
             Recent Activity
           </h3>
@@ -475,8 +475,8 @@ export function InsightsAnalytics({ insights, userId }: InsightsAnalyticsProps) 
               <div key={index} className="flex items-start space-x-3">
                 <div className="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
                 <div className="flex-1">
-                  <p className="text-[#E0E0E0] text-sm">{activity.description}</p>
-                  <p className="text-[#9CA3AF] text-xs">
+                  <p className="text-shield-fg text-sm">{activity.description}</p>
+                  <p className="text-shield-muted text-xs">
                     {new Date(activity.timestamp).toLocaleDateString()}
                   </p>
                 </div>

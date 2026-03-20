@@ -181,11 +181,11 @@ export function MobileBibleNavigation({
   const renderNavigationTab = () => (
     <div className="space-y-4">
       {/* Current Location */}
-      <div className="bg-[#1A1D24] rounded-lg p-4">
+      <div className="bg-shield-canvas rounded-lg p-4">
         <h3 className="font-semibold text-blue-400 mb-3">Current Location</h3>
         <div className="text-center">
           <div className="text-lg font-bold text-white">{currentBook} {currentChapter}</div>
-          {currentVerse && <div className="text-sm text-[#9CA3AF]">Verse {currentVerse}</div>}
+          {currentVerse && <div className="text-sm text-shield-muted">Verse {currentVerse}</div>}
         </div>
         
         {/* Navigation Controls */}
@@ -193,13 +193,13 @@ export function MobileBibleNavigation({
           <button
             onClick={() => onNavigate(`${currentBook} ${Math.max(1, currentChapter - 1)}`)}
             disabled={currentChapter <= 1}
-            className="p-2 bg-[#2C303A] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 bg-shield-panel rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <button
             onClick={() => onNavigate(`${currentBook} ${currentChapter + 1}`)}
-            className="p-2 bg-[#2C303A] rounded-lg"
+            className="p-2 bg-shield-panel rounded-lg"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -207,10 +207,10 @@ export function MobileBibleNavigation({
       </div>
 
       {/* Book Selection */}
-      <div className="bg-[#1A1D24] rounded-lg p-4">
+      <div className="bg-shield-canvas rounded-lg p-4">
         <button
           onClick={() => toggleSection('books')}
-          className="w-full flex items-center justify-between p-3 bg-[#2C303A] rounded-lg"
+          className="w-full flex items-center justify-between p-3 bg-shield-panel rounded-lg"
         >
           <span className="font-medium">Select Book</span>
           {expandedSections.has('books') ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -229,7 +229,7 @@ export function MobileBibleNavigation({
                   className={`p-2 text-sm rounded transition-colors ${
                     currentBook === book
                       ? 'bg-blue-600 text-white'
-                      : 'bg-[#2C303A] text-[#E5E7EB] hover:bg-[#3A404B]'
+                      : 'bg-shield-panel text-shield-fg hover:bg-shield-elevated'
                   }`}
                 >
                   {book}
@@ -241,7 +241,7 @@ export function MobileBibleNavigation({
       </div>
 
       {/* Quick Passages */}
-      <div className="bg-[#1A1D24] rounded-lg p-4">
+      <div className="bg-shield-canvas rounded-lg p-4">
         <h3 className="font-semibold text-green-400 mb-3">Quick Passages</h3>
         <div className="space-y-2">
           {quickPassages.map(passage => (
@@ -251,10 +251,10 @@ export function MobileBibleNavigation({
                 onNavigate(passage.reference)
                 setIsOpen(false)
               }}
-              className="w-full text-left p-3 bg-[#2C303A] rounded-lg hover:bg-[#3A404B] transition-colors"
+              className="w-full text-left p-3 bg-shield-panel rounded-lg hover:bg-shield-elevated transition-colors"
             >
               <div className="font-medium text-blue-400">{passage.label}</div>
-              <div className="text-sm text-[#9CA3AF]">{passage.description}</div>
+              <div className="text-sm text-shield-muted">{passage.description}</div>
             </button>
           ))}
         </div>
@@ -265,13 +265,13 @@ export function MobileBibleNavigation({
   const renderSearchTab = () => (
     <div className="space-y-4">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#9CA3AF]" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-shield-muted" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search scripture..."
-          className="w-full bg-[#1A1D24] border border-[#3A404B] text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500"
+          className="w-full bg-shield-canvas border border-shield-edge text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500"
         />
         {isSearching && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -290,10 +290,10 @@ export function MobileBibleNavigation({
                 onNavigate(result.reference)
                 setIsOpen(false)
               }}
-              className="w-full text-left p-3 bg-[#1A1D24] rounded-lg hover:bg-[#2C303A] transition-colors"
+              className="w-full text-left p-3 bg-shield-canvas rounded-lg hover:bg-shield-panel transition-colors"
             >
               <div className="font-medium text-blue-400">{result.reference}</div>
-              <div className="text-sm text-[#E5E7EB] mt-1 line-clamp-2">{result.text}</div>
+              <div className="text-sm text-shield-fg mt-1 line-clamp-2">{result.text}</div>
             </button>
           ))}
         </div>
@@ -314,7 +314,7 @@ export function MobileBibleNavigation({
       </div>
       
       {history.length === 0 ? (
-        <div className="text-center py-8 text-[#9CA3AF]">
+        <div className="text-center py-8 text-shield-muted">
           <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>No recent passages</p>
         </div>
@@ -327,10 +327,10 @@ export function MobileBibleNavigation({
                 onNavigate(item.reference)
                 setIsOpen(false)
               }}
-              className="w-full text-left p-3 bg-[#1A1D24] rounded-lg hover:bg-[#2C303A] transition-colors"
+              className="w-full text-left p-3 bg-shield-canvas rounded-lg hover:bg-shield-panel transition-colors"
             >
               <div className="font-medium text-blue-400">{item.reference}</div>
-              <div className="text-xs text-[#9CA3AF]">
+              <div className="text-xs text-shield-muted">
                 {item.timestamp.toLocaleDateString()} at {item.timestamp.toLocaleTimeString()}
               </div>
             </button>
@@ -362,7 +362,7 @@ export function MobileBibleNavigation({
       </div>
       
       {favorites.length === 0 ? (
-        <div className="text-center py-8 text-[#9CA3AF]">
+        <div className="text-center py-8 text-shield-muted">
           <Star className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>No favorite passages</p>
         </div>
@@ -371,7 +371,7 @@ export function MobileBibleNavigation({
           {favorites.map((favorite) => (
             <div
               key={favorite.id}
-              className="flex items-center justify-between p-3 bg-[#1A1D24] rounded-lg"
+              className="flex items-center justify-between p-3 bg-shield-canvas rounded-lg"
             >
               <button
                 onClick={() => {
@@ -382,12 +382,12 @@ export function MobileBibleNavigation({
               >
                 <div className="font-medium text-yellow-400">{favorite.reference}</div>
                 {favorite.note && (
-                  <div className="text-xs text-[#9CA3AF] mt-1">{favorite.note}</div>
+                  <div className="text-xs text-shield-muted mt-1">{favorite.note}</div>
                 )}
               </button>
               <button
                 onClick={() => onRemoveFavorite(favorite.id)}
-                className="p-1 text-[#9CA3AF] hover:text-red-400 transition-colors"
+                className="p-1 text-shield-muted hover:text-red-400 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -404,11 +404,11 @@ export function MobileBibleNavigation({
       
       {/* Version Selection */}
       <div>
-        <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Bible Version</label>
+        <label className="block text-sm font-medium text-shield-muted mb-2">Bible Version</label>
         <select
           value={currentVersion}
           onChange={(e) => onVersionChange(e.target.value)}
-          className="w-full bg-[#1A1D24] border border-[#3A404B] text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+          className="w-full bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
         >
           {versions.map(version => (
             <option key={version.id} value={version.id}>
@@ -420,7 +420,7 @@ export function MobileBibleNavigation({
 
       {/* AI Features */}
       <div>
-        <h4 className="font-medium text-[#E5E7EB] mb-3">AI Features</h4>
+        <h4 className="font-medium text-shield-fg mb-3">AI Features</h4>
         <div className="grid grid-cols-2 gap-2">
           {aiFeatures.map(feature => (
             <button
@@ -429,11 +429,11 @@ export function MobileBibleNavigation({
                 onAIFeature(feature.id)
                 setIsOpen(false)
               }}
-              className="p-3 bg-[#1A1D24] rounded-lg hover:bg-[#2C303A] transition-colors text-left"
+              className="p-3 bg-shield-canvas rounded-lg hover:bg-shield-panel transition-colors text-left"
             >
               <div className="text-2xl mb-1">{feature.icon}</div>
               <div className="text-sm font-medium">{feature.label}</div>
-              <div className="text-xs text-[#9CA3AF]">{feature.description}</div>
+              <div className="text-xs text-shield-muted">{feature.description}</div>
             </button>
           ))}
         </div>
@@ -441,16 +441,16 @@ export function MobileBibleNavigation({
 
       {/* Data Management */}
       <div>
-        <h4 className="font-medium text-[#E5E7EB] mb-3">Data Management</h4>
+        <h4 className="font-medium text-shield-fg mb-3">Data Management</h4>
         <div className="space-y-2">
           <button
             onClick={onExportData}
-            className="w-full flex items-center space-x-2 p-3 bg-[#1A1D24] rounded-lg hover:bg-[#2C303A] transition-colors"
+            className="w-full flex items-center space-x-2 p-3 bg-shield-canvas rounded-lg hover:bg-shield-panel transition-colors"
           >
             <Download className="h-4 w-4" />
             <span>Export Data</span>
           </button>
-          <label className="w-full flex items-center space-x-2 p-3 bg-[#1A1D24] rounded-lg hover:bg-[#2C303A] transition-colors cursor-pointer">
+          <label className="w-full flex items-center space-x-2 p-3 bg-shield-canvas rounded-lg hover:bg-shield-panel transition-colors cursor-pointer">
             <Upload className="h-4 w-4" />
             <span>Import Data</span>
             <input
@@ -488,20 +488,20 @@ export function MobileBibleNavigation({
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setIsOpen(false)} />
           
-          <div className="absolute bottom-0 left-0 right-0 bg-[#1A1D24] rounded-t-lg max-h-[90vh] overflow-hidden">
+          <div className="absolute bottom-0 left-0 right-0 bg-shield-canvas rounded-t-lg max-h-[90vh] overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-[#3A404B]">
+            <div className="flex items-center justify-between p-4 border-b border-shield-edge">
               <h2 className="text-lg font-semibold">Bible Navigation</h2>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-2 text-[#9CA3AF] hover:text-white"
+                className="p-2 text-shield-muted hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex border-b border-[#3A404B]">
+            <div className="flex border-b border-shield-edge">
               {tabs.map(tab => (
                 <button
                   key={tab.id}
@@ -509,7 +509,7 @@ export function MobileBibleNavigation({
                   className={`flex-1 flex items-center justify-center space-x-2 p-3 text-sm transition-colors ${
                     activeTab === tab.id
                       ? 'bg-blue-600 text-white'
-                      : 'text-[#9CA3AF] hover:text-white'
+                      : 'text-shield-muted hover:text-white'
                   }`}
                 >
                   <tab.icon className="h-4 w-4" />

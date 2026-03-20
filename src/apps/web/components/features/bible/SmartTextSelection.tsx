@@ -297,7 +297,7 @@ export function SmartTextSelection({ passage, onInsightGenerated, onImageGenerat
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div
             ref={modalRef}
-            className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+            className="bg-shield-canvas border border-shield-panel rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
             style={{
               position: 'fixed',
               top: selectionPosition ? `${selectionPosition.y}px` : '50%',
@@ -310,21 +310,21 @@ export function SmartTextSelection({ passage, onInsightGenerated, onImageGenerat
               <div className="flex items-center space-x-3">
                 <Brain className="h-6 w-6 text-blue-400" />
                 <div>
-                  <h3 className="text-lg font-semibold text-[#E0E0E0]">Selected Scripture</h3>
-                  <p className="text-sm text-[#9CA3AF]">{selectedText.reference}</p>
+                  <h3 className="text-lg font-semibold text-shield-fg">Selected Scripture</h3>
+                  <p className="text-sm text-shield-muted">{selectedText.reference}</p>
                 </div>
               </div>
               <button
                 onClick={closeModal}
-                className="text-[#9CA3AF] hover:text-white transition-colors"
+                className="text-shield-muted hover:text-white transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Selected Text */}
-            <div className="mb-4 p-4 bg-[#2C303A] rounded-lg">
-              <p className="text-[#E0E0E0] italic text-lg leading-relaxed">
+            <div className="mb-4 p-4 bg-shield-panel rounded-lg">
+              <p className="text-shield-fg italic text-lg leading-relaxed">
                 "{selectedText.text}"
               </p>
             </div>
@@ -386,18 +386,18 @@ export function SmartTextSelection({ passage, onInsightGenerated, onImageGenerat
               <div className="mb-4">
                 <div className="flex items-center space-x-2 mb-3">
                   <Sparkles className="h-5 w-5 text-yellow-400" />
-                  <h4 className="text-lg font-semibold text-[#E0E0E0]">AI Analysis</h4>
+                  <h4 className="text-lg font-semibold text-shield-fg">AI Analysis</h4>
                 </div>
                 
                 <div className="space-y-4">
-                  <div className="p-4 bg-[#2C303A] rounded-lg">
-                    <h5 className="font-medium text-[#E0E0E0] mb-2">Explanation</h5>
-                    <p className="text-[#E0E0E0] text-sm leading-relaxed">{generatedInsight.explanation}</p>
+                  <div className="p-4 bg-shield-panel rounded-lg">
+                    <h5 className="font-medium text-shield-fg mb-2">Explanation</h5>
+                    <p className="text-shield-fg text-sm leading-relaxed">{generatedInsight.explanation}</p>
                   </div>
 
                   {generatedInsight.keyThemes && generatedInsight.keyThemes.length > 0 && (
-                    <div className="p-4 bg-[#2C303A] rounded-lg">
-                      <h5 className="font-medium text-[#E0E0E0] mb-2">Key Themes</h5>
+                    <div className="p-4 bg-shield-panel rounded-lg">
+                      <h5 className="font-medium text-shield-fg mb-2">Key Themes</h5>
                       <div className="flex flex-wrap gap-2">
                         {generatedInsight.keyThemes.map((theme: string, index: number) => (
                           <span
@@ -412,9 +412,9 @@ export function SmartTextSelection({ passage, onInsightGenerated, onImageGenerat
                   )}
 
                   {generatedInsight.practicalApplication && (
-                    <div className="p-4 bg-[#2C303A] rounded-lg">
-                      <h5 className="font-medium text-[#E0E0E0] mb-2">Practical Application</h5>
-                      <p className="text-[#E0E0E0] text-sm leading-relaxed">{generatedInsight.practicalApplication}</p>
+                    <div className="p-4 bg-shield-panel rounded-lg">
+                      <h5 className="font-medium text-shield-fg mb-2">Practical Application</h5>
+                      <p className="text-shield-fg text-sm leading-relaxed">{generatedInsight.practicalApplication}</p>
                     </div>
                   )}
                 </div>
@@ -426,17 +426,17 @@ export function SmartTextSelection({ passage, onInsightGenerated, onImageGenerat
               <div className="mb-4">
                 <div className="flex items-center space-x-2 mb-3">
                   <Image className="h-5 w-5 text-purple-400" />
-                  <h4 className="text-lg font-semibold text-[#E0E0E0]">Generated Image</h4>
+                  <h4 className="text-lg font-semibold text-shield-fg">Generated Image</h4>
                 </div>
                 
-                <div className="p-4 bg-[#2C303A] rounded-lg">
+                <div className="p-4 bg-shield-panel rounded-lg">
                   <img
                     src={generatedImage.url}
                     alt={`Visual representation of ${selectedText.reference}`}
                     className="w-full rounded-lg"
                   />
                   {generatedImage.revisedPrompt && (
-                    <p className="text-xs text-[#9CA3AF] mt-2 italic">
+                    <p className="text-xs text-shield-muted mt-2 italic">
                       Generated from: "{generatedImage.revisedPrompt}"
                     </p>
                   )}

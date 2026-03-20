@@ -199,7 +199,7 @@ export function EnhancedBibleInterface({ onVerseSelect, initialPassage }: Enhanc
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#1A1D24] text-white">
+    <div className="min-h-screen bg-shield-canvas text-white">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -207,7 +207,7 @@ export function EnhancedBibleInterface({ onVerseSelect, initialPassage }: Enhanc
             <BookOpen className="h-10 w-10 text-blue-400 mr-3" />
             Enhanced Bible Study
           </h1>
-          <p className="text-[#9CA3AF] text-lg">
+          <p className="text-shield-muted text-lg">
             AI-powered Bible study with insights, questions, and cross-references
           </p>
         </div>
@@ -215,16 +215,16 @@ export function EnhancedBibleInterface({ onVerseSelect, initialPassage }: Enhanc
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Navigation Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-[#2C303A] rounded-lg p-6 space-y-6">
+            <div className="bg-shield-panel rounded-lg p-6 space-y-6">
               <h3 className="text-lg font-semibold mb-4">Navigation</h3>
               
               {/* Book Selection */}
               <div>
-                <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Book</label>
+                <label className="block text-sm font-medium text-shield-muted mb-2">Book</label>
                 <select
                   value={selectedBook}
                   onChange={(e) => handleBookChange(e.target.value)}
-                  className="w-full bg-[#1A1D24] border border-[#3A404B] text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+                  className="w-full bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                 >
                   {books.map((book) => (
                     <option key={book} value={book}>{book}</option>
@@ -234,35 +234,35 @@ export function EnhancedBibleInterface({ onVerseSelect, initialPassage }: Enhanc
 
               {/* Chapter Selection */}
               <div>
-                <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Chapter</label>
+                <label className="block text-sm font-medium text-shield-muted mb-2">Chapter</label>
                 <input
                   type="number"
                   value={selectedChapter}
                   onChange={(e) => handleChapterChange(parseInt(e.target.value) || 1)}
-                  className="w-full bg-[#1A1D24] border border-[#3A404B] text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+                  className="w-full bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                   min="1"
                 />
               </div>
 
               {/* Verse Selection */}
               <div>
-                <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Verse (Optional)</label>
+                <label className="block text-sm font-medium text-shield-muted mb-2">Verse (Optional)</label>
                 <input
                   type="number"
                   value={selectedVerse}
                   onChange={(e) => handleVerseChange(parseInt(e.target.value) || 1)}
-                  className="w-full bg-[#1A1D24] border border-[#3A404B] text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+                  className="w-full bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                   min="1"
                 />
               </div>
 
               {/* Version Selection */}
               <div>
-                <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Version</label>
+                <label className="block text-sm font-medium text-shield-muted mb-2">Version</label>
                 <select
                   value={selectedVersion}
                   onChange={(e) => handleVersionChange(e.target.value)}
-                  className="w-full bg-[#1A1D24] border border-[#3A404B] text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+                  className="w-full bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                 >
                   <option value="de4e12af7f28f599-02">King James Version</option>
                   <option value="de4e12af7f28f599-01">New International Version</option>
@@ -270,8 +270,8 @@ export function EnhancedBibleInterface({ onVerseSelect, initialPassage }: Enhanc
               </div>
 
               {/* AI Features Toggle */}
-              <div className="pt-4 border-t border-[#3A404B]">
-                <h4 className="text-sm font-medium text-[#9CA3AF] mb-3">AI Features</h4>
+              <div className="pt-4 border-t border-shield-edge">
+                <h4 className="text-sm font-medium text-shield-muted mb-3">AI Features</h4>
                 <div className="space-y-2">
                   {tabs.slice(1).map((tab) => (
                     <button
@@ -280,7 +280,7 @@ export function EnhancedBibleInterface({ onVerseSelect, initialPassage }: Enhanc
                       className={`w-full flex items-center justify-between p-2 rounded transition-colors ${
                         expandedSections.has(tab.id) 
                           ? 'bg-blue-600 text-white' 
-                          : 'bg-[#1A1D24] text-[#9CA3AF] hover:bg-[#3A404B]'
+                          : 'bg-shield-canvas text-shield-muted hover:bg-shield-elevated'
                       }`}
                     >
                       <div className="flex items-center space-x-2">
@@ -311,7 +311,7 @@ export function EnhancedBibleInterface({ onVerseSelect, initialPassage }: Enhanc
                     className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                       activeTab === tab.id
                         ? 'bg-blue-600 text-white'
-                        : 'bg-[#2C303A] text-[#9CA3AF] hover:bg-[#3A404B] hover:text-white'
+                        : 'bg-shield-panel text-shield-muted hover:bg-shield-elevated hover:text-white'
                     }`}
                   >
                     <tab.icon className="h-4 w-4" />
@@ -325,12 +325,12 @@ export function EnhancedBibleInterface({ onVerseSelect, initialPassage }: Enhanc
             <div className="space-y-6">
               {/* Bible Text Tab */}
               {activeTab === 'bible' && (
-                <div className="bg-[#2C303A] rounded-lg p-6">
+                <div className="bg-shield-panel rounded-lg p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold">
                       {currentPassage ? currentPassage.reference : `${selectedBook} ${selectedChapter}:${selectedVerse}`}
                     </h2>
-                    <div className="text-sm text-[#9CA3AF]">
+                    <div className="text-sm text-shield-muted">
                       {currentPassage?.version?.name || 'King James Version'}
                     </div>
                   </div>
@@ -338,7 +338,7 @@ export function EnhancedBibleInterface({ onVerseSelect, initialPassage }: Enhanc
                   {isLoading ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
-                      <span className="ml-2 text-[#9CA3AF]">Loading scripture...</span>
+                      <span className="ml-2 text-shield-muted">Loading scripture...</span>
                     </div>
                   ) : error ? (
                     <div className="flex items-center justify-center py-12">
@@ -362,15 +362,15 @@ export function EnhancedBibleInterface({ onVerseSelect, initialPassage }: Enhanc
                           ))
                         ) : (
                           <div className="text-center py-8">
-                            <p className="text-[#9CA3AF]">No verses found for this passage</p>
+                            <p className="text-shield-muted">No verses found for this passage</p>
                           </div>
                         )}
                       </div>
                     </div>
                   ) : (
                     <div className="text-center py-12">
-                      <BookOpen className="h-16 w-16 text-[#9CA3AF] mx-auto mb-4" />
-                      <p className="text-[#9CA3AF] text-lg">Select a passage to begin reading</p>
+                      <BookOpen className="h-16 w-16 text-shield-muted mx-auto mb-4" />
+                      <p className="text-shield-muted text-lg">Select a passage to begin reading</p>
                     </div>
                   )}
                 </div>
@@ -418,9 +418,9 @@ export function EnhancedBibleInterface({ onVerseSelect, initialPassage }: Enhanc
 
               {/* Empty State for AI Tabs */}
               {activeTab !== 'bible' && !currentPassage && (
-                <div className="bg-[#2C303A] rounded-lg p-12 text-center">
-                  <BookOpen className="h-16 w-16 text-[#9CA3AF] mx-auto mb-4" />
-                  <p className="text-[#9CA3AF] text-lg">Select a Bible passage to see AI insights</p>
+                <div className="bg-shield-panel rounded-lg p-12 text-center">
+                  <BookOpen className="h-16 w-16 text-shield-muted mx-auto mb-4" />
+                  <p className="text-shield-muted text-lg">Select a Bible passage to see AI insights</p>
                 </div>
               )}
             </div>

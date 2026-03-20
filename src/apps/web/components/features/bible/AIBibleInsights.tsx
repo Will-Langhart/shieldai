@@ -512,11 +512,11 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
   }
 
   return (
-    <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6 mt-6">
+    <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6 mt-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <Brain className="h-6 w-6 text-blue-400" />
-          <h3 className="text-xl font-semibold text-[#E0E0E0]">AI Bible Insights</h3>
+          <h3 className="text-xl font-semibold text-shield-fg">AI Bible Insights</h3>
         </div>
         
         <div className="flex items-center space-x-2">
@@ -572,16 +572,16 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
       {/* Saved Insights Section */}
       {savedInsights.length > 0 && (
-        <div className="mb-6 p-4 bg-[#2C303A] rounded-lg">
-          <h4 className="text-lg font-medium text-[#E0E0E0] mb-3 flex items-center">
+        <div className="mb-6 p-4 bg-shield-panel rounded-lg">
+          <h4 className="text-lg font-medium text-shield-fg mb-3 flex items-center">
             <Bookmark className="h-5 w-5 text-yellow-400 mr-2" />
             Previously Saved Insights ({savedInsights.length})
           </h4>
           <div className="space-y-3">
             {savedInsights.map((saved, index) => (
-              <div key={saved.id} className="p-3 bg-[#1A1D24] rounded border border-[#3A404B]">
+              <div key={saved.id} className="p-3 bg-shield-canvas rounded border border-shield-edge">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-[#9CA3AF]">
+                  <span className="text-sm text-shield-muted">
                     {new Date(saved.created_at).toLocaleDateString()}
                   </span>
                   <div className="flex items-center space-x-2">
@@ -594,7 +594,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
                     )}
                   </div>
                 </div>
-                <p className="text-[#E0E0E0] text-sm line-clamp-2">
+                <p className="text-shield-fg text-sm line-clamp-2">
                   {saved.explanation}
                 </p>
               </div>
@@ -612,7 +612,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
             </div>
           </div>
           <div className="text-blue-400 mb-2 font-medium">Generating AI insights...</div>
-          <div className="text-sm text-[#9CA3AF] mb-4">Analyzing scripture with AI-powered understanding</div>
+          <div className="text-sm text-shield-muted mb-4">Analyzing scripture with AI-powered understanding</div>
           <div className="flex space-x-1">
             <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
             <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -625,7 +625,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
         <div className="flex flex-col items-center justify-center py-12">
           <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
           <div className="text-red-400 mb-2">Failed to load AI insights</div>
-          <div className="text-sm text-[#9CA3AF] mb-4">{error}</div>
+          <div className="text-sm text-shield-muted mb-4">{error}</div>
           <div className="flex items-center justify-center space-x-4">
             <button 
               onClick={generateInsights}
@@ -659,7 +659,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
           </div>
 
           {/* Interaction Bar */}
-          <div className="bg-[#2C303A] rounded-lg p-4">
+          <div className="bg-shield-panel rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
@@ -701,7 +701,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
               </div>
               
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-[#9CA3AF]">
+                <span className="text-sm text-shield-muted">
                   {responses.length} responses • {interactions.length} interactions
                 </span>
               </div>
@@ -710,13 +710,13 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Response Form */}
           {showResponseForm && (
-            <div className="bg-[#2C303A] rounded-lg p-4 border border-[#3A404B]">
-              <h4 className="text-lg font-medium text-[#E0E0E0] mb-3">Share Your Response</h4>
+            <div className="bg-shield-panel rounded-lg p-4 border border-shield-edge">
+              <h4 className="text-lg font-medium text-shield-fg mb-3">Share Your Response</h4>
               <div className="space-y-3">
                 <select
                   value={newResponse.type}
                   onChange={(e) => setNewResponse(prev => ({ ...prev, type: e.target.value as any }))}
-                  className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="comment">💬 Comment</option>
                   <option value="question">❓ Question</option>
@@ -732,7 +732,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
                   onChange={(e) => setNewResponse(prev => ({ ...prev, text: e.target.value }))}
                   placeholder="Share your thoughts on this passage..."
                   rows={3}
-                  className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
                 
                 <div className="flex items-center justify-between">
@@ -742,19 +742,19 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
                         type="checkbox"
                         checked={newResponse.is_helpful === true}
                         onChange={(e) => setNewResponse(prev => ({ ...prev, is_helpful: e.target.checked ? true : null }))}
-                        className="rounded border-[#3A404B] bg-[#1A1D24] text-green-600 focus:ring-green-500"
+                        className="rounded border-shield-edge bg-shield-canvas text-green-600 focus:ring-green-500"
                       />
-                      <span className="text-sm text-[#E0E0E0]">Helpful</span>
+                      <span className="text-sm text-shield-fg">Helpful</span>
                     </label>
                     
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-[#9CA3AF]">Rating:</span>
+                      <span className="text-sm text-shield-muted">Rating:</span>
                       <div className="flex space-x-1">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <button
                             key={star}
                             onClick={() => setNewResponse(prev => ({ ...prev, rating: star }))}
-                            className={`text-lg ${newResponse.rating && star <= newResponse.rating ? 'text-yellow-400' : 'text-[#9CA3AF]'}`}
+                            className={`text-lg ${newResponse.rating && star <= newResponse.rating ? 'text-yellow-400' : 'text-shield-muted'}`}
                           >
                             ⭐
                           </button>
@@ -777,8 +777,8 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Feedback Form */}
           {showFeedbackForm && (
-            <div className="bg-[#2C303A] rounded-lg p-4 border border-[#3A404B]">
-              <h4 className="text-lg font-medium text-[#E0E0E0] mb-3">Rate This Insight</h4>
+            <div className="bg-shield-panel rounded-lg p-4 border border-shield-edge">
+              <h4 className="text-lg font-medium text-shield-fg mb-3">Rate This Insight</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                   { key: 'content_quality', label: 'Content Quality', icon: <BookOpen className="h-4 w-4" /> },
@@ -791,14 +791,14 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
                   <div key={key} className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       {icon}
-                      <span className="text-sm text-[#E0E0E0]">{label}</span>
+                      <span className="text-sm text-shield-fg">{label}</span>
                     </div>
                     <div className="flex space-x-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
                           onClick={() => setNewFeedback(prev => ({ ...prev, [key]: star }))}
-                          className={`text-lg ${newFeedback[key as keyof typeof newFeedback] && star <= (newFeedback[key as keyof typeof newFeedback] as number) ? 'text-yellow-400' : 'text-[#9CA3AF]'}`}
+                          className={`text-lg ${newFeedback[key as keyof typeof newFeedback] && star <= (newFeedback[key as keyof typeof newFeedback] as number) ? 'text-yellow-400' : 'text-shield-muted'}`}
                         >
                           ⭐
                         </button>
@@ -814,7 +814,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
                   onChange={(e) => setNewFeedback(prev => ({ ...prev, feedback_text: e.target.value }))}
                   placeholder="Additional feedback (optional)"
                   rows={2}
-                  className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
                 
                 <button
@@ -829,24 +829,24 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
           )}
 
           {/* Explanation */}
-          <div className="border border-[#2C303A] rounded-lg">
+          <div className="border border-shield-panel rounded-lg">
             <button
               onClick={() => toggleSection('explanation')}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <BookOpen className="h-5 w-5 text-blue-400" />
-                <span className="font-medium text-[#E0E0E0]">Explanation</span>
+                <span className="font-medium text-shield-fg">Explanation</span>
               </div>
               {expandedSections.has('explanation') ? (
-                <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronUp className="h-5 w-5 text-shield-muted" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronDown className="h-5 w-5 text-shield-muted" />
               )}
             </button>
             {expandedSections.has('explanation') && (
-              <div className="p-4 border-t border-[#2C303A]">
-                <p className="text-[#E0E0E0] leading-relaxed">
+              <div className="p-4 border-t border-shield-panel">
+                <p className="text-shield-fg leading-relaxed">
                   {typeof insights.explanation === 'string' 
                     ? insights.explanation 
                     : JSON.stringify(insights.explanation, null, 2)
@@ -869,24 +869,24 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Key Themes */}
           {insights.keyThemes && Array.isArray(insights.keyThemes) && insights.keyThemes.length > 0 && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('themes')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <Lightbulb className="h-5 w-5 text-yellow-400" />
-                  <span className="font-medium text-[#E0E0E0]">Key Themes</span>
-                  <span className="text-sm text-[#9CA3AF]">({insights.keyThemes.length})</span>
+                  <span className="font-medium text-shield-fg">Key Themes</span>
+                  <span className="text-sm text-shield-muted">({insights.keyThemes.length})</span>
                 </div>
                 {expandedSections.has('themes') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('themes') && (
-                <div className="p-4 border-t border-[#2C303A]">
+                <div className="p-4 border-t border-shield-panel">
                   <div className="flex flex-wrap gap-2">
                     {insights.keyThemes.map((theme, index) => (
                       <span
@@ -904,29 +904,29 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Cross References */}
           {insights.crossReferences && Array.isArray(insights.crossReferences) && insights.crossReferences.length > 0 && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('crossrefs')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <Cross className="h-5 w-5 text-green-400" />
-                  <span className="font-medium text-[#E0E0E0]">Cross References</span>
-                  <span className="text-sm text-[#9CA3AF]">({insights.crossReferences.length})</span>
+                  <span className="font-medium text-shield-fg">Cross References</span>
+                  <span className="text-sm text-shield-muted">({insights.crossReferences.length})</span>
                 </div>
                 {expandedSections.has('crossrefs') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('crossrefs') && (
-                <div className="p-4 border-t border-[#2C303A] space-y-3">
+                <div className="p-4 border-t border-shield-panel space-y-3">
                   {insights.crossReferences.map((ref, index) => (
-                    <div key={index} className="p-3 bg-[#1A1D24] rounded border border-[#3A404B]">
+                    <div key={index} className="p-3 bg-shield-canvas rounded border border-shield-edge">
                       <div className="font-medium text-blue-400 mb-1">{ref.reference}</div>
-                      <p className="text-[#E0E0E0] text-sm mb-2">{ref.text}</p>
-                      <p className="text-[#9CA3AF] text-xs">{ref.relevance}</p>
+                      <p className="text-shield-fg text-sm mb-2">{ref.text}</p>
+                      <p className="text-shield-muted text-xs">{ref.relevance}</p>
                     </div>
                   ))}
                 </div>
@@ -936,31 +936,31 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Study Questions */}
           {insights.studyQuestions && Array.isArray(insights.studyQuestions) && insights.studyQuestions.length > 0 && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('questions')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <MessageCircle className="h-5 w-5 text-purple-400" />
-                  <span className="font-medium text-[#E0E0E0]">Study Questions</span>
-                  <span className="text-sm text-[#9CA3AF]">({insights.studyQuestions.length})</span>
+                  <span className="font-medium text-shield-fg">Study Questions</span>
+                  <span className="text-sm text-shield-muted">({insights.studyQuestions.length})</span>
                 </div>
                 {expandedSections.has('questions') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('questions') && (
-                <div className="p-4 border-t border-[#2C303A] space-y-3">
+                <div className="p-4 border-t border-shield-panel space-y-3">
                   {insights.studyQuestions.map((question, index) => (
-                    <div key={index} className="p-3 bg-[#1A1D24] rounded border border-[#3A404B]">
+                    <div key={index} className="p-3 bg-shield-canvas rounded border border-shield-edge">
                       <div className="flex items-start space-x-3">
                         <span className="text-purple-400 font-medium text-sm mt-1">{index + 1}.</span>
                         <div className="flex-1">
-                          <p className="text-[#E0E0E0] mb-1">{question.question}</p>
-                          <span className="text-xs text-[#9CA3AF] bg-purple-900 px-2 py-1 rounded">
+                          <p className="text-shield-fg mb-1">{question.question}</p>
+                          <span className="text-xs text-shield-muted bg-purple-900 px-2 py-1 rounded">
                             {question.category}
                           </span>
                         </div>
@@ -974,24 +974,24 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Historical Context */}
           {insights.historicalContext && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('history')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <Search className="h-5 w-5 text-orange-400" />
-                  <span className="font-medium text-[#E0E0E0]">Historical Context</span>
+                  <span className="font-medium text-shield-fg">Historical Context</span>
                 </div>
                 {expandedSections.has('history') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('history') && (
-                <div className="p-4 border-t border-[#2C303A]">
-                  <p className="text-[#E0E0E0] leading-relaxed">{insights.historicalContext}</p>
+                <div className="p-4 border-t border-shield-panel">
+                  <p className="text-shield-fg leading-relaxed">{insights.historicalContext}</p>
                 </div>
               )}
             </div>
@@ -999,24 +999,24 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Theological Meaning */}
           {insights.theologicalMeaning && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('theology')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <Heart className="h-5 w-5 text-red-400" />
-                  <span className="font-medium text-[#E0E0E0]">Theological Meaning</span>
+                  <span className="font-medium text-shield-fg">Theological Meaning</span>
                 </div>
                 {expandedSections.has('theology') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('theology') && (
-                <div className="p-4 border-t border-[#2C303A]">
-                  <p className="text-[#E0E0E0] leading-relaxed">{insights.theologicalMeaning}</p>
+                <div className="p-4 border-t border-shield-panel">
+                  <p className="text-shield-fg leading-relaxed">{insights.theologicalMeaning}</p>
                 </div>
               )}
             </div>
@@ -1024,24 +1024,24 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Practical Application */}
           {insights.practicalApplication && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('application')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <Lightbulb className="h-5 w-5 text-green-400" />
-                  <span className="font-medium text-[#E0E0E0]">Practical Application</span>
+                  <span className="font-medium text-shield-fg">Practical Application</span>
                 </div>
                 {expandedSections.has('application') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('application') && (
-                <div className="p-4 border-t border-[#2C303A]">
-                  <p className="text-[#E0E0E0] leading-relaxed">{insights.practicalApplication}</p>
+                <div className="p-4 border-t border-shield-panel">
+                  <p className="text-shield-fg leading-relaxed">{insights.practicalApplication}</p>
                 </div>
               )}
             </div>
@@ -1049,28 +1049,28 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Prayer Points */}
           {insights.prayerPoints && Array.isArray(insights.prayerPoints) && insights.prayerPoints.length > 0 && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('prayer')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <Heart className="h-5 w-5 text-pink-400" />
-                  <span className="font-medium text-[#E0E0E0]">Prayer Points</span>
-                  <span className="text-sm text-[#9CA3AF]">({insights.prayerPoints.length})</span>
+                  <span className="font-medium text-shield-fg">Prayer Points</span>
+                  <span className="text-sm text-shield-muted">({insights.prayerPoints.length})</span>
                 </div>
                 {expandedSections.has('prayer') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('prayer') && (
-                <div className="p-4 border-t border-[#2C303A] space-y-2">
+                <div className="p-4 border-t border-shield-panel space-y-2">
                   {insights.prayerPoints.map((point, index) => (
                     <div key={index} className="flex items-start space-x-3">
                       <span className="text-pink-400 font-medium text-sm mt-1">{index + 1}.</span>
-                      <p className="text-[#E0E0E0] text-sm">{point}</p>
+                      <p className="text-shield-fg text-sm">{point}</p>
                     </div>
                   ))}
                 </div>
@@ -1080,26 +1080,26 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Shield AI Apologetics Features */}
           {insights.apologeticsPoints && insights.apologeticsPoints.length > 0 && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('apologetics')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <Shield className="h-5 w-5 text-blue-400" />
-                  <span className="font-medium text-[#E0E0E0]">Apologetics Points</span>
-                  <span className="text-sm text-[#9CA3AF]">({insights.apologeticsPoints.length})</span>
+                  <span className="font-medium text-shield-fg">Apologetics Points</span>
+                  <span className="text-sm text-shield-muted">({insights.apologeticsPoints.length})</span>
                 </div>
                 {expandedSections.has('apologetics') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('apologetics') && (
-                <div className="p-4 border-t border-[#2C303A] space-y-3">
+                <div className="p-4 border-t border-shield-panel space-y-3">
                   {insights.apologeticsPoints.map((point, index) => (
-                    <div key={index} className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                    <div key={index} className="bg-shield-canvas rounded-lg p-3 border border-shield-edge">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center space-x-2">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -1119,7 +1119,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
                           </span>
                         </div>
                       </div>
-                      <p className="text-[#E0E0E0] text-sm">{point.point}</p>
+                      <p className="text-shield-fg text-sm">{point.point}</p>
                     </div>
                   ))}
                 </div>
@@ -1129,26 +1129,26 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Defense Questions */}
           {insights.defenseQuestions && insights.defenseQuestions.length > 0 && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('defense')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <Target className="h-5 w-5 text-green-400" />
-                  <span className="font-medium text-[#E0E0E0]">Defense Questions</span>
-                  <span className="text-sm text-[#9CA3AF]">({insights.defenseQuestions.length})</span>
+                  <span className="font-medium text-shield-fg">Defense Questions</span>
+                  <span className="text-sm text-shield-muted">({insights.defenseQuestions.length})</span>
                 </div>
                 {expandedSections.has('defense') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('defense') && (
-                <div className="p-4 border-t border-[#2C303A] space-y-3">
+                <div className="p-4 border-t border-shield-panel space-y-3">
                   {insights.defenseQuestions.map((question, index) => (
-                    <div key={index} className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                    <div key={index} className="bg-shield-canvas rounded-lg p-3 border border-shield-edge">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center space-x-2">
                           <span className="px-2 py-1 bg-blue-600 text-white rounded-full text-xs font-medium">
@@ -1163,7 +1163,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
                           </span>
                         </div>
                       </div>
-                      <p className="text-[#E0E0E0] text-sm">{question.question}</p>
+                      <p className="text-shield-fg text-sm">{question.question}</p>
                     </div>
                   ))}
                 </div>
@@ -1173,26 +1173,26 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Evidence Types */}
           {insights.evidenceTypes && insights.evidenceTypes.length > 0 && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('evidence')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <Search className="h-5 w-5 text-purple-400" />
-                  <span className="font-medium text-[#E0E0E0]">Evidence Types</span>
-                  <span className="text-sm text-[#9CA3AF]">({insights.evidenceTypes.length})</span>
+                  <span className="font-medium text-shield-fg">Evidence Types</span>
+                  <span className="text-sm text-shield-muted">({insights.evidenceTypes.length})</span>
                 </div>
                 {expandedSections.has('evidence') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('evidence') && (
-                <div className="p-4 border-t border-[#2C303A] space-y-3">
+                <div className="p-4 border-t border-shield-panel space-y-3">
                   {insights.evidenceTypes.map((evidence, index) => (
-                    <div key={index} className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                    <div key={index} className="bg-shield-canvas rounded-lg p-3 border border-shield-edge">
                       <div className="flex items-center space-x-2 mb-2">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           evidence.type === 'historical' ? 'bg-orange-600 text-white' :
@@ -1204,8 +1204,8 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
                           {evidence.type}
                         </span>
                       </div>
-                      <p className="text-[#E0E0E0] text-sm mb-2">{evidence.description}</p>
-                      <p className="text-[#9CA3AF] text-xs">{evidence.relevance}</p>
+                      <p className="text-shield-fg text-sm mb-2">{evidence.description}</p>
+                      <p className="text-shield-muted text-xs">{evidence.relevance}</p>
                     </div>
                   ))}
                 </div>
@@ -1215,37 +1215,37 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Common Objections */}
           {insights.commonObjections && insights.commonObjections.length > 0 && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('objections')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <AlertTriangle className="h-5 w-5 text-red-400" />
-                  <span className="font-medium text-[#E0E0E0]">Common Objections</span>
-                  <span className="text-sm text-[#9CA3AF]">({insights.commonObjections.length})</span>
+                  <span className="font-medium text-shield-fg">Common Objections</span>
+                  <span className="text-sm text-shield-muted">({insights.commonObjections.length})</span>
                 </div>
                 {expandedSections.has('objections') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('objections') && (
-                <div className="p-4 border-t border-[#2C303A] space-y-4">
+                <div className="p-4 border-t border-shield-panel space-y-4">
                   {insights.commonObjections.map((objection, index) => (
-                    <div key={index} className="bg-[#1A1D24] rounded-lg p-4 border border-[#3A404B]">
+                    <div key={index} className="bg-shield-canvas rounded-lg p-4 border border-shield-edge">
                       <div className="mb-3">
                         <h4 className="text-sm font-medium text-red-400 mb-2">Objection:</h4>
-                        <p className="text-[#E0E0E0] text-sm">{objection.objection}</p>
+                        <p className="text-shield-fg text-sm">{objection.objection}</p>
                       </div>
                       <div className="mb-3">
                         <h4 className="text-sm font-medium text-green-400 mb-2">Response:</h4>
-                        <p className="text-[#E0E0E0] text-sm">{objection.response}</p>
+                        <p className="text-shield-fg text-sm">{objection.response}</p>
                       </div>
                       <div>
                         <h4 className="text-sm font-medium text-blue-400 mb-2">Scripture:</h4>
-                        <p className="text-[#E0E0E0] text-sm">{objection.scripture}</p>
+                        <p className="text-shield-fg text-sm">{objection.scripture}</p>
                       </div>
                     </div>
                   ))}
@@ -1256,36 +1256,36 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
           {/* Faith Building */}
           {insights.faithBuilding && (
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={() => toggleSection('faith')}
-                className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <Heart className="h-5 w-5 text-pink-400" />
-                  <span className="font-medium text-[#E0E0E0]">Faith Building</span>
+                  <span className="font-medium text-shield-fg">Faith Building</span>
                 </div>
                 {expandedSections.has('faith') ? (
-                  <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
                 ) : (
-                  <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
                 )}
               </button>
               {expandedSections.has('faith') && (
-                <div className="p-4 border-t border-[#2C303A] space-y-4">
-                  <div className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                <div className="p-4 border-t border-shield-panel space-y-4">
+                  <div className="bg-shield-canvas rounded-lg p-3 border border-shield-edge">
                     <h4 className="text-sm font-medium text-pink-400 mb-2">Encouragement:</h4>
-                    <p className="text-[#E0E0E0] text-sm">{insights.faithBuilding.encouragement}</p>
+                    <p className="text-shield-fg text-sm">{insights.faithBuilding.encouragement}</p>
                   </div>
                   
                   {insights.faithBuilding.promises && insights.faithBuilding.promises.length > 0 && (
-                    <div className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                    <div className="bg-shield-canvas rounded-lg p-3 border border-shield-edge">
                       <h4 className="text-sm font-medium text-yellow-400 mb-2">Promises:</h4>
                       <ul className="space-y-1">
                         {insights.faithBuilding.promises.map((promise, index) => (
                           <li key={index} className="flex items-start space-x-2">
                             <span className="text-yellow-400 font-medium text-sm mt-1">•</span>
-                            <span className="text-[#E0E0E0] text-sm">{promise}</span>
+                            <span className="text-shield-fg text-sm">{promise}</span>
                           </li>
                         ))}
                       </ul>
@@ -1293,13 +1293,13 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
                   )}
                   
                   {insights.faithBuilding.applications && insights.faithBuilding.applications.length > 0 && (
-                    <div className="bg-[#1A1D24] rounded-lg p-3 border border-[#3A404B]">
+                    <div className="bg-shield-canvas rounded-lg p-3 border border-shield-edge">
                       <h4 className="text-sm font-medium text-green-400 mb-2">Applications:</h4>
                       <ul className="space-y-1">
                         {insights.faithBuilding.applications.map((application, index) => (
                           <li key={index} className="flex items-start space-x-2">
                             <span className="text-green-400 font-medium text-sm mt-1">•</span>
-                            <span className="text-[#E0E0E0] text-sm">{application}</span>
+                            <span className="text-shield-fg text-sm">{application}</span>
                           </li>
                         ))}
                       </ul>
@@ -1315,18 +1315,18 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
       {/* Image Generation Modal */}
       {showImageModal && generatedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <Palette className="h-6 w-6 text-indigo-400" />
                 <div>
-                  <h3 className="text-lg font-semibold text-[#E0E0E0]">Generated Image</h3>
-                  <p className="text-sm text-[#9CA3AF]">{passage.reference}</p>
+                  <h3 className="text-lg font-semibold text-shield-fg">Generated Image</h3>
+                  <p className="text-sm text-shield-muted">{passage.reference}</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowImageModal(false)}
-                className="text-[#9CA3AF] hover:text-white transition-colors"
+                className="text-shield-muted hover:text-white transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1347,9 +1347,9 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
               </div>
 
               {generatedImage.revisedPrompt && (
-                <div className="p-4 bg-[#2C303A] rounded-lg">
-                  <h4 className="text-sm font-medium text-[#E0E0E0] mb-2">Generated from:</h4>
-                  <p className="text-sm text-[#9CA3AF] italic">"{generatedImage.revisedPrompt}"</p>
+                <div className="p-4 bg-shield-panel rounded-lg">
+                  <h4 className="text-sm font-medium text-shield-fg mb-2">Generated from:</h4>
+                  <p className="text-sm text-shield-muted italic">"{generatedImage.revisedPrompt}"</p>
                 </div>
               )}
 

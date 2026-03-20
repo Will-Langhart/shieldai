@@ -375,9 +375,9 @@ export function QuickNavigation({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center pt-20">
-      <div className="bg-[#1A1D24] rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
+      <div className="bg-shield-canvas rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-[#3A404B]">
+        <div className="p-4 border-b border-shield-edge">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold flex items-center">
               <Zap className="h-5 w-5 mr-2 text-blue-400" />
@@ -385,7 +385,7 @@ export function QuickNavigation({
             </h2>
             <button
               onClick={onClose}
-              className="p-1 text-[#9CA3AF] hover:text-white transition-colors"
+              className="p-1 text-shield-muted hover:text-white transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -393,7 +393,7 @@ export function QuickNavigation({
 
           {/* Search Input */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-shield-muted" />
             <input
               ref={inputRef}
               type="text"
@@ -403,7 +403,7 @@ export function QuickNavigation({
                 setSelectedIndex(0)
               }}
               placeholder="Search passages, AI features, or use shortcuts..."
-              className="w-full bg-[#2C303A] border border-[#3A404B] text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500"
+              className="w-full bg-shield-panel border border-shield-edge text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500"
             />
             {isSearching && (
               <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-blue-400" />
@@ -422,7 +422,7 @@ export function QuickNavigation({
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                   activeCategory === category.id
                     ? 'bg-blue-600 text-white'
-                    : 'bg-[#2C303A] text-[#9CA3AF] hover:bg-[#3A404B] hover:text-white'
+                    : 'bg-shield-panel text-shield-muted hover:bg-shield-elevated hover:text-white'
                 }`}
               >
                 <category.icon className="h-4 w-4" />
@@ -435,7 +435,7 @@ export function QuickNavigation({
         {/* Results */}
         <div ref={resultsRef} className="max-h-96 overflow-y-auto">
           {filteredItems.length === 0 ? (
-            <div className="p-8 text-center text-[#9CA3AF]">
+            <div className="p-8 text-center text-shield-muted">
               <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No items found</p>
             </div>
@@ -449,7 +449,7 @@ export function QuickNavigation({
                   className={`w-full text-left p-3 rounded-lg transition-colors ${
                     selectedIndex === index
                       ? 'bg-blue-600 text-white'
-                      : 'hover:bg-[#2C303A] text-[#E5E7EB]'
+                      : 'hover:bg-shield-panel text-shield-fg'
                   }`}
                 >
                   <div className="flex items-start space-x-3">
@@ -472,8 +472,8 @@ export function QuickNavigation({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[#3A404B] bg-[#1A1D24]">
-          <div className="flex items-center justify-between text-xs text-[#9CA3AF]">
+        <div className="p-4 border-t border-shield-edge bg-shield-canvas">
+          <div className="flex items-center justify-between text-xs text-shield-muted">
             <div className="flex items-center space-x-4">
               <span>↑↓ Navigate</span>
               <span>Enter Select</span>

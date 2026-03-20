@@ -163,8 +163,8 @@ export function AIDiagnostics({ onClose }: AIDiagnosticsProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-[#1A1D24] rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
-        <div className="p-6 border-b border-[#3A404B]">
+      <div className="bg-shield-canvas rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+        <div className="p-6 border-b border-shield-edge">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold flex items-center">
               <AlertCircle className="h-6 w-6 text-blue-400 mr-2" />
@@ -172,7 +172,7 @@ export function AIDiagnostics({ onClose }: AIDiagnosticsProps) {
             </h2>
             <button
               onClick={onClose}
-              className="p-2 text-[#9CA3AF] hover:text-white transition-colors"
+              className="p-2 text-shield-muted hover:text-white transition-colors"
             >
               ×
             </button>
@@ -197,12 +197,12 @@ export function AIDiagnostics({ onClose }: AIDiagnosticsProps) {
 
           {diagnostics && (
             <div className="space-y-4">
-              <div className="text-sm text-[#9CA3AF]">
+              <div className="text-sm text-shield-muted">
                 Diagnostics run at: {new Date(diagnostics.timestamp).toLocaleString()}
               </div>
               
               {diagnostics.tests.map((test: any, index: number) => (
-                <div key={index} className="bg-[#2C303A] rounded-lg p-4">
+                <div key={index} className="bg-shield-panel rounded-lg p-4">
                   <div className="flex items-start space-x-3">
                     {getStatusIcon(test.status)}
                     <div className="flex-1">
@@ -212,13 +212,13 @@ export function AIDiagnostics({ onClose }: AIDiagnosticsProps) {
                           {test.status.toUpperCase()}
                         </span>
                       </div>
-                      <p className="text-sm text-[#E5E7EB] mt-1">{test.message}</p>
+                      <p className="text-sm text-shield-fg mt-1">{test.message}</p>
                       {test.details && (
                         <details className="mt-2">
-                          <summary className="text-xs text-[#9CA3AF] cursor-pointer hover:text-white">
+                          <summary className="text-xs text-shield-muted cursor-pointer hover:text-white">
                             View Details
                           </summary>
-                          <pre className="mt-2 text-xs bg-[#1A1D24] p-2 rounded overflow-auto max-h-32">
+                          <pre className="mt-2 text-xs bg-shield-canvas p-2 rounded overflow-auto max-h-32">
                             {JSON.stringify(test.details, null, 2)}
                           </pre>
                         </details>
@@ -231,7 +231,7 @@ export function AIDiagnostics({ onClose }: AIDiagnosticsProps) {
           )}
 
           {!diagnostics && !isRunning && (
-            <div className="text-center py-8 text-[#9CA3AF]">
+            <div className="text-center py-8 text-shield-muted">
               <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Click "Run Diagnostics" to check AI system status</p>
             </div>

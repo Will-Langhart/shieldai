@@ -176,10 +176,10 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
 
   if (loading) {
     return (
-      <div className="bg-[#1A1D24] rounded-lg p-6">
+      <div className="bg-shield-canvas rounded-lg p-6">
         <div className="flex items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-blue-400 mr-3" />
-          <span className="text-[#9CA3AF]">Generating study questions...</span>
+          <span className="text-shield-muted">Generating study questions...</span>
         </div>
       </div>
     )
@@ -187,7 +187,7 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
 
   if (error) {
     return (
-      <div className="bg-[#1A1D24] rounded-lg p-6">
+      <div className="bg-shield-canvas rounded-lg p-6">
         <div className="text-center">
           <div className="text-red-400 mb-2">Failed to generate study questions</div>
           <button 
@@ -202,7 +202,7 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
   }
 
   return (
-    <div className="bg-[#1A1D24] rounded-lg p-6">
+    <div className="bg-shield-canvas rounded-lg p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <MessageCircle className="h-6 w-6 text-blue-400" />
@@ -212,7 +212,7 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
           <button
             onClick={generateQuestions}
             disabled={loading}
-            className="p-2 text-[#9CA3AF] hover:text-blue-400 transition-colors disabled:opacity-50"
+            className="p-2 text-shield-muted hover:text-blue-400 transition-colors disabled:opacity-50"
             title="Generate new questions"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -223,7 +223,7 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
       {/* Filters */}
       <div className="mb-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Question Type</label>
+          <label className="block text-sm font-medium text-shield-muted mb-2">Question Type</label>
           <div className="flex flex-wrap gap-2">
             {questionTypes.map(({ id, label, icon: Icon }) => (
               <button
@@ -232,7 +232,7 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                   selectedType === id
                     ? 'bg-blue-600 text-white'
-                    : 'bg-[#2C303A] text-[#9CA3AF] hover:bg-[#3A404B] hover:text-white'
+                    : 'bg-shield-panel text-shield-muted hover:bg-shield-elevated hover:text-white'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -243,7 +243,7 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Difficulty Level</label>
+          <label className="block text-sm font-medium text-shield-muted mb-2">Difficulty Level</label>
           <div className="flex flex-wrap gap-2">
             {difficulties.map(({ id, label }) => (
               <button
@@ -252,7 +252,7 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
                 className={`px-3 py-2 rounded-lg text-sm transition-colors ${
                   selectedDifficulty === id
                     ? 'bg-blue-600 text-white'
-                    : 'bg-[#2C303A] text-[#9CA3AF] hover:bg-[#3A404B] hover:text-white'
+                    : 'bg-shield-panel text-shield-muted hover:bg-shield-elevated hover:text-white'
                 }`}
               >
                 {label}
@@ -266,14 +266,14 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
       <div className="space-y-4">
         {filteredQuestions.length === 0 ? (
           <div className="text-center py-8">
-            <MessageCircle className="h-12 w-12 text-[#9CA3AF] mx-auto mb-4" />
-            <p className="text-[#9CA3AF]">No questions match your current filters</p>
+            <MessageCircle className="h-12 w-12 text-shield-muted mx-auto mb-4" />
+            <p className="text-shield-muted">No questions match your current filters</p>
           </div>
         ) : (
           filteredQuestions.map((question) => (
             <div 
               key={question.id} 
-              className={`bg-[#2C303A] rounded-lg p-4 transition-all ${
+              className={`bg-shield-panel rounded-lg p-4 transition-all ${
                 answeredQuestions.has(question.id) ? 'opacity-75' : ''
               }`}
             >
@@ -292,19 +292,19 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
                       </span>
                     )}
                   </div>
-                  <p className="text-[#E5E7EB] leading-relaxed">{question.question}</p>
+                  <p className="text-shield-fg leading-relaxed">{question.question}</p>
                 </div>
                 <div className="flex space-x-1 ml-4">
                   <button
                     onClick={() => copyQuestion(question)}
-                    className="p-1 text-[#9CA3AF] hover:text-blue-400 transition-colors"
+                    className="p-1 text-shield-muted hover:text-blue-400 transition-colors"
                     title="Copy question"
                   >
                     <Copy className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => shareQuestion(question)}
-                    className="p-1 text-[#9CA3AF] hover:text-blue-400 transition-colors"
+                    className="p-1 text-shield-muted hover:text-blue-400 transition-colors"
                     title="Share question"
                   >
                     <Share2 className="h-4 w-4" />
@@ -322,8 +322,8 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
                     {showAnswers.has(question.id) ? 'Hide' : 'Show'} Suggested Answer
                   </button>
                   {showAnswers.has(question.id) && (
-                    <div className="mt-2 p-3 bg-[#1A1D24] rounded-lg">
-                      <p className="text-[#E5E7EB] text-sm leading-relaxed">
+                    <div className="mt-2 p-3 bg-shield-canvas rounded-lg">
+                      <p className="text-shield-fg text-sm leading-relaxed">
                         {question.suggestedAnswer}
                       </p>
                     </div>
@@ -334,10 +334,10 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
               {/* Related Verses */}
               {question.relatedVerses && question.relatedVerses.length > 0 && (
                 <div className="mt-3">
-                  <p className="text-[#9CA3AF] text-sm mb-1">Related verses:</p>
+                  <p className="text-shield-muted text-sm mb-1">Related verses:</p>
                   <div className="flex flex-wrap gap-1">
                     {question.relatedVerses.map((verse, index) => (
-                      <span key={index} className="px-2 py-1 bg-[#1A1D24] rounded text-xs text-blue-400">
+                      <span key={index} className="px-2 py-1 bg-shield-canvas rounded text-xs text-blue-400">
                         {verse}
                       </span>
                     ))}
@@ -352,7 +352,7 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
                   className={`flex items-center space-x-2 px-3 py-1 rounded text-sm transition-colors ${
                     answeredQuestions.has(question.id)
                       ? 'bg-green-600 text-white'
-                      : 'bg-[#1A1D24] text-[#9CA3AF] hover:bg-green-600 hover:text-white'
+                      : 'bg-shield-canvas text-shield-muted hover:bg-green-600 hover:text-white'
                   }`}
                 >
                   <CheckCircle className="h-4 w-4" />
@@ -375,9 +375,9 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
 
       {/* Summary */}
       {filteredQuestions.length > 0 && (
-        <div className="mt-6 p-4 bg-[#2C303A] rounded-lg">
+        <div className="mt-6 p-4 bg-shield-panel rounded-lg">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-[#9CA3AF]">
+            <span className="text-shield-muted">
               Showing {filteredQuestions.length} of {questions.length} questions
             </span>
             <span className="text-blue-400">

@@ -18,13 +18,13 @@ export default function InsightsHistoryPage({ userId }: InsightsHistoryPageProps
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="min-h-screen bg-[#0F0F0F]">
+      <div className="min-h-screen bg-shield-void">
         <Header />
         
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-[#E0E0E0] mb-2">Insights History</h1>
-            <p className="text-[#9CA3AF]">
+            <h1 className="text-3xl font-bold text-shield-fg mb-2">Insights History</h1>
+            <p className="text-shield-muted">
               View, manage, and analyze your AI-generated Bible insights
             </p>
           </div>

@@ -159,10 +159,10 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
 
   if (loading) {
     return (
-      <div className="bg-[#1A1D24] rounded-lg p-6">
+      <div className="bg-shield-canvas rounded-lg p-6">
         <div className="flex items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-blue-400 mr-3" />
-          <span className="text-[#9CA3AF]">Finding cross-references...</span>
+          <span className="text-shield-muted">Finding cross-references...</span>
         </div>
       </div>
     )
@@ -170,7 +170,7 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
 
   if (error) {
     return (
-      <div className="bg-[#1A1D24] rounded-lg p-6">
+      <div className="bg-shield-canvas rounded-lg p-6">
         <div className="text-center">
           <div className="text-red-400 mb-2">Failed to generate cross-references</div>
           <button 
@@ -185,13 +185,13 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
   }
 
   return (
-    <div className="bg-[#1A1D24] rounded-lg p-6">
+    <div className="bg-shield-canvas rounded-lg p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <Search className="h-6 w-6 text-blue-400" />
           <h3 className="text-xl font-semibold">AI Cross-References</h3>
         </div>
-        <div className="text-sm text-[#9CA3AF]">
+        <div className="text-sm text-shield-muted">
           {filteredReferences.length} references found
         </div>
       </div>
@@ -199,7 +199,7 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
       {/* Filters */}
       <div className="mb-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Connection Type</label>
+          <label className="block text-sm font-medium text-shield-muted mb-2">Connection Type</label>
           <div className="flex flex-wrap gap-2">
             {connectionTypes.map(({ id, label, icon: Icon }) => (
               <button
@@ -208,7 +208,7 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                   selectedType === id
                     ? 'bg-blue-600 text-white'
-                    : 'bg-[#2C303A] text-[#9CA3AF] hover:bg-[#3A404B] hover:text-white'
+                    : 'bg-shield-panel text-shield-muted hover:bg-shield-elevated hover:text-white'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -219,7 +219,7 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Connection Strength</label>
+          <label className="block text-sm font-medium text-shield-muted mb-2">Connection Strength</label>
           <div className="flex flex-wrap gap-2">
             {strengthLevels.map(({ id, label }) => (
               <button
@@ -228,7 +228,7 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
                 className={`px-3 py-2 rounded-lg text-sm transition-colors ${
                   selectedStrength === id
                     ? 'bg-blue-600 text-white'
-                    : 'bg-[#2C303A] text-[#9CA3AF] hover:bg-[#3A404B] hover:text-white'
+                    : 'bg-shield-panel text-shield-muted hover:bg-shield-elevated hover:text-white'
                 }`}
               >
                 {label}
@@ -242,14 +242,14 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
       <div className="space-y-4">
         {filteredReferences.length === 0 ? (
           <div className="text-center py-8">
-            <Search className="h-12 w-12 text-[#9CA3AF] mx-auto mb-4" />
-            <p className="text-[#9CA3AF]">No cross-references match your current filters</p>
+            <Search className="h-12 w-12 text-shield-muted mx-auto mb-4" />
+            <p className="text-shield-muted">No cross-references match your current filters</p>
           </div>
         ) : (
           filteredReferences.map((reference) => (
             <div 
               key={reference.id} 
-              className="bg-[#2C303A] rounded-lg p-4 transition-all hover:bg-[#3A404B]"
+              className="bg-shield-panel rounded-lg p-4 transition-all hover:bg-shield-elevated"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
@@ -265,23 +265,23 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
                     <h4 className="font-semibold text-blue-400">{reference.reference}</h4>
                     <button
                       onClick={() => copyReference(reference)}
-                      className="p-1 text-[#9CA3AF] hover:text-blue-400 transition-colors"
+                      className="p-1 text-shield-muted hover:text-blue-400 transition-colors"
                       title="Copy reference"
                     >
                       <Copy className="h-4 w-4" />
                     </button>
                   </div>
-                  <p className="text-[#E5E7EB] text-sm leading-relaxed mb-2">
+                  <p className="text-shield-fg text-sm leading-relaxed mb-2">
                     "{reference.text}"
                   </p>
-                  <p className="text-[#9CA3AF] text-sm">
+                  <p className="text-shield-muted text-sm">
                     {reference.relevance}
                   </p>
                 </div>
                 <div className="flex space-x-1 ml-4">
                   <button
                     onClick={() => toggleExpanded(reference.id)}
-                    className="p-1 text-[#9CA3AF] hover:text-blue-400 transition-colors"
+                    className="p-1 text-shield-muted hover:text-blue-400 transition-colors"
                     title={expandedRefs.has(reference.id) ? 'Show less' : 'Show more'}
                   >
                     <ChevronRight className={`h-4 w-4 transition-transform ${expandedRefs.has(reference.id) ? 'rotate-90' : ''}`} />
@@ -289,7 +289,7 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
                   {onReferenceSelect && (
                     <button
                       onClick={() => onReferenceSelect(reference)}
-                      className="p-1 text-[#9CA3AF] hover:text-blue-400 transition-colors"
+                      className="p-1 text-shield-muted hover:text-blue-400 transition-colors"
                       title="Use in chat"
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -300,11 +300,11 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
 
               {/* Expanded Content */}
               {expandedRefs.has(reference.id) && (
-                <div className="mt-3 pt-3 border-t border-[#3A404B]">
+                <div className="mt-3 pt-3 border-t border-shield-edge">
                   <div className="space-y-3">
                     <div>
                       <h5 className="font-medium text-blue-400 mb-1">Context</h5>
-                      <p className="text-[#E5E7EB] text-sm leading-relaxed">
+                      <p className="text-shield-fg text-sm leading-relaxed">
                         {reference.context}
                       </p>
                     </div>
@@ -312,14 +312,14 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
                     {reference.theologicalSignificance && (
                       <div>
                         <h5 className="font-medium text-blue-400 mb-1">Theological Significance</h5>
-                        <p className="text-[#E5E7EB] text-sm leading-relaxed">
+                        <p className="text-shield-fg text-sm leading-relaxed">
                           {reference.theologicalSignificance}
                         </p>
                       </div>
                     )}
 
                     <div className="flex items-center justify-between pt-2">
-                      <div className="text-xs text-[#9CA3AF]">
+                      <div className="text-xs text-shield-muted">
                         Book: {reference.book} | Chapter: {reference.chapter} | Verse: {reference.verse}
                       </div>
                       <button
@@ -339,9 +339,9 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
 
       {/* Summary */}
       {filteredReferences.length > 0 && (
-        <div className="mt-6 p-4 bg-[#2C303A] rounded-lg">
+        <div className="mt-6 p-4 bg-shield-panel rounded-lg">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-[#9CA3AF]">
+            <span className="text-shield-muted">
               Showing {filteredReferences.length} of {references.length} cross-references
             </span>
             <div className="flex space-x-4 text-xs">

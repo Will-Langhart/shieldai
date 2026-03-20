@@ -457,7 +457,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
           </div>
         </div>
         <div className="text-blue-400 mb-2 font-medium">Loading insights...</div>
-        <div className="text-sm text-[#9CA3AF]">Fetching your saved AI insights</div>
+        <div className="text-sm text-shield-muted">Fetching your saved AI insights</div>
       </div>
     )
   }
@@ -467,7 +467,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
       <div className="flex flex-col items-center justify-center py-12">
         <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
         <div className="text-red-400 mb-2">Failed to load insights</div>
-        <div className="text-sm text-[#9CA3AF] mb-4">{error}</div>
+        <div className="text-sm text-shield-muted mb-4">{error}</div>
         <button 
           onClick={loadInsights}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -485,12 +485,12 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[#E0E0E0]">Analytics Dashboard</h1>
-            <p className="text-[#9CA3AF]">Insights into your Bible study journey</p>
+            <h1 className="text-2xl font-bold text-shield-fg">Analytics Dashboard</h1>
+            <p className="text-shield-muted">Insights into your Bible study journey</p>
           </div>
           <button
             onClick={() => setShowAnalytics(false)}
-            className="flex items-center space-x-2 px-4 py-2 bg-[#2C303A] hover:bg-[#3A404B] text-[#E0E0E0] rounded-lg transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-shield-panel hover:bg-shield-elevated text-shield-fg rounded-lg transition-colors"
           >
             <X className="h-4 w-4" />
             <span>Back to Insights</span>
@@ -548,17 +548,17 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
       </div>
 
       {/* Search and Filter Bar */}
-      <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-4">
+      <div className="bg-shield-canvas border border-shield-panel rounded-lg p-4">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search Input */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-shield-muted" />
             <input
               type="text"
               placeholder="Search insights by passage, theme, or content..."
               value={filters.query}
               onChange={(e) => setFilters(prev => ({ ...prev, query: e.target.value }))}
-              className="w-full pl-10 pr-4 py-2 bg-[#2C303A] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -569,7 +569,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
                 showFilters 
                   ? 'bg-blue-600 text-white' 
-                  : 'bg-[#2C303A] text-[#9CA3AF] hover:text-[#E0E0E0]'
+                  : 'bg-shield-panel text-shield-muted hover:text-shield-fg'
               }`}
             >
               <Filter className="h-4 w-4" />
@@ -582,7 +582,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                 const [sort_by, sort_order] = e.target.value.split('-')
                 setFilters(prev => ({ ...prev, sort_by: sort_by as any, sort_order: sort_order as any }))
               }}
-              className="px-3 py-2 bg-[#2C303A] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="created_at-desc">Newest First</option>
               <option value="created_at-asc">Oldest First</option>
@@ -597,7 +597,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                 ...prev, 
                 view_mode: prev.view_mode === 'grid' ? 'list' : 'grid' 
               }))}
-              className="flex items-center space-x-2 px-3 py-2 bg-[#2C303A] text-[#9CA3AF] hover:text-[#E0E0E0] rounded-lg transition-colors"
+              className="flex items-center space-x-2 px-3 py-2 bg-shield-panel text-shield-muted hover:text-shield-fg rounded-lg transition-colors"
             >
               {filters.view_mode === 'grid' ? <List className="h-4 w-4" /> : <Grid3X3 className="h-4 w-4" />}
             </button>
@@ -606,15 +606,15 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
 
         {/* Advanced Filters */}
         {showFilters && (
-          <div className="mt-4 pt-4 border-t border-[#3A404B]">
+          <div className="mt-4 pt-4 border-t border-shield-edge">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Bible Version */}
               <div>
-                <label className="block text-sm text-[#9CA3AF] mb-1">Bible Version</label>
+                <label className="block text-sm text-shield-muted mb-1">Bible Version</label>
                 <select
                   value={filters.bible_version}
                   onChange={(e) => setFilters(prev => ({ ...prev, bible_version: e.target.value }))}
-                  className="w-full px-3 py-2 bg-[#2C303A] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Versions</option>
                   {availableFilters.versions.map(version => (
@@ -625,35 +625,35 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
 
               {/* Date Range */}
               <div>
-                <label className="block text-sm text-[#9CA3AF] mb-1">From Date</label>
+                <label className="block text-sm text-shield-muted mb-1">From Date</label>
                 <input
                   type="date"
                   value={filters.date_from}
                   onChange={(e) => setFilters(prev => ({ ...prev, date_from: e.target.value }))}
-                  className="w-full px-3 py-2 bg-[#2C303A] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-[#9CA3AF] mb-1">To Date</label>
+                <label className="block text-sm text-shield-muted mb-1">To Date</label>
                 <input
                   type="date"
                   value={filters.date_to}
                   onChange={(e) => setFilters(prev => ({ ...prev, date_to: e.target.value }))}
-                  className="w-full px-3 py-2 bg-[#2C303A] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               {/* Boolean Filters */}
               <div>
-                <label className="block text-sm text-[#9CA3AF] mb-1">Status</label>
+                <label className="block text-sm text-shield-muted mb-1">Status</label>
                 <select
                   value={filters.is_favorite === null ? '' : filters.is_favorite.toString()}
                   onChange={(e) => setFilters(prev => ({ 
                     ...prev, 
                     is_favorite: e.target.value === '' ? null : e.target.value === 'true' 
                   }))}
-                  className="w-full px-3 py-2 bg-[#2C303A] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All</option>
                   <option value="true">Favorites Only</option>
@@ -665,7 +665,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
             {/* Tag and Theme Filters */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-[#9CA3AF] mb-2">Tags</label>
+                <label className="block text-sm text-shield-muted mb-2">Tags</label>
                 <div className="flex flex-wrap gap-2">
                   {availableFilters.tags.map(tag => (
                     <button
@@ -679,7 +679,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                       className={`px-3 py-1 rounded-full text-sm transition-colors ${
                         filters.tags.includes(tag)
                           ? 'bg-blue-600 text-white'
-                          : 'bg-[#2C303A] text-[#9CA3AF] hover:text-[#E0E0E0]'
+                          : 'bg-shield-panel text-shield-muted hover:text-shield-fg'
                       }`}
                     >
                       {tag}
@@ -689,7 +689,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
               </div>
 
               <div>
-                <label className="block text-sm text-[#9CA3AF] mb-2">Key Themes</label>
+                <label className="block text-sm text-shield-muted mb-2">Key Themes</label>
                 <div className="flex flex-wrap gap-2">
                   {availableFilters.themes.map(theme => (
                     <button
@@ -703,7 +703,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                       className={`px-3 py-1 rounded-full text-sm transition-colors ${
                         filters.themes.includes(theme)
                           ? 'bg-purple-600 text-white'
-                          : 'bg-[#2C303A] text-[#9CA3AF] hover:text-[#E0E0E0]'
+                          : 'bg-shield-panel text-shield-muted hover:text-shield-fg'
                       }`}
                     >
                       {theme}
@@ -718,11 +718,11 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
 
       {/* Results Summary */}
       <div className="flex items-center justify-between">
-        <div className="text-[#9CA3AF]">
+        <div className="text-shield-muted">
           Showing {filteredInsights.length} of {insights.length} insights
         </div>
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-4 text-sm text-[#9CA3AF]">
+          <div className="flex items-center space-x-4 text-sm text-shield-muted">
             <div className="flex items-center space-x-1">
               <Star className="h-4 w-4 text-yellow-400" />
               <span>{insights.filter(i => i.is_favorite).length} favorites</span>
@@ -737,14 +737,14 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
             <div className="flex items-center space-x-2">
               <button
                 onClick={exportInsights}
-                className="flex items-center space-x-1 px-3 py-1 bg-[#2C303A] hover:bg-[#3A404B] text-[#E0E0E0] rounded text-sm transition-colors"
+                className="flex items-center space-x-1 px-3 py-1 bg-shield-panel hover:bg-shield-elevated text-shield-fg rounded text-sm transition-colors"
               >
                 <Download className="h-3 w-3" />
                 <span>JSON</span>
               </button>
               <button
                 onClick={exportInsightsCSV}
-                className="flex items-center space-x-1 px-3 py-1 bg-[#2C303A] hover:bg-[#3A404B] text-[#E0E0E0] rounded text-sm transition-colors"
+                className="flex items-center space-x-1 px-3 py-1 bg-shield-panel hover:bg-shield-elevated text-shield-fg rounded text-sm transition-colors"
               >
                 <Download className="h-3 w-3" />
                 <span>CSV</span>
@@ -757,9 +757,9 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
       {/* Insights Grid/List */}
       {filteredInsights.length === 0 ? (
         <div className="text-center py-12">
-          <Brain className="h-12 w-12 text-[#9CA3AF] mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-[#E0E0E0] mb-2">No insights found</h3>
-          <p className="text-[#9CA3AF] mb-4">
+          <Brain className="h-12 w-12 text-shield-muted mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-shield-fg mb-2">No insights found</h3>
+          <p className="text-shield-muted mb-4">
             {filters.query || filters.bible_version || filters.tags.length > 0 || filters.themes.length > 0
               ? 'Try adjusting your search criteria'
               : 'Generate some AI insights to get started'
@@ -839,18 +839,18 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
   }
 
   return (
-    <div className={`bg-[#1A1D24] border border-[#2C303A] rounded-lg overflow-hidden transition-all duration-200 hover:border-[#3A404B] ${
+    <div className={`bg-shield-canvas border border-shield-panel rounded-lg overflow-hidden transition-all duration-200 hover:border-shield-elevated ${
       viewMode === 'list' ? 'flex' : ''
     }`}>
       <div className={`${viewMode === 'list' ? 'flex-1' : ''}`}>
         {/* Header */}
-        <div className="p-4 border-b border-[#2C303A]">
+        <div className="p-4 border-b border-shield-panel">
           <div className="flex items-start justify-between mb-2">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-[#E0E0E0] mb-1">
+              <h3 className="text-lg font-semibold text-shield-fg mb-1">
                 {insight.passage_reference}
               </h3>
-              <p className="text-sm text-[#9CA3AF] mb-2 line-clamp-2">
+              <p className="text-sm text-shield-muted mb-2 line-clamp-2">
                 {insight.passage_text.substring(0, 100)}...
               </p>
             </div>
@@ -861,7 +861,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
           </div>
 
           {/* Metadata */}
-          <div className="flex items-center justify-between text-xs text-[#9CA3AF]">
+          <div className="flex items-center justify-between text-xs text-shield-muted">
             <div className="flex items-center space-x-4">
               <span>{insight.bible_version}</span>
               <span>{formatDate(insight.created_at)}</span>
@@ -881,7 +881,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
               )}
               <button
                 onClick={onToggleExpansion}
-                className="text-[#9CA3AF] hover:text-[#E0E0E0] transition-colors"
+                className="text-shield-muted hover:text-shield-fg transition-colors"
               >
                 {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </button>
@@ -920,7 +920,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
             </div>
 
             {/* Interaction Bar */}
-            <div className="bg-[#2C303A] rounded-lg p-3">
+            <div className="bg-shield-panel rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <button className="flex items-center space-x-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors">
@@ -944,26 +944,26 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
                   </button>
                 </div>
                 
-                <div className="flex items-center space-x-1 text-xs text-[#9CA3AF]">
+                <div className="flex items-center space-x-1 text-xs text-shield-muted">
                   <span>{insight.response_count || 0} responses • {insight.interaction_count || 0} interactions</span>
                 </div>
               </div>
             </div>
 
             {/* Explanation */}
-            <div className="border border-[#2C303A] rounded-lg">
+            <div className="border border-shield-panel rounded-lg">
               <button
                 onClick={onToggleExpansion}
-                className="w-full flex items-center justify-between p-3 text-left hover:bg-[#2C303A] transition-colors"
+                className="w-full flex items-center justify-between p-3 text-left hover:bg-shield-panel transition-colors"
               >
                 <div className="flex items-center space-x-2">
                   <BookOpen className="h-4 w-4 text-blue-400" />
-                  <span className="font-medium text-[#E0E0E0]">Explanation</span>
+                  <span className="font-medium text-shield-fg">Explanation</span>
                 </div>
-                <ChevronUp className="h-4 w-4 text-[#9CA3AF]" />
+                <ChevronUp className="h-4 w-4 text-shield-muted" />
               </button>
-              <div className="p-3 border-t border-[#2C303A]">
-                <p className="text-[#E0E0E0] text-sm leading-relaxed mb-2">{insight.explanation}</p>
+              <div className="p-3 border-t border-shield-panel">
+                <p className="text-shield-fg text-sm leading-relaxed mb-2">{insight.explanation}</p>
                 <button
                   onClick={() => onCopy(insight.explanation)}
                   className="flex items-center space-x-1 text-blue-400 hover:text-blue-300 transition-colors text-xs"
@@ -976,12 +976,12 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
 
             {/* Key Themes */}
             {insight.key_themes.length > 0 && (
-              <div className="border border-[#2C303A] rounded-lg">
-                <div className="p-3 border-b border-[#2C303A]">
+              <div className="border border-shield-panel rounded-lg">
+                <div className="p-3 border-b border-shield-panel">
                   <div className="flex items-center space-x-2">
                     <Lightbulb className="h-4 w-4 text-yellow-400" />
-                    <span className="font-medium text-[#E0E0E0]">Key Themes</span>
-                    <span className="text-sm text-[#9CA3AF]">({insight.key_themes.length})</span>
+                    <span className="font-medium text-shield-fg">Key Themes</span>
+                    <span className="text-sm text-shield-muted">({insight.key_themes.length})</span>
                   </div>
                 </div>
                 <div className="p-3">
@@ -999,28 +999,28 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
             {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-4">
               {insight.cross_references.length > 0 && (
-                <div className="bg-[#2C303A] rounded-lg p-3">
+                <div className="bg-shield-panel rounded-lg p-3">
                   <div className="flex items-center space-x-2 mb-1">
                     <Cross className="h-4 w-4 text-green-400" />
-                    <span className="text-sm font-medium text-[#E0E0E0]">Cross References</span>
+                    <span className="text-sm font-medium text-shield-fg">Cross References</span>
                   </div>
-                  <span className="text-xs text-[#9CA3AF]">{insight.cross_references.length} references</span>
+                  <span className="text-xs text-shield-muted">{insight.cross_references.length} references</span>
                 </div>
               )}
               
               {insight.study_questions.length > 0 && (
-                <div className="bg-[#2C303A] rounded-lg p-3">
+                <div className="bg-shield-panel rounded-lg p-3">
                   <div className="flex items-center space-x-2 mb-1">
                     <MessageCircle className="h-4 w-4 text-purple-400" />
-                    <span className="text-sm font-medium text-[#E0E0E0]">Study Questions</span>
+                    <span className="text-sm font-medium text-shield-fg">Study Questions</span>
                   </div>
-                  <span className="text-xs text-[#9CA3AF]">{insight.study_questions.length} questions</span>
+                  <span className="text-xs text-shield-muted">{insight.study_questions.length} questions</span>
                 </div>
               )}
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-[#2C303A]">
+            <div className="flex items-center justify-between pt-3 border-t border-shield-panel">
               <div className="flex items-center space-x-2">
                 <button
                   onClick={onSelect}
@@ -1030,16 +1030,16 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
                 </button>
                 <button
                   onClick={() => onCopy(insight.explanation)}
-                  className="px-3 py-1 bg-[#2C303A] hover:bg-[#3A404B] text-[#E0E0E0] rounded text-sm transition-colors"
+                  className="px-3 py-1 bg-shield-panel hover:bg-shield-elevated text-shield-fg rounded text-sm transition-colors"
                 >
                   Copy
                 </button>
               </div>
               <div className="flex items-center space-x-2">
-                <button className="p-1 text-[#9CA3AF] hover:text-[#E0E0E0] transition-colors">
+                <button className="p-1 text-shield-muted hover:text-shield-fg transition-colors">
                   <Share2 className="h-4 w-4" />
                 </button>
-                <button className="p-1 text-[#9CA3AF] hover:text-[#E0E0E0] transition-colors">
+                <button className="p-1 text-shield-muted hover:text-shield-fg transition-colors">
                   <Download className="h-4 w-4" />
                 </button>
               </div>

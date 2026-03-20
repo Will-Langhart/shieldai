@@ -290,21 +290,21 @@ export function EnhancedBibleNavigation({
   const renderNavigationSection = () => (
     <div className="space-y-4">
       {/* Current Location */}
-      <div className="bg-[#1A1D24] rounded-lg p-4">
+      <div className="bg-shield-canvas rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-blue-400">Current Location</h3>
           <div className="flex space-x-2">
             <button
               onClick={() => onChapterChange(Math.max(1, selectedChapter - 1))}
               disabled={selectedChapter <= 1}
-              className="p-1 text-[#9CA3AF] hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-1 text-shield-muted hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={() => onChapterChange(selectedChapter + 1)}
               disabled={selectedChapter >= (currentBook?.chapters || 1)}
-              className="p-1 text-[#9CA3AF] hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-1 text-shield-muted hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -312,9 +312,9 @@ export function EnhancedBibleNavigation({
         </div>
         <div className="text-sm">
           <div className="font-medium text-white">{selectedBook} {selectedChapter}</div>
-          {selectedVerse && <div className="text-[#9CA3AF]">Verse {selectedVerse}</div>}
+          {selectedVerse && <div className="text-shield-muted">Verse {selectedVerse}</div>}
           {currentBook && (
-            <div className="text-xs text-[#6B7280] mt-1">{currentBook.description}</div>
+            <div className="text-xs text-shield-muted mt-1">{currentBook.description}</div>
           )}
         </div>
       </div>
@@ -326,15 +326,15 @@ export function EnhancedBibleNavigation({
         const isExpanded = expandedTestaments.has(testament)
         
         return (
-          <div key={testament} className="bg-[#2C303A] rounded-lg">
+          <div key={testament} className="bg-shield-panel rounded-lg">
             <button
               onClick={() => toggleTestamentExpansion(testament)}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#3A404B] transition-colors"
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-elevated transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <div className={`w-3 h-3 rounded-full ${testament === 'old' ? 'bg-orange-500' : 'bg-green-500'}`} />
                 <span className="font-medium">{testamentName}</span>
-                <span className="text-xs text-[#9CA3AF]">({testamentBooks.length} books)</span>
+                <span className="text-xs text-shield-muted">({testamentBooks.length} books)</span>
               </div>
               {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
@@ -348,12 +348,12 @@ export function EnhancedBibleNavigation({
                     className={`w-full text-left p-2 rounded text-sm transition-colors ${
                       selectedBook === book.name
                         ? 'bg-blue-600 text-white'
-                        : 'text-[#E5E7EB] hover:bg-[#1A1D24]'
+                        : 'text-shield-fg hover:bg-shield-canvas'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span>{book.name}</span>
-                      <span className="text-xs text-[#9CA3AF]">{book.chapters} ch</span>
+                      <span className="text-xs text-shield-muted">{book.chapters} ch</span>
                     </div>
                   </button>
                 ))}
@@ -365,7 +365,7 @@ export function EnhancedBibleNavigation({
 
       {/* Chapter Navigation */}
       {currentBook && (
-        <div className="bg-[#2C303A] rounded-lg p-4">
+        <div className="bg-shield-panel rounded-lg p-4">
           <h4 className="font-medium mb-3">Chapters in {selectedBook}</h4>
           <div className="grid grid-cols-5 gap-2">
             {Array.from({ length: currentBook.chapters }, (_, i) => i + 1).map(chapter => (
@@ -375,7 +375,7 @@ export function EnhancedBibleNavigation({
                 className={`p-2 text-sm rounded transition-colors ${
                   selectedChapter === chapter
                     ? 'bg-blue-600 text-white'
-                    : 'bg-[#1A1D24] text-[#E5E7EB] hover:bg-[#3A404B]'
+                    : 'bg-shield-canvas text-shield-fg hover:bg-shield-elevated'
                 }`}
               >
                 {chapter}
@@ -390,19 +390,19 @@ export function EnhancedBibleNavigation({
   const renderSearchSection = () => (
     <div className="space-y-4">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#9CA3AF]" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-shield-muted" />
         <input
           ref={searchInputRef}
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search scripture... (Ctrl+K)"
-          className="w-full bg-[#1A1D24] border border-[#3A404B] text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500"
+          className="w-full bg-shield-canvas border border-shield-edge text-white px-10 py-3 rounded-lg focus:outline-none focus:border-blue-500"
         />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#9CA3AF] hover:text-white"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-shield-muted hover:text-white"
           >
             <X className="h-4 w-4" />
           </button>
@@ -412,21 +412,21 @@ export function EnhancedBibleNavigation({
       {isSearching && (
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
-          <span className="ml-2 text-[#9CA3AF]">Searching...</span>
+          <span className="ml-2 text-shield-muted">Searching...</span>
         </div>
       )}
 
       {searchResults.length > 0 && (
         <div className="space-y-2">
-          <h4 className="font-medium text-[#9CA3AF]">Search Results</h4>
+          <h4 className="font-medium text-shield-muted">Search Results</h4>
           {searchResults.map((result, index) => (
             <button
               key={index}
               onClick={() => onPassageSelect(result.reference)}
-              className="w-full text-left p-3 bg-[#1A1D24] rounded-lg hover:bg-[#2C303A] transition-colors"
+              className="w-full text-left p-3 bg-shield-canvas rounded-lg hover:bg-shield-panel transition-colors"
             >
               <div className="font-medium text-blue-400">{result.reference}</div>
-              <div className="text-sm text-[#E5E7EB] mt-1 line-clamp-2">{result.text}</div>
+              <div className="text-sm text-shield-fg mt-1 line-clamp-2">{result.text}</div>
             </button>
           ))}
         </div>
@@ -442,7 +442,7 @@ export function EnhancedBibleNavigation({
       </div>
       
       {history.length === 0 ? (
-        <div className="text-center py-8 text-[#9CA3AF]">
+        <div className="text-center py-8 text-shield-muted">
           <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>No recent passages</p>
         </div>
@@ -452,10 +452,10 @@ export function EnhancedBibleNavigation({
             <button
               key={item.id}
               onClick={() => onPassageSelect(item.reference)}
-              className="w-full text-left p-3 bg-[#1A1D24] rounded-lg hover:bg-[#2C303A] transition-colors"
+              className="w-full text-left p-3 bg-shield-canvas rounded-lg hover:bg-shield-panel transition-colors"
             >
               <div className="font-medium text-blue-400">{item.reference}</div>
-              <div className="text-xs text-[#9CA3AF]">
+              <div className="text-xs text-shield-muted">
                 {item.timestamp.toLocaleDateString()} at {item.timestamp.toLocaleTimeString()}
               </div>
             </button>
@@ -479,7 +479,7 @@ export function EnhancedBibleNavigation({
       </div>
       
       {favorites.length === 0 ? (
-        <div className="text-center py-8 text-[#9CA3AF]">
+        <div className="text-center py-8 text-shield-muted">
           <Star className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>No favorite passages</p>
         </div>
@@ -488,7 +488,7 @@ export function EnhancedBibleNavigation({
           {favorites.map((favorite) => (
             <div
               key={favorite.id}
-              className="flex items-center justify-between p-3 bg-[#1A1D24] rounded-lg"
+              className="flex items-center justify-between p-3 bg-shield-canvas rounded-lg"
             >
               <button
                 onClick={() => onPassageSelect(favorite.reference)}
@@ -496,12 +496,12 @@ export function EnhancedBibleNavigation({
               >
                 <div className="font-medium text-blue-400">{favorite.reference}</div>
                 {favorite.note && (
-                  <div className="text-xs text-[#9CA3AF] mt-1">{favorite.note}</div>
+                  <div className="text-xs text-shield-muted mt-1">{favorite.note}</div>
                 )}
               </button>
               <button
                 onClick={() => removeFromFavorites(favorite.id)}
-                className="p-1 text-[#9CA3AF] hover:text-red-400 transition-colors"
+                className="p-1 text-shield-muted hover:text-red-400 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -517,11 +517,11 @@ export function EnhancedBibleNavigation({
       <h3 className="font-semibold">Settings</h3>
       
       <div>
-        <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Bible Version</label>
+        <label className="block text-sm font-medium text-shield-muted mb-2">Bible Version</label>
         <select
           value={selectedVersion}
           onChange={(e) => onVersionChange(e.target.value)}
-          className="w-full bg-[#1A1D24] border border-[#3A404B] text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+          className="w-full bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
         >
           {versions.map(version => (
             <option key={version.id} value={version.id}>
@@ -532,7 +532,7 @@ export function EnhancedBibleNavigation({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Navigation Preferences</label>
+        <label className="block text-sm font-medium text-shield-muted mb-2">Navigation Preferences</label>
         <div className="space-y-2">
           <label className="flex items-center">
             <input type="checkbox" className="mr-2" defaultChecked />
@@ -552,12 +552,12 @@ export function EnhancedBibleNavigation({
   )
 
   return (
-    <div className="bg-[#2C303A] rounded-lg p-6 h-full">
+    <div className="bg-shield-panel rounded-lg p-6 h-full">
       {/* Mobile Menu Toggle */}
       <div className="lg:hidden mb-4">
         <button
           onClick={() => setShowMobileMenu(!showMobileMenu)}
-          className="w-full flex items-center justify-between p-3 bg-[#1A1D24] rounded-lg"
+          className="w-full flex items-center justify-between p-3 bg-shield-canvas rounded-lg"
         >
           <span className="font-medium">Navigation Menu</span>
           {showMobileMenu ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -575,7 +575,7 @@ export function EnhancedBibleNavigation({
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                 activeSection === section.id
                   ? 'bg-blue-600 text-white'
-                  : 'bg-[#1A1D24] text-[#9CA3AF] hover:bg-[#3A404B] hover:text-white'
+                  : 'bg-shield-canvas text-shield-muted hover:bg-shield-elevated hover:text-white'
               }`}
             >
               <section.icon className="h-4 w-4" />
@@ -595,7 +595,7 @@ export function EnhancedBibleNavigation({
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-6 pt-4 border-t border-[#3A404B]">
+      <div className="mt-6 pt-4 border-t border-shield-edge">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => onPassageSelect(`${selectedBook} ${selectedChapter}`)}
@@ -607,7 +607,7 @@ export function EnhancedBibleNavigation({
           <button
             onClick={addToFavorites}
             disabled={isCurrentPassageFavorited}
-            className="flex items-center space-x-2 px-3 py-2 bg-[#1A1D24] hover:bg-[#3A404B] text-[#9CA3AF] hover:text-white rounded text-sm transition-colors disabled:opacity-50"
+            className="flex items-center space-x-2 px-3 py-2 bg-shield-canvas hover:bg-shield-elevated text-shield-muted hover:text-white rounded text-sm transition-colors disabled:opacity-50"
           >
             <Star className="h-4 w-4" />
             <span>Favorite</span>

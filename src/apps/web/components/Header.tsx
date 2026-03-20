@@ -15,13 +15,13 @@ export function Header() {
   ]
   
   return (
-    <header className="bg-[#1A1D24] shadow-sm border-b border-[#2C303A] relative z-50">
+    <header className="bg-shield-canvas shadow-sm border-b border-shield-panel relative z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <Shield className="h-8 w-8 text-blue-400" />
-              <span className="text-xl font-bold text-[#E0E0E0]">Shield AI</span>
+              <Shield className="h-8 w-8 text-shield-brand" />
+              <span className="text-xl font-bold text-shield-fg">Shield AI</span>
             </Link>
           </div>
           
@@ -34,10 +34,10 @@ export function Header() {
                 <Link
                   key={item.path}
                   href={item.path}
-                  className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                  className={`flex items-center space-x-1 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
                     isActive
-                      ? 'text-blue-400 bg-blue-400/10'
-                      : 'text-[#9CA3AF] hover:text-[#E0E0E0] hover:bg-[#2C303A]'
+                      ? 'bg-shield-brand/15 text-shield-brand shadow-shield-inset'
+                      : 'text-shield-muted hover:bg-shield-panel hover:text-shield-fg'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -48,7 +48,10 @@ export function Header() {
           </nav>
           
           <div className="md:hidden">
-            <button className="text-gray-600 hover:text-gray-900">
+            <button
+              type="button"
+              className="rounded-md p-2 text-shield-muted transition-colors hover:bg-shield-panel hover:text-shield-fg focus:outline-none focus:ring-2 focus:ring-shield-brand"
+            >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>

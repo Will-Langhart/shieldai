@@ -31,8 +31,8 @@ export const LoginForm= ({ onSuccess, onSwitchToSignUp }: LoginFormProps) => {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-[#2C303A] rounded-lg p-8">
-        <h2 className="text-2xl font-bold text-[#E0E0E0] mb-6 text-center">Sign In</h2>
+      <div className="bg-shield-panel rounded-lg p-8">
+        <h2 className="text-2xl font-bold text-shield-fg mb-6 text-center">Sign In</h2>
         
         {error && (
           <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-4">
@@ -42,7 +42,7 @@ export const LoginForm= ({ onSuccess, onSwitchToSignUp }: LoginFormProps) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-[#E0E0E0] mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-shield-fg mb-2">
               Email
             </label>
             <input
@@ -51,13 +51,13 @@ export const LoginForm= ({ onSuccess, onSwitchToSignUp }: LoginFormProps) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-shield-brand focus:border-transparent"
               placeholder="Enter your email"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-[#E0E0E0] mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-shield-fg mb-2">
               Password
             </label>
             <input
@@ -66,7 +66,7 @@ export const LoginForm= ({ onSuccess, onSwitchToSignUp }: LoginFormProps) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-shield-brand focus:border-transparent"
               placeholder="Enter your password"
             />
           </div>
@@ -74,18 +74,18 @@ export const LoginForm= ({ onSuccess, onSwitchToSignUp }: LoginFormProps) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#2C303A] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim py-3 px-4 font-medium text-white shadow-shield-glow-sm hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-shield-brand focus:ring-offset-2 focus:ring-offset-shield-panel disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-[#9CA3AF]">
+          <p className="text-shield-muted">
             Don't have an account?{' '}
             <button
               onClick={onSwitchToSignUp}
-              className="text-blue-400 hover:text-blue-300 font-medium"
+              className="font-medium text-shield-brand hover:text-sky-300"
             >
               Sign up
             </button>

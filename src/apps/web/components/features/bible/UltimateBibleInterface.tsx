@@ -292,16 +292,16 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
   }, [navigatePrevious, navigateNext])
 
   return (
-    <div className="min-h-screen bg-[#1A1D24] text-white">
+    <div className="min-h-screen bg-shield-canvas text-white">
       {/* Header */}
-      <div className="bg-[#1A1D24] border-b border-[#3A404B] p-4">
+      <div className="bg-shield-canvas border-b border-shield-edge p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold flex items-center">
               <BookOpen className="h-8 w-8 text-blue-400 mr-3" />
               Ultimate Bible Study
             </h1>
-            <div className="hidden md:flex items-center space-x-2 text-sm text-[#9CA3AF]">
+            <div className="hidden md:flex items-center space-x-2 text-sm text-shield-muted">
               <span>Ctrl+K for quick nav</span>
               <span>•</span>
               <span>Ctrl+←/→ for chapters</span>
@@ -311,14 +311,14 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowQuickNav(true)}
-              className="hidden lg:flex items-center space-x-2 px-3 py-2 bg-[#2C303A] hover:bg-[#3A404B] rounded-lg transition-colors"
+              className="hidden lg:flex items-center space-x-2 px-3 py-2 bg-shield-panel hover:bg-shield-elevated rounded-lg transition-colors"
             >
               <Zap className="h-4 w-4" />
               <span>Quick Nav</span>
             </button>
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="hidden lg:flex items-center space-x-2 px-3 py-2 bg-[#2C303A] hover:bg-[#3A404B] rounded-lg transition-colors"
+              className="hidden lg:flex items-center space-x-2 px-3 py-2 bg-shield-panel hover:bg-shield-elevated rounded-lg transition-colors"
             >
               {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
               <span>{sidebarCollapsed ? 'Show' : 'Hide'} Sidebar</span>
@@ -375,7 +375,7 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                     activeTab === tab.id
                       ? 'bg-blue-600 text-white'
-                      : 'bg-[#2C303A] text-[#9CA3AF] hover:bg-[#3A404B] hover:text-white'
+                      : 'bg-shield-panel text-shield-muted hover:bg-shield-elevated hover:text-white'
                   }`}
                 >
                   <tab.icon className="h-4 w-4" />
@@ -389,13 +389,13 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
           <div className="space-y-6">
             {/* Bible Text Tab */}
             {activeTab === 'bible' && (
-              <div className="bg-[#2C303A] rounded-lg p-6">
+              <div className="bg-shield-panel rounded-lg p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">
                     {currentPassage ? currentPassage.reference : `${currentBook} ${currentChapter}:${currentVerse || 'All'}`}
                   </h2>
                   <div className="flex items-center space-x-2">
-                    <div className="text-sm text-[#9CA3AF]">
+                    <div className="text-sm text-shield-muted">
                       {currentPassage?.version?.name || 'King James Version'}
                     </div>
                     <button
@@ -414,7 +414,7 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
                         }
                       }}
                       disabled={isCurrentPassageFavorited()}
-                      className="p-2 text-[#9CA3AF] hover:text-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2 text-shield-muted hover:text-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Add to favorites"
                     >
                       <Heart className="h-5 w-5" />
@@ -425,7 +425,7 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
                 {isLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
-                    <span className="ml-2 text-[#9CA3AF]">Loading scripture...</span>
+                    <span className="ml-2 text-shield-muted">Loading scripture...</span>
                   </div>
                 ) : error ? (
                   <div className="flex items-center justify-center py-12">
@@ -449,15 +449,15 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
                         ))
                       ) : (
                         <div className="text-center py-8">
-                          <p className="text-[#9CA3AF]">No verses found for this passage</p>
+                          <p className="text-shield-muted">No verses found for this passage</p>
                         </div>
                       )}
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <BookOpen className="h-16 w-16 text-[#9CA3AF] mx-auto mb-4" />
-                    <p className="text-[#9CA3AF] text-lg">Select a passage to begin reading</p>
+                    <BookOpen className="h-16 w-16 text-shield-muted mx-auto mb-4" />
+                    <p className="text-shield-muted text-lg">Select a passage to begin reading</p>
                   </div>
                 )}
               </div>
@@ -505,9 +505,9 @@ export function UltimateBibleInterface({ onVerseSelect, initialPassage }: Ultima
 
             {/* Empty State for AI Tabs */}
             {activeTab !== 'bible' && !currentPassage && (
-              <div className="bg-[#2C303A] rounded-lg p-12 text-center">
-                <BookOpen className="h-16 w-16 text-[#9CA3AF] mx-auto mb-4" />
-                <p className="text-[#9CA3AF] text-lg">Select a Bible passage to see AI insights</p>
+              <div className="bg-shield-panel rounded-lg p-12 text-center">
+                <BookOpen className="h-16 w-16 text-shield-muted mx-auto mb-4" />
+                <p className="text-shield-muted text-lg">Select a Bible passage to see AI insights</p>
               </div>
             )}
           </div>

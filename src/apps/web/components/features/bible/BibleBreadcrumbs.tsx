@@ -191,19 +191,19 @@ export function BibleBreadcrumbs({
       case 'verse': return 'text-yellow-400'
       case 'search': return 'text-pink-400'
       case 'favorite': return 'text-yellow-400'
-      default: return 'text-[#9CA3AF]'
+      default: return 'text-shield-muted'
     }
   }
 
   return (
-    <div className="bg-[#1A1D24] rounded-lg p-4 mb-6">
+    <div className="bg-shield-canvas rounded-lg p-4 mb-6">
       <div className="flex items-center justify-between">
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center space-x-2 text-sm">
           {breadcrumbs.map((item, index) => (
             <React.Fragment key={item.id}>
               {index > 0 && (
-                <ChevronRight className="h-4 w-4 text-[#6B7280] mx-1" />
+                <ChevronRight className="h-4 w-4 text-shield-muted mx-1" />
               )}
               <button
                 onClick={item.onClick}
@@ -211,7 +211,7 @@ export function BibleBreadcrumbs({
                 className={`flex items-center space-x-1 px-2 py-1 rounded transition-colors ${
                   item.isActive
                     ? 'bg-blue-600 text-white cursor-default'
-                    : 'hover:bg-[#2C303A] text-[#9CA3AF] hover:text-white'
+                    : 'hover:bg-shield-panel text-shield-muted hover:text-white'
                 }`}
               >
                 {getBreadcrumbIcon(item.type)}
@@ -228,7 +228,7 @@ export function BibleBreadcrumbs({
             <div className="relative">
               <button
                 onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}
-                className="flex items-center space-x-1 px-3 py-2 bg-[#2C303A] hover:bg-[#3A404B] text-[#9CA3AF] hover:text-white rounded transition-colors"
+                className="flex items-center space-x-1 px-3 py-2 bg-shield-panel hover:bg-shield-elevated text-shield-muted hover:text-white rounded transition-colors"
               >
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">History</span>
@@ -238,8 +238,8 @@ export function BibleBreadcrumbs({
               </button>
               
               {showHistoryDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-[#2C303A] rounded-lg shadow-lg border border-[#3A404B] z-50">
-                  <div className="p-3 border-b border-[#3A404B]">
+                <div className="absolute right-0 top-full mt-2 w-64 bg-shield-panel rounded-lg shadow-lg border border-shield-edge z-50">
+                  <div className="p-3 border-b border-shield-edge">
                     <h3 className="font-medium text-white">Recent Passages</h3>
                   </div>
                   <div className="max-h-64 overflow-y-auto">
@@ -250,10 +250,10 @@ export function BibleBreadcrumbs({
                           onNavigate(item.reference)
                           setShowHistoryDropdown(false)
                         }}
-                        className="w-full text-left p-3 hover:bg-[#1A1D24] transition-colors"
+                        className="w-full text-left p-3 hover:bg-shield-canvas transition-colors"
                       >
                         <div className="font-medium text-blue-400">{item.reference}</div>
-                        <div className="text-xs text-[#9CA3AF]">
+                        <div className="text-xs text-shield-muted">
                           {item.timestamp.toLocaleDateString()} at {item.timestamp.toLocaleTimeString()}
                         </div>
                       </button>
@@ -269,7 +269,7 @@ export function BibleBreadcrumbs({
             <div className="relative">
               <button
                 onClick={() => setShowFavoritesDropdown(!showFavoritesDropdown)}
-                className="flex items-center space-x-1 px-3 py-2 bg-[#2C303A] hover:bg-[#3A404B] text-[#9CA3AF] hover:text-white rounded transition-colors"
+                className="flex items-center space-x-1 px-3 py-2 bg-shield-panel hover:bg-shield-elevated text-shield-muted hover:text-white rounded transition-colors"
               >
                 <Star className="h-4 w-4" />
                 <span className="hidden sm:inline">Favorites</span>
@@ -279,8 +279,8 @@ export function BibleBreadcrumbs({
               </button>
               
               {showFavoritesDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-[#2C303A] rounded-lg shadow-lg border border-[#3A404B] z-50">
-                  <div className="p-3 border-b border-[#3A404B]">
+                <div className="absolute right-0 top-full mt-2 w-64 bg-shield-panel rounded-lg shadow-lg border border-shield-edge z-50">
+                  <div className="p-3 border-b border-shield-edge">
                     <h3 className="font-medium text-white">Favorite Passages</h3>
                   </div>
                   <div className="max-h-64 overflow-y-auto">
@@ -291,10 +291,10 @@ export function BibleBreadcrumbs({
                           onNavigate(favorite.reference)
                           setShowFavoritesDropdown(false)
                         }}
-                        className="w-full text-left p-3 hover:bg-[#1A1D24] transition-colors"
+                        className="w-full text-left p-3 hover:bg-shield-canvas transition-colors"
                       >
                         <div className="font-medium text-yellow-400">{favorite.reference}</div>
-                        <div className="text-xs text-[#9CA3AF]">
+                        <div className="text-xs text-shield-muted">
                           {favorite.book} {favorite.chapter}
                           {favorite.verse && `:${favorite.verse}`}
                         </div>
@@ -308,7 +308,7 @@ export function BibleBreadcrumbs({
 
           {/* Version Info */}
           {currentVersion && (
-            <div className="hidden md:flex items-center space-x-1 px-3 py-2 bg-[#2C303A] text-[#9CA3AF] rounded">
+            <div className="hidden md:flex items-center space-x-1 px-3 py-2 bg-shield-panel text-shield-muted rounded">
               <BookOpen className="h-4 w-4" />
               <span className="text-sm">
                 {currentVersion === 'de4e12af7f28f599-02' ? 'KJV' : 
@@ -321,8 +321,8 @@ export function BibleBreadcrumbs({
       </div>
 
       {/* Additional Info */}
-      <div className="mt-3 pt-3 border-t border-[#3A404B]">
-        <div className="flex items-center justify-between text-xs text-[#9CA3AF]">
+      <div className="mt-3 pt-3 border-t border-shield-edge">
+        <div className="flex items-center justify-between text-xs text-shield-muted">
           <div className="flex items-center space-x-4">
             <span>Category: {getBookCategory(currentBook)}</span>
             <span>Testament: {getTestament(currentBook) === 'old' ? 'Old' : 'New'}</span>

@@ -326,17 +326,17 @@ export function InsightDetailView({
   }
 
   return (
-    <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6 max-w-4xl mx-auto">
+    <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6 max-w-4xl mx-auto">
       {/* Header */}
       {onClose && (
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <Brain className="h-6 w-6 text-blue-400" />
-            <h2 className="text-xl font-semibold text-[#E0E0E0]">Insight Details</h2>
+            <h2 className="text-xl font-semibold text-shield-fg">Insight Details</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-[#9CA3AF] hover:text-white transition-colors"
+            className="text-shield-muted hover:text-white transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -345,8 +345,8 @@ export function InsightDetailView({
 
       {/* Passage Reference */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[#E0E0E0] mb-2">{insight.passage_reference}</h1>
-        <div className="flex items-center space-x-4 text-sm text-[#9CA3AF] mb-3">
+        <h1 className="text-2xl font-bold text-shield-fg mb-2">{insight.passage_reference}</h1>
+        <div className="flex items-center space-x-4 text-sm text-shield-muted mb-3">
           <span>{insight.bible_version}</span>
           <span>•</span>
           <span>{formatDate(insight.created_at)}</span>
@@ -362,8 +362,8 @@ export function InsightDetailView({
         </div>
         
         {/* Passage Text */}
-        <div className="bg-[#2C303A] rounded-lg p-4 mb-4">
-          <p className="text-[#E0E0E0] leading-relaxed italic">"{insight.passage_text}"</p>
+        <div className="bg-shield-panel rounded-lg p-4 mb-4">
+          <p className="text-shield-fg leading-relaxed italic">"{insight.passage_text}"</p>
         </div>
 
         {/* Metadata */}
@@ -374,7 +374,7 @@ export function InsightDetailView({
             {insight.average_rating && (
               <div className="flex items-center space-x-1">
                 {getRatingStars(insight.average_rating)}
-                <span className="text-sm text-[#9CA3AF]">({insight.average_rating.toFixed(1)})</span>
+                <span className="text-sm text-shield-muted">({insight.average_rating.toFixed(1)})</span>
               </div>
             )}
           </div>
@@ -385,7 +385,7 @@ export function InsightDetailView({
               className={`p-2 rounded-lg transition-colors ${
                 insight.is_favorite 
                   ? 'bg-yellow-600 text-white' 
-                  : 'bg-[#2C303A] text-[#9CA3AF] hover:text-[#E0E0E0]'
+                  : 'bg-shield-panel text-shield-muted hover:text-shield-fg'
               }`}
             >
               <Star className="h-4 w-4" />
@@ -395,7 +395,7 @@ export function InsightDetailView({
               className={`p-2 rounded-lg transition-colors ${
                 insight.is_shared 
                   ? 'bg-blue-600 text-white' 
-                  : 'bg-[#2C303A] text-[#9CA3AF] hover:text-[#E0E0E0]'
+                  : 'bg-shield-panel text-shield-muted hover:text-shield-fg'
               }`}
             >
               <Share2 className="h-4 w-4" />
@@ -417,7 +417,7 @@ export function InsightDetailView({
         </div>
 
         {/* Interaction Bar */}
-        <div className="bg-[#2C303A] rounded-lg p-4">
+        <div className="bg-shield-panel rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
@@ -459,7 +459,7 @@ export function InsightDetailView({
             </div>
             
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-[#9CA3AF]">
+              <span className="text-sm text-shield-muted">
                 {responses.length} responses • {interactions.length} interactions
               </span>
             </div>
@@ -468,13 +468,13 @@ export function InsightDetailView({
 
         {/* Response Form */}
         {showResponseForm && (
-          <div className="bg-[#2C303A] rounded-lg p-4 border border-[#3A404B]">
-            <h4 className="text-lg font-medium text-[#E0E0E0] mb-3">Share Your Response</h4>
+          <div className="bg-shield-panel rounded-lg p-4 border border-shield-edge">
+            <h4 className="text-lg font-medium text-shield-fg mb-3">Share Your Response</h4>
             <div className="space-y-3">
               <select
                 value={newResponse.type}
                 onChange={(e) => setNewResponse(prev => ({ ...prev, type: e.target.value as any }))}
-                className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="comment">💬 Comment</option>
                 <option value="question">❓ Question</option>
@@ -490,7 +490,7 @@ export function InsightDetailView({
                 onChange={(e) => setNewResponse(prev => ({ ...prev, text: e.target.value }))}
                 placeholder="Share your thoughts on this passage..."
                 rows={3}
-                className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
               
               <div className="flex items-center justify-between">
@@ -500,19 +500,19 @@ export function InsightDetailView({
                       type="checkbox"
                       checked={newResponse.is_helpful === true}
                       onChange={(e) => setNewResponse(prev => ({ ...prev, is_helpful: e.target.checked ? true : null }))}
-                      className="rounded border-[#3A404B] bg-[#1A1D24] text-green-600 focus:ring-green-500"
+                      className="rounded border-shield-edge bg-shield-canvas text-green-600 focus:ring-green-500"
                     />
-                    <span className="text-sm text-[#E0E0E0]">Helpful</span>
+                    <span className="text-sm text-shield-fg">Helpful</span>
                   </label>
                   
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-[#9CA3AF]">Rating:</span>
+                    <span className="text-sm text-shield-muted">Rating:</span>
                     <div className="flex space-x-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
                           onClick={() => setNewResponse(prev => ({ ...prev, rating: star }))}
-                          className={`text-lg ${newResponse.rating && star <= newResponse.rating ? 'text-yellow-400' : 'text-[#9CA3AF]'}`}
+                          className={`text-lg ${newResponse.rating && star <= newResponse.rating ? 'text-yellow-400' : 'text-shield-muted'}`}
                         >
                           ⭐
                         </button>
@@ -535,8 +535,8 @@ export function InsightDetailView({
 
         {/* Feedback Form */}
         {showFeedbackForm && (
-          <div className="bg-[#2C303A] rounded-lg p-4 border border-[#3A404B]">
-            <h4 className="text-lg font-medium text-[#E0E0E0] mb-3">Rate This Insight</h4>
+          <div className="bg-shield-panel rounded-lg p-4 border border-shield-edge">
+            <h4 className="text-lg font-medium text-shield-fg mb-3">Rate This Insight</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
                 { key: 'content_quality', label: 'Content Quality', icon: <BookOpen className="h-4 w-4" /> },
@@ -549,14 +549,14 @@ export function InsightDetailView({
                 <div key={key} className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     {icon}
-                    <span className="text-sm text-[#E0E0E0]">{label}</span>
+                    <span className="text-sm text-shield-fg">{label}</span>
                   </div>
                   <div className="flex space-x-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         onClick={() => setNewFeedback(prev => ({ ...prev, [key]: star }))}
-                        className={`text-lg ${newFeedback[key as keyof typeof newFeedback] && star <= (newFeedback[key as keyof typeof newFeedback] as number) ? 'text-yellow-400' : 'text-[#9CA3AF]'}`}
+                        className={`text-lg ${newFeedback[key as keyof typeof newFeedback] && star <= (newFeedback[key as keyof typeof newFeedback] as number) ? 'text-yellow-400' : 'text-shield-muted'}`}
                       >
                         ⭐
                       </button>
@@ -572,7 +572,7 @@ export function InsightDetailView({
                 onChange={(e) => setNewFeedback(prev => ({ ...prev, feedback_text: e.target.value }))}
                 placeholder="Additional feedback (optional)"
                 rows={2}
-                className="w-full px-3 py-2 bg-[#1A1D24] border border-[#3A404B] rounded-lg text-[#E0E0E0] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
               
               <button
@@ -587,24 +587,24 @@ export function InsightDetailView({
         )}
 
         {/* Explanation */}
-        <div className="border border-[#2C303A] rounded-lg">
+        <div className="border border-shield-panel rounded-lg">
           <button
             onClick={() => toggleSection('explanation')}
-            className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+            className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
           >
             <div className="flex items-center space-x-3">
               <BookOpen className="h-5 w-5 text-blue-400" />
-              <span className="font-medium text-[#E0E0E0]">Explanation</span>
+              <span className="font-medium text-shield-fg">Explanation</span>
             </div>
             {expandedSections.has('explanation') ? (
-              <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+              <ChevronUp className="h-5 w-5 text-shield-muted" />
             ) : (
-              <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+              <ChevronDown className="h-5 w-5 text-shield-muted" />
             )}
           </button>
           {expandedSections.has('explanation') && (
-            <div className="p-4 border-t border-[#2C303A]">
-              <p className="text-[#E0E0E0] leading-relaxed">{insight.explanation}</p>
+            <div className="p-4 border-t border-shield-panel">
+              <p className="text-shield-fg leading-relaxed">{insight.explanation}</p>
               <button
                 onClick={() => copyToClipboard(insight.explanation)}
                 className="mt-3 flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors"
@@ -618,24 +618,24 @@ export function InsightDetailView({
 
         {/* Key Themes */}
         {insight.key_themes.length > 0 && (
-          <div className="border border-[#2C303A] rounded-lg">
+          <div className="border border-shield-panel rounded-lg">
             <button
               onClick={() => toggleSection('themes')}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <Lightbulb className="h-5 w-5 text-yellow-400" />
-                <span className="font-medium text-[#E0E0E0]">Key Themes</span>
-                <span className="text-sm text-[#9CA3AF]">({insight.key_themes.length})</span>
+                <span className="font-medium text-shield-fg">Key Themes</span>
+                <span className="text-sm text-shield-muted">({insight.key_themes.length})</span>
               </div>
               {expandedSections.has('themes') ? (
-                <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronUp className="h-5 w-5 text-shield-muted" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronDown className="h-5 w-5 text-shield-muted" />
               )}
             </button>
             {expandedSections.has('themes') && (
-              <div className="p-4 border-t border-[#2C303A]">
+              <div className="p-4 border-t border-shield-panel">
                 <div className="flex flex-wrap gap-2">
                   {insight.key_themes.map((theme, index) => (
                     <span
@@ -653,29 +653,29 @@ export function InsightDetailView({
 
         {/* Cross References */}
         {insight.cross_references.length > 0 && (
-          <div className="border border-[#2C303A] rounded-lg">
+          <div className="border border-shield-panel rounded-lg">
             <button
               onClick={() => toggleSection('crossrefs')}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <Cross className="h-5 w-5 text-green-400" />
-                <span className="font-medium text-[#E0E0E0]">Cross References</span>
-                <span className="text-sm text-[#9CA3AF]">({insight.cross_references.length})</span>
+                <span className="font-medium text-shield-fg">Cross References</span>
+                <span className="text-sm text-shield-muted">({insight.cross_references.length})</span>
               </div>
               {expandedSections.has('crossrefs') ? (
-                <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronUp className="h-5 w-5 text-shield-muted" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronDown className="h-5 w-5 text-shield-muted" />
               )}
             </button>
             {expandedSections.has('crossrefs') && (
-              <div className="p-4 border-t border-[#2C303A] space-y-3">
+              <div className="p-4 border-t border-shield-panel space-y-3">
                 {insight.cross_references.map((ref, index) => (
-                  <div key={index} className="p-3 bg-[#1A1D24] rounded border border-[#3A404B]">
+                  <div key={index} className="p-3 bg-shield-canvas rounded border border-shield-edge">
                     <div className="font-medium text-blue-400 mb-1">{ref.reference}</div>
-                    <p className="text-[#E0E0E0] text-sm mb-2">{ref.text}</p>
-                    <p className="text-[#9CA3AF] text-xs">{ref.relevance}</p>
+                    <p className="text-shield-fg text-sm mb-2">{ref.text}</p>
+                    <p className="text-shield-muted text-xs">{ref.relevance}</p>
                   </div>
                 ))}
               </div>
@@ -685,31 +685,31 @@ export function InsightDetailView({
 
         {/* Study Questions */}
         {insight.study_questions.length > 0 && (
-          <div className="border border-[#2C303A] rounded-lg">
+          <div className="border border-shield-panel rounded-lg">
             <button
               onClick={() => toggleSection('questions')}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <MessageCircle className="h-5 w-5 text-purple-400" />
-                <span className="font-medium text-[#E0E0E0]">Study Questions</span>
-                <span className="text-sm text-[#9CA3AF]">({insight.study_questions.length})</span>
+                <span className="font-medium text-shield-fg">Study Questions</span>
+                <span className="text-sm text-shield-muted">({insight.study_questions.length})</span>
               </div>
               {expandedSections.has('questions') ? (
-                <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronUp className="h-5 w-5 text-shield-muted" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronDown className="h-5 w-5 text-shield-muted" />
               )}
             </button>
             {expandedSections.has('questions') && (
-              <div className="p-4 border-t border-[#2C303A] space-y-3">
+              <div className="p-4 border-t border-shield-panel space-y-3">
                 {insight.study_questions.map((question, index) => (
-                  <div key={index} className="p-3 bg-[#1A1D24] rounded border border-[#3A404B]">
+                  <div key={index} className="p-3 bg-shield-canvas rounded border border-shield-edge">
                     <div className="flex items-start space-x-3">
                       <span className="text-purple-400 font-medium text-sm mt-1">{index + 1}.</span>
                       <div className="flex-1">
-                        <p className="text-[#E0E0E0] mb-1">{question.question}</p>
-                        <span className="text-xs text-[#9CA3AF] bg-purple-900 px-2 py-1 rounded">
+                        <p className="text-shield-fg mb-1">{question.question}</p>
+                        <span className="text-xs text-shield-muted bg-purple-900 px-2 py-1 rounded">
                           {question.category}
                         </span>
                       </div>
@@ -723,24 +723,24 @@ export function InsightDetailView({
 
         {/* Historical Context */}
         {insight.historical_context && (
-          <div className="border border-[#2C303A] rounded-lg">
+          <div className="border border-shield-panel rounded-lg">
             <button
               onClick={() => toggleSection('history')}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <Search className="h-5 w-5 text-orange-400" />
-                <span className="font-medium text-[#E0E0E0]">Historical Context</span>
+                <span className="font-medium text-shield-fg">Historical Context</span>
               </div>
               {expandedSections.has('history') ? (
-                <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronUp className="h-5 w-5 text-shield-muted" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronDown className="h-5 w-5 text-shield-muted" />
               )}
             </button>
             {expandedSections.has('history') && (
-              <div className="p-4 border-t border-[#2C303A]">
-                <p className="text-[#E0E0E0] leading-relaxed">{insight.historical_context}</p>
+              <div className="p-4 border-t border-shield-panel">
+                <p className="text-shield-fg leading-relaxed">{insight.historical_context}</p>
               </div>
             )}
           </div>
@@ -748,24 +748,24 @@ export function InsightDetailView({
 
         {/* Theological Meaning */}
         {insight.theological_meaning && (
-          <div className="border border-[#2C303A] rounded-lg">
+          <div className="border border-shield-panel rounded-lg">
             <button
               onClick={() => toggleSection('theology')}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <Heart className="h-5 w-5 text-red-400" />
-                <span className="font-medium text-[#E0E0E0]">Theological Meaning</span>
+                <span className="font-medium text-shield-fg">Theological Meaning</span>
               </div>
               {expandedSections.has('theology') ? (
-                <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronUp className="h-5 w-5 text-shield-muted" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronDown className="h-5 w-5 text-shield-muted" />
               )}
             </button>
             {expandedSections.has('theology') && (
-              <div className="p-4 border-t border-[#2C303A]">
-                <p className="text-[#E0E0E0] leading-relaxed">{insight.theological_meaning}</p>
+              <div className="p-4 border-t border-shield-panel">
+                <p className="text-shield-fg leading-relaxed">{insight.theological_meaning}</p>
               </div>
             )}
           </div>
@@ -773,24 +773,24 @@ export function InsightDetailView({
 
         {/* Practical Application */}
         {insight.practical_application && (
-          <div className="border border-[#2C303A] rounded-lg">
+          <div className="border border-shield-panel rounded-lg">
             <button
               onClick={() => toggleSection('application')}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <Lightbulb className="h-5 w-5 text-green-400" />
-                <span className="font-medium text-[#E0E0E0]">Practical Application</span>
+                <span className="font-medium text-shield-fg">Practical Application</span>
               </div>
               {expandedSections.has('application') ? (
-                <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronUp className="h-5 w-5 text-shield-muted" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronDown className="h-5 w-5 text-shield-muted" />
               )}
             </button>
             {expandedSections.has('application') && (
-              <div className="p-4 border-t border-[#2C303A]">
-                <p className="text-[#E0E0E0] leading-relaxed">{insight.practical_application}</p>
+              <div className="p-4 border-t border-shield-panel">
+                <p className="text-shield-fg leading-relaxed">{insight.practical_application}</p>
               </div>
             )}
           </div>
@@ -798,28 +798,28 @@ export function InsightDetailView({
 
         {/* Prayer Points */}
         {insight.prayer_points.length > 0 && (
-          <div className="border border-[#2C303A] rounded-lg">
+          <div className="border border-shield-panel rounded-lg">
             <button
               onClick={() => toggleSection('prayer')}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <Heart className="h-5 w-5 text-pink-400" />
-                <span className="font-medium text-[#E0E0E0]">Prayer Points</span>
-                <span className="text-sm text-[#9CA3AF]">({insight.prayer_points.length})</span>
+                <span className="font-medium text-shield-fg">Prayer Points</span>
+                <span className="text-sm text-shield-muted">({insight.prayer_points.length})</span>
               </div>
               {expandedSections.has('prayer') ? (
-                <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronUp className="h-5 w-5 text-shield-muted" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronDown className="h-5 w-5 text-shield-muted" />
               )}
             </button>
             {expandedSections.has('prayer') && (
-              <div className="p-4 border-t border-[#2C303A] space-y-2">
+              <div className="p-4 border-t border-shield-panel space-y-2">
                 {insight.prayer_points.map((point, index) => (
                   <div key={index} className="flex items-start space-x-3">
                     <span className="text-pink-400 font-medium text-sm mt-1">{index + 1}.</span>
-                    <p className="text-[#E0E0E0] text-sm">{point}</p>
+                    <p className="text-shield-fg text-sm">{point}</p>
                   </div>
                 ))}
               </div>
@@ -829,24 +829,24 @@ export function InsightDetailView({
 
         {/* User Notes */}
         {insight.notes && (
-          <div className="border border-[#2C303A] rounded-lg">
+          <div className="border border-shield-panel rounded-lg">
             <button
               onClick={() => toggleSection('notes')}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-[#2C303A] transition-colors"
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <PenTool className="h-5 w-5 text-purple-400" />
-                <span className="font-medium text-[#E0E0E0]">Your Notes</span>
+                <span className="font-medium text-shield-fg">Your Notes</span>
               </div>
               {expandedSections.has('notes') ? (
-                <ChevronUp className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronUp className="h-5 w-5 text-shield-muted" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-[#9CA3AF]" />
+                <ChevronDown className="h-5 w-5 text-shield-muted" />
               )}
             </button>
             {expandedSections.has('notes') && (
-              <div className="p-4 border-t border-[#2C303A]">
-                <p className="text-[#E0E0E0] leading-relaxed">{insight.notes}</p>
+              <div className="p-4 border-t border-shield-panel">
+                <p className="text-shield-fg leading-relaxed">{insight.notes}</p>
               </div>
             )}
           </div>
@@ -856,18 +856,18 @@ export function InsightDetailView({
       {/* Image Generation Modal */}
       {showImageModal && generatedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#1A1D24] border border-[#2C303A] rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <Palette className="h-6 w-6 text-indigo-400" />
                 <div>
-                  <h3 className="text-lg font-semibold text-[#E0E0E0]">Generated Image</h3>
-                  <p className="text-sm text-[#9CA3AF]">{insight.passage_reference}</p>
+                  <h3 className="text-lg font-semibold text-shield-fg">Generated Image</h3>
+                  <p className="text-sm text-shield-muted">{insight.passage_reference}</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowImageModal(false)}
-                className="text-[#9CA3AF] hover:text-white transition-colors"
+                className="text-shield-muted hover:text-white transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -888,9 +888,9 @@ export function InsightDetailView({
               </div>
 
               {generatedImage.revisedPrompt && (
-                <div className="p-4 bg-[#2C303A] rounded-lg">
-                  <h4 className="text-sm font-medium text-[#E0E0E0] mb-2">Generated from:</h4>
-                  <p className="text-sm text-[#9CA3AF] italic">"{generatedImage.revisedPrompt}"</p>
+                <div className="p-4 bg-shield-panel rounded-lg">
+                  <h4 className="text-sm font-medium text-shield-fg mb-2">Generated from:</h4>
+                  <p className="text-sm text-shield-muted italic">"{generatedImage.revisedPrompt}"</p>
                 </div>
               )}
 

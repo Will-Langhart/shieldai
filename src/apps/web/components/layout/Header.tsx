@@ -14,15 +14,15 @@ const Header = () => {
   ]
 
   return (
-     <header className="bg-[#1A1D24] border-b border-[#2C303A]">
+     <header className="bg-shield-canvas border-b border-shield-panel">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-shield-glow-sm">
               <span className="text-white font-bold text-lg">S</span>
             </div>
-            <span className="text-xl font-bold text-[#E0E0E0]">Shield AI</span>
+            <span className="text-xl font-bold text-shield-fg">Shield AI</span>
           </Link>
 
           {/* Navigation */}
@@ -34,8 +34,8 @@ const Header = () => {
                 className={cn(
                   'flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                   location.pathname === item.path
-                    ? 'bg-blue-600 text-white'
-                    : 'text-[#9CA3AF] hover:text-[#E0E0E0] hover:bg-[#2C303A]'
+                    ? 'bg-shield-brand/20 text-shield-brand shadow-shield-inset'
+                    : 'text-shield-muted hover:bg-shield-panel hover:text-shield-fg'
                 )}
               >
                 <span>{item.icon}</span>
@@ -48,7 +48,7 @@ const Header = () => {
           <div className="md:hidden">
             <button
               type="button"
-              className="text-[#9CA3AF] hover:text-[#E0E0E0] focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md p-2"
+              className="rounded-md p-2 text-shield-muted hover:text-shield-fg focus:outline-none focus:ring-2 focus:ring-shield-brand"
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

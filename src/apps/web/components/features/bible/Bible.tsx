@@ -344,7 +344,7 @@ export function Bible() {
       return (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
-          <span className="ml-2 text-[#9CA3AF]">Loading scripture...</span>
+          <span className="ml-2 text-shield-muted">Loading scripture...</span>
         </div>
       )
     }
@@ -372,9 +372,9 @@ export function Bible() {
           </div>
           <div className="space-y-4">
             {searchResults.passages.map((passage) => (
-              <div key={passage.id} className="p-4 bg-[#1A1D24] rounded-lg">
+              <div key={passage.id} className="p-4 bg-shield-canvas rounded-lg">
                 <h4 className="font-semibold text-blue-400 mb-2">{passage.reference}</h4>
-                <p className="text-[#E5E7EB] leading-relaxed">{passage.text}</p>
+                <p className="text-shield-fg leading-relaxed">{passage.text}</p>
                 <button
                   onClick={() => {
                     const [book, chapterVerse] = passage.reference.split(' ')
@@ -409,8 +409,8 @@ export function Bible() {
               ))
             ) : (
               <div className="text-center py-8">
-                <p className="text-[#9CA3AF]">No verses found for this passage</p>
-                <p className="text-[#6B7280] text-sm mt-2">
+                <p className="text-shield-muted">No verses found for this passage</p>
+                <p className="text-shield-muted text-sm mt-2">
                   Reference: {currentPassage.reference}
                 </p>
               </div>
@@ -422,15 +422,15 @@ export function Bible() {
 
     return (
       <div className="text-center py-12">
-        <BookOpen className="h-16 w-16 text-[#9CA3AF] mx-auto mb-4" />
-        <p className="text-[#9CA3AF] text-lg">Select a passage to begin reading</p>
-        <p className="text-[#6B7280] text-sm mt-2">
+        <BookOpen className="h-16 w-16 text-shield-muted mx-auto mb-4" />
+        <p className="text-shield-muted text-lg">Select a passage to begin reading</p>
+        <p className="text-shield-muted text-sm mt-2">
           Current selection: {selectedBook} {selectedChapter}:{selectedVerse}
         </p>
         {isLoading && (
           <div className="mt-4">
             <Loader2 className="h-6 w-6 animate-spin text-blue-400 mx-auto" />
-            <p className="text-[#9CA3AF] text-sm mt-2">Loading scripture...</p>
+            <p className="text-shield-muted text-sm mt-2">Loading scripture...</p>
           </div>
         )}
       </div>
@@ -440,7 +440,7 @@ export function Bible() {
   // Simple fallback for debugging
   if (error) {
     return (
-      <div className="min-h-screen bg-[#1A1D24] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-shield-canvas text-white flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Error Loading Bible</h1>
@@ -457,14 +457,14 @@ export function Bible() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A1D24] text-white">
+    <div className="min-h-screen bg-shield-canvas text-white">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4 flex items-center">
             <BookOpen className="h-10 w-10 text-blue-400 mr-3" />
             Bible Study
           </h1>
-          <p className="text-[#9CA3AF] text-lg">
+          <p className="text-shield-muted text-lg">
             Explore scripture with AI-powered insights and study tools
           </p>
         </div>
@@ -479,14 +479,14 @@ export function Bible() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder="Search scripture..."
-                className="w-full bg-[#2C303A] border border-[#3A404B] text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full bg-shield-panel border border-shield-edge text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
             <div className="lg:w-64">
               <select
                 value={selectedVersion}
                 onChange={(e) => handleVersionChange(e.target.value)}
-                className="w-full bg-[#2C303A] border border-[#3A404B] text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full bg-shield-panel border border-shield-edge text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500"
               >
                 {availableVersions.length > 0 ? (
                   availableVersions.map((version) => (
@@ -515,19 +515,19 @@ export function Bible() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Navigation */}
           <div className="lg:col-span-1">
-            <div className="bg-[#2C303A] rounded-lg p-6">
+            <div className="bg-shield-panel rounded-lg p-6">
               <h3 className="text-lg font-semibold mb-4">Navigation</h3>
               
               <div className="space-y-4">
-                <div className="text-xs text-[#9CA3AF] mb-2">
+                <div className="text-xs text-shield-muted mb-2">
                   💡 Use Ctrl/Cmd + Arrow keys to navigate
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Book</label>
+                  <label className="block text-sm font-medium text-shield-muted mb-2">Book</label>
                   <select
                     value={selectedBook}
                     onChange={(e) => handleBookChange(e.target.value)}
-                    className="w-full bg-[#1A1D24] border border-[#3A404B] text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+                    className="w-full bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                   >
                     {availableBooks.map((book) => (
                       <option key={book} value={book}>{book}</option>
@@ -536,7 +536,7 @@ export function Bible() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Chapter</label>
+                  <label className="block text-sm font-medium text-shield-muted mb-2">Chapter</label>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => selectedChapter > 1 && handleChapterChange(selectedChapter - 1)}
@@ -549,7 +549,7 @@ export function Bible() {
                     type="number"
                     value={selectedChapter}
                       onChange={(e) => handleChapterChange(parseInt(e.target.value) || 1)}
-                      className="flex-1 bg-[#1A1D24] border border-[#3A404B] text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+                      className="flex-1 bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                     min="1"
                       max={availableChapters.length}
                     />
@@ -564,7 +564,7 @@ export function Bible() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#9CA3AF] mb-2">Verse</label>
+                  <label className="block text-sm font-medium text-shield-muted mb-2">Verse</label>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => selectedVerse > 1 && handleVerseChange(selectedVerse - 1)}
@@ -577,7 +577,7 @@ export function Bible() {
                     type="number"
                     value={selectedVerse}
                       onChange={(e) => handleVerseChange(parseInt(e.target.value) || 1)}
-                      className="flex-1 bg-[#1A1D24] border border-[#3A404B] text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+                      className="flex-1 bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
                     min="1"
                       max={availableVerses.length || 50}
                     />
@@ -604,7 +604,7 @@ export function Bible() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <div className="bg-[#2C303A] rounded-lg p-6">
+            <div className="bg-shield-panel rounded-lg p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold">
                   {currentPassage ? currentPassage.reference : `${selectedBook} ${selectedChapter}:${selectedVerse}`}
