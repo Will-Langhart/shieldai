@@ -73,34 +73,19 @@ export function Home() {
   )
   const colorShift = scrollProgress * 0.3
 
-  const getSectionColor = (sectionIndex: number) => {
-    if (typeof window === 'undefined') {
-      return { brightness: 1, saturation: 1, hue: 0 }
-    }
-    const sectionProgress = Math.max(
-      0,
-      Math.min(1, (scrollY - sectionIndex * window.innerHeight) / window.innerHeight)
-    )
-    return {
-      brightness: 1 + sectionProgress * 0.1,
-      saturation: 1 + sectionProgress * 0.2,
-      hue: sectionProgress * 5,
-    }
-  }
-
   return (
     <div className="min-h-screen relative text-shield-fg">
       <div
-        className="fixed inset-0 transition-all duration-1000 ease-out -z-10 bg-shield-deep"
+        className="fixed inset-0 -z-10 bg-shield-deep transition-all duration-1000 ease-out"
         style={{
           background: `linear-gradient(180deg, 
             #12151C 0%, 
-            #1A1D24 22%, 
-            #1E2128 48%, 
-            #222530 68%, 
-            #262A36 88%, 
-            #2A2E3A 100%)`,
-          filter: `brightness(${1 + colorShift * 0.1}) saturate(${1 + colorShift * 0.2})`,
+            #171A22 18%, 
+            #1A1D24 38%, 
+            #1C2029 58%, 
+            #1E222C 78%, 
+            #20242E 100%)`,
+          filter: `brightness(${1 + colorShift * 0.08}) saturate(${1 + colorShift * 0.12})`,
         }}
       />
 
@@ -110,22 +95,17 @@ export function Home() {
       />
 
       <div
-        className="fixed inset-0 pointer-events-none transition-all duration-1000 ease-out -z-10"
+        className="pointer-events-none fixed inset-0 -z-10 transition-all duration-1000 ease-out"
         style={{
           background: `linear-gradient(180deg, 
-            rgba(26, 29, 36, ${0.35 + colorShift * 0.15}) 0%, 
-            rgba(30, 33, 40, ${0.2 + colorShift * 0.25}) 50%, 
-            rgba(44, 48, 58, ${0.08 + colorShift * 0.35}) 100%)`,
+            rgba(22, 25, 32, ${0.12 + colorShift * 0.06}) 0%, 
+            rgba(24, 27, 34, ${0.08 + colorShift * 0.08}) 45%, 
+            rgba(26, 30, 38, ${0.1 + colorShift * 0.1}) 100%)`,
         }}
       />
 
       {/* Hero */}
-      <section
-        className="landing-section section-transition scroll-enhanced enhanced-transition relative overflow-hidden bg-gradient-shield-hero pt-28 pb-32 md:pt-36 md:pb-40"
-        style={{
-          filter: `brightness(${getSectionColor(0).brightness}) saturate(${getSectionColor(0).saturation}) hue-rotate(${getSectionColor(0).hue}deg)`,
-        }}
-      >
+      <section className="landing-section scroll-enhanced enhanced-transition relative overflow-hidden bg-transparent pt-28 pb-24 md:pt-36 md:pb-28">
         <div
           className="pointer-events-none absolute -top-32 left-1/2 h-[420px] w-[min(100%,720px)] -translate-x-1/2 rounded-full bg-shield-brand/15 blur-[100px]"
           aria-hidden
@@ -203,15 +183,10 @@ export function Home() {
             </div>
           </div>
         </div>
-
-        <div className="pointer-events-none absolute bottom-0 left-0 h-28 w-full bg-gradient-to-b from-transparent to-shield-surface" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-14 w-full bg-gradient-to-b from-transparent to-shield-layer opacity-70" />
       </section>
 
       {/* Features */}
-      <section
-        className="landing-section section-transition scroll-enhanced enhanced-transition relative flex min-h-screen items-center py-24 bg-gradient-to-b from-shield-surface via-shield-layer to-shield-tier"
-      >
+      <section className="landing-section scroll-enhanced enhanced-transition relative flex min-h-screen items-center bg-transparent py-20 md:py-28">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-16 text-center md:mb-20">
             <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-shield-brand">
@@ -278,14 +253,10 @@ export function Home() {
             </div>
           </div>
         </div>
-
-        <div className="pointer-events-none absolute bottom-0 left-0 h-28 w-full bg-gradient-to-b from-transparent to-shield-tier" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-14 w-full bg-gradient-to-b from-transparent to-shield-mist opacity-70" />
       </section>
 
       {/* CTA */}
-      <section className="landing-section section-transition scroll-enhanced enhanced-transition relative overflow-hidden py-24 md:py-28 bg-gradient-to-b from-shield-panel via-shield-canvas to-shield-deep">
-        <div className="pointer-events-none absolute inset-0 bg-shield-radial opacity-60" aria-hidden />
+      <section className="landing-section scroll-enhanced enhanced-transition relative overflow-hidden bg-transparent py-20 md:py-28">
         <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-shield-brand">
             Get started

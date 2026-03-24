@@ -29,29 +29,9 @@
   transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Enhanced section transitions */
+/* Section shell (no horizontal rules — backgrounds blend via page layer) */
 .section-transition {
   position: relative;
-  overflow: hidden;
-}
-
-.section-transition::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    var(--shield-brand-soft) 50%, 
-    transparent 100%);
-  opacity: 0;
-  transition: opacity 0.8s ease-in-out;
-}
-
-.section-transition:hover::after {
-  opacity: 1;
 }
 
 /* Smooth color fade between sections */

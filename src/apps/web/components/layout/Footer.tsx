@@ -2,11 +2,8 @@ import React from 'react'
 
 const Footer = () => {
   return (
-    <footer className="relative bg-gradient-to-t from-shield-canvas to-shield-panel border-t border-shield-panel landing-section section-transition">
-      {/* Smooth Transition Overlay */}
-      <div className="absolute top-0 left-0 w-full h-16 bg-gradient-to-b from-shield-panel to-transparent pointer-events-none"></div>
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+    <footer className="landing-section relative bg-transparent">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
@@ -66,7 +63,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-shield-edge">
+        <div className="mt-10 pt-10">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-shield-muted text-sm">
               © 2024 Shield AI. All rights reserved.
