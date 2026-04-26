@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
-import { analyzeQuestion, generateSpecializedPrompt } from '../../lib/prompt-engineering';
+import { analyzeQuestion, generateSpecializedPrompt, generateDenominationContext } from '../../lib/prompt-engineering';
 import { classifyObjection, generateSpecializedResponse, objectionHandlers } from '../../lib/objection-classifier';
 import { advancedPrompts, responseEnhancers } from '../../lib/advanced-prompts';
 import { searchApologeticsContent, enhanceResponseWithContent } from '../../lib/apologetics-knowledge';
@@ -122,6 +122,19 @@ export default async function handler(
       }
     } else {
       logger.info('Developer mode enabled', { cid, userId: user.id, email: user.email });
+    }
+
+    // Fetch user denomination preference
+    let userDenomination: string | null = null;
+    try {
+      const { data: userRow } = await serverSupabase
+        .from('users')
+        .select('preferences')
+        .eq('id', user.id)
+        .single();
+      userDenomination = userRow?.preferences?.denomination ?? null;
+    } catch {
+      // non-fatal
     }
 
     // Get conversation history for this session
@@ -254,7 +267,13 @@ export default async function handler(
 
     // Generate specialized prompt based on context and objection type
     let systemPrompt = generateSpecializedPrompt(questionContext, mode);
-    
+
+    // Inject denomination-specific theological framing
+    const denominationContext = generateDenominationContext(userDenomination as any);
+    if (denominationContext) {
+      systemPrompt += denominationContext;
+    }
+
     // Add Bible version context if provided
     if (bibleVersion && bibleVersion.id && bibleVersion.name) {
       systemPrompt += `\n\nBIBLE VERSION CONTEXT:

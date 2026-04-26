@@ -56,6 +56,56 @@ export function analyzeQuestion(message: string): PromptContext {
   };
 }
 
+export type Denomination = 'Protestant' | 'Catholic' | 'Oriental Orthodox' | 'Eastern Orthodox';
+
+const DENOMINATION_CONTEXT: Record<Denomination, string> = {
+  Protestant: `
+DENOMINATION CONTEXT — PROTESTANT:
+This user identifies as Protestant. Frame theological responses according to Protestant distinctives:
+- Sola Scriptura: Scripture alone is the supreme authority in all matters of faith and practice. Rely primarily on direct biblical text.
+- Sola Fide / Sola Gratia: Salvation is by grace alone through faith alone — avoid implying merit-based salvation.
+- Priesthood of all believers: Every Christian has direct access to God; no human mediator beyond Christ is required.
+- Prefer references from Protestant reformers (Luther, Calvin, Zwingli) and modern evangelical scholars (R.C. Sproul, John Piper, Tim Keller) where relevant.
+- When discussing sacraments, treat baptism and the Lord's Supper as ordinances/signs rather than channels of saving grace (unless context suggests Lutheran leanings, in which case note the distinction).
+- Do not appeal to Tradition, the Magisterium, or extra-biblical authority as equal to Scripture.`,
+
+  Catholic: `
+DENOMINATION CONTEXT — ROMAN CATHOLIC:
+This user identifies as Roman Catholic. Frame theological responses according to Catholic teaching:
+- Scripture and Sacred Tradition together constitute the single deposit of the Word of God; the Magisterium authoritatively interprets both.
+- The seven sacraments are efficacious signs of grace instituted by Christ.
+- Acknowledge the role of Mary (Theotokos, Immaculate Conception, Assumption) and the veneration of saints as intercessors where relevant.
+- Papal authority and the teaching office of the Church (encyclicals, councils, Catechism of the Catholic Church) are legitimate sources — cite the CCC where helpful.
+- Salvation involves ongoing cooperation with grace (justification and sanctification are not sharply separated).
+- Reference Catholic theologians and Doctors of the Church (Aquinas, Augustine, Newman, Ratzinger) where appropriate.`,
+
+  'Oriental Orthodox': `
+DENOMINATION CONTEXT — ORIENTAL ORTHODOX:
+This user identifies with the Oriental Orthodox tradition (Coptic, Ethiopian/Eritrean, Armenian, Syriac, Malankara). Frame responses accordingly:
+- The Oriental Orthodox churches accept only the first three Ecumenical Councils (Nicaea I, Constantinople I, Ephesus I) and hold to Miaphysite Christology — Christ has one united divine-human nature, not two separate natures.
+- Avoid Chalcedonian language (dyophysite / "two natures") without clarification; use Miaphysite or "one united nature" terminology.
+- The Church Fathers of the East are central: Cyril of Alexandria, Athanasius, Dioscorus, and the Syriac Fathers.
+- Rich liturgical and sacramental life; monastic tradition is highly valued (e.g., Desert Fathers).
+- The Theotokos (God-bearer) is a central Marian title and deeply venerated.
+- Scripture is interpreted within the living Tradition of the Church; emphasize patristic exegesis.`,
+
+  'Eastern Orthodox': `
+DENOMINATION CONTEXT — EASTERN ORTHODOX:
+This user identifies as Eastern Orthodox. Frame theological responses according to Orthodox theology:
+- The Seven Ecumenical Councils define orthodox doctrine; the Church is the pillar and ground of truth and preserves the fullness of the Christian faith.
+- Theosis (divinization / union with God) is the goal of the Christian life — humans are called to participate in the divine nature (2 Pet 1:4).
+- Scripture is interpreted within Holy Tradition; the two are inseparable. The Fathers, liturgy, icons, and councils all constitute Tradition.
+- The Filioque controversy: the Holy Spirit proceeds from the Father alone (not from the Father and the Son).
+- Emphasize apophatic (negative) theology and the essence/energies distinction (Palamas).
+- Reference Orthodox theologians (John Chrysostom, Gregory Palamas, Maximus the Confessor, Alexander Schmemann, Georges Florovsky) where relevant.
+- Sacraments (Mysteries) are real participation in divine life, not merely symbols.`,
+};
+
+export function generateDenominationContext(denomination: Denomination | null | undefined): string {
+  if (!denomination || !(denomination in DENOMINATION_CONTEXT)) return '';
+  return `\n\n${DENOMINATION_CONTEXT[denomination]}`;
+}
+
 export function generateSpecializedPrompt(context: PromptContext, mode: 'gentle' | 'scholarly' | 'debate'): string {
   const basePrompt = `You are Shield AI, an advanced AI-powered apologetics companion designed to help believers, seekers, and faith leaders explore and defend the Christian worldview with wisdom, compassion, and intellectual rigor.
 

@@ -1,15 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { User, Mail, LogOut, Key } from 'lucide-react';
+import { User, Mail, LogOut, Key, Church } from 'lucide-react';
+
+type Denomination = 'Protestant' | 'Catholic' | 'Oriental Orthodox' | 'Eastern Orthodox';
+
+const DENOMINATIONS: Denomination[] = [
+  'Protestant',
+  'Catholic',
+  'Oriental Orthodox',
+  'Eastern Orthodox',
+];
 
 interface UserProfileProps {
   onClose: () => void;
 }
 
 export const UserProfile= ({ onClose }: UserProfileProps) => {
-  const { user, signOut, resetPassword } = useAuth();
+  const { user, session, signOut, resetPassword } = useAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [denomination, setDenomination] = useState<Denomination | ''>('');
+  const [denominationSaving, setDenominationSaving] = useState(false);
+
+  useEffect(() => {
+    const authToken = session?.access_token;
+    if (!authToken) return;
+
+    fetch('/api/user/preferences', {
+      headers: { Authorization: `Bearer ${authToken}` },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data?.preferences?.denomination) {
+          setDenomination(data.preferences.denomination as Denomination);
+        }
+      })
+      .catch(() => {});
+  }, [session]);
+
+  const handleSaveDenomination = async (value: Denomination | '') => {
+    setDenomination(value);
+    setDenominationSaving(true);
+
+    const authToken = session?.access_token;
+    if (!authToken) {
+      setMessage('Error: Could not authenticate request');
+      setDenominationSaving(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/user/preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ denomination: value || null }),
+      });
+
+      if (res.ok) {
+        setMessage('Denomination saved successfully.');
+      } else {
+        setMessage('Error: Failed to save denomination');
+      }
+    } catch {
+      setMessage('Error: Failed to save denomination');
+    }
+
+    setDenominationSaving(false);
+  };
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -90,6 +150,28 @@ export const UserProfile= ({ onClose }: UserProfileProps) => {
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Denomination */}
+          <div className="p-4 bg-shield-canvas rounded-lg space-y-2">
+            <div className="flex items-center space-x-2">
+              <Church className="w-5 h-5 text-shield-muted" />
+              <p className="text-shield-fg text-sm font-medium">Christian Denomination</p>
+            </div>
+            <p className="text-shield-muted text-xs">
+              Select your denomination so Shield AI can tailor responses to your tradition's theology and perspective.
+            </p>
+            <select
+              value={denomination}
+              onChange={e => handleSaveDenomination(e.target.value as Denomination | '')}
+              disabled={denominationSaving}
+              className="w-full mt-1 px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              <option value="">No preference</option>
+              {DENOMINATIONS.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
           </div>
 
           {/* Actions */}

@@ -5,6 +5,7 @@ import { logger, withCorrelationId } from '../../../lib/logger';
 import { bibleService } from '../../../lib/bible-service';
 import { BiblePineconeService } from '../../../lib/bible-pinecone';
 import { EmbeddingService } from '../../../lib/embeddings';
+import { generateDenominationContext } from '../../../lib/prompt-engineering';
 
 // Initialize OpenAI client lazily
 let openai: OpenAI | null = null;
@@ -33,7 +34,7 @@ export default async function handler(
   }
 
   try {
-    const { passage, version } = req.body || {};
+    const { passage, version, denomination } = req.body || {};
 
     // Log the request for monitoring
     logger.info('AI insights request', { 
@@ -155,7 +156,8 @@ ${bibleSearchResults.map((verse, index) =>
     }
 
     // Step 4: Create specialized prompts for different types of analysis
-    const systemPrompt = `You are Shield AI, a Christian AI assistant specializing in biblical analysis and study. Your role is to provide comprehensive, biblically-grounded insights about scripture passages.
+    const denominationContext = generateDenominationContext(denomination);
+    const systemPrompt = `You are Shield AI, a Christian AI assistant specializing in biblical analysis and study. Your role is to provide comprehensive, biblically-grounded insights about scripture passages.${denominationContext}
 
 IMPORTANT: Always ground your responses in biblical truth and provide accurate, helpful analysis. Use the provided context to give comprehensive insights.
 

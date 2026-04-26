@@ -145,12 +145,30 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
     suggestions: ''
   })
   const [currentInsightId, setCurrentInsightId] = useState<string | null>(null)
-  
+  const [denomination, setDenomination] = useState<string | null>(null)
+
   // Image generation states
   const [generatedImage, setGeneratedImage] = useState<any>(null)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
   const [imageError, setImageError] = useState<string | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
+
+  // Load denomination preference once on mount
+  useEffect(() => {
+    getAuthToken().then(token => {
+      if (!token || token === 'test-token') return
+      fetch('/api/user/preferences', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.preferences?.denomination) {
+            setDenomination(data.preferences.denomination)
+          }
+        })
+        .catch(() => {})
+    })
+  }, [])
 
   // Load saved insights for this passage
   useEffect(() => {
@@ -231,7 +249,8 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
         },
         body: JSON.stringify({
           passage: passage,
-          version: version
+          version: version,
+          denomination: denomination
         })
       })
 
@@ -649,12 +668,20 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
         <div className="space-y-6">
           {/* Shield AI Header */}
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-4 text-white">
-            <div className="flex items-center space-x-3 mb-2">
-              <Shield className="h-6 w-6" />
-              <h3 className="text-lg font-semibold">Shield AI Apologetics Insights</h3>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-3">
+                <Shield className="h-6 w-6" />
+                <h3 className="text-lg font-semibold">Shield AI Apologetics Insights</h3>
+              </div>
+              {denomination && (
+                <span className="text-xs px-2 py-1 bg-white/20 rounded-full font-medium">
+                  {denomination}
+                </span>
+              )}
             </div>
             <p className="text-blue-100 text-sm">
               Defending faith through Scripture • Building understanding • Strengthening belief
+              {denomination && ` • Filtered for ${denomination} theology`}
             </p>
           </div>
 
