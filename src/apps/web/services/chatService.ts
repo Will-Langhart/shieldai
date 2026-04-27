@@ -141,7 +141,6 @@ export class ChatService {
       // Try RAG API first, fall back to regular chat API
       let response;
       try {
-        console.log('🔍 DEBUG: Sending to /api/chat-rag with message:', JSON.stringify(message))
         response = await fetch('/api/chat-rag', {
           method: 'POST',
           headers: {
@@ -235,33 +234,20 @@ export class ChatService {
    */
   async getConversation(conversationId: string, session?: any): Promise<ChatMessage[]> {
     try {
-      console.log('🔍 getConversation called with ID:', conversationId);
-      
-      // Get auth token from session or fallback to test token
       const token = session?.access_token || 'test-token';
-      
-      console.log('🔑 Session token:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
-      console.log('🌐 Making request to:', `/api/conversations/${conversationId}`);
       const response = await fetch(`/api/conversations/${conversationId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
-      console.log('📡 Response status:', response.status);
-      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      console.log('📦 Raw response data:', data);
-      
       const messages = data.messages || [];
-      console.log('💬 Messages array:', messages);
-      
-      // Map API response to ChatMessage format
-      const mappedMessages = messages.map((msg: any) => ({
+      return messages.map((msg: any) => ({
         id: msg.id,
         content: msg.content,
         role: msg.role,
@@ -269,9 +255,6 @@ export class ChatService {
         conversation_id: msg.conversation_id,
         metadata: msg.metadata
       }));
-      
-      console.log('🔄 Mapped messages:', mappedMessages);
-      return mappedMessages;
     } catch (error) {
       console.error('❌ Error getting conversation:', error);
       return [];
@@ -283,32 +266,20 @@ export class ChatService {
    */
   async getConversations(session?: any): Promise<Conversation[]> {
     try {
-      console.log('📋 getConversations called');
-      
-      // Get auth token from session or fallback to test token
       const token = session?.access_token || 'test-token';
-
-      console.log('🌐 Making request to:', '/api/conversations');
       const response = await fetch('/api/conversations', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
-      console.log('📡 Response status:', response.status);
-      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      console.log('📦 Raw response data:', data);
-      
       const conversations = data.conversations || [];
-      console.log('💬 Conversations array:', conversations);
-      
-      // Map API response to Conversation format
-      const mappedConversations = conversations.map((conv: any) => ({
+      return conversations.map((conv: any) => ({
         id: conv.id,
         title: conv.title,
         created_at: new Date(conv.created_at),
@@ -316,9 +287,6 @@ export class ChatService {
         message_count: conv.message_count || 0,
         last_message: conv.last_message
       }));
-      
-      console.log('🔄 Mapped conversations:', mappedConversations);
-      return mappedConversations;
     } catch (error) {
       console.error('❌ Error getting conversations:', error);
       return [];

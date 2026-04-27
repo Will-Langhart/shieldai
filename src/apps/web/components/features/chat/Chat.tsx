@@ -117,11 +117,6 @@ export function Chat() {
     return () => clearInterval(interval)
   }, [])
 
-  // Debug: Log current placeholder text
-  useEffect(() => {
-    console.log('🔍 DEBUG: Current placeholder text:', JSON.stringify(apologeticsQuestions[currentPlaceholderIndex]))
-  }, [currentPlaceholderIndex])
-
   // Load conversations on mount
   useEffect(() => {
     loadConversations()
@@ -129,9 +124,7 @@ export function Chat() {
 
   const loadConversations = async () => {
     try {
-      console.log('📋 Loading conversations...')
       const conversationsList = await chatService.getConversations(session)
-      console.log('📋 Loaded conversations:', conversationsList)
       // Convert conversations to match component interface
       const convertedConversations = conversationsList.map(conv => ({
         ...conv,
@@ -146,10 +139,8 @@ export function Chat() {
 
   const loadConversation = async (conversationId: string) => {
     try {
-      console.log('🔍 Loading conversation:', conversationId)
       setIsLoading(true)
       const conversationData = await chatService.getConversation(conversationId, session)
-      console.log('🔍 Received conversation data:', conversationData)
       
       if (conversationData && Array.isArray(conversationData)) {
         // Convert messages to match component interface with enhanced storage compatibility
@@ -175,9 +166,7 @@ export function Chat() {
         })
         setMessages(convertedMessages)
         setCurrentConversationId(conversationId)
-        console.log('✅ Messages loaded:', convertedMessages.length)
       } else {
-        console.warn('⚠️ No messages found in conversation')
         setMessages([])
       }
     } catch (error) {
@@ -190,10 +179,6 @@ export function Chat() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return
 
-    console.log('🔍 DEBUG: handleSendMessage called with inputMessage:', JSON.stringify(inputMessage))
-    console.log('🔍 DEBUG: inputMessage length:', inputMessage.length)
-    console.log('🔍 DEBUG: inputMessage trimmed:', JSON.stringify(inputMessage.trim()))
-
     const userMessageId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     const userMessage: Message = {
       id: userMessageId,
@@ -204,30 +189,22 @@ export function Chat() {
       metadata: {}
     }
 
-    console.log('🔍 DEBUG: Created userMessage:', JSON.stringify(userMessage))
-
     setMessages(prev => [...prev, userMessage])
     setInputMessage('')
     setIsLoading(true)
 
     try {
-      console.log('💬 Sending streaming message:', inputMessage)
-      
       // Create a placeholder for the assistant's response
       const assistantMessageId = `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       let assistantMessageAdded = false
       
-      // Use streaming message
-      console.log('🔍 DEBUG: About to call sendStreamingMessage with inputMessage:', JSON.stringify(inputMessage))
       await chatService.sendStreamingMessage(
         inputMessage,
         currentConversationId || undefined,
         selectedMode,
         // onChunk: Update the assistant message as chunks arrive
         (chunk: string) => {
-          console.log('🔍 DEBUG: Received chunk for assistant:', JSON.stringify(chunk))
           if (!assistantMessageAdded) {
-            // Add the assistant message only when we receive the first chunk
             const assistantMessage: Message = {
               id: assistantMessageId,
               content: chunk,
@@ -236,25 +213,17 @@ export function Chat() {
               timestamp: new Date().toISOString(),
               metadata: {}
             }
-            console.log('🔍 DEBUG: Creating new assistant message:', JSON.stringify(assistantMessage))
-            setMessages(prev => {
-              console.log('🔍 DEBUG: Current messages before adding assistant:', prev.map(m => ({ id: m.id, role: m.role, content: m.content.substring(0, 50) + '...' })))
-              return [...prev, assistantMessage]
-            })
+            setMessages(prev => [...prev, assistantMessage])
             assistantMessageAdded = true
           } else {
-            // Update the existing message
-            console.log('🔍 DEBUG: Updating existing assistant message with chunk')
-            setMessages(prev => prev.map(msg => 
-              msg.id === assistantMessageId 
+            setMessages(prev => prev.map(msg =>
+              msg.id === assistantMessageId
                 ? { ...msg, content: msg.content + chunk }
                 : msg
             ))
           }
         },
-        // onComplete: Handle completion
         (fullMessage: any) => {
-          console.log('💬 Streaming completed:', fullMessage)
           if (fullMessage.conversationId) {
             setCurrentConversationId(fullMessage.conversationId)
             loadConversations() // Refresh conversations list
@@ -397,10 +366,7 @@ export function Chat() {
                       <input
                         type="text"
                         value={inputMessage}
-                        onChange={(e) => {
-                          console.log('🔍 DEBUG: Input onChange triggered with value:', JSON.stringify(e.target.value))
-                          setInputMessage(e.target.value)
-                        }}
+                        onChange={(e) => setInputMessage(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
@@ -451,9 +417,7 @@ export function Chat() {
                         ...message,
                         created_at: message.created_at || message.timestamp || new Date().toISOString()
                       }}
-                      onFeedback={(messageId, feedback) => {
-                        console.log('User feedback received:', { messageId, feedback })
-                      }}
+                      onFeedback={(_messageId, _feedback) => {}}
                     />
                   </div>
                 ))}
@@ -492,10 +456,7 @@ export function Chat() {
                   <input
                     type="text"
                     value={inputMessage}
-                    onChange={(e) => {
-                      console.log('🔍 DEBUG: Second input onChange triggered with value:', JSON.stringify(e.target.value))
-                      setInputMessage(e.target.value)
-                    }}
+                    onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     className="w-full bg-transparent text-shield-fg placeholder-transparent focus:outline-none text-base"
                     disabled={isLoading}

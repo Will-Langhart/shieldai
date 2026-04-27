@@ -31,9 +31,6 @@ const getOpenAI = () => {
   return openai;
 };
 
-// In-memory conversation store (for development/testing)
-const conversationStore = new Map<string, Array<{ role: 'system' | 'user' | 'assistant'; content: string }>>();
-
 // Memory service health check - disable if it fails consistently
 let memoryServiceDisabled = false;
 let memoryServiceFailureCount = 0;
@@ -126,126 +123,85 @@ export default async function handler(
       logger.info('Developer mode enabled', { cid, userId: user.id, email: user.email });
     }
 
-    // Fetch user denomination preference
-    let userDenomination: string | null = null;
-    try {
-      const { data: userRow } = await serverSupabase
-        .from('users')
-        .select('preferences')
-        .eq('id', user.id)
-        .single();
-      userDenomination = userRow?.preferences?.denomination ?? null;
-    } catch {
-      // non-fatal
-    }
-
-    // Get conversation history for this session
-    let conversationHistory = conversationStore.get(sessionId) || [];
-    
-    // Limit conversation history to last 10 messages to manage context
-    if (conversationHistory.length > 10) {
-      conversationHistory = conversationHistory.slice(-10);
-    }
-
-    // Analyze the question to determine context
+    // Analyze the question to determine context (synchronous)
     const questionContext = analyzeQuestion(message);
-    questionContext.sessionLength = conversationHistory.length / 2; // Each exchange is 2 messages
-
-    // Advanced objection classification
     const objectionAnalysis = classifyObjection(message);
     logger.debug('Objection analysis', { cid }, objectionAnalysis);
 
-    // Track analytics for the question
+    // Fire analytics tracking without blocking the main flow
     if (user) {
       AnalyticsService.trackQuestion(
-        user.id,
-        message,
-        objectionAnalysis.primaryType,
-        objectionAnalysis.userStance,
-        objectionAnalysis.intensity,
-        sessionId,
-        conversationId
+        user.id, message, objectionAnalysis.primaryType,
+        objectionAnalysis.userStance, objectionAnalysis.intensity, sessionId, conversationId
       );
     }
 
-    // Get enhanced conversation context with long-term memory
-    let memoryContext = null;
+    // Wave 1: run all independent async lookups in parallel
+    const [
+      userDenomination,
+      conversationHistory,
+      memoryResult,
+      verseSuggestions,
+      bibleVectorResults,
+      advancedModelAccess,
+    ] = await Promise.all([
+      // Denomination preference
+      serverSupabase
+        .from('users').select('preferences').eq('id', user.id).single()
+        .then(({ data }: { data: any }) => (data?.preferences?.denomination ?? null) as string | null)
+        .catch(() => null as string | null),
+
+      // Conversation history from Supabase (replaces in-memory Map)
+      (conversationId && typeof conversationId === 'string' && serverSupabase
+        ? ChatService.getMessages(conversationId, serverSupabase)
+            .then(msgs => msgs.slice(-20).map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })))
+            .catch(() => [] as Array<{ role: 'user' | 'assistant'; content: string }>)
+        : Promise.resolve([] as Array<{ role: 'user' | 'assistant'; content: string }>)),
+
+      // Long-term memory context
+      (user && conversationId && typeof conversationId === 'string'
+        ? MemoryService.getEnhancedConversationContext(conversationId, user.id, message, 10).catch(() => null)
+        : Promise.resolve(null)),
+
+      // Bible verse suggestions
+      bibleService.getVerseSuggestions(message, 'de4e12af7f28f599-02')
+        .then((s: any[]) => s.slice(0, 3))
+        .catch(() => [] as any[]),
+
+      // Bible vector search (embedding → Pinecone)
+      EmbeddingService.generateEmbeddingForIndex(message)
+        .then(embedding => BiblePineconeService.searchBibleContent(embedding, 5, { type: 'bible_verse' }))
+        .catch(() => [] as any[]),
+
+      // Subscription model-tier check
+      SubscriptionMiddleware.checkApiFeatureAccess(user.id, 'advanced_ai_models').catch(() => ({ allowed: false })),
+    ]);
+
+    // Extract similar messages from memory context
+    const memoryContext = memoryResult;
     let similarMessages: Array<{ content: string; role: string; score: number }> = [];
-    
-    if (user && conversationId && typeof conversationId === 'string') {
+    if (memoryContext) {
+      similarMessages = memoryContext.messages
+        .filter((msg: any) => msg.relevance > 0.7)
+        .map((msg: any) => ({ content: msg.content, role: msg.role, score: msg.relevance }));
+      logger.info('Memory context', { cid, count: memoryContext.messages.length, keyTopics: memoryContext.keyTopics });
+    } else if (user && conversationId && typeof conversationId === 'string') {
+      // Fallback to basic similarity search if memory service failed
       try {
-        // Get enhanced memory context
-        memoryContext = await MemoryService.getEnhancedConversationContext(
-          conversationId,
-          user.id,
-          message,
-          10 // Get top 10 relevant memories
-        );
-        
-        // Extract similar messages from memory context
-        similarMessages = memoryContext.messages
-          .filter(msg => msg.relevance > 0.7) // Only include highly relevant memories
-          .map(msg => ({
-            content: msg.content,
-            role: msg.role,
-            score: msg.relevance,
-          }));
-        
-        logger.info('Memory context', { cid, count: memoryContext.messages.length, keyTopics: memoryContext.keyTopics, emotionalTone: memoryContext.emotionalTone });
-      } catch (error) {
-        logger.error('Enhanced memory context failed', { cid }, error);
-        
-        // Fallback to basic similarity search
-        try {
-          similarMessages = await ChatService.searchSimilarMessages(message, user.id, conversationId, 3, serverSupabase);
-          logger.info('Similarity fallback', { cid, count: similarMessages.length });
-        } catch (fallbackError) {
-          logger.error('Similarity fallback failed', { cid }, fallbackError);
-        }
+        similarMessages = await ChatService.searchSimilarMessages(message, user.id, conversationId, 3, serverSupabase);
+      } catch (e) {
+        logger.error('Similarity fallback failed', { cid }, e);
       }
     }
 
-    // Search apologetics knowledge base for relevant content
-    const relevantContent = searchApologeticsContent(message, objectionAnalysis.primaryType);
-    logger.debug('Apologetics content', { cid, count: relevantContent.length });
+    logger.debug('Wave 1 complete', { cid, historyLen: conversationHistory.length, verses: verseSuggestions.length, vectors: bibleVectorResults.length });
+    questionContext.sessionLength = conversationHistory.length / 2;
 
-    // Get Bible verse suggestions based on conversation context
-    let verseSuggestions: any[] = [];
-    try {
-      const suggestions = await bibleService.getVerseSuggestions(message, 'de4e12af7f28f599-02');
-      verseSuggestions = suggestions.slice(0, 3); // Limit to 3 suggestions
-      logger.debug('Verse suggestions', { cid, count: verseSuggestions.length });
-    } catch (error) {
-      logger.error('Verse suggestions failed', { cid }, error);
-    }
-
-    // Get Bible content from Pinecone vector database for enhanced context
-    let bibleVectorResults: any[] = [];
-    try {
-      // Generate embedding for the user's message
-      const messageEmbedding = await EmbeddingService.generateEmbeddingForIndex(message);
-      
-      // Search for relevant Bible content across all namespaces
-      const results = await BiblePineconeService.searchBibleContent(
-        messageEmbedding,
-        5, // Get top 5 most relevant verses
-        { type: 'bible_verse' }
-      );
-      
-      bibleVectorResults = results;
-      logger.debug('Bible vector search results', { cid, count: bibleVectorResults.length });
-    } catch (error) {
-      logger.error('Bible vector search failed', { cid }, error);
-      // Don't fail the entire request if vector search fails
-    }
-
-    // Search for relevant videos based on user message
+    // Wave 2: video search uses memory context from Wave 1 for better relevance
     let relevantVideos: any[] = [];
     try {
-      // Enhanced development logging for video search
       devLogger.chat.videoSearch(message, cid);
-      
-      const videoResults = await VideoService.searchRelevantVideos({
+      relevantVideos = await VideoService.searchRelevantVideos({
         query: message,
         maxResults: 3,
         relevanceThreshold: 0.05,
@@ -259,13 +215,14 @@ export default async function handler(
           emotionalTone: memoryContext?.emotionalTone
         }
       });
-      
-      relevantVideos = videoResults;
       logger.debug('Video search results', { cid, count: relevantVideos.length });
     } catch (error) {
       logger.error('Video search failed', { cid }, error);
-      // Don't fail the entire request if video search fails
     }
+
+    // Search apologetics knowledge base for relevant content (synchronous)
+    const relevantContent = searchApologeticsContent(message, objectionAnalysis.primaryType);
+    logger.debug('Apologetics content', { cid, count: relevantContent.length });
 
     // Generate specialized prompt based on context and objection type
     let systemPrompt = generateSpecializedPrompt(questionContext, mode);
@@ -329,8 +286,7 @@ Please reference relevant previous discussions when appropriate and maintain con
     let maxTokens = mode === 'gentle' ? 2000 : 4000; // Increased token limits for scholarly/debate modes
     let temperature = mode === 'gentle' ? 0.7 : 0.8;
 
-    // Check if user has access to advanced models
-    const advancedModelAccess = await SubscriptionMiddleware.checkApiFeatureAccess(user.id, 'advanced_ai_models');
+    // advancedModelAccess already fetched in Wave 1 parallel batch
     if (!advancedModelAccess.allowed && (mode === 'scholarly' || mode === 'debate')) {
       // Fallback to basic model for users without premium
       model = 'gpt-5.2';
@@ -615,13 +571,6 @@ Please mention these relevant videos in your response and explain how they can h
           }
         }
 
-        // Update in-memory conversation history
-        conversationHistory.push(
-          { role: 'user', content: message },
-          { role: 'assistant', content: fullText || 'No response generated' }
-        );
-        conversationStore.set(sessionId, conversationHistory);
-
         // Enhanced development logging for response completion
         devLogger.chat.response(fullText?.length || 0, relevantVideos?.length || 0, cid);
         
@@ -772,13 +721,6 @@ ${content.content.substring(0, 200)}...
     } else {
       logger.warn('Unauthenticated user; skip persistence', { cid });
     }
-
-    // Update conversation history
-    conversationHistory.push(
-      { role: 'user', content: message },
-      { role: 'assistant', content: aiResponse || 'No response generated' }
-    );
-    conversationStore.set(sessionId, conversationHistory);
 
     return res.status(200).json({
       response: enhancedResponse || 'No response generated',
