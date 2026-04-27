@@ -220,7 +220,8 @@ export class ChatService {
    */
   async getConversation(conversationId: string, session?: any): Promise<ChatMessage[]> {
     try {
-      const token = session?.access_token || 'test-token';
+      const token = session?.access_token;
+      if (!token) return [];
       const response = await fetch(`/api/conversations/${conversationId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
