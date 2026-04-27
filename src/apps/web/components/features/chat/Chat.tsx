@@ -4,6 +4,7 @@ import { chatService } from '../../../services/chatService'
 import { useRouter } from 'next/router'
 import { EnhancedMessage } from './EnhancedMessage'
 import { DenominationSelector } from '../../ui/DenominationSelector'
+import { UserButton } from '../../auth/UserButton'
 import {
   Plus,
   Search,
@@ -14,8 +15,7 @@ import {
   Send,
   X,
   MessageSquare,
-  Shield,
-  User
+  Shield
 } from 'lucide-react'
 
 interface Message {
@@ -354,15 +354,7 @@ export function Chat() {
         {/* Denomination + User Profile */}
         <div className="p-4 border-t border-shield-edge space-y-3">
           <DenominationSelector variant="sidebar" />
-          <div className="flex items-center space-x-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-shield-glow-sm">
-              <User className="h-5 w-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-medium">Shield AI</div>
-              <div className="text-xs text-shield-muted">Plus</div>
-            </div>
-          </div>
+          <UserButton />
         </div>
       </div>
 
@@ -387,9 +379,7 @@ export function Chat() {
               <ChevronDown className="h-4 w-4 text-shield-muted" />
             </div>
           </div>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-shield-glow-sm">
-            <User className="h-5 w-5" />
-          </div>
+          <UserButton />
         </div>
 
         {/* Messages Area */}
