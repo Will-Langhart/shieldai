@@ -226,8 +226,8 @@ export function Chat() {
         (fullMessage: any) => {
           if (fullMessage.conversationId) {
             setCurrentConversationId(fullMessage.conversationId)
-            loadConversations() // Refresh conversations list
           }
+          loadConversations() // Always refresh sidebar after a message completes
         },
         // onError: Handle errors
         (error: Error) => {

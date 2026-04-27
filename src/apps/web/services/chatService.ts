@@ -115,7 +115,10 @@ export class ChatService {
       const { createClient } = await import('@supabase/supabase-js');
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || 'test-token';
+      if (!session?.access_token) {
+        throw new Error('Please sign in to send messages');
+      }
+      const token = session.access_token;
 
       // Save user message first
       if (conversationId) {
@@ -176,6 +179,9 @@ export class ChatService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
+      // Capture conversation ID from response header before reading body
+      const returnedConversationId = response.headers.get('x-conversation-id') || conversationId || undefined;
+
       // Handle streaming response
       const reader = response.body?.getReader();
       if (!reader) {
@@ -188,39 +194,19 @@ export class ChatService {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        
+
         const chunk = decoder.decode(value, { stream: true });
         fullText += chunk;
         onChunk(chunk);
       }
 
-      const completeMessage: ChatMessage = {
+      const completeMessage: ChatMessage & { conversationId?: string } = {
         id: Date.now().toString(),
         content: fullText,
         role: 'assistant',
-        timestamp: new Date()
+        timestamp: new Date(),
+        conversationId: returnedConversationId
       };
-
-      // Save assistant message
-      if (conversationId) {
-        try {
-          await fetch('/api/messages', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              conversationId,
-              content: fullText,
-              role: 'assistant',
-              mode
-            })
-          });
-        } catch (error) {
-          console.warn('Failed to save assistant message:', error);
-        }
-      }
 
       onComplete(completeMessage);
     } catch (error) {

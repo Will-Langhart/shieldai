@@ -6,7 +6,7 @@ import { applyChatRateLimit } from '../../lib/rate-limit';
 import { bibleService } from '../../lib/bible-service';
 import { BiblePineconeService } from '../../lib/bible-pinecone';
 import { EmbeddingService } from '../../lib/embeddings';
-import { conversationStorage } from '../../lib/conversation-storage';
+import { ChatService } from '../../lib/chat-service';
 
 // Initialize OpenAI client lazily
 let openai: OpenAI | null = null;
@@ -115,22 +115,26 @@ export default async function handler(
       // Continue without Bible API results
     }
 
-    // Step 3: Create conversation if none exists
+    // Step 3: Create conversation in Supabase if none exists
     let currentConversationId = conversationId;
-    if (!currentConversationId && user) {
-      const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
-      const conversation = conversationStorage.createConversation(user.id, title);
-      currentConversationId = conversation.id;
-      logger.info('Created conversation in storage', { cid, conversationId: currentConversationId, title });
+    if (!currentConversationId && user && serverSupabase) {
+      try {
+        const title = message.length > 50 ? message.substring(0, 50) + '...' : message;
+        const conversation = await ChatService.createConversation(title, serverSupabase);
+        currentConversationId = conversation.id;
+        logger.info('Created conversation in Supabase', { cid, conversationId: currentConversationId, title });
+      } catch (error) {
+        logger.error('Failed to create conversation', { cid }, error);
+      }
     }
 
-    // Step 4: Get conversation history from storage
+    // Step 4: Get conversation history from Supabase
     let conversationHistory: any[] = [];
     try {
-      if (currentConversationId) {
-        const messages = conversationStorage.getMessages(currentConversationId);
-        conversationHistory = messages.slice(-10); // Get last 10 messages
-        logger.debug('Conversation history retrieved from storage', { cid, count: conversationHistory.length });
+      if (currentConversationId && serverSupabase) {
+        const messages = await ChatService.getMessages(currentConversationId, serverSupabase);
+        conversationHistory = messages.slice(-10);
+        logger.debug('Conversation history retrieved from Supabase', { cid, count: conversationHistory.length });
       }
     } catch (error) {
       logger.error('Failed to get conversation history', { cid }, error);
@@ -187,13 +191,15 @@ ${conversationHistory.slice(-6).map((msg: any) =>
 
     // Step 5: Generate response from OpenAI
     if (stream) {
-      // Streaming response
+      // Streaming response — include conversationId in header so client can track it
       res.writeHead(200, {
         'Content-Type': 'text/plain; charset=utf-8',
         'Transfer-Encoding': 'chunked',
         'Cache-Control': 'no-cache, no-transform',
         Connection: 'keep-alive',
-        'X-Accel-Buffering': 'no'
+        'X-Accel-Buffering': 'no',
+        'X-Conversation-Id': currentConversationId || '',
+        'Access-Control-Expose-Headers': 'X-Conversation-Id'
       });
 
       let fullText = '';
@@ -215,33 +221,14 @@ ${conversationHistory.slice(-6).map((msg: any) =>
           }
         }
 
-        // Save conversation to storage
-        if (user && currentConversationId) {
+        // Save messages to Supabase
+        if (user && currentConversationId && serverSupabase) {
           try {
-            // Save user message
-            conversationStorage.addMessage(
-              currentConversationId,
-              user.id,
-              message,
-              'user',
-              { mode, timestamp: new Date().toISOString() }
-            );
-
-            // Save AI response
-            conversationStorage.addMessage(
-              currentConversationId,
-              user.id,
-              fullText,
-              'assistant',
-              { 
-                mode, 
-                timestamp: new Date().toISOString(),
-                relevant_verses: relevantVerses.length,
-                bible_search_results: bibleSearchResults.length
-              }
-            );
-
-            logger.info('Conversation saved to storage', { cid, conversationId: currentConversationId });
+            await ChatService.addMessage(currentConversationId, message, 'user', mode, serverSupabase, undefined, undefined, undefined, user);
+            if (fullText) {
+              await ChatService.addMessage(currentConversationId, fullText, 'assistant', mode, serverSupabase, undefined, undefined, undefined, user);
+            }
+            logger.info('Conversation saved to Supabase', { cid, conversationId: currentConversationId });
           } catch (error) {
             logger.error('Failed to save conversation', { cid }, error);
           }
@@ -265,33 +252,19 @@ ${conversationHistory.slice(-6).map((msg: any) =>
 
       const aiResponse = response.choices[0].message.content;
 
-      // Save conversation to storage
-      if (user && currentConversationId) {
+      // Save messages to Supabase
+      if (user && currentConversationId && serverSupabase) {
         try {
-          // Save user message
-          conversationStorage.addMessage(
+          await ChatService.addMessage(currentConversationId, message, 'user', mode, serverSupabase, undefined, undefined, undefined, user);
+          await ChatService.addMessage(
             currentConversationId,
-            user.id,
-            message,
-            'user',
-            { mode, timestamp: new Date().toISOString() }
-          );
-
-          // Save AI response
-          conversationStorage.addMessage(
-            currentConversationId,
-            user.id,
             aiResponse || 'I apologize, but I was unable to generate a response at this time.',
             'assistant',
-            { 
-              mode, 
-              timestamp: new Date().toISOString(),
-              relevant_verses: relevantVerses.length,
-              bible_search_results: bibleSearchResults.length
-            }
+            mode,
+            serverSupabase,
+            undefined, undefined, undefined, user
           );
-
-          logger.info('Conversation saved to storage', { cid, conversationId: currentConversationId });
+          logger.info('Conversation saved to Supabase', { cid, conversationId: currentConversationId });
         } catch (error) {
           logger.error('Failed to save conversation', { cid }, error);
         }
