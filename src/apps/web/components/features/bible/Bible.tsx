@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { BookOpen, Search, Bookmark, ChevronLeft, ChevronRight, Loader2, AlertCircle } from 'lucide-react'
 import { AIBibleInsights } from './AIBibleInsights'
+import { DenominationSelector } from '../../ui/DenominationSelector'
 
 interface BiblePassage {
   id: string
@@ -591,13 +592,17 @@ export function Bible() {
                   </div>
                 </div>
 
-                <button 
+                <button
                   onClick={handleGoToPassage}
                   disabled={isLoading}
                   className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded transition-colors"
                 >
                   {isLoading ? 'Loading...' : 'Go to Passage'}
                 </button>
+              </div>
+
+              <div className="pt-4 border-t border-shield-edge">
+                <DenominationSelector variant="panel" />
               </div>
             </div>
           </div>

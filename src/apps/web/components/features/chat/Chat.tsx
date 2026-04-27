@@ -3,13 +3,14 @@ import { useAuth } from '../../../contexts/AuthContext'
 import { chatService } from '../../../services/chatService'
 import { useRouter } from 'next/router'
 import { EnhancedMessage } from './EnhancedMessage'
-import { 
-  Plus, 
-  Search, 
-  BookOpen, 
-  ChevronDown, 
-  Mic, 
-  Square, 
+import { DenominationSelector } from '../../ui/DenominationSelector'
+import {
+  Plus,
+  Search,
+  BookOpen,
+  ChevronDown,
+  Mic,
+  Square,
   Send,
   X,
   MessageSquare,
@@ -350,8 +351,9 @@ export function Chat() {
           </div>
         </div>
 
-        {/* User Profile */}
-        <div className="p-4 border-t border-shield-edge">
+        {/* Denomination + User Profile */}
+        <div className="p-4 border-t border-shield-edge space-y-3">
+          <DenominationSelector variant="sidebar" />
           <div className="flex items-center space-x-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-shield-glow-sm">
               <User className="h-5 w-5 text-white" />
