@@ -202,7 +202,7 @@ Guidelines:
     ];
 
     const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-5.4',
+      model: 'gpt-4o',
       max_tokens: 3000,
       temperature: 0.7,
       messages: messages,

@@ -282,14 +282,14 @@ Please reference relevant previous discussions when appropriate and maintain con
     }
 
     // Use different models and settings based on mode and subscription
-    let model = mode === 'gentle' ? 'gpt-5.2' : 'gpt-5.4';
+    let model = mode === 'gentle' ? 'gpt-4o-mini' : 'gpt-4o';
     let maxTokens = mode === 'gentle' ? 2000 : 4000; // Increased token limits for scholarly/debate modes
     let temperature = mode === 'gentle' ? 0.7 : 0.8;
 
     // advancedModelAccess already fetched in Wave 1 parallel batch
     if (!advancedModelAccess.allowed && (mode === 'scholarly' || mode === 'debate')) {
       // Fallback to basic model for users without premium
-      model = 'gpt-5.2';
+      model = 'gpt-4o-mini';
       maxTokens = 800;
       temperature = 0.7;
     }

@@ -181,7 +181,7 @@ ${conversationHistory.slice(-6).map((msg: any) =>
     ];
 
     // Configure OpenAI parameters based on mode
-    const model = mode === 'gentle' ? 'gpt-5.2' : 'gpt-5.4';
+    const model = mode === 'gentle' ? 'gpt-4o-mini' : 'gpt-4o';
     const maxTokens = mode === 'gentle' ? 2000 : 4000;
     const temperature = mode === 'gentle' ? 0.7 : 0.8;
 

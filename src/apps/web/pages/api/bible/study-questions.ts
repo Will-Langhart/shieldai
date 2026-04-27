@@ -173,7 +173,7 @@ Guidelines for question creation:
     ];
 
     const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-5.4',
+      model: 'gpt-4o',
       max_tokens: 2500,
       temperature: 0.8,
       messages: messages,
