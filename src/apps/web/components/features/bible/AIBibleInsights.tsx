@@ -41,6 +41,7 @@ import {
   Wand2,
   X
 } from 'lucide-react'
+import { supabase } from '../../../lib/supabase'
 import { AIDiagnostics } from './AIDiagnostics'
 
 interface BiblePassage {
@@ -196,12 +197,12 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
     }
   }
 
-  const getAuthToken = async (): Promise<string> => {
+  const getAuthToken = async (): Promise<string | null> => {
     try {
-      const { data: { session } } = await import('../../../lib/supabase').then(m => m.supabase.auth.getSession())
-      return session?.access_token || 'test-token'
+      const { data: { session } } = await supabase.auth.getSession()
+      return session?.access_token || null
     } catch (error) {
-      return 'test-token'
+      return null
     }
   }
 
@@ -240,6 +241,9 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
     try {
       const authToken = await getAuthToken()
+      if (!authToken) {
+        throw new Error('Please sign in to generate insights')
+      }
 
       const response = await fetch('/api/bible/ai-insights', {
         method: 'POST',
@@ -305,6 +309,9 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
     setSaving(true)
     try {
       const authToken = await getAuthToken()
+      if (!authToken) {
+        throw new Error('Please sign in to save insights')
+      }
 
       const response = await fetch('/api/ai-insights/save', {
         method: 'POST',

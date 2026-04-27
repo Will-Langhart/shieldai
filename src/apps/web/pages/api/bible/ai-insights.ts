@@ -209,22 +209,29 @@ Guidelines:
     });
 
     const aiResponse = response.choices[0].message.content;
-    
+
+    // Strip markdown code fences GPT-4o sometimes wraps JSON in
+    const cleanedResponse = (aiResponse || '{}')
+      .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+
     // Parse the JSON response
     let insights;
     try {
-      insights = JSON.parse(aiResponse || '{}');
+      insights = JSON.parse(cleanedResponse);
+      // Normalize field name: API may return theologicalSignificance, frontend expects theologicalMeaning
+      if (insights.theologicalSignificance && !insights.theologicalMeaning) {
+        insights.theologicalMeaning = insights.theologicalSignificance;
+      }
     } catch (parseError) {
       logger.error('Failed to parse AI insights JSON', { cid }, parseError);
-      // Fallback to a basic structure
       insights = {
         explanation: aiResponse || 'Unable to generate insights at this time.',
         keyThemes: ['Faith', 'Love', 'Hope'],
         crossReferences: [],
         studyQuestions: [],
-        historicalContext: 'Historical context not available.',
-        theologicalSignificance: 'Theological significance not available.',
-        practicalApplication: 'Practical application not available.',
+        historicalContext: '',
+        theologicalMeaning: '',
+        practicalApplication: '',
         prayerPoints: []
       };
     }
