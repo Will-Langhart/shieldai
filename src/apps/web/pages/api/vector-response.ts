@@ -78,7 +78,7 @@ IMPORTANT: Use the provided context to give more personalized and relevant respo
     ];
 
     // Configure OpenAI parameters
-    const model = mode === 'gentle' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
+    const model = mode === 'gentle' ? 'gpt-5.2' : 'gpt-5.4';
     const maxTokens = mode === 'gentle' ? 2000 : 4000;
     const temperature = mode === 'gentle' ? 0.7 : 0.8;
 

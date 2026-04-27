@@ -46,7 +46,7 @@ export default async function handler(
       theological_meaning,
       practical_application,
       prayer_points,
-      ai_model = 'gpt-4-turbo-preview',
+      ai_model = 'gpt-5.4',
       tags = [],
       notes = ''
     } = req.body;

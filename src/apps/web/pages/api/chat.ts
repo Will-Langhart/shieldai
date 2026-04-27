@@ -323,7 +323,7 @@ Please reference relevant previous discussions when appropriate and maintain con
     }
 
     // Use different models and settings based on mode and subscription
-    let model = mode === 'gentle' ? 'gpt-3.5-turbo' : 'gpt-4-turbo-preview';
+    let model = mode === 'gentle' ? 'gpt-5.2' : 'gpt-5.4';
     let maxTokens = mode === 'gentle' ? 2000 : 4000; // Increased token limits for scholarly/debate modes
     let temperature = mode === 'gentle' ? 0.7 : 0.8;
 
@@ -331,7 +331,7 @@ Please reference relevant previous discussions when appropriate and maintain con
     const advancedModelAccess = await SubscriptionMiddleware.checkApiFeatureAccess(user.id, 'advanced_ai_models');
     if (!advancedModelAccess.allowed && (mode === 'scholarly' || mode === 'debate')) {
       // Fallback to basic model for users without premium
-      model = 'gpt-3.5-turbo';
+      model = 'gpt-5.2';
       maxTokens = 800;
       temperature = 0.7;
     }

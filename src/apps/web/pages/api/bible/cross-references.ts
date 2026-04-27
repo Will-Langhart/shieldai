@@ -184,7 +184,7 @@ Guidelines for cross-reference identification:
     ];
 
     const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-5.4',
       max_tokens: 3000,
       temperature: 0.7,
       messages: messages,
