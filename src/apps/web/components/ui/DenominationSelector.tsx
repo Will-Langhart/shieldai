@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Church, ChevronDown, Check } from 'lucide-react'
-import { useAuth } from '../../contexts/AuthContext'
+import { Church, ChevronDown, Check, AlertCircle } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
 export type Denomination = 'Protestant' | 'Catholic' | 'Oriental Orthodox' | 'Eastern Orthodox'
 
@@ -10,6 +10,16 @@ const DENOMINATIONS: { value: Denomination; description: string }[] = [
   { value: 'Oriental Orthodox', description: 'Coptic, Ethiopian, Armenian, Syriac churches' },
   { value: 'Eastern Orthodox',  description: 'Greek, Russian, Antiochian Orthodox churches' },
 ]
+
+async function getToken(): Promise<string | null> {
+  try {
+    if (!supabase) return null
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.access_token ?? null
+  } catch {
+    return null
+  }
+}
 
 interface DenominationSelectorProps {
   /** 'sidebar' = compact pill for sidebars; 'panel' = full-width card for settings panels */
@@ -21,28 +31,32 @@ export function DenominationSelector({
   variant = 'sidebar',
   onDenominationChange,
 }: DenominationSelectorProps) {
-  const { session } = useAuth()
   const [denomination, setDenomination] = useState<Denomination | null>(null)
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [flash, setFlash] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle')
+  const [noSession, setNoSession] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  // Load saved denomination
+  // Load saved denomination on mount
   useEffect(() => {
-    const token = session?.access_token
-    if (!token) return
-    fetch('/api/user/preferences', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.preferences?.denomination) {
-          setDenomination(data.preferences.denomination as Denomination)
-        }
+    let cancelled = false
+    getToken().then(token => {
+      if (cancelled) return
+      if (!token) { setNoSession(true); return }
+      fetch('/api/user/preferences', {
+        headers: { Authorization: `Bearer ${token}` },
       })
-      .catch(() => {})
-  }, [session])
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!cancelled && data?.preferences?.denomination) {
+            setDenomination(data.preferences.denomination as Denomination)
+          }
+        })
+        .catch(() => {})
+    })
+    return () => { cancelled = true }
+  }, [])
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -56,11 +70,17 @@ export function DenominationSelector({
   }, [])
 
   const save = async (value: Denomination | null) => {
-    const token = session?.access_token
-    if (!token) return
     setSaving(true)
+    setStatus('idle')
     try {
-      await fetch('/api/user/preferences', {
+      const token = await getToken()
+      if (!token) {
+        setNoSession(true)
+        setStatus('error')
+        return
+      }
+
+      const res = await fetch('/api/user/preferences', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -68,12 +88,21 @@ export function DenominationSelector({
         },
         body: JSON.stringify({ denomination: value }),
       })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        console.error('[DenominationSelector] save failed:', res.status, body)
+        setStatus('error')
+        return
+      }
+
       setDenomination(value)
       onDenominationChange?.(value)
-      setFlash(true)
-      setTimeout(() => setFlash(false), 1500)
-    } catch {
-      // silent
+      setStatus('saved')
+      setTimeout(() => setStatus('idle'), 2000)
+    } catch (err) {
+      console.error('[DenominationSelector] save error:', err)
+      setStatus('error')
     } finally {
       setSaving(false)
       setOpen(false)
@@ -86,8 +115,14 @@ export function DenominationSelector({
         <div className="flex items-center space-x-2">
           <Church className="w-4 h-4 text-shield-muted" />
           <span className="text-sm font-medium text-shield-fg">Christian Denomination</span>
-          {flash && (
-            <span className="text-xs text-green-400 ml-auto">Saved</span>
+          {status === 'saved' && (
+            <span className="ml-auto text-xs text-green-400 font-medium">Saved ✓</span>
+          )}
+          {status === 'error' && (
+            <span className="ml-auto text-xs text-red-400 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3" />
+              {noSession ? 'Sign in to save' : 'Save failed'}
+            </span>
           )}
         </div>
         <p className="text-xs text-shield-muted">
@@ -97,7 +132,7 @@ export function DenominationSelector({
           <button
             onClick={() => save(null)}
             disabled={saving}
-            className={`flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors ${
+            className={`flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors disabled:opacity-50 ${
               denomination === null
                 ? 'border-shield-brand bg-shield-brand/10 text-shield-fg'
                 : 'border-shield-edge text-shield-muted hover:border-shield-edge-strong hover:text-shield-fg'
@@ -111,7 +146,7 @@ export function DenominationSelector({
               key={d.value}
               onClick={() => save(d.value)}
               disabled={saving}
-              className={`flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors ${
+              className={`flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors disabled:opacity-50 ${
                 denomination === d.value
                   ? 'border-shield-brand bg-shield-brand/10 text-shield-fg'
                   : 'border-shield-edge text-shield-muted hover:border-shield-edge-strong hover:text-shield-fg'
@@ -121,7 +156,9 @@ export function DenominationSelector({
                 <div className="font-medium">{d.value}</div>
                 <div className="text-xs opacity-60">{d.description}</div>
               </div>
-              {denomination === d.value && <Check className="w-3.5 h-3.5 text-shield-brand flex-shrink-0" />}
+              {saving && denomination !== d.value
+                ? null
+                : denomination === d.value && <Check className="w-3.5 h-3.5 text-shield-brand flex-shrink-0" />}
             </button>
           ))}
         </div>
@@ -142,10 +179,14 @@ export function DenominationSelector({
       >
         <Church className="w-3.5 h-3.5 flex-shrink-0" />
         <span className="flex-1 text-left truncate">
-          {denomination ?? 'Set denomination'}
+          {status === 'saved'
+            ? `${denomination ?? 'None'} ✓`
+            : denomination ?? 'Set denomination'}
         </span>
         {saving ? (
           <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
+        ) : status === 'error' ? (
+          <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
         ) : (
           <ChevronDown className={`w-3 h-3 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
         )}
@@ -155,12 +196,17 @@ export function DenominationSelector({
         <div className="absolute bottom-full mb-1 left-0 w-64 bg-shield-panel border border-shield-edge rounded-xl shadow-xl z-50 overflow-hidden">
           <div className="px-3 py-2 border-b border-shield-edge">
             <p className="text-xs text-shield-muted font-medium">Denomination</p>
-            <p className="text-xs text-shield-muted opacity-60 mt-0.5">AI responses adapt to your tradition</p>
+            {noSession ? (
+              <p className="text-xs text-red-400 mt-0.5">Sign in to save preferences</p>
+            ) : (
+              <p className="text-xs text-shield-muted opacity-60 mt-0.5">AI responses adapt to your tradition</p>
+            )}
           </div>
           <div className="py-1">
             <button
               onClick={() => save(null)}
-              className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors hover:bg-shield-elevated ${
+              disabled={saving}
+              className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors hover:bg-shield-elevated disabled:opacity-50 ${
                 denomination === null ? 'text-shield-fg' : 'text-shield-muted'
               }`}
             >
@@ -171,7 +217,8 @@ export function DenominationSelector({
               <button
                 key={d.value}
                 onClick={() => save(d.value)}
-                className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors hover:bg-shield-elevated ${
+                disabled={saving}
+                className={`flex w-full items-center justify-between px-3 py-2 text-xs transition-colors hover:bg-shield-elevated disabled:opacity-50 ${
                   denomination === d.value ? 'text-shield-fg' : 'text-shield-muted'
                 }`}
               >
@@ -183,6 +230,11 @@ export function DenominationSelector({
               </button>
             ))}
           </div>
+          {status === 'error' && !noSession && (
+            <div className="px-3 py-2 border-t border-shield-edge">
+              <p className="text-xs text-red-400">Failed to save. Please try again.</p>
+            </div>
+          )}
         </div>
       )}
     </div>
