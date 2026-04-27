@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '../../../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import { logger, withCorrelationId } from '../../../lib/logger';
+import { applyBibleRateLimit } from '../../../lib/rate-limit';
 import { InsightsPineconeService } from '../../../lib/insights-pinecone';
 
 // Service role client that bypasses RLS
@@ -27,7 +28,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const cid = withCorrelationId(req, `save_ai_insight_${Date.now()}`);
-  
+  if (!(await applyBibleRateLimit(req, res))) return;
   if (req.method !== 'POST') {
     logger.warn('Method not allowed', { cid, path: '/api/ai-insights/save', method: req.method });
     return res.status(405).json({ error: 'Method not allowed' });
@@ -64,16 +65,7 @@ export default async function handler(
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       
-      // Check for test token (for development/testing only)
-      if (token === 'test-token') {
-        // Use the existing real user for testing
-        user = {
-          id: 'ec74002e-1801-40b7-a166-fe75c4b14d9f',
-          email: 'langhartcw@gmail.com',
-          user_metadata: { full_name: 'Will Langhart' }
-        };
-        logger.info('Using test user for saving AI insights', { cid, userId: user.id });
-      } else {
+      {
         try {
           const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
           

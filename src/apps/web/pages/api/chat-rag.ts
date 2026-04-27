@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { logger, withCorrelationId } from '../../lib/logger';
+import { applyChatRateLimit } from '../../lib/rate-limit';
 import { bibleService } from '../../lib/bible-service';
 import { BiblePineconeService } from '../../lib/bible-pinecone';
 import { EmbeddingService } from '../../lib/embeddings';
@@ -28,7 +29,7 @@ export default async function handler(
 ) {
   const cid = withCorrelationId(req, `chat_rag_${Date.now()}`);
   const startedAt = Date.now();
-
+  if (!(await applyChatRateLimit(req, res))) return;
   if (req.method !== 'POST') {
     logger.warn('Method not allowed', { cid, path: '/api/chat-rag', method: req.method });
     return res.status(405).json({ error: 'Method not allowed' });

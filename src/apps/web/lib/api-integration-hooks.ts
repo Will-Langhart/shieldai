@@ -329,7 +329,7 @@ export function useChatAPI() {
           message,
           conversationId,
           mode,
-          developerMode: user?.email === 'langhartcw@gmail.com'
+          developerMode: false
         })
       });
 

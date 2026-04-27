@@ -14,6 +14,7 @@ import { BiblePineconeService } from '../../lib/bible-pinecone';
 import { EmbeddingService } from '../../lib/embeddings';
 import { VideoService } from '../../lib/video-service';
 import { logger, withCorrelationId, devLogger } from '../../lib/logger';
+import { applyChatRateLimit } from '../../lib/rate-limit';
 
 // Initialize OpenAI client lazily
 let openai: OpenAI | null = null;
@@ -44,6 +45,7 @@ export default async function handler(
 ) {
   const cid = withCorrelationId(req, `chat_${Date.now()}`);
   const startedAt = Date.now();
+  if (!(await applyChatRateLimit(req, res))) return;
   if (req.method !== 'POST') {
     logger.warn('Method not allowed', { cid, path: '/api/chat', method: req.method });
     return res.status(405).json({ error: 'Method not allowed' });
@@ -99,8 +101,8 @@ export default async function handler(
     // Enhanced development logging for chat requests (after authentication)
     devLogger.chat.request(message, user.id, mode, cid);
 
-    // Developer bypass for langhartcw@gmail.com
-    const isDeveloper = user.email === 'langhartcw@gmail.com';
+    const developerEmails = (process.env.DEVELOPER_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+    const isDeveloper = process.env.NODE_ENV !== 'production' && developerEmails.includes(user.email);
     const developerMode = req.body.developerMode === true;
 
     // Check subscription access for AI conversations

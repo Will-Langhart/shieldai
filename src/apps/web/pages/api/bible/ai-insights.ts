@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import OpenAI from 'openai';
 import { createServerSupabaseClient } from '../../../lib/supabase';
 import { logger, withCorrelationId } from '../../../lib/logger';
+import { applyBibleRateLimit } from '../../../lib/rate-limit';
 import { bibleService } from '../../../lib/bible-service';
 import { BiblePineconeService } from '../../../lib/bible-pinecone';
 import { EmbeddingService } from '../../../lib/embeddings';
@@ -27,7 +28,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const cid = withCorrelationId(req, `bible_ai_insights_${Date.now()}`);
-
+  if (!(await applyBibleRateLimit(req, res))) return;
   if (req.method !== 'POST') {
     logger.warn('Method not allowed', { cid, path: '/api/bible/ai-insights', method: req.method });
     return res.status(405).json({ error: 'Method not allowed' });

@@ -56,16 +56,7 @@ export default async function handler(
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       
-      // Check for test token (for development/testing only)
-      if (token === 'test-token') {
-        // Use the existing real user for testing
-        user = {
-          id: 'ec74002e-1801-40b7-a166-fe75c4b14d9f',
-          email: 'langhartcw@gmail.com',
-          user_metadata: { full_name: 'Will Langhart' }
-        };
-        logger.info('Using test user for insights history', { cid, userId: user.id });
-      } else {
+      {
         try {
           const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(token);
           
