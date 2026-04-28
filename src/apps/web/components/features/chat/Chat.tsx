@@ -541,7 +541,6 @@ export function Chat() {
               <ChevronDown className="h-4 w-4 text-shield-muted" />
             </div>
           </div>
-          <UserButton />
         </div>
 
         {/* Messages Area */}
