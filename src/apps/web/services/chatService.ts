@@ -333,15 +333,38 @@ export class ChatService {
    * Delete a conversation
    */
   async deleteConversation(conversationId: string): Promise<void> {
-    await apiService.deleteConversation(conversationId)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error('Please sign in to delete conversations');
+    const response = await fetch(`/api/conversations/${conversationId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) throw new Error(`Failed to delete conversation: ${response.status}`);
   }
 
   /**
    * Update conversation title
    */
   async updateConversationTitle(conversationId: string, title: string): Promise<Conversation> {
-    const response = await apiService.updateConversationTitle(conversationId, title)
-    return response
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error('Please sign in to rename conversations');
+    const response = await fetch(`/api/conversations/${conversationId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ title })
+    });
+    if (!response.ok) throw new Error(`Failed to rename conversation: ${response.status}`);
+    return response.json();
   }
 
   /**

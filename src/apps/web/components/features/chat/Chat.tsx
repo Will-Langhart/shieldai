@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { chatService } from '../../../services/chatService'
 import { useRouter } from 'next/router'
@@ -8,14 +8,16 @@ import { UserButton } from '../../auth/UserButton'
 import {
   Plus,
   Search,
-  BookOpen,
   ChevronDown,
   Mic,
-  Square,
   Send,
-  X,
-  MessageSquare,
-  Shield
+  Shield,
+  Pin,
+  PinOff,
+  Pencil,
+  Trash2,
+  MoreHorizontal,
+  X
 } from 'lucide-react'
 
 interface Message {
@@ -55,7 +57,14 @@ export function Chat() {
   const [selectedMode, setSelectedMode] = useState<'gentle' | 'scholarly' | 'debate'>('gentle')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0)
+  const [pinnedIds, setPinnedIds] = useState<string[]>([])
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const renameRef = useRef<HTMLInputElement>(null)
 
   const apologeticsQuestions = [
     "How can we know God exists?",
@@ -80,33 +89,77 @@ export function Chat() {
     "What about the problem of evil?"
   ]
 
-  // Custom sidebar toggle icon component
-  const SidebarToggleIcon = () => (
-    <svg 
-      width="20" 
-      height="20" 
-      viewBox="0 0 20 20" 
-      fill="none" 
-      className="text-shield-muted"
-    >
-      <rect 
-        x="2" 
-        y="3" 
-        width="6" 
-        height="14" 
-        rx="2" 
-        fill="currentColor"
-      />
-      <rect 
-        x="10" 
-        y="3" 
-        width="8" 
-        height="14" 
-        rx="2" 
-        fill="currentColor"
-      />
+  // Sidebar toggle SVG matching Claude's layout icon style
+  const SidebarToggleIcon = ({ className = '' }: { className?: string }) => (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className={className}>
+      <rect x="1.5" y="2" width="15" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.4" fill="none"/>
+      <line x1="6.5" y1="2.5" x2="6.5" y2="15.5" stroke="currentColor" strokeWidth="1.4"/>
     </svg>
   )
+
+  // Load pinned from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('shieldai-pinned')
+      if (stored) setPinnedIds(JSON.parse(stored))
+    } catch {}
+  }, [])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpenId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  // Focus rename input when it opens
+  useEffect(() => {
+    if (renamingId && renameRef.current) {
+      renameRef.current.focus()
+      renameRef.current.select()
+    }
+  }, [renamingId])
+
+  const togglePin = (id: string) => {
+    setPinnedIds(prev => {
+      const next = prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+      localStorage.setItem('shieldai-pinned', JSON.stringify(next))
+      return next
+    })
+    setMenuOpenId(null)
+  }
+
+  const startRename = (conv: Conversation) => {
+    setRenameValue(conv.title)
+    setRenamingId(conv.id)
+    setMenuOpenId(null)
+  }
+
+  const commitRename = async () => {
+    if (!renamingId || !renameValue.trim()) { setRenamingId(null); return }
+    try {
+      await chatService.updateConversationTitle(renamingId, renameValue.trim())
+      await loadConversations()
+    } catch {}
+    setRenamingId(null)
+  }
+
+  const handleDelete = async (id: string) => {
+    setMenuOpenId(null)
+    try {
+      await chatService.deleteConversation(id)
+      if (currentConversationId === id) {
+        setCurrentConversationId(null)
+        setMessages([])
+      }
+      setPinnedIds(prev => prev.filter(p => p !== id))
+      await loadConversations()
+    } catch {}
+  }
 
   // Cycle through apologetics questions
   useEffect(() => {
@@ -265,81 +318,204 @@ export function Chat() {
     conv.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  const pinnedConversations = filteredConversations.filter(c => pinnedIds.includes(c.id))
+  const recentConversations = filteredConversations.filter(c => !pinnedIds.includes(c.id))
+
+  const ConversationItem = ({ conv }: { conv: Conversation }) => {
+    const isActive = currentConversationId === conv.id
+    const isPinned = pinnedIds.includes(conv.id)
+    const isMenuOpen = menuOpenId === conv.id
+    const isRenaming = renamingId === conv.id
+
+    return (
+      <div
+        className={`group relative flex items-center rounded-lg px-3 py-2 cursor-pointer transition-colors ${
+          isActive
+            ? 'bg-shield-elevated text-shield-fg'
+            : 'text-shield-muted hover:bg-shield-elevated hover:text-shield-fg'
+        }`}
+        onClick={() => !isRenaming && loadConversation(conv.id)}
+      >
+        {isRenaming ? (
+          <input
+            ref={renameRef}
+            value={renameValue}
+            onChange={e => setRenameValue(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={e => {
+              if (e.key === 'Enter') commitRename()
+              if (e.key === 'Escape') setRenamingId(null)
+            }}
+            onClick={e => e.stopPropagation()}
+            className="flex-1 bg-shield-canvas border border-shield-brand rounded px-2 py-0.5 text-sm text-shield-fg focus:outline-none focus:ring-1 focus:ring-shield-brand"
+          />
+        ) : (
+          <span className="flex-1 text-sm truncate pr-6">{conv.title}</span>
+        )}
+
+        {/* "..." menu button — visible on hover or when menu is open */}
+        {!isRenaming && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2" ref={isMenuOpen ? menuRef : undefined}>
+            <button
+              onClick={e => {
+                e.stopPropagation()
+                setMenuOpenId(isMenuOpen ? null : conv.id)
+              }}
+              className={`p-1 rounded transition-opacity ${
+                isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              } hover:bg-shield-panel text-shield-muted hover:text-shield-fg`}
+            >
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Dropdown menu */}
+            {isMenuOpen && (
+              <div
+                className="absolute right-0 top-full mt-1 z-50 min-w-[160px] rounded-lg border border-shield-edge bg-shield-panel shadow-xl py-1"
+                onClick={e => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => togglePin(conv.id)}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-shield-fg hover:bg-shield-elevated transition-colors"
+                >
+                  {isPinned ? <PinOff className="h-3.5 w-3.5 text-shield-muted" /> : <Pin className="h-3.5 w-3.5 text-shield-muted" />}
+                  {isPinned ? 'Unpin' : 'Pin'}
+                </button>
+                <button
+                  onClick={() => startRename(conv)}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-shield-fg hover:bg-shield-elevated transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5 text-shield-muted" />
+                  Rename
+                </button>
+                <div className="my-1 border-t border-shield-edge" />
+                <button
+                  onClick={() => handleDelete(conv.id)}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen bg-shield-canvas text-shield-fg">
       {/* Sidebar */}
-      <div className={`${sidebarCollapsed ? 'w-0' : 'w-80'} transition-all duration-300 overflow-hidden bg-shield-panel border-r border-shield-edge flex flex-col`}>
-        <div className="p-4 space-y-4">
-          {/* New Chat Button */}
+      <div className={`${sidebarCollapsed ? 'w-0' : 'w-64'} transition-all duration-300 overflow-hidden bg-shield-panel border-r border-shield-edge flex flex-col flex-shrink-0`}>
+        {/* Sidebar header */}
+        <div className="flex items-center justify-between px-3 pt-3 pb-2">
           <button
-            onClick={handleNewTopic}
-            className="flex w-full transform items-center space-x-3 rounded-xl bg-gradient-to-r from-shield-brand to-shield-brand-dim px-4 py-3 text-white shadow-shield-glow-sm transition-all duration-200 hover:scale-[1.02] hover:brightness-110 hover:shadow-shield-glow"
+            onClick={() => setSidebarCollapsed(true)}
+            className="p-1.5 rounded-md hover:bg-shield-elevated transition-colors text-shield-muted hover:text-shield-fg"
+            title="Collapse sidebar"
           >
-            <Plus className="h-5 w-5" />
-            <span>New chat</span>
+            <SidebarToggleIcon />
           </button>
-
-          {/* Search Chats */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-shield-muted" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search chats"
-              className="w-full rounded-lg border border-shield-edge bg-shield-canvas py-2 pl-10 pr-4 text-shield-fg placeholder-shield-muted focus:border-transparent focus:outline-none focus:ring-2 focus:ring-shield-brand"
-            />
-          </div>
-
-          {/* Library Link */}
-          <div className="flex items-center space-x-3 px-4 py-2 text-shield-muted hover:text-shield-fg cursor-pointer transition-colors rounded-lg hover:bg-shield-elevated">
-            <BookOpen className="h-5 w-5" />
-            <span>Library</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => { setShowSearch(s => !s); setSearchQuery('') }}
+              className="p-1.5 rounded-md hover:bg-shield-elevated transition-colors text-shield-muted hover:text-shield-fg"
+              title="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleNewTopic}
+              className="p-1.5 rounded-md hover:bg-shield-elevated transition-colors text-shield-muted hover:text-shield-fg"
+              title="New chat"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
-        {/* Conversations */}
-        <div className="flex-1 overflow-y-auto px-4 scrollbar-hide">
-          <div className="space-y-2">
-            {filteredConversations.map((conversation) => (
-              <div
-                key={conversation.id}
-                onClick={() => loadConversation(conversation.id)}
-                className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                  currentConversationId === conversation.id
-                    ? 'border border-shield-brand/35 bg-shield-brand/15 text-shield-fg shadow-lg shadow-shield-brand/10'
-                    : 'hover:bg-shield-elevated text-shield-muted hover:text-shield-fg border border-transparent hover:border-shield-edge-strong'
-                }`}
-              >
-                <div className="font-medium text-sm truncate">{conversation.title}</div>
-                <div className="text-xs text-shield-muted mt-1">
-                  {new Date(conversation.updated_at).toLocaleDateString()}
-                </div>
+        {/* Search bar (expandable) */}
+        {showSearch && (
+          <div className="px-3 pb-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-shield-muted pointer-events-none" />
+              <input
+                autoFocus
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search your chats..."
+                className="w-full rounded-md border border-shield-edge bg-shield-canvas py-1.5 pl-8 pr-3 text-sm text-shield-fg placeholder-shield-muted focus:border-shield-brand focus:outline-none focus:ring-1 focus:ring-shield-brand"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-shield-muted hover:text-shield-fg">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* New chat row */}
+        <button
+          onClick={handleNewTopic}
+          className="flex items-center gap-2.5 px-3 py-2 mx-2 mb-1 rounded-lg text-sm text-shield-muted hover:bg-shield-elevated hover:text-shield-fg transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          New chat
+        </button>
+
+        {/* Conversation list */}
+        <div className="flex-1 overflow-y-auto px-2 py-1 scrollbar-hide space-y-4">
+          {/* Pinned section */}
+          {pinnedConversations.length > 0 && (
+            <div>
+              <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-shield-muted">Pinned</p>
+              <div className="space-y-0.5">
+                {pinnedConversations.map(conv => <ConversationItem key={conv.id} conv={conv} />)}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* Recents section */}
+          {recentConversations.length > 0 && (
+            <div>
+              <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-shield-muted">Recents</p>
+              <div className="space-y-0.5">
+                {recentConversations.map(conv => <ConversationItem key={conv.id} conv={conv} />)}
+              </div>
+            </div>
+          )}
+
+          {conversations.length === 0 && (
+            <p className="px-3 py-4 text-xs text-shield-muted text-center">No conversations yet</p>
+          )}
         </div>
 
-        {/* Denomination + User Profile */}
-        <div className="p-4 border-t border-shield-edge space-y-3">
+        {/* Bottom: denomination + user */}
+        <div className="border-t border-shield-edge px-2 py-3 space-y-2">
           <DenominationSelector variant="sidebar" />
           <UserButton />
         </div>
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-gradient-to-br from-shield-canvas to-shield-panel">
+      <div className="flex-1 flex flex-col bg-gradient-to-br from-shield-canvas to-shield-panel min-w-0">
         {/* Top Bar */}
-        <div className="flex items-center justify-between p-4 border-b border-shield-edge bg-gradient-to-br from-shield-canvas to-shield-panel">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-2 hover:bg-shield-elevated rounded-lg transition-colors"
-            >
-              <SidebarToggleIcon />
-            </button>
-            <div className="flex items-center space-x-2">
-              <h1 
+        <div className="flex items-center justify-between px-4 py-3 border-b border-shield-edge bg-gradient-to-br from-shield-canvas to-shield-panel">
+          <div className="flex items-center gap-3">
+            {sidebarCollapsed && (
+              <button
+                onClick={() => setSidebarCollapsed(false)}
+                className="p-1.5 rounded-md hover:bg-shield-elevated transition-colors text-shield-muted hover:text-shield-fg"
+                title="Open sidebar"
+              >
+                <SidebarToggleIcon />
+              </button>
+            )}
+            <div className="flex items-center gap-1.5">
+              <h1
                 className="cursor-pointer bg-gradient-to-r from-shield-brand via-sky-300 to-shield-brand-dim bg-clip-text text-lg font-semibold text-transparent transition-all duration-200 hover:brightness-125"
                 onClick={() => router.push('/')}
               >
