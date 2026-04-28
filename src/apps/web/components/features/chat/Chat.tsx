@@ -63,6 +63,7 @@ export function Chat() {
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const renameRef = useRef<HTMLInputElement>(null)
 
@@ -110,6 +111,7 @@ export function Chat() {
     const handleClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpenId(null)
+        setMenuPos(null)
       }
     }
     document.addEventListener('mousedown', handleClick)
@@ -131,12 +133,14 @@ export function Chat() {
       return next
     })
     setMenuOpenId(null)
+    setMenuPos(null)
   }
 
   const startRename = (conv: Conversation) => {
     setRenameValue(conv.title)
     setRenamingId(conv.id)
     setMenuOpenId(null)
+    setMenuPos(null)
   }
 
   const commitRename = async () => {
@@ -150,6 +154,7 @@ export function Chat() {
 
   const handleDelete = async (id: string) => {
     setMenuOpenId(null)
+    setMenuPos(null)
     try {
       await chatService.deleteConversation(id)
       if (currentConversationId === id) {
@@ -355,11 +360,18 @@ export function Chat() {
 
         {/* "..." menu button — visible on hover or when menu is open */}
         {!isRenaming && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2" ref={isMenuOpen ? menuRef : undefined}>
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">
             <button
               onClick={e => {
                 e.stopPropagation()
-                setMenuOpenId(isMenuOpen ? null : conv.id)
+                if (isMenuOpen) {
+                  setMenuOpenId(null)
+                  setMenuPos(null)
+                } else {
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                  setMenuPos({ x: rect.right, y: rect.bottom })
+                  setMenuOpenId(conv.id)
+                }
               }}
               className={`p-1 rounded transition-opacity ${
                 isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
@@ -367,37 +379,6 @@ export function Chat() {
             >
               <MoreHorizontal className="h-3.5 w-3.5" />
             </button>
-
-            {/* Dropdown menu */}
-            {isMenuOpen && (
-              <div
-                className="absolute right-0 top-full mt-1 z-50 min-w-[160px] rounded-lg border border-shield-edge bg-shield-panel shadow-xl py-1"
-                onClick={e => e.stopPropagation()}
-              >
-                <button
-                  onClick={() => togglePin(conv.id)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-shield-fg hover:bg-shield-elevated transition-colors"
-                >
-                  {isPinned ? <PinOff className="h-3.5 w-3.5 text-shield-muted" /> : <Pin className="h-3.5 w-3.5 text-shield-muted" />}
-                  {isPinned ? 'Unpin' : 'Pin'}
-                </button>
-                <button
-                  onClick={() => startRename(conv)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-shield-fg hover:bg-shield-elevated transition-colors"
-                >
-                  <Pencil className="h-3.5 w-3.5 text-shield-muted" />
-                  Rename
-                </button>
-                <div className="my-1 border-t border-shield-edge" />
-                <button
-                  onClick={() => handleDelete(conv.id)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Delete
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -496,9 +477,45 @@ export function Chat() {
         {/* Bottom: denomination + user */}
         <div className="border-t border-shield-edge px-2 py-3 space-y-2">
           <DenominationSelector variant="sidebar" />
-          <UserButton />
+          <UserButton placement="up" />
         </div>
       </div>
+
+      {/* Fixed conversation context menu — rendered outside scroll container to avoid overflow clipping */}
+      {menuOpenId && menuPos && (
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', top: menuPos.y + 4, left: menuPos.x - 168 }}
+          className="z-[200] w-42 min-w-[168px] rounded-lg border border-shield-edge bg-shield-panel shadow-xl py-1"
+          onClick={e => e.stopPropagation()}
+        >
+          <button
+            onClick={() => togglePin(menuOpenId)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-shield-fg hover:bg-shield-elevated transition-colors"
+          >
+            {pinnedIds.includes(menuOpenId) ? <PinOff className="h-3.5 w-3.5 text-shield-muted" /> : <Pin className="h-3.5 w-3.5 text-shield-muted" />}
+            {pinnedIds.includes(menuOpenId) ? 'Unpin' : 'Pin'}
+          </button>
+          <button
+            onClick={() => {
+              const conv = conversations.find(c => c.id === menuOpenId)
+              if (conv) startRename(conv)
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-shield-fg hover:bg-shield-elevated transition-colors"
+          >
+            <Pencil className="h-3.5 w-3.5 text-shield-muted" />
+            Rename
+          </button>
+          <div className="my-1 border-t border-shield-edge" />
+          <button
+            onClick={() => handleDelete(menuOpenId)}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </button>
+        </div>
+      )}
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-gradient-to-br from-shield-canvas to-shield-panel min-w-0">

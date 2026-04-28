@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { AuthModal } from './AuthModal'
 import { UserProfile } from './UserProfile'
 
-export function UserButton() {
+export function UserButton({ placement = 'down' }: { placement?: 'up' | 'down' }) {
   const { user, session, signOut, loading } = useAuth()
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authView, setAuthView] = useState<'login' | 'signup'>('login')
@@ -82,7 +82,7 @@ export function UserButton() {
         </button>
 
         {dropdownOpen && (
-          <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-shield-edge bg-shield-panel shadow-2xl z-50 overflow-hidden">
+          <div className={`absolute right-0 w-56 rounded-xl border border-shield-edge bg-shield-panel shadow-2xl z-50 overflow-hidden ${placement === 'up' ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
             {/* User info */}
             <div className="border-b border-shield-edge px-4 py-3">
               <p className="text-sm font-semibold text-shield-fg truncate">{displayName}</p>
