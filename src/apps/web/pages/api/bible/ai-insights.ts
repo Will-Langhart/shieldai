@@ -131,7 +131,27 @@ export default async function handler(
       // Continue without Bible API results
     }
 
-    // Step 3: Build comprehensive context for AI analysis
+    // Step 3a: Fetch user's denomination from Supabase
+    let userDenomination: string | null = null;
+    if (user && authHeader) {
+      try {
+        const token = (authHeader as string).substring(7);
+        if (token !== 'test-token') {
+          const prefClient = createServerSupabaseClient(token);
+          const { data: userData } = await prefClient
+            .from('users')
+            .select('preferences')
+            .eq('id', (user as any).id)
+            .maybeSingle();
+          userDenomination = userData?.preferences?.denomination ?? null;
+          logger.debug('User denomination for insights', { cid, denomination: userDenomination });
+        }
+      } catch {
+        // Continue without denomination
+      }
+    }
+
+    // Step 3b: Build comprehensive context for AI analysis
     const passageText = passage.verses?.map((v: any) => v.text).join(' ') || passage.text;
     const passageReference = passage.reference;
     const bookName = passage.verses?.[0]?.bookName || passage.reference.split(' ')[0];
@@ -157,14 +177,28 @@ ${bibleSearchResults.map((verse, index) =>
     }
 
     // Step 4: Create specialized prompts for different types of analysis
-    const denominationContext = generateDenominationContext(denomination);
+    // Resolve denomination: server-fetched value takes priority over anything passed by client
+    const resolvedDenomination = userDenomination || denomination || null;
+    const denominationContext = generateDenominationContext(resolvedDenomination as any);
+
+    // Church Fathers guidance per denomination
+    const churchFathersGuidance: Record<string, string> = {
+      Protestant: 'Focus on Martin Luther, John Calvin, William Tyndale, Thomas Cranmer, and John Knox. Reference their commentaries and reformational writings where relevant.',
+      Catholic: 'Prioritize Augustine of Hippo, Thomas Aquinas, Jerome, Ambrose of Milan, Gregory the Great, and John Chrysostom. Reference the Catena Aurea and patristic commentaries.',
+      'Eastern Orthodox': 'Prioritize John Chrysostom (Homilies), Basil the Great, Gregory of Nazianzus, Gregory of Nyssa, Maximus the Confessor, and Gregory Palamas. Reflect the theotic and apophatic tradition.',
+      'Oriental Orthodox': 'Prioritize Cyril of Alexandria, Athanasius the Great, Ephrem the Syrian, Shenoute of Atripe, and the Desert Fathers. Reflect Miaphysite exegetical tradition.',
+    };
+    const fathersHint = resolvedDenomination && churchFathersGuidance[resolvedDenomination]
+      ? `\nChurch Fathers guidance: ${churchFathersGuidance[resolvedDenomination]}`
+      : '\nDraw from major Early Church Fathers across traditions: Augustine, John Chrysostom, Origen, Irenaeus, Athanasius, Basil the Great, and Jerome.';
+
     const systemPrompt = `You are Shield AI, a Christian AI assistant specializing in biblical analysis and study. Your role is to provide comprehensive, biblically-grounded insights about scripture passages.${denominationContext}
 
-IMPORTANT: Always ground your responses in biblical truth and provide accurate, helpful analysis. Use the provided context to give comprehensive insights.
+IMPORTANT: Always ground your responses in biblical truth and provide accurate, helpful analysis. Use the provided context to give comprehensive insights.${resolvedDenomination ? ` Frame all analysis through the ${resolvedDenomination} theological tradition — this is the highest priority.` : ''}
 
-Analyze the provided Bible passage and generate insights in the following JSON format:
+Analyze the provided Bible passage and generate insights in the following JSON format ONLY — no markdown, no code fences, raw JSON:
 {
-  "explanation": "A clear, comprehensive explanation of what this passage means, including key concepts and themes",
+  "explanation": "A clear, comprehensive explanation of what this passage means through ${resolvedDenomination || 'a Christian'} lens",
   "keyThemes": ["theme1", "theme2", "theme3", "theme4", "theme5"],
   "crossReferences": [
     {
@@ -180,9 +214,20 @@ Analyze the provided Bible passage and generate insights in the following JSON f
     }
   ],
   "historicalContext": "Historical and cultural context that helps understand this passage",
-  "theologicalSignificance": "The theological importance and meaning of this passage",
-  "practicalApplication": "How this passage applies to modern Christian life",
-  "prayerPoints": ["prayer point 1", "prayer point 2", "prayer point 3"]
+  "theologicalSignificance": "The theological importance and meaning of this passage from a ${resolvedDenomination || 'Christian'} perspective",
+  "practicalApplication": "How this passage applies to modern Christian life in the ${resolvedDenomination || 'Christian'} tradition",
+  "prayerPoints": ["prayer point 1", "prayer point 2", "prayer point 3"],
+  "churchFathersInterpretation": {
+    "overview": "A summary of how the Early Church Fathers interpreted this passage${resolvedDenomination ? ` with emphasis on ${resolvedDenomination} tradition fathers` : ''}",
+    "fathers": [
+      {
+        "name": "Name of Church Father",
+        "era": "Century and tradition (e.g., 4th century, Eastern)",
+        "interpretation": "Their specific interpretation or teaching on this passage",
+        "quote": "A direct quote or close paraphrase from their writings if available, otherwise omit this field"
+      }
+    ]
+  }
 }
 
 Guidelines:
@@ -193,7 +238,9 @@ Guidelines:
 - Make historical context informative but concise
 - Focus on practical application for believers
 - Include 2-4 prayer points based on the passage
-- Always reference scripture and maintain biblical accuracy`;
+- Church Fathers: include 2-4 fathers who specifically commented on this passage.${fathersHint}
+- Always reference scripture and maintain biblical accuracy
+- Return ONLY valid JSON — no markdown code fences`;
 
     // Step 5: Generate AI insights
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
@@ -232,9 +279,12 @@ Guidelines:
         historicalContext: '',
         theologicalMeaning: '',
         practicalApplication: '',
-        prayerPoints: []
+        prayerPoints: [],
+        churchFathersInterpretation: null
       };
     }
+    // Attach denomination so the client can display it
+    insights.denomination = resolvedDenomination;
 
     logger.info('AI insights generated successfully', { 
       cid, 

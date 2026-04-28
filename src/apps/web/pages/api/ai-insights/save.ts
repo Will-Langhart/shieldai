@@ -49,7 +49,9 @@ export default async function handler(
       prayer_points,
       ai_model = 'gpt-4o',
       tags = [],
-      notes = ''
+      notes = '',
+      church_fathers_interpretation = null,
+      denomination = null
     } = req.body;
 
     // Validate required fields
@@ -101,7 +103,9 @@ export default async function handler(
       prayer_points: Array.isArray(prayer_points) ? prayer_points : [],
       ai_model,
       tags: Array.isArray(tags) ? tags : [],
-      notes: notes || null
+      notes: notes || null,
+      church_fathers_interpretation: church_fathers_interpretation || null,
+      denomination: denomination || null
     };
 
     // Use service client to bypass RLS for all users

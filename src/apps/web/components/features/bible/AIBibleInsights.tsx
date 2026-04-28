@@ -43,6 +43,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { AIDiagnostics } from './AIDiagnostics'
+import { DenominationSelector } from '../../ui/DenominationSelector'
 
 interface BiblePassage {
   id: string
@@ -107,6 +108,16 @@ interface AIInsights {
     promises: string[]
     applications: string[]
   }
+  churchFathersInterpretation?: {
+    overview: string
+    fathers: Array<{
+      name: string
+      era: string
+      interpretation: string
+      quote?: string
+    }>
+  }
+  denomination?: string | null
 }
 
 interface AIBibleInsightsProps {
@@ -330,7 +341,9 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
           historical_context: insights.historicalContext || '',
           theological_meaning: insights.theologicalMeaning || '',
           practical_application: insights.practicalApplication || '',
-          prayer_points: insights.prayerPoints || []
+          prayer_points: insights.prayerPoints || [],
+          church_fathers_interpretation: insights.churchFathersInterpretation || null,
+          denomination: insights.denomination || denomination || null
         })
       })
 
@@ -539,12 +552,19 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
   return (
     <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6 mt-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div className="flex items-center space-x-3">
-          <Brain className="h-6 w-6 text-blue-400" />
+          <Brain className="h-6 w-6 text-shield-brand" />
           <h3 className="text-xl font-semibold text-shield-fg">AI Bible Insights</h3>
         </div>
-        
+        <div className="w-56">
+          <DenominationSelector
+            variant="sidebar"
+            onDenominationChange={(d) => setDenomination(d)}
+          />
+        </div>
+      </div>
+      <div className="flex items-center justify-end mb-4 flex-wrap gap-2">
         <div className="flex items-center space-x-2">
           {!insights && !loading && (
             <>
@@ -1107,6 +1127,60 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
                       <p className="text-shield-fg text-sm">{point}</p>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Church Fathers Interpretation */}
+          {insights.churchFathersInterpretation && (
+            <div className="border border-shield-panel rounded-lg">
+              <button
+                onClick={() => toggleSection('churchFathers')}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <BookOpen className="h-5 w-5 text-amber-400" />
+                  <span className="font-medium text-shield-fg">Church Fathers Interpretation</span>
+                  {insights.denomination && (
+                    <span className="text-xs px-2 py-0.5 bg-shield-brand/20 text-shield-brand rounded-full border border-shield-brand/30">
+                      {insights.denomination}
+                    </span>
+                  )}
+                </div>
+                {expandedSections.has('churchFathers') ? (
+                  <ChevronUp className="h-5 w-5 text-shield-muted" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-shield-muted" />
+                )}
+              </button>
+              {expandedSections.has('churchFathers') && (
+                <div className="p-4 border-t border-shield-panel space-y-4">
+                  {insights.churchFathersInterpretation.overview && (
+                    <p className="text-shield-fg leading-relaxed text-sm italic border-l-2 border-amber-400/50 pl-3">
+                      {insights.churchFathersInterpretation.overview}
+                    </p>
+                  )}
+                  <div className="space-y-3">
+                    {insights.churchFathersInterpretation.fathers?.map((father, index) => (
+                      <div key={index} className="bg-shield-canvas rounded-lg p-4 border border-shield-edge">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <span className="font-semibold text-amber-400 text-sm">{father.name}</span>
+                            {father.era && (
+                              <span className="ml-2 text-xs text-shield-muted">{father.era}</span>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-shield-fg text-sm leading-relaxed mb-2">{father.interpretation}</p>
+                        {father.quote && (
+                          <blockquote className="border-l-2 border-amber-400/50 pl-3 text-shield-muted text-xs italic">
+                            "{father.quote}"
+                          </blockquote>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
