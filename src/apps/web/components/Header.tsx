@@ -1,18 +1,19 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { Shield, BookOpen, MessageCircle, Brain } from 'lucide-react'
+import { Shield, BookOpen, MessageCircle, Brain, BookMarked } from 'lucide-react'
 import { UserButton } from './auth/UserButton'
 // Using simple className concatenation instead of clsx
 
 export function Header() {
   const router = useRouter()
   const location = { pathname: router.pathname }
-  
+
   const navItems = [
     { path: '/', label: 'Home', icon: Shield },
     { path: '/bible', label: 'Bible', icon: BookOpen },
     { path: '/chat', label: 'Chat', icon: MessageCircle },
     { path: '/insights-history', label: 'Insights', icon: Brain },
+    { path: '/journal', label: 'Journal', icon: BookMarked },
   ]
   
   return (

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { 
-  Brain, 
-  BookOpen, 
-  Lightbulb, 
+import { JournalNoteEditor } from './JournalNoteEditor'
+import {
+  Brain,
+  BookOpen,
+  Lightbulb,
   Cross, 
   Heart, 
   MessageCircle, 
@@ -827,30 +828,11 @@ export function InsightDetailView({
           </div>
         )}
 
-        {/* User Notes */}
-        {insight.notes && (
-          <div className="border border-shield-panel rounded-lg">
-            <button
-              onClick={() => toggleSection('notes')}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <PenTool className="h-5 w-5 text-purple-400" />
-                <span className="font-medium text-shield-fg">Your Notes</span>
-              </div>
-              {expandedSections.has('notes') ? (
-                <ChevronUp className="h-5 w-5 text-shield-muted" />
-              ) : (
-                <ChevronDown className="h-5 w-5 text-shield-muted" />
-              )}
-            </button>
-            {expandedSections.has('notes') && (
-              <div className="p-4 border-t border-shield-panel">
-                <p className="text-shield-fg leading-relaxed">{insight.notes}</p>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Journal Note Editor — always shown */}
+        <JournalNoteEditor
+          insightId={insight.id}
+          initialNote={insight.notes ?? ''}
+        />
       </div>
 
       {/* Image Generation Modal */}
