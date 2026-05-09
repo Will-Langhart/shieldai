@@ -3,6 +3,7 @@ import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { Header } from '../components/Header'
 import { EnhancedInsightsQuery } from '../components/features/bible/EnhancedInsightsQuery'
+import { ProtectedRoute } from '../components/auth/ProtectedRoute'
 
 interface InsightsHistoryPageProps {
   userId?: string
@@ -10,6 +11,7 @@ interface InsightsHistoryPageProps {
 
 export default function InsightsHistoryPage({ userId }: InsightsHistoryPageProps) {
   return (
+    <ProtectedRoute>
     <>
       <Head>
         <title>Insights History - Shield AI</title>
@@ -33,6 +35,7 @@ export default function InsightsHistoryPage({ userId }: InsightsHistoryPageProps
         </main>
       </div>
     </>
+    </ProtectedRoute>
   )
 }
 

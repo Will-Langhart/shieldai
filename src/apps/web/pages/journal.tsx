@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Head from 'next/head'
 import { Header } from '../components/Header'
+import { ProtectedRoute } from '../components/auth/ProtectedRoute'
 import { JournalNoteEditor } from '../components/features/bible/JournalNoteEditor'
 import {
   BookOpen,
@@ -240,6 +241,7 @@ export default function JournalPage() {
   }
 
   return (
+    <ProtectedRoute>
     <>
       <Head>
         <title>Study Journal – Shield AI</title>
@@ -356,6 +358,7 @@ export default function JournalPage() {
         </main>
       </div>
     </>
+    </ProtectedRoute>
   )
 }
 
