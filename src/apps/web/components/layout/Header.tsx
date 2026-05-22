@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { cn } from '../../utils/cn'
 import { UserButton } from '../auth/UserButton'
@@ -20,9 +21,14 @@ const Header = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-shield-glow-sm">
-              <span className="text-white font-bold text-lg">S</span>
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Shield AI"
+              width={36}
+              height={36}
+              className="rounded-lg"
+              priority
+            />
             <span className="text-xl font-bold text-shield-fg">Shield AI</span>
           </Link>
 
