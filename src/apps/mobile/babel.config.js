@@ -7,9 +7,9 @@ module.exports = function (api) {
       ['module-resolver', {
         extensions: ['.tsx', '.ts', '.js', '.json'],
         alias: {
-          '@services': '../../packages/services/src',
-          '@types': '../../packages/types/src',
-          '@ui': '../../packages/ui/src',
+          '@services/mobile-api': '../../src/shared/services_mobile-api',
+          '@types': '../../src/shared/types_index',
+          '@ui': '../../src/shared/ui_index',
         }
       }]
     ]

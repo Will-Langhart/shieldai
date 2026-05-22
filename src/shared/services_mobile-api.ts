@@ -53,7 +53,7 @@ export async function getHealth() {
 // Chat
 export interface SendChatRequest {
   message: string;
-  mode?: 'fast' | 'accurate';
+  mode?: 'gentle' | 'scholarly' | 'debate';
   sessionId?: string;
   conversationId?: string;
 }

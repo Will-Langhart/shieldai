@@ -86,7 +86,8 @@ dist
 
 # Gatsby files
 .cache/
-public
+# Note: Next.js src/apps/web/public/ is intentionally tracked (static assets)
+!src/apps/web/public/
 
 # Storybook build outputs
 .out
