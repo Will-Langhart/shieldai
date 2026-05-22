@@ -1,15 +1,15 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { Shield, BookOpen, MessageCircle, Brain, BookMarked } from 'lucide-react'
+import { BookOpen, MessageCircle, Brain, BookMarked, Home } from 'lucide-react'
 import { UserButton } from './auth/UserButton'
-// Using simple className concatenation instead of clsx
 
 export function Header() {
   const router = useRouter()
   const location = { pathname: router.pathname }
 
   const navItems = [
-    { path: '/', label: 'Home', icon: Shield },
+    { path: '/', label: 'Home', icon: Home },
     { path: '/bible', label: 'Bible', icon: BookOpen },
     { path: '/chat', label: 'Chat', icon: MessageCircle },
     { path: '/insights-history', label: 'Insights', icon: Brain },
@@ -22,7 +22,14 @@ export function Header() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <Shield className="h-8 w-8 text-shield-brand" />
+              <Image
+                src="/logo.png"
+                alt="Shield AI"
+                width={36}
+                height={36}
+                className="rounded-lg"
+                priority
+              />
               <span className="text-xl font-bold text-shield-fg">Shield AI</span>
             </Link>
           </div>
