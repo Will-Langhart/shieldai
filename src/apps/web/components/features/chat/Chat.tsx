@@ -590,7 +590,7 @@ export function Chat() {
         </div>
 
         {/* Input Area — always pinned to bottom */}
-        <div className="px-4 py-3 border-t border-shield-edge bg-gradient-to-br from-shield-canvas to-shield-panel">
+        <div className="px-4 py-3">
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center bg-shield-panel rounded-xl px-3 py-2 shadow-lg border border-shield-edge">
               <div className="flex-1 relative">
