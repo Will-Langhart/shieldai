@@ -520,7 +520,7 @@ export function Chat() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col bg-gradient-to-br from-shield-canvas to-shield-panel min-w-0">
         {/* Top Bar */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-shield-edge bg-gradient-to-br from-shield-canvas to-shield-panel">
+        <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             {sidebarCollapsed && (
               <button
