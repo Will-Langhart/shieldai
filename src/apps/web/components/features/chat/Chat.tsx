@@ -547,63 +547,16 @@ export function Chat() {
         <div className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
-              <div className="text-center w-full">
-                <h2 className="text-2xl font-semibold mb-8 text-shield-fg">What can I help with?</h2>
-                <div className="relative w-full max-w-3xl mx-auto">
-                  <div className="flex items-center bg-shield-panel rounded-2xl px-4 py-3 shadow-lg border border-shield-edge">
-                    <button className="p-2 hover:bg-shield-elevated rounded-lg transition-colors mr-2">
-                      <Plus className="h-5 w-5 text-white" />
-                    </button>
-                    <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        value={inputMessage}
-                        onChange={(e) => setInputMessage(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
-                        className="w-full bg-transparent text-shield-fg placeholder-transparent focus:outline-none text-base"
-                        disabled={isLoading}
-                      />
-                      {!inputMessage && (
-                        <div className="absolute inset-0 pointer-events-none">
-                          <span className="text-shield-muted text-base animate-pulse">
-                            {apologeticsQuestions[currentPlaceholderIndex]}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2 ml-2">
-                      <button 
-                        onClick={handleSendMessage}
-                        disabled={isLoading || !inputMessage.trim()}
-                        className="p-2 hover:bg-shield-elevated rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Mic className="h-5 w-5 text-white" />
-                      </button>
-                      <button 
-                        onClick={handleSendMessage}
-                        disabled={isLoading || !inputMessage.trim()}
-                        className="rounded-lg bg-shield-brand p-2 transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Send className="h-5 w-5 text-white" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+              <div className="text-center w-full max-w-2xl mx-auto">
+                <h2 className="text-xl font-semibold mb-2 text-shield-fg">What can I help with?</h2>
+                <p className="text-sm text-shield-muted">Ask a theological question, explore scripture, or test an argument.</p>
               </div>
             </div>
           ) : (
-            <div className="max-w-5xl mx-auto px-4 py-6">
+            <div className="max-w-2xl mx-auto px-4 py-4">
               <div className="space-y-0">
                 {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className="w-full"
-                  >
+                  <div key={message.id} className="w-full">
                     <EnhancedMessage
                       message={{
                         ...message,
@@ -636,51 +589,44 @@ export function Chat() {
           )}
         </div>
 
-        {/* Input Area - Only show when there are messages */}
-        {messages.length > 0 && (
-          <div className="p-4 border-t border-shield-edge bg-gradient-to-br from-shield-canvas to-shield-panel">
-            <div className="max-w-5xl mx-auto">
-              <div className="flex items-center bg-shield-canvas rounded-2xl px-4 py-3 shadow-lg border border-shield-edge">
-                <button className="p-2 hover:bg-shield-elevated rounded-lg transition-colors mr-2">
-                  <Plus className="h-5 w-5 text-white" />
+        {/* Input Area — always pinned to bottom */}
+        <div className="px-4 py-3 border-t border-shield-edge bg-gradient-to-br from-shield-canvas to-shield-panel">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center bg-shield-panel rounded-xl px-3 py-2 shadow-lg border border-shield-edge">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSendMessage()
+                    }
+                  }}
+                  className="w-full bg-transparent text-shield-fg placeholder-transparent focus:outline-none text-sm py-1"
+                  disabled={isLoading}
+                />
+                {!inputMessage && (
+                  <div className="absolute inset-0 pointer-events-none flex items-center">
+                    <span className="text-shield-muted text-sm">
+                      {apologeticsQuestions[currentPlaceholderIndex]}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1 ml-2">
+                <button
+                  onClick={handleSendMessage}
+                  disabled={isLoading || !inputMessage.trim()}
+                  className="rounded-lg bg-shield-brand p-1.5 transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Send className="h-4 w-4 text-white" />
                 </button>
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    className="w-full bg-transparent text-shield-fg placeholder-transparent focus:outline-none text-base"
-                    disabled={isLoading}
-                  />
-                  {!inputMessage && (
-                    <div className="absolute inset-0 pointer-events-none">
-                      <span className="text-shield-muted text-base animate-pulse">
-                        {apologeticsQuestions[currentPlaceholderIndex]}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2 ml-2">
-                  <button 
-                    onClick={handleSendMessage}
-                    disabled={isLoading || !inputMessage.trim()}
-                    className="p-2 hover:bg-shield-elevated rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Mic className="h-5 w-5 text-white" />
-                  </button>
-                  <button 
-                    onClick={handleSendMessage}
-                    disabled={isLoading || !inputMessage.trim()}
-                    className="rounded-lg bg-shield-brand p-2 transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Send className="h-5 w-5 text-white" />
-                  </button>
-                </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

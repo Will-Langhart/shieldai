@@ -19,18 +19,18 @@ export function Header() {
   return (
     <header className="bg-shield-canvas shadow-sm border-b border-shield-panel relative z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-12">
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
               <Image
                 src="/logo.png"
                 alt="Shield AI"
-                width={36}
-                height={36}
-                className="rounded-lg"
+                width={28}
+                height={28}
+                className="rounded-md"
                 priority
               />
-              <span className="text-xl font-bold text-shield-fg">Shield AI</span>
+              <span className="text-base font-semibold text-shield-fg">Shield AI</span>
             </Link>
           </div>
           
