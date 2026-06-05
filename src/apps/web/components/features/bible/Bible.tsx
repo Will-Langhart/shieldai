@@ -343,39 +343,39 @@ export function Bible() {
   const renderPassageContent = () => {
     if (isLoading) {
       return (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
-          <span className="ml-2 text-shield-muted">Loading scripture...</span>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
+          <span className="ml-2 text-sm text-shield-muted">Loading scripture...</span>
         </div>
       )
     }
 
     if (error) {
       return (
-        <div className="flex items-center justify-center py-12">
-          <AlertCircle className="h-8 w-8 text-red-400" />
-          <span className="ml-2 text-red-400">{error}</span>
+        <div className="flex items-center justify-center py-8">
+          <AlertCircle className="h-5 w-5 text-red-400" />
+          <span className="ml-2 text-sm text-red-400">{error}</span>
         </div>
       )
     }
 
     if (showSearchResults && searchResults) {
       return (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold">Search Results for "{searchResults.query}"</h3>
+            <h3 className="text-base font-semibold">Results for "{searchResults.query}"</h3>
             <button
               onClick={() => setShowSearchResults(false)}
-              className="text-blue-400 hover:text-blue-300"
+              className="text-sm text-blue-400 hover:text-blue-300"
             >
               Back to Passage
             </button>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {searchResults.passages.map((passage) => (
-              <div key={passage.id} className="p-4 bg-shield-canvas rounded-lg">
-                <h4 className="font-semibold text-blue-400 mb-2">{passage.reference}</h4>
-                <p className="text-shield-fg leading-relaxed">{passage.text}</p>
+              <div key={passage.id} className="p-3 bg-shield-canvas rounded-lg">
+                <h4 className="text-sm font-semibold text-blue-400 mb-1">{passage.reference}</h4>
+                <p className="text-sm text-shield-fg leading-relaxed">{passage.text}</p>
                 <button
                   onClick={() => {
                     const [book, chapterVerse] = passage.reference.split(' ')
@@ -386,7 +386,7 @@ export function Bible() {
                     setShowSearchResults(false)
                     loadPassage(book, parseInt(chapter), parseInt(verse))
                   }}
-                  className="mt-2 text-sm text-blue-400 hover:text-blue-300"
+                  className="mt-1.5 text-xs text-blue-400 hover:text-blue-300"
                 >
                   Go to this passage
                 </button>
@@ -400,18 +400,18 @@ export function Bible() {
     if (currentPassage) {
       return (
         <div className="prose prose-invert max-w-none">
-          <div className="text-lg leading-relaxed">
+          <div className="text-sm leading-relaxed">
             {currentPassage.verses && currentPassage.verses.length > 0 ? (
               currentPassage.verses.map((verse, index) => (
-                <p key={verse.id || index} className="mb-4">
-                  <span className="text-blue-400 font-semibold mr-2">{verse.verseNumber}.</span>
+                <p key={verse.id || index} className="mb-3">
+                  <span className="text-blue-400 font-semibold mr-1.5">{verse.verseNumber}.</span>
                   {verse.text}
                 </p>
               ))
             ) : (
-              <div className="text-center py-8">
-                <p className="text-shield-muted">No verses found for this passage</p>
-                <p className="text-shield-muted text-sm mt-2">
+              <div className="text-center py-6">
+                <p className="text-sm text-shield-muted">No verses found for this passage</p>
+                <p className="text-xs text-shield-muted mt-1">
                   Reference: {currentPassage.reference}
                 </p>
               </div>
@@ -422,16 +422,16 @@ export function Bible() {
     }
 
     return (
-      <div className="text-center py-12">
-        <BookOpen className="h-16 w-16 text-shield-muted mx-auto mb-4" />
-        <p className="text-shield-muted text-lg">Select a passage to begin reading</p>
-        <p className="text-shield-muted text-sm mt-2">
+      <div className="text-center py-10">
+        <BookOpen className="h-10 w-10 text-shield-muted mx-auto mb-3" />
+        <p className="text-sm text-shield-muted">Select a passage to begin reading</p>
+        <p className="text-xs text-shield-muted mt-1">
           Current selection: {selectedBook} {selectedChapter}:{selectedVerse}
         </p>
         {isLoading && (
-          <div className="mt-4">
-            <Loader2 className="h-6 w-6 animate-spin text-blue-400 mx-auto" />
-            <p className="text-shield-muted text-sm mt-2">Loading scripture...</p>
+          <div className="mt-3">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-400 mx-auto" />
+            <p className="text-xs text-shield-muted mt-1">Loading scripture...</p>
           </div>
         )}
       </div>
@@ -443,12 +443,12 @@ export function Bible() {
     return (
       <div className="min-h-screen bg-shield-canvas text-white flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Error Loading Bible</h1>
-          <p className="text-red-400 mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          <AlertCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />
+          <h1 className="text-lg font-bold mb-1">Error Loading Bible</h1>
+          <p className="text-sm text-red-400 mb-3">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 text-sm rounded"
           >
             Reload Page
           </button>
@@ -459,20 +459,20 @@ export function Bible() {
 
   return (
     <div className="min-h-screen bg-shield-canvas text-white">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-4 flex items-center">
-            <BookOpen className="h-10 w-10 text-blue-400 mr-3" />
+      <div className="container mx-auto px-4 py-5">
+        <div className="mb-5">
+          <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
+            <BookOpen className="h-6 w-6 text-blue-400" />
             Bible Study
           </h1>
-          <p className="text-shield-muted text-lg">
+          <p className="text-shield-muted text-sm">
             Explore scripture with AI-powered insights and study tools
           </p>
         </div>
 
         {/* Search Bar and Version Selector */}
-        <div className="mb-8">
-          <div className="flex flex-col lg:flex-row gap-4">
+        <div className="mb-5">
+          <div className="flex flex-col lg:flex-row gap-2">
             <div className="flex-1">
               <input
                 type="text"
@@ -480,14 +480,14 @@ export function Bible() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder="Search scripture..."
-                className="w-full bg-shield-panel border border-shield-edge text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full bg-shield-panel border border-shield-edge text-white px-3 py-2 text-sm rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
-            <div className="lg:w-64">
+            <div className="lg:w-52">
               <select
                 value={selectedVersion}
                 onChange={(e) => handleVersionChange(e.target.value)}
-                className="w-full bg-shield-panel border border-shield-edge text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full bg-shield-panel border border-shield-edge text-white px-3 py-2 text-sm rounded-lg focus:outline-none focus:border-blue-500"
               >
                 {availableVersions.length > 0 ? (
                   availableVersions.map((version) => (
@@ -501,34 +501,34 @@ export function Bible() {
             <button
               onClick={handleSearch}
               disabled={isLoading || !searchTerm.trim()}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-2 text-sm rounded-lg flex items-center gap-1.5 transition-colors"
             >
               {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-              <Search className="h-5 w-5" />
+                <Search className="h-4 w-4" />
               )}
               <span>Search</span>
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
           {/* Navigation */}
           <div className="lg:col-span-1">
-            <div className="bg-shield-panel rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">Navigation</h3>
-              
-              <div className="space-y-4">
-                <div className="text-xs text-shield-muted mb-2">
-                  💡 Use Ctrl/Cmd + Arrow keys to navigate
+            <div className="bg-shield-panel rounded-lg p-4">
+              <h3 className="text-sm font-semibold mb-3">Navigation</h3>
+
+              <div className="space-y-3">
+                <div className="text-xs text-shield-muted">
+                  💡 Ctrl/Cmd + Arrow keys to navigate
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-shield-muted mb-2">Book</label>
+                  <label className="block text-xs font-medium text-shield-muted mb-1">Book</label>
                   <select
                     value={selectedBook}
                     onChange={(e) => handleBookChange(e.target.value)}
-                    className="w-full bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
+                    className="w-full bg-shield-canvas border border-shield-edge text-white px-2 py-1.5 text-sm rounded focus:outline-none focus:border-blue-500"
                   >
                     {availableBooks.map((book) => (
                       <option key={book} value={book}>{book}</option>
@@ -537,8 +537,8 @@ export function Bible() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-shield-muted mb-2">Chapter</label>
-                  <div className="flex items-center space-x-2">
+                  <label className="block text-xs font-medium text-shield-muted mb-1">Chapter</label>
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => selectedChapter > 1 && handleChapterChange(selectedChapter - 1)}
                       disabled={selectedChapter <= 1}
@@ -546,12 +546,12 @@ export function Bible() {
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
-                  <input
-                    type="number"
-                    value={selectedChapter}
+                    <input
+                      type="number"
+                      value={selectedChapter}
                       onChange={(e) => handleChapterChange(parseInt(e.target.value) || 1)}
-                      className="flex-1 bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
-                    min="1"
+                      className="flex-1 bg-shield-canvas border border-shield-edge text-white px-2 py-1.5 text-sm rounded focus:outline-none focus:border-blue-500"
+                      min="1"
                       max={availableChapters.length}
                     />
                     <button
@@ -565,8 +565,8 @@ export function Bible() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-shield-muted mb-2">Verse</label>
-                  <div className="flex items-center space-x-2">
+                  <label className="block text-xs font-medium text-shield-muted mb-1">Verse</label>
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => selectedVerse > 1 && handleVerseChange(selectedVerse - 1)}
                       disabled={selectedVerse <= 1}
@@ -574,12 +574,12 @@ export function Bible() {
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
-                  <input
-                    type="number"
-                    value={selectedVerse}
+                    <input
+                      type="number"
+                      value={selectedVerse}
                       onChange={(e) => handleVerseChange(parseInt(e.target.value) || 1)}
-                      className="flex-1 bg-shield-canvas border border-shield-edge text-white px-3 py-2 rounded focus:outline-none focus:border-blue-500"
-                    min="1"
+                      className="flex-1 bg-shield-canvas border border-shield-edge text-white px-2 py-1.5 text-sm rounded focus:outline-none focus:border-blue-500"
+                      min="1"
                       max={availableVerses.length || 50}
                     />
                     <button
@@ -595,13 +595,13 @@ export function Bible() {
                 <button
                   onClick={handleGoToPassage}
                   disabled={isLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-2 rounded transition-colors"
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-1.5 text-sm rounded transition-colors"
                 >
                   {isLoading ? 'Loading...' : 'Go to Passage'}
                 </button>
               </div>
 
-              <div className="pt-4 border-t border-shield-edge">
+              <div className="pt-3 mt-3 border-t border-shield-edge">
                 <DenominationSelector variant="panel" />
               </div>
             </div>
@@ -609,13 +609,13 @@ export function Bible() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <div className="bg-shield-panel rounded-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">
+            <div className="bg-shield-panel rounded-lg p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold">
                   {currentPassage ? currentPassage.reference : `${selectedBook} ${selectedChapter}:${selectedVerse}`}
                 </h2>
-                <button className="flex items-center space-x-2 text-blue-400 hover:text-blue-300">
-                  <Bookmark className="h-5 w-5" />
+                <button className="flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300">
+                  <Bookmark className="h-4 w-4" />
                   <span>Bookmark</span>
                 </button>
               </div>
@@ -623,8 +623,8 @@ export function Bible() {
               {renderPassageContent()}
 
               {currentPassage && !showSearchResults && (
-                <AIBibleInsights 
-                  passage={currentPassage} 
+                <AIBibleInsights
+                  passage={currentPassage}
                   version={selectedVersion}
                 />
               )}
