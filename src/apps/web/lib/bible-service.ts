@@ -249,55 +249,70 @@ class BibleService {
     }
   }
 
-  // Recursively extract verses from API.Bible JSON content structure
-  extractVersesFromJSON(
-    content: any,
-    bookId: string,
-    chapterId: string
-  ): BibleVerse[] {
+  // Extract verses from API.Bible USFM-JSON content.
+  // Verse nodes are MARKERS; actual text follows as sibling nodes.
+  extractVersesFromJSON(content: any, bookId: string, chapterId: string): BibleVerse[] {
+    const chapterNum = parseInt((chapterId || '').split('.')[1] || '1', 10);
     const verses: BibleVerse[] = [];
 
-    const getText = (node: any): string => {
+    const getNodeText = (node: any): string => {
       if (!node) return '';
-      if (typeof node === 'string') return node;
-      if (node.text && typeof node.text === 'string') return node.text;
-      if (Array.isArray(node.items)) return node.items.map(getText).join('');
-      if (Array.isArray(node)) return node.map(getText).join('');
+      if (typeof node === 'string') return node.trim();
+      if (typeof node.text === 'string') return node.text;
+      if (Array.isArray(node.items)) return node.items.map(getNodeText).filter(Boolean).join(' ');
       return '';
+    };
+
+    const isVerseMarker = (node: any) =>
+      node?.name === 'verse' || node?.attrs?.style === 'v' || node?.type === 'verse';
+
+    const processItems = (items: any[]) => {
+      let curNum: number | null = null;
+      let parts: string[] = [];
+
+      const flush = () => {
+        if (curNum === null) return;
+        const text = parts.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+        if (text && !verses.find(v => v.verseNumber === curNum)) {
+          verses.push({
+            id: `${bookId}.${chapterNum}.${curNum}`,
+            text,
+            reference: `${bookId} ${chapterNum}:${curNum}`,
+            verseNumber: curNum,
+            chapterNumber: chapterNum,
+            bookName: bookId,
+          });
+        }
+      };
+
+      for (const item of items) {
+        if (isVerseMarker(item)) {
+          flush();
+          curNum = parseInt(item?.attrs?.number || item?.number || '0', 10);
+          parts = [];
+        } else if (curNum !== null) {
+          const t = getNodeText(item);
+          if (t) parts.push(t);
+        }
+      }
+      flush();
     };
 
     const walk = (node: any) => {
       if (!node) return;
-      const name = node.name || node.type || '';
-      const isVerse =
-        name === 'verse' ||
-        (node.attrs && (node.attrs.style === 'v' || node.attrs.number));
-
-      if (isVerse && node.items) {
-        const num = parseInt(node.attrs?.number || node.number || '0', 10);
-        const text = getText(node).trim();
-        if (num > 0 && text && !verses.find(v => v.verseNumber === num)) {
-          const chapterNum = parseInt((chapterId || '').split('.')[1] || '1', 10);
-          const bookName = bookId || '';
-          verses.push({
-            id: `${bookId}.${chapterNum}.${num}`,
-            text,
-            reference: `${bookName} ${chapterNum}:${num}`,
-            verseNumber: num,
-            chapterNumber: chapterNum,
-            bookName,
-          });
-        }
+      const items: any[] = Array.isArray(node)
+        ? node
+        : Array.isArray(node.items) ? node.items
+        : Array.isArray(node.content) ? node.content
+        : [];
+      if (items.some(isVerseMarker)) {
+        processItems(items);
+      } else {
+        items.forEach(walk);
       }
-
-      if (Array.isArray(node.items)) node.items.forEach(walk);
-      if (Array.isArray(node.content)) node.content.forEach(walk);
-      if (Array.isArray(node)) node.forEach(walk);
     };
 
-    if (Array.isArray(content)) content.forEach(walk);
-    else walk(content);
-
+    if (Array.isArray(content)) content.forEach(walk); else walk(content);
     return verses.sort((a, b) => a.verseNumber - b.verseNumber);
   }
 

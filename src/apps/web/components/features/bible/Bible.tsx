@@ -75,28 +75,70 @@ function extractVersesFromPassage(passage: any, bookName: string, chapter: numbe
 
 function extractFromJSON(content: any, bookId: string, chapter: number): BibleVerse[] {
   const verses: BibleVerse[] = []
-  const getText = (node: any): string => {
+
+  // In USFM-JSON, verse nodes are MARKERS — the text follows as sibling nodes.
+  // We must process a flat item list: collect text after each verse marker.
+  const getNodeText = (node: any): string => {
     if (!node) return ''
-    if (typeof node === 'string') return node
-    if (node.text && typeof node.text === 'string') return node.text
-    if (Array.isArray(node.items)) return node.items.map(getText).join('')
-    if (Array.isArray(node)) return node.map(getText).join('')
+    if (typeof node === 'string') return node.trim()
+    if (typeof node.text === 'string') return node.text
+    if (Array.isArray(node.items)) return node.items.map(getNodeText).filter(Boolean).join(' ')
     return ''
   }
-  const walk = (node: any) => {
-    if (!node) return
-    const name = node.name || node.type || ''
-    if ((name === 'verse' || (node.attrs && node.attrs.style === 'v')) && node.items) {
-      const num = parseInt(node.attrs?.number || node.number || '0', 10)
-      const text = getText(node).trim()
-      if (num > 0 && text && !verses.find(v => v.verseNumber === num)) {
-        verses.push({ id: `${bookId}.${chapter}.${num}`, text, reference: `${bookId} ${chapter}:${num}`, verseNumber: num, chapterNumber: chapter, bookName: bookId })
+
+  const isVerseMarker = (node: any) =>
+    node?.name === 'verse' || node?.attrs?.style === 'v' || node?.type === 'verse'
+
+  const processItems = (items: any[]) => {
+    let curNum: number | null = null
+    let parts: string[] = []
+
+    const flush = () => {
+      if (curNum === null) return
+      const text = parts.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim()
+      if (text && !verses.find(v => v.verseNumber === curNum)) {
+        verses.push({
+          id: `${bookId}.${chapter}.${curNum}`,
+          text,
+          reference: `${bookId} ${chapter}:${curNum}`,
+          verseNumber: curNum,
+          chapterNumber: chapter,
+          bookName: bookId,
+        })
       }
     }
-    if (Array.isArray(node.items)) node.items.forEach(walk)
-    if (Array.isArray(node.content)) node.content.forEach(walk)
-    if (Array.isArray(node)) node.forEach(walk)
+
+    for (const item of items) {
+      if (isVerseMarker(item)) {
+        flush()
+        curNum = parseInt(item?.attrs?.number || item?.number || '0', 10)
+        parts = []
+      } else if (curNum !== null) {
+        const t = getNodeText(item)
+        if (t) parts.push(t)
+      }
+    }
+    flush()
   }
+
+  // Walk the tree looking for item arrays that contain verse markers
+  const walk = (node: any) => {
+    if (!node) return
+    const items: any[] = Array.isArray(node)
+      ? node
+      : Array.isArray(node.items)
+        ? node.items
+        : Array.isArray(node.content)
+          ? node.content
+          : []
+
+    if (items.some(isVerseMarker)) {
+      processItems(items)
+    } else {
+      items.forEach(walk)
+    }
+  }
+
   if (Array.isArray(content)) content.forEach(walk); else walk(content)
   return verses.sort((a, b) => a.verseNumber - b.verseNumber)
 }
