@@ -27,6 +27,16 @@ interface BibleSearchResult {
   query: string; total: number
   passages: Array<{ id: string; reference: string; text: string; version: { name: string } }>
 }
+interface AIInsight {
+  explanation: string
+  keyThemes: string[]
+  crossReferences: Array<{ reference: string; text: string; relevance: string }>
+  studyQuestions: Array<{ question: string; category: string; difficulty?: string }>
+  historicalContext?: string
+  theologicalMeaning?: string
+  practicalApplication?: string
+  denomination?: string
+}
 
 const DENOMINATION_VERSION_HINTS: Record<string, string[]> = {
   'Protestant':        ['English Standard', 'New International', 'King James'],
@@ -133,7 +143,7 @@ export function Bible() {
   const verseInsightCache = useRef<Record<string, string>>({})
 
   // Ambient AI insight
-  const [ambientInsight, setAmbientInsight] = useState<string | null>(null)
+  const [ambientInsight, setAmbientInsight] = useState<AIInsight | null>(null)
   const [ambientLoading, setAmbientLoading] = useState(false)
   const [insightFailed, setInsightFailed] = useState(false)
 
@@ -359,18 +369,58 @@ export function Bible() {
       const res = await fetch('/api/bible/ai-insights', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ passage, version: selectedVersion, denomination, compact: true }),
+        body: JSON.stringify({ passage, version: selectedVersion, denomination }),
       })
-      if (res.ok) {
-        const d = await res.json()
-        const ins = d.insights || d
-        const text = ins.explanation || ins.historicalContext || ins.theologicalMeaning || ''
-        if (text) { setAmbientInsight(text); return }
+      if (!res.ok) { setInsightFailed(true); return }
+
+      const d = await res.json()
+      let ins = d.insights || d
+
+      // Sometimes the server returns the raw JSON string in explanation when its own
+      // JSON.parse fails — detect and re-parse
+      if (ins.explanation && typeof ins.explanation === 'string' && ins.explanation.trim().startsWith('{')) {
+        try { ins = { ...ins, ...JSON.parse(ins.explanation) } } catch { /* keep as-is */ }
       }
-      setInsightFailed(true)
+
+      if (!ins.explanation) { setInsightFailed(true); return }
+
+      const insight: AIInsight = {
+        explanation: ins.explanation,
+        keyThemes: ins.keyThemes || [],
+        crossReferences: ins.crossReferences || [],
+        studyQuestions: ins.studyQuestions || [],
+        historicalContext: ins.historicalContext,
+        theologicalMeaning: ins.theologicalMeaning,
+        practicalApplication: ins.practicalApplication,
+        denomination: ins.denomination,
+      }
+      setAmbientInsight(insight)
+
+      // Save to insights history (non-blocking)
+      if (session?.access_token && user?.id) {
+        fetch('/api/ai-insights/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+          body: JSON.stringify({
+            passage_reference: passage.reference,
+            passage_text: passage.text,
+            bible_version: passage.version?.name || selectedVersion,
+            explanation: insight.explanation,
+            key_themes: insight.keyThemes,
+            cross_references: insight.crossReferences,
+            study_questions: insight.studyQuestions,
+            historical_context: insight.historicalContext || '',
+            theological_meaning: insight.theologicalMeaning || '',
+            practical_application: insight.practicalApplication || '',
+            prayer_points: ins.prayerPoints || [],
+            denomination: insight.denomination || denomination || null,
+            tags: insight.keyThemes?.slice(0, 5) || [],
+          }),
+        }).catch(() => { /* save failure is non-critical */ })
+      }
     } catch { setInsightFailed(true) }
     finally { setAmbientLoading(false) }
-  }, [selectedVersion, denomination])
+  }, [selectedVersion, denomination, session, user])
 
   // ── Verse insight ─────────────────────────────────────────────────────────
 
@@ -388,11 +438,15 @@ export function Bible() {
       if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
       const res = await fetch('/api/bible/ai-insights', {
         method: 'POST', headers,
-        body: JSON.stringify({ passage: versePassage, version: selectedVersion, denomination, compact: true }),
+        body: JSON.stringify({ passage: versePassage, version: selectedVersion, denomination }),
       })
       if (res.ok) {
         const d = await res.json()
-        const ins = d.insights || d
+        let ins = d.insights || d
+        // Re-parse if explanation contains raw JSON
+        if (ins.explanation?.trim().startsWith('{')) {
+          try { ins = { ...ins, ...JSON.parse(ins.explanation) } } catch { /* keep */ }
+        }
         const text = ins.explanation || ins.theologicalMeaning || ''
         if (text) { verseInsightCache.current[key] = text; setVerseInsight(text) }
       }
@@ -577,18 +631,21 @@ export function Bible() {
 
     if (currentPassage) return (
       <div>
-        {/* AI Insights panel — always visible when a passage is loaded */}
-        <div className="mb-5 rounded-lg border border-shield-brand/20 bg-shield-brand/5 px-4 py-3">
-          <div className="flex items-center justify-between mb-1.5">
+        {/* AI Insights panel */}
+        <div className="mb-6 rounded-lg border border-shield-brand/20 bg-shield-brand/5 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-shield-brand/15">
             <div className="flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-shield-brand" />
               <span className="text-xs font-semibold text-shield-brand uppercase tracking-wider">AI Insights</span>
+              {ambientInsight?.denomination && (
+                <span className="text-[10px] text-shield-muted ml-1">· {ambientInsight.denomination}</span>
+              )}
             </div>
-            {/* Generate / Regenerate button */}
             {!ambientLoading && (
               <button
                 onClick={() => currentPassage && loadAmbientInsight(currentPassage)}
-                className="flex items-center gap-1 text-[10px] font-medium text-shield-brand hover:text-shield-brand/80 transition-colors"
+                className="flex items-center gap-1 text-[10px] font-medium text-shield-brand hover:opacity-70 transition-opacity"
               >
                 <Sparkles className="h-3 w-3" />
                 {ambientInsight ? 'Regenerate' : 'Generate'}
@@ -596,25 +653,74 @@ export function Bible() {
             )}
           </div>
 
-          {ambientLoading && (
-            <div className="space-y-1.5">
-              <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-full" />
-              <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-4/5" />
-              <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-3/5" />
-            </div>
-          )}
+          <div className="px-4 py-3 space-y-4">
+            {/* Loading shimmer */}
+            {ambientLoading && (
+              <div className="space-y-2">
+                <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-full" />
+                <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-4/5" />
+                <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-3/5" />
+              </div>
+            )}
 
-          {!ambientLoading && ambientInsight && (
-            <p className="text-xs text-shield-fg/80 leading-relaxed">{ambientInsight}</p>
-          )}
+            {/* Failed / empty state */}
+            {!ambientLoading && !ambientInsight && (
+              <p className="text-xs text-shield-muted">
+                {insightFailed ? 'Could not generate insight. Click Generate to try again.' : 'Click Generate to create an AI insight for this passage.'}
+              </p>
+            )}
 
-          {!ambientLoading && !ambientInsight && !insightFailed && (
-            <p className="text-xs text-shield-muted">Generating insight for this passage…</p>
-          )}
+            {/* Full structured insight */}
+            {!ambientLoading && ambientInsight && (<>
+              {/* Explanation */}
+              <p className="text-xs text-shield-fg/85 leading-relaxed">{ambientInsight.explanation}</p>
 
-          {!ambientLoading && insightFailed && (
-            <p className="text-xs text-shield-muted">Could not generate insight. Click Generate to try again.</p>
-          )}
+              {/* Key Themes */}
+              {ambientInsight.keyThemes?.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-shield-muted mb-2">Key Themes</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ambientInsight.keyThemes.map(t => (
+                      <span key={t} className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-shield-brand/10 text-shield-brand border border-shield-brand/20">
+                        <Sparkles className="h-2.5 w-2.5" />{t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Cross-References */}
+              {ambientInsight.crossReferences?.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-shield-muted mb-2">Cross-References</p>
+                  <div className="space-y-2">
+                    {ambientInsight.crossReferences.map((cr, i) => (
+                      <div key={i} className="rounded-md border border-shield-edge bg-shield-canvas/40 px-3 py-2">
+                        <p className="text-[10px] font-semibold text-shield-brand mb-0.5">{cr.reference}</p>
+                        <p className="text-[10px] text-shield-fg/75 leading-relaxed italic mb-1">"{cr.text}"</p>
+                        {cr.relevance && <p className="text-[10px] text-shield-muted leading-relaxed">{cr.relevance}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Study Questions */}
+              {ambientInsight.studyQuestions?.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-shield-muted mb-2">Study Questions</p>
+                  <ol className="space-y-1.5 list-none">
+                    {ambientInsight.studyQuestions.map((q, i) => (
+                      <li key={i} className="flex gap-2 text-[11px] text-shield-fg/80 leading-relaxed">
+                        <span className="text-shield-brand font-semibold flex-shrink-0">{i + 1}.</span>
+                        <span>{typeof q === 'string' ? q : q.question}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+            </>)}
+          </div>
         </div>
 
         {/* Main verses */}
