@@ -142,6 +142,7 @@ export function Bible() {
   // Ambient AI insight
   const [ambientInsight, setAmbientInsight] = useState<string | null>(null)
   const [ambientLoading, setAmbientLoading] = useState(false)
+  const [insightFailed, setInsightFailed] = useState(false)
 
   // Audio
   const [audioBibles, setAudioBibles] = useState<Array<{ id: string; name: string }>>([])
@@ -308,7 +309,7 @@ export function Bible() {
 
   const loadPassage = useCallback(async (bookName: string, bookId: string, chapter: number, verse?: number) => {
     setIsLoading(true); setError(null); setShowSearchResults(false)
-    setActiveVerseNumber(null); setVerseInsight(null); setAmbientInsight(null)
+    setActiveVerseNumber(null); setVerseInsight(null); setAmbientInsight(null); setInsightFailed(false)
 
     const chapterId = `${bookId}.${chapter}`
     setSelectedChapterId(chapterId)
@@ -358,6 +359,7 @@ export function Bible() {
   const loadAmbientInsight = useCallback(async (passage: BiblePassage) => {
     if (!passage.verses.length) return
     setAmbientLoading(true)
+    setInsightFailed(false)
     try {
       const res = await fetch('/api/bible/ai-insights', {
         method: 'POST',
@@ -368,9 +370,10 @@ export function Bible() {
         const d = await res.json()
         const ins = d.insights || d
         const text = ins.explanation || ins.historicalContext || ins.theologicalMeaning || ''
-        if (text) setAmbientInsight(text)
+        if (text) { setAmbientInsight(text); return }
       }
-    } catch { }
+      setInsightFailed(true)
+    } catch { setInsightFailed(true) }
     finally { setAmbientLoading(false) }
   }, [selectedVersion, denomination])
 
@@ -577,22 +580,45 @@ export function Bible() {
 
     if (currentPassage) return (
       <div>
-        {/* Ambient insight */}
-        {(ambientLoading || ambientInsight) && (
-          <div className="mb-5 rounded-lg border border-shield-brand/20 bg-shield-brand/5 px-4 py-3">
-            <div className="flex items-center gap-1.5 mb-1.5">
+        {/* AI Insights panel — always visible when a passage is loaded */}
+        <div className="mb-5 rounded-lg border border-shield-brand/20 bg-shield-brand/5 px-4 py-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-shield-brand" />
-              <span className="text-xs font-semibold text-shield-brand uppercase tracking-wider">Passage Overview</span>
+              <span className="text-xs font-semibold text-shield-brand uppercase tracking-wider">AI Insights</span>
             </div>
-            {ambientLoading ? (
-              <div className="space-y-1.5">
-                <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-full" />
-                <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-4/5" />
-                <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-3/5" />
-              </div>
-            ) : <p className="text-xs text-shield-fg/80 leading-relaxed">{ambientInsight}</p>}
+            {/* Generate / Regenerate button */}
+            {!ambientLoading && (
+              <button
+                onClick={() => currentPassage && loadAmbientInsight(currentPassage)}
+                className="flex items-center gap-1 text-[10px] font-medium text-shield-brand hover:text-shield-brand/80 transition-colors"
+              >
+                <Sparkles className="h-3 w-3" />
+                {ambientInsight ? 'Regenerate' : 'Generate'}
+              </button>
+            )}
           </div>
-        )}
+
+          {ambientLoading && (
+            <div className="space-y-1.5">
+              <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-full" />
+              <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-4/5" />
+              <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-3/5" />
+            </div>
+          )}
+
+          {!ambientLoading && ambientInsight && (
+            <p className="text-xs text-shield-fg/80 leading-relaxed">{ambientInsight}</p>
+          )}
+
+          {!ambientLoading && !ambientInsight && !insightFailed && (
+            <p className="text-xs text-shield-muted">Generating insight for this passage…</p>
+          )}
+
+          {!ambientLoading && insightFailed && (
+            <p className="text-xs text-shield-muted">Could not generate insight. Click Generate to try again.</p>
+          )}
+        </div>
 
         {/* Main verses */}
         {currentPassage.verses.length > 0 ? renderVerseList(currentPassage.verses) : (
