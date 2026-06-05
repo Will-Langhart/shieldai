@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { BookOpen, Search, ChevronLeft, ChevronRight, Loader2, AlertCircle, Sparkles, X } from 'lucide-react'
+import { BookOpen, Search, ChevronLeft, ChevronRight, Loader2, AlertCircle, Sparkles, X, PanelLeft, PanelRight } from 'lucide-react'
 import { DenominationSelector } from '../../ui/DenominationSelector'
 import { MarginNotes } from './MarginNotes'
 import { useAuth } from '../../../contexts/AuthContext'
@@ -88,6 +88,10 @@ export function Bible() {
   // Denomination → version recommendation
   const [denomination, setDenomination] = useState<string | null>(null)
   const [versionRecommendation, setVersionRecommendation] = useState<{ name: string; id: string } | null>(null)
+
+  // Sidebar collapse state
+  const [navCollapsed, setNavCollapsed] = useState(false)
+  const [notesCollapsed, setNotesCollapsed] = useState(false)
 
   // Reading progress
   const [progressLoaded, setProgressLoaded] = useState(false)
@@ -488,7 +492,7 @@ export function Bible() {
     <div className="flex bg-shield-canvas text-white" style={{ height: 'calc(100vh - 48px)' }}>
 
       {/* ── Left nav column ─────────────────────────────────────────────── */}
-      <div className="w-52 flex-shrink-0 border-r border-shield-edge bg-shield-panel overflow-y-auto flex flex-col">
+      <div className={`${navCollapsed ? 'w-0' : 'w-52'} flex-shrink-0 border-r border-shield-edge bg-shield-panel overflow-y-auto flex flex-col transition-all duration-300`}>
         <div className="p-4 space-y-3 flex-1">
           <p className="text-xs font-semibold text-shield-fg uppercase tracking-wider">Navigation</p>
           <p className="text-[10px] text-shield-muted">⌘ + ← → to change chapter</p>
@@ -554,8 +558,16 @@ export function Bible() {
 
       {/* ── Centre content column ────────────────────────────────────────── */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-        {/* Search bar */}
-        <div className="flex-shrink-0 px-5 py-3 border-b border-shield-edge flex gap-2">
+        {/* Search bar + sidebar toggles */}
+        <div className="flex-shrink-0 px-3 py-3 border-b border-shield-edge flex items-center gap-2">
+          {/* Left sidebar toggle */}
+          <button
+            onClick={() => setNavCollapsed(c => !c)}
+            className="p-1.5 rounded-md hover:bg-shield-elevated transition-colors text-shield-muted hover:text-shield-fg flex-shrink-0"
+            title={navCollapsed ? 'Show navigation' : 'Hide navigation'}
+          >
+            <PanelLeft className="h-4 w-4" />
+          </button>
           <input
             type="text" value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
@@ -565,10 +577,18 @@ export function Bible() {
           />
           <button
             onClick={handleSearch} disabled={isLoading || !searchTerm.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-1.5 text-sm rounded-lg flex items-center gap-1.5 transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-1.5 text-sm rounded-lg flex items-center gap-1.5 transition-colors flex-shrink-0"
           >
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             Search
+          </button>
+          {/* Right sidebar toggle */}
+          <button
+            onClick={() => setNotesCollapsed(c => !c)}
+            className="p-1.5 rounded-md hover:bg-shield-elevated transition-colors text-shield-muted hover:text-shield-fg flex-shrink-0"
+            title={notesCollapsed ? 'Show study notes' : 'Hide study notes'}
+          >
+            <PanelRight className="h-4 w-4" />
           </button>
         </div>
 
@@ -606,7 +626,7 @@ export function Bible() {
       </div>
 
       {/* ── Right margin notes column ────────────────────────────────────── */}
-      <div className="w-72 flex-shrink-0 border-l border-shield-edge bg-shield-panel/50 overflow-hidden flex flex-col">
+      <div className={`${notesCollapsed ? 'w-0' : 'w-72'} flex-shrink-0 border-l border-shield-edge bg-shield-panel/50 overflow-hidden flex flex-col transition-all duration-300`}>
         <MarginNotes
           book={selectedBook}
           chapter={selectedChapter}
