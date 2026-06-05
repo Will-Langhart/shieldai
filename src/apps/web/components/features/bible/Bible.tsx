@@ -354,9 +354,11 @@ export function Bible() {
     setAmbientLoading(true)
     setInsightFailed(false)
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
       const res = await fetch('/api/bible/ai-insights', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ passage, version: selectedVersion, denomination, compact: true }),
       })
       if (res.ok) {
@@ -382,8 +384,10 @@ export function Bible() {
         verses: [{ id: 'v', text: verseText, reference: `${selectedBook} ${selectedChapter}:${verseNum}`, verseNumber: verseNum, chapterNumber: selectedChapter, bookName: selectedBook }],
         version: { id: selectedVersion, name: '', description: '', language: { id: 'eng', name: 'English' }, type: 'text' },
       }
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
       const res = await fetch('/api/bible/ai-insights', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers,
         body: JSON.stringify({ passage: versePassage, version: selectedVersion, denomination, compact: true }),
       })
       if (res.ok) {
