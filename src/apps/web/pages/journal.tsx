@@ -249,7 +249,7 @@ export default function JournalPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="min-h-screen bg-shield-void">
+      <div className="min-h-screen bg-shield-canvas">
         <Header />
 
         <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
