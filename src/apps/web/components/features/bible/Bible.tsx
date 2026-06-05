@@ -38,109 +38,60 @@ const DENOMINATION_VERSION_HINTS: Record<string, string[]> = {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function stripHtml(html: string) {
-  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 function extractVersesFromPassage(passage: any, bookName: string, chapter: number): BibleVerse[] {
-  // Prefer JSON content (new path)
-  if (passage.content && typeof passage.content !== 'string') {
-    return extractFromJSON(passage.content, passage.bookId || bookName, chapter)
-  }
+  const html: string = passage.content || passage.text || ''
+  if (!html) return []
 
-  // Fall back: JSON stored as string
-  if (passage.content && typeof passage.content === 'string') {
-    try {
-      const parsed = JSON.parse(passage.content)
-      const verses = extractFromJSON(parsed, passage.bookId || bookName, chapter)
-      if (verses.length > 0) return verses
-    } catch { /* fall through to HTML */ }
-  }
-
-  // Last resort: HTML regex parsing
-  const content = passage.content || passage.text || ''
   const verses: BibleVerse[] = []
+  const makeVerse = (num: number, text: string): BibleVerse => ({
+    id: `${bookName}.${chapter}.${num}`,
+    text: text.trim(),
+    reference: `${bookName} ${chapter}:${num}`,
+    verseNumber: num,
+    chapterNumber: chapter,
+    bookName,
+  })
 
-  const regex = /<span[^>]*data-number="(\d+)"[^>]*class="v"[^>]*>\d+<\/span>([^<]*?)(?=<span[^>]*data-number="\d+"[^>]*class="v"|$)/g
-  let match
-  while ((match = regex.exec(content)) !== null) {
-    const vNum = parseInt(match[1]); const vText = match[2].trim()
-    if (vText) verses.push({ id: `${bookName}.${chapter}.${vNum}`, text: vText, reference: `${bookName} ${chapter}:${vNum}`, verseNumber: vNum, chapterNumber: chapter, bookName })
-  }
-  if (verses.length === 0) {
-    const textContent = stripHtml(content)
-    if (textContent) verses.push({ id: `${bookName}.${chapter}.1`, text: textContent, reference: `${bookName} ${chapter}`, verseNumber: 1, chapterNumber: chapter, bookName })
-  }
-  return verses
-}
-
-function extractFromJSON(content: any, bookId: string, chapter: number): BibleVerse[] {
-  const verses: BibleVerse[] = []
-
-  // In USFM-JSON, verse nodes are MARKERS — the text follows as sibling nodes.
-  // We must process a flat item list: collect text after each verse marker.
-  const getNodeText = (node: any): string => {
-    if (!node) return ''
-    if (typeof node === 'string') return node.trim()
-    if (typeof node.text === 'string') return node.text
-    if (Array.isArray(node.items)) return node.items.map(getNodeText).filter(Boolean).join(' ')
-    return ''
+  // Strategy 1: <span data-number="N" ...> with verse spans (include-verse-spans=true)
+  // Collects ALL text between consecutive verse-number spans
+  const spanRegex = /<span[^>]*data-number="(\d+)"[^>]*>/g
+  const spanMatches: Array<{ num: number; index: number }> = []
+  let m: RegExpExecArray | null
+  while ((m = spanRegex.exec(html)) !== null) {
+    const num = parseInt(m[1], 10)
+    if (num > 0) spanMatches.push({ num, index: m.index })
   }
 
-  const isVerseMarker = (node: any) =>
-    node?.name === 'verse' || node?.attrs?.style === 'v' || node?.type === 'verse'
-
-  const processItems = (items: any[]) => {
-    let curNum: number | null = null
-    let parts: string[] = []
-
-    const flush = () => {
-      if (curNum === null) return
-      const text = parts.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim()
-      if (text && !verses.find(v => v.verseNumber === curNum)) {
-        verses.push({
-          id: `${bookId}.${chapter}.${curNum}`,
-          text,
-          reference: `${bookId} ${chapter}:${curNum}`,
-          verseNumber: curNum,
-          chapterNumber: chapter,
-          bookName: bookId,
-        })
-      }
+  if (spanMatches.length > 0) {
+    for (let i = 0; i < spanMatches.length; i++) {
+      const start = spanMatches[i].index
+      const end = i + 1 < spanMatches.length ? spanMatches[i + 1].index : html.length
+      const chunk = html.slice(start, end)
+      // Strip all tags and leading verse-number digits
+      const text = stripHtml(chunk).replace(/^\d+\s*/, '').trim()
+      if (text) verses.push(makeVerse(spanMatches[i].num, text))
     }
-
-    for (const item of items) {
-      if (isVerseMarker(item)) {
-        flush()
-        curNum = parseInt(item?.attrs?.number || item?.number || '0', 10)
-        parts = []
-      } else if (curNum !== null) {
-        const t = getNodeText(item)
-        if (t) parts.push(t)
-      }
-    }
-    flush()
+    if (verses.length > 0) return verses
   }
 
-  // Walk the tree looking for item arrays that contain verse markers
-  const walk = (node: any) => {
-    if (!node) return
-    const items: any[] = Array.isArray(node)
-      ? node
-      : Array.isArray(node.items)
-        ? node.items
-        : Array.isArray(node.content)
-          ? node.content
-          : []
-
-    if (items.some(isVerseMarker)) {
-      processItems(items)
-    } else {
-      items.forEach(walk)
+  // Strategy 2: plain numbered text — "1 In the beginning..." (text content-type)
+  const lines = stripHtml(html).split(/(?=\b\d+\s+\p{Lu})/u)
+  for (const line of lines) {
+    const lm = line.match(/^(\d+)\s+(.+)/)
+    if (lm) {
+      const num = parseInt(lm[1], 10)
+      if (num > 0 && num < 200) verses.push(makeVerse(num, lm[2].trim()))
     }
   }
+  if (verses.length > 0) return verses
 
-  if (Array.isArray(content)) content.forEach(walk); else walk(content)
-  return verses.sort((a, b) => a.verseNumber - b.verseNumber)
+  // Strategy 3: full text as a single block
+  const fullText = stripHtml(html)
+  if (fullText) return [makeVerse(1, fullText)]
+  return []
 }
 
 // ── Component ──────────────────────────────────────────────────────────────

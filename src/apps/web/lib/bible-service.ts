@@ -208,7 +208,8 @@ class BibleService {
     }
   }
 
-  // Get verse by reference (e.g., "John 3:16") — requests JSON content for reliable verse extraction
+  // Get verse by reference (e.g., "John 3:16")
+  // Uses HTML content-type with verse spans for reliable cross-translation parsing
   async getVerseByReference(versionId: string, reference: string): Promise<BiblePassage | null> {
     try {
       const convertedReference = this.convertReferenceFormat(reference);
@@ -217,32 +218,12 @@ class BibleService {
         {
           headers: this.getHeaders(),
           params: {
-            'content-type': 'json',
             'include-verse-numbers': true,
-            'include-titles': true,
+            'include-verse-spans': true,
           },
         }
       );
-      const data = response.data.data;
-      if (!data) return null;
-
-      // Parse JSON content into verses
-      const verses = this.extractVersesFromJSON(data.content, data.bookId || '', data.chapterId || '');
-
-      return {
-        id: data.id,
-        reference: data.reference,
-        text: verses.map(v => v.text).join(' '),
-        content: data.content ? JSON.stringify(data.content) : '',
-        verses,
-        version: {
-          id: versionId,
-          name: data.bibleId || '',
-          description: '',
-          language: { id: 'eng', name: 'English' },
-          type: 'text',
-        },
-      };
+      return response.data.data || null;
     } catch (error) {
       console.error('Error fetching verse by reference:', error);
       return null;
