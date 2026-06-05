@@ -9,42 +9,35 @@ export default async function handler(
   const cid = withCorrelationId(req, `notes_${Date.now()}`);
   if (req.method === 'GET') {
     try {
-      const { reference, userId } = req.query;
-
-      if (!reference || typeof reference !== 'string') {
-        logger.warn('Notes GET missing reference', { cid });
-        return res.status(400).json({ error: 'Reference parameter is required' });
-      }
+      const { reference, userId, book, chapter } = req.query;
 
       if (!userId || typeof userId !== 'string') {
         logger.warn('Notes GET missing userId', { cid });
         return res.status(400).json({ error: 'User ID is required' });
       }
 
+      // Support chapter-level fetch: ?book=Genesis&chapter=1 → all verse notes for that chapter
+      const isChapterFetch = book && chapter;
+      if (!isChapterFetch && (!reference || typeof reference !== 'string')) {
+        logger.warn('Notes GET missing reference or book+chapter', { cid });
+        return res.status(400).json({ error: 'Either reference or book+chapter is required' });
+      }
+
+      const SELECT_FIELDS = `
+        id, user_id, reference, text, note, tags, category,
+        visibility, color, is_favorite, cross_references,
+        related_verses, audio_note_url, attachments, created_at, last_modified
+      `
+
+      let query = supabase.from('bible_notes').select(SELECT_FIELDS).eq('user_id', userId)
+      if (isChapterFetch) {
+        query = query.ilike('reference', `${book} ${chapter}:%`)
+      } else {
+        query = query.eq('reference', reference as string)
+      }
+
       // Get notes for the reference and user with enhanced fields
-      const { data: notes, error } = await supabase
-        .from('bible_notes')
-        .select(`
-          id,
-          user_id,
-          reference,
-          text,
-          note,
-          tags,
-          category,
-          visibility,
-          color,
-          is_favorite,
-          cross_references,
-          related_verses,
-          audio_note_url,
-          attachments,
-          created_at,
-          last_modified
-        `)
-        .eq('reference', reference)
-        .eq('user_id', userId)
-        .order('last_modified', { ascending: false });
+      const { data: notes, error } = await query.order('last_modified', { ascending: false });
 
       if (error) {
         logger.error('Notes fetch failed', { cid }, error);
