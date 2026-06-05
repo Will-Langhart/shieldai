@@ -208,16 +208,179 @@ class BibleService {
     }
   }
 
-  // Get verse by reference (e.g., "John 3:16")
+  // Get verse by reference (e.g., "John 3:16") — requests JSON content for reliable verse extraction
   async getVerseByReference(versionId: string, reference: string): Promise<BiblePassage | null> {
     try {
       const convertedReference = this.convertReferenceFormat(reference);
-      const response = await axios.get(`${this.baseUrl}/bibles/${versionId}/passages/${encodeURIComponent(convertedReference)}`, {
-        headers: this.getHeaders(),
-      });
-      return response.data.data || null;
+      const response = await axios.get(
+        `${this.baseUrl}/bibles/${versionId}/passages/${encodeURIComponent(convertedReference)}`,
+        {
+          headers: this.getHeaders(),
+          params: {
+            'content-type': 'json',
+            'include-verse-numbers': true,
+            'include-titles': true,
+          },
+        }
+      );
+      const data = response.data.data;
+      if (!data) return null;
+
+      // Parse JSON content into verses
+      const verses = this.extractVersesFromJSON(data.content, data.bookId || '', data.chapterId || '');
+
+      return {
+        id: data.id,
+        reference: data.reference,
+        text: verses.map(v => v.text).join(' '),
+        content: data.content ? JSON.stringify(data.content) : '',
+        verses,
+        version: {
+          id: versionId,
+          name: data.bibleId || '',
+          description: '',
+          language: { id: 'eng', name: 'English' },
+          type: 'text',
+        },
+      };
     } catch (error) {
       console.error('Error fetching verse by reference:', error);
+      return null;
+    }
+  }
+
+  // Recursively extract verses from API.Bible JSON content structure
+  extractVersesFromJSON(
+    content: any,
+    bookId: string,
+    chapterId: string
+  ): BibleVerse[] {
+    const verses: BibleVerse[] = [];
+
+    const getText = (node: any): string => {
+      if (!node) return '';
+      if (typeof node === 'string') return node;
+      if (node.text && typeof node.text === 'string') return node.text;
+      if (Array.isArray(node.items)) return node.items.map(getText).join('');
+      if (Array.isArray(node)) return node.map(getText).join('');
+      return '';
+    };
+
+    const walk = (node: any) => {
+      if (!node) return;
+      const name = node.name || node.type || '';
+      const isVerse =
+        name === 'verse' ||
+        (node.attrs && (node.attrs.style === 'v' || node.attrs.number));
+
+      if (isVerse && node.items) {
+        const num = parseInt(node.attrs?.number || node.number || '0', 10);
+        const text = getText(node).trim();
+        if (num > 0 && text && !verses.find(v => v.verseNumber === num)) {
+          const chapterNum = parseInt((chapterId || '').split('.')[1] || '1', 10);
+          const bookName = bookId || '';
+          verses.push({
+            id: `${bookId}.${chapterNum}.${num}`,
+            text,
+            reference: `${bookName} ${chapterNum}:${num}`,
+            verseNumber: num,
+            chapterNumber: chapterNum,
+            bookName,
+          });
+        }
+      }
+
+      if (Array.isArray(node.items)) node.items.forEach(walk);
+      if (Array.isArray(node.content)) node.content.forEach(walk);
+      if (Array.isArray(node)) node.forEach(walk);
+    };
+
+    if (Array.isArray(content)) content.forEach(walk);
+    else walk(content);
+
+    return verses.sort((a, b) => a.verseNumber - b.verseNumber);
+  }
+
+  // ── Dynamic books / chapters / sections ────────────────────────────────
+
+  async getBooksForVersion(versionId: string): Promise<Array<{ id: string; name: string; abbreviation: string; nameLong: string }>> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/bibles/${versionId}/books`, {
+        headers: this.getHeaders(),
+      });
+      return (response.data.data || []).map((b: any) => ({
+        id: b.id,
+        name: b.name,
+        abbreviation: b.abbreviation || b.name,
+        nameLong: b.nameLong || b.name,
+      }));
+    } catch (error) {
+      console.error('Error fetching books:', error);
+      return [];
+    }
+  }
+
+  async getChaptersForBook(versionId: string, bookId: string): Promise<Array<{ id: string; number: string; reference: string }>> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/bibles/${versionId}/books/${bookId}/chapters`, {
+        headers: this.getHeaders(),
+      });
+      // Filter out intro chapters (number: 'intro')
+      return (response.data.data || [])
+        .filter((c: any) => c.number !== 'intro')
+        .map((c: any) => ({
+          id: c.id,
+          number: c.number,
+          reference: c.reference || `${bookId} ${c.number}`,
+        }));
+    } catch (error) {
+      console.error('Error fetching chapters:', error);
+      return [];
+    }
+  }
+
+  async getSectionsForChapter(versionId: string, chapterId: string): Promise<Array<{ title: string; firstVerseNum: number }>> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/bibles/${versionId}/chapters/${chapterId}/sections`, {
+        headers: this.getHeaders(),
+      });
+      return (response.data.data || []).map((s: any) => ({
+        title: s.title || '',
+        firstVerseNum: parseInt((s.firstVerseId || '').split('.').pop() || '0', 10),
+      })).filter((s: any) => s.title && s.firstVerseNum > 0);
+    } catch {
+      return []; // Sections not available for all translations — silently degrade
+    }
+  }
+
+  // ── Audio Bibles ────────────────────────────────────────────────────────
+
+  async getAudioBibles(language = 'eng'): Promise<Array<{ id: string; name: string; nameLocal: string }>> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/audio-bibles`, {
+        headers: this.getHeaders(),
+        params: { language },
+      });
+      return (response.data.data || []).map((a: any) => ({
+        id: a.id,
+        name: a.name || a.nameLocal,
+        nameLocal: a.nameLocal || a.name,
+      }));
+    } catch (error) {
+      console.error('Error fetching audio bibles:', error);
+      return [];
+    }
+  }
+
+  async getAudioChapter(audioBibleId: string, chapterId: string): Promise<string | null> {
+    try {
+      const response = await axios.get(
+        `${this.baseUrl}/audio-bibles/${audioBibleId}/chapters/${chapterId}`,
+        { headers: this.getHeaders() }
+      );
+      return response.data.data?.resourceUrl || null;
+    } catch (error) {
+      console.error('Error fetching audio chapter:', error);
       return null;
     }
   }
