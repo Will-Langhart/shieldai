@@ -55,7 +55,7 @@ export function Chat() {
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [selectedMode, setSelectedMode] = useState<'gentle' | 'scholarly' | 'debate'>('gentle')
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearch, setShowSearch] = useState(false)
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0)
@@ -548,6 +548,7 @@ export function Chat() {
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
               <div className="text-center w-full max-w-2xl mx-auto">
+                <img src="/logo.png" alt="Shield AI" className="w-16 h-16 mx-auto mb-4 object-contain" />
                 <h2 className="text-xl font-semibold mb-2 text-shield-fg">What can I help with?</h2>
                 <p className="text-sm text-shield-muted">Ask a theological question, explore scripture, or test an argument.</p>
               </div>
