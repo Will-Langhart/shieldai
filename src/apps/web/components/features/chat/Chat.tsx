@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { useAuth } from '../../../contexts/AuthContext'
 import { chatService } from '../../../services/chatService'
 import { useRouter } from 'next/router'
+import { navItems, isActivePath } from '../../layout/navItems'
 import { EnhancedMessage } from './EnhancedMessage'
 import { DenominationSelector } from '../../ui/DenominationSelector'
 import { UserButton } from '../../auth/UserButton'
@@ -446,6 +448,31 @@ export function Chat() {
           <Plus className="h-4 w-4" />
           New chat
         </button>
+
+        {/* App navigation */}
+        <nav aria-label="Primary" className="px-2 pb-1 space-y-0.5">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const active = isActivePath(router.pathname, item.path)
+            return (
+              <Link
+                key={item.path}
+                href={item.path}
+                aria-current={active ? 'page' : undefined}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  active
+                    ? 'bg-shield-elevated text-shield-fg'
+                    : 'text-shield-muted hover:bg-shield-elevated hover:text-shield-fg'
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div className="mx-3 my-1 border-t border-shield-edge" />
 
         {/* Conversation list */}
         <div className="flex-1 overflow-y-auto px-2 py-1 scrollbar-hide space-y-4">

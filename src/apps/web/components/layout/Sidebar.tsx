@@ -1,30 +1,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import {
-  Home,
-  BookOpen,
-  MessageCircle,
-  Brain,
-  BookMarked,
-  PanelLeftClose,
-  PanelLeftOpen,
-  X,
-} from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
 import { cn } from '../../utils/cn'
-
-const navItems = [
-  { path: '/', label: 'Home', icon: Home },
-  { path: '/bible', label: 'Bible', icon: BookOpen },
-  { path: '/chat', label: 'Chat', icon: MessageCircle },
-  { path: '/insights-history', label: 'Insights', icon: Brain },
-  { path: '/journal', label: 'Journal', icon: BookMarked },
-]
-
-function isActivePath(pathname: string, path: string) {
-  if (path === '/') return pathname === '/'
-  return pathname === path || pathname.startsWith(`${path}/`)
-}
+import { navItems, isActivePath } from './navItems'
 
 interface SidebarProps {
   /** Desktop rail: collapsed = icon-only, expanded = icon + label. */
