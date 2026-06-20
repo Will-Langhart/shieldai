@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Head from 'next/head'
-import { AppShell } from '../components/layout/AppShell'
+import { Header } from '../components/Header'
 import { ProtectedRoute } from '../components/auth/ProtectedRoute'
 import { JournalNoteEditor } from '../components/features/bible/JournalNoteEditor'
 import {
@@ -249,7 +249,8 @@ export default function JournalPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <AppShell>
+      <div className="min-h-screen bg-shield-canvas">
+        <Header showNav />
         <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
           {/* Page header */}
           <div className="mb-8">
@@ -354,7 +355,7 @@ export default function JournalPage() {
             </section>
           ))}
         </main>
-      </AppShell>
+      </div>
     </>
     </ProtectedRoute>
   )
