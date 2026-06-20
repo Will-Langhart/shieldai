@@ -1,26 +1,29 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/router'
-import { BookOpen, MessageCircle, Brain, BookMarked, Home } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import { UserButton } from './auth/UserButton'
 
-export function Header() {
-  const router = useRouter()
-  const location = { pathname: router.pathname }
+interface HeaderProps {
+  /** When provided, renders a hamburger button (mobile only) that opens the nav drawer. */
+  onMenuClick?: () => void
+}
 
-  const navItems = [
-    { path: '/', label: 'Home', icon: Home },
-    { path: '/bible', label: 'Bible', icon: BookOpen },
-    { path: '/chat', label: 'Chat', icon: MessageCircle },
-    { path: '/insights-history', label: 'Insights', icon: Brain },
-    { path: '/journal', label: 'Journal', icon: BookMarked },
-  ]
-  
+export function Header({ onMenuClick }: HeaderProps = {}) {
   return (
-    <header className="sticky top-0 z-50 bg-shield-canvas/95 backdrop-blur-sm shadow-sm border-b border-shield-panel">
+    <header className="sticky top-0 z-30 bg-shield-canvas/95 backdrop-blur-sm shadow-sm border-b border-shield-panel">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-12">
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            {onMenuClick && (
+              <button
+                type="button"
+                onClick={onMenuClick}
+                aria-label="Open menu"
+                className="md:hidden rounded-md p-1.5 text-shield-muted transition-colors hover:bg-shield-panel hover:text-shield-fg"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            )}
             <Link href="/" className="flex items-center space-x-2">
               <Image
                 src="/logo.png"
@@ -33,29 +36,7 @@ export function Header() {
               <span className="text-base font-semibold text-shield-fg">Shield AI</span>
             </Link>
           </div>
-          
-          <nav className="hidden md:flex space-x-8">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive = location.pathname === item.path
-              
-              return (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={`flex items-center space-x-1 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
-                    isActive
-                      ? 'bg-shield-brand/15 text-shield-brand shadow-shield-inset'
-                      : 'text-shield-muted hover:bg-shield-panel hover:text-shield-fg'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </Link>
-              )
-            })}
-          </nav>
-          
+
           <div className="flex items-center">
             <UserButton />
           </div>

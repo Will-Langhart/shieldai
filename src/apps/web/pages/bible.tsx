@@ -1,14 +1,13 @@
 import { Bible } from '../components/features/bible/Bible'
-import { Header } from '../components/Header'
+import { AppShell } from '../components/layout/AppShell'
 import { ProtectedRoute } from '../components/auth/ProtectedRoute'
 
 export default function BiblePage() {
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-shield-canvas">
-        <Header />
+      <AppShell>
         <Bible />
-      </div>
+      </AppShell>
     </ProtectedRoute>
   )
 }

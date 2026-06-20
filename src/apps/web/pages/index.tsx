@@ -1,13 +1,12 @@
 import { Home } from './Home'
-import { Header } from '../components/Header'
+import { AppShell } from '../components/layout/AppShell'
 import Footer from '../components/layout/Footer'
 
 export default function IndexPage() {
   return (
-    <div className="min-h-screen relative">
-      <Header />
+    <AppShell>
       <Home />
       <Footer />
-    </div>
+    </AppShell>
   )
 }
