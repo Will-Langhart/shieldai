@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shield AI — Mobile Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --void:    #0B0D12;
+    --deep:    #0F1117;
+    --canvas:  #1A1D24;
+    --surface: #1E2128;
+    --panel:   #2C303A;
+    --elevated:#3A404B;
+    --muted:   #9CA3AF;
+    --fg:      #E8EAED;
+    --brand:   #46A1E2;
+    --brand2:  #2E8BC4;
+    --accent:  #E8B44C;
+    --danger:  #EF4444;
+    --success: #22C55E;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #111418;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  /* ── Phone shell ── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--canvas);
+    border-radius: 48px;
+    border: 2px solid #2a2e38;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Status bar ── */
+  .statusbar {
+    height: 50px;
+    background: var(--canvas);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 28px 0;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  .statusbar .time { font-size: 15px; font-weight: 600; color: var(--fg); }
+  .statusbar .icons { display: flex; gap: 6px; align-items: center; }
+  .statusbar .icons svg { fill: var(--fg); }
+
+  /* ── Screen container ── */
+  .screens { flex: 1; overflow: hidden; position: relative; }
+  .screen {
+    position: absolute; inset: 0;
+    background: var(--canvas);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .screen.active { display: flex; }
+
+  /* ── Tab bar ── */
+  .tabbar {
+    height: 83px;
+    background: var(--deep);
+    border-top: 1px solid #2a2e38;
+    display: flex;
+    align-items: flex-start;
+    padding-top: 10px;
+    flex-shrink: 0;
+  }
+  .tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 4px; cursor: pointer; padding: 6px 0;
+  }
+  .tab svg { width: 24px; height: 24px; }
+  .tab span { font-size: 10px; font-weight: 500; color: var(--muted); }
+  .tab.active span { color: var(--brand); }
+  .tab.active svg { fill: var(--brand); }
+  .tab:not(.active) svg { fill: var(--muted); }
+
+  /* ── Shared components ── */
+  .screen-header {
+    padding: 16px 20px 12px;
+    background: var(--canvas);
+    border-bottom: 1px solid #2a2e38;
+    flex-shrink: 0;
+  }
+  .screen-title { font-size: 28px; font-weight: 700; color: var(--fg); }
+  .screen-subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+  .scroll-content { flex: 1; overflow-y: auto; }
+  .scroll-content::-webkit-scrollbar { display: none; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--brand), var(--brand2));
+    color: #fff; border: none; border-radius: 14px;
+    padding: 14px 24px; font-size: 15px; font-weight: 600;
+    cursor: pointer; width: 100%; text-align: center;
+    box-shadow: 0 4px 20px rgba(70,161,226,0.3);
+  }
+  .btn-secondary {
+    background: transparent; color: var(--brand);
+    border: 1.5px solid var(--brand); border-radius: 14px;
+    padding: 14px 24px; font-size: 15px; font-weight: 600;
+    cursor: pointer; width: 100%; text-align: center;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid #3a404b;
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .tag {
+    display: inline-block; background: rgba(70,161,226,0.15);
+    color: var(--brand); font-size: 11px; font-weight: 500;
+    border-radius: 20px; padding: 3px 10px;
+  }
+  .tag.gold { background: rgba(232,180,76,0.15); color: var(--accent); }
+
+  /* ──────────────────────────────
+     SCREEN 1 — AUTH / LANDING
+  ────────────────────────────── */
+  #screen-auth {
+    background: linear-gradient(165deg, #12151C 0%, #1A1D24 40%, #1E2430 100%);
+    justify-content: center;
+    align-items: center;
+    padding: 32px 28px;
+    gap: 0;
+  }
+  .auth-glow {
+    position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(70,161,226,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .auth-logo {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    margin-bottom: 36px; margin-top: 20px;
+  }
+  .shield-icon {
+    width: 80px; height: 80px; border-radius: 24px;
+    background: linear-gradient(135deg, #46A1E2, #1A6CF8);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 32px rgba(70,161,226,0.4);
+  }
+  .shield-icon svg { width: 48px; height: 48px; fill: white; }
+  .auth-logo h1 { font-size: 32px; font-weight: 800; color: var(--fg); letter-spacing: -0.5px; }
+  .auth-logo p { font-size: 14px; color: var(--muted); text-align: center; line-height: 1.5; }
+
+  .auth-features { width: 100%; margin-bottom: 32px; display: flex; flex-direction: column; gap: 12px; }
+  .auth-feature { display: flex; align-items: center; gap: 12px; }
+  .auth-feature-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--panel); display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .auth-feature p { font-size: 13px; color: var(--muted); }
+  .auth-feature strong { color: var(--fg); font-size: 14px; display: block; }
+
+  .auth-buttons { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+  .auth-divider { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
+  .auth-divider hr { flex: 1; border: none; border-top: 1px solid #2a2e38; }
+  .auth-divider span { font-size: 12px; color: var(--muted); }
+
+  /* ──────────────────────────────
+     SCREEN 2 — CHAT
+  ────────────────────────────── */
+  .chat-search {
+    margin: 12px 20px;
+    background: var(--panel);
+    border: 1px solid #3a404b;
+    border-radius: 12px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+  }
+  .chat-search input {
+    flex: 1; background: transparent; border: none;
+    color: var(--fg); font-size: 14px; font-family: inherit; outline: none;
+  }
+  .chat-search input::placeholder { color: var(--muted); }
+
+  .convo-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px; cursor: pointer;
+    border-bottom: 1px solid #222530;
+    transition: background 0.15s;
+  }
+  .convo-item:active { background: var(--surface); }
+  .convo-avatar {
+    width: 46px; height: 46px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--brand), var(--brand2));
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 20px;
+  }
+  .convo-body { flex: 1; min-width: 0; }
+  .convo-title { font-size: 14px; font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .convo-preview { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .convo-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .convo-time { font-size: 12px; color: var(--muted); }
+  .convo-badge {
+    background: var(--brand); color: white;
+    font-size: 11px; font-weight: 600;
+    width: 18px; height: 18px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mode-pill {
+    display: inline-flex; gap: 0; background: var(--panel);
+    border: 1px solid #3a404b; border-radius: 10px; overflow: hidden;
+    margin: 10px 20px 0;
+  }
+  .mode-pill button {
+    flex: 1; padding: 8px 0; font-size: 12px; font-weight: 500;
+    border: none; background: transparent; color: var(--muted);
+    cursor: pointer; font-family: inherit;
+  }
+  .mode-pill button.active { background: var(--brand); color: white; }
+
+  .fab {
+    position: absolute; bottom: 20px; right: 20px;
+    width: 52px; height: 52px; border-radius: 16px;
+    background: linear-gradient(135deg, var(--brand), var(--brand2));
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(70,161,226,0.4);
+  }
+  .fab svg { width: 24px; height: 24px; fill: white; }
+
+  /* Chat detail */
+  #screen-chat-detail {
+    background: var(--canvas);
+  }
+  .chat-detail-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #2a2e38;
+    flex-shrink: 0;
+  }
+  .back-btn {
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--brand); font-size: 20px; border: none; background: transparent;
+  }
+  .chat-detail-title { flex: 1; }
+  .chat-detail-title h2 { font-size: 16px; font-weight: 600; color: var(--fg); }
+  .chat-detail-title span { font-size: 12px; color: var(--muted); }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .chat-messages::-webkit-scrollbar { display: none; }
+  .msg { display: flex; gap: 8px; max-width: 88%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-avatar {
+    width: 30px; height: 30px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--brand), var(--brand2));
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .msg.user .msg-avatar { background: var(--elevated); }
+  .msg-bubble {
+    background: var(--panel); border-radius: 16px; border-bottom-left-radius: 4px;
+    padding: 12px 14px; font-size: 14px; color: var(--fg); line-height: 1.5;
+  }
+  .msg.user .msg-bubble {
+    background: var(--brand); border-radius: 16px; border-bottom-right-radius: 4px; color: white;
+  }
+  .msg-bubble .verse-ref { color: var(--accent); font-weight: 600; font-size: 13px; }
+  .chat-input-bar {
+    padding: 12px 16px 16px; border-top: 1px solid #2a2e38;
+    display: flex; gap: 10px; align-items: flex-end;
+    background: var(--canvas); flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1; background: var(--panel); border: 1px solid #3a404b;
+    border-radius: 20px; padding: 10px 16px;
+    color: var(--fg); font-size: 14px; font-family: inherit;
+    resize: none; outline: none; max-height: 100px;
+  }
+  .chat-input::placeholder { color: var(--muted); }
+  .send-btn {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--brand); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .send-btn svg { width: 18px; height: 18px; fill: white; }
+
+  /* ──────────────────────────────
+     SCREEN 3 — BIBLE
+  ────────────────────────────── */
+  .bible-search-row {
+    display: flex; gap: 8px; padding: 12px 20px;
+    flex-shrink: 0;
+  }
+  .bible-search-input {
+    flex: 1; background: var(--panel); border: 1px solid #3a404b;
+    border-radius: 12px; padding: 10px 14px;
+    color: var(--fg); font-size: 14px; font-family: inherit; outline: none;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .version-pill {
+    background: var(--panel); border: 1px solid #3a404b; border-radius: 12px;
+    padding: 10px 12px; color: var(--brand); font-size: 13px; font-weight: 600;
+    white-space: nowrap; cursor: pointer;
+  }
+  .daily-verse-card {
+    margin: 0 20px 16px;
+    background: linear-gradient(135deg, rgba(70,161,226,0.15), rgba(46,139,196,0.08));
+    border: 1px solid rgba(70,161,226,0.25);
+    border-radius: 18px; padding: 18px;
+  }
+  .daily-verse-label { font-size: 11px; font-weight: 600; color: var(--brand); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+  .daily-verse-text { font-size: 15px; color: var(--fg); line-height: 1.6; font-style: italic; margin-bottom: 8px; }
+  .daily-verse-ref { font-size: 13px; color: var(--accent); font-weight: 600; }
+
+  .bible-tabs { display: flex; gap: 0; padding: 0 20px; margin-bottom: 12px; flex-shrink: 0; }
+  .bible-tab {
+    flex: 1; padding: 9px 0; text-align: center; font-size: 13px; font-weight: 500;
+    color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer;
+  }
+  .bible-tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+
+  .passage-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px 12px; flex-shrink: 0;
+  }
+  .nav-btn {
+    width: 36px; height: 36px; border-radius: 10px; background: var(--panel);
+    border: 1px solid #3a404b; display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .nav-btn svg { width: 16px; height: 16px; fill: var(--fg); }
+  .passage-ref { font-size: 16px; font-weight: 600; color: var(--fg); }
+
+  .verse { padding: 4px 20px; }
+  .verse-number { font-size: 11px; font-weight: 700; color: var(--brand); margin-right: 4px; vertical-align: super; }
+  .verse-text { font-size: 15px; color: var(--fg); line-height: 1.8; }
+  .verse-text.highlight { background: rgba(232,180,76,0.15); border-radius: 4px; padding: 2px 4px; }
+
+  .insights-panel {
+    margin: 12px 20px 0;
+    background: var(--surface);
+    border: 1px solid #3a404b;
+    border-radius: 16px; padding: 16px;
+  }
+  .insights-panel h3 { font-size: 14px; font-weight: 600; color: var(--fg); margin-bottom: 8px; }
+  .insight-item { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+  .insight-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); margin-top: 6px; flex-shrink: 0; }
+  .insight-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  /* ──────────────────────────────
+     SCREEN 4 — INSIGHTS
+  ────────────────────────────── */
+  .insights-search {
+    margin: 12px 20px;
+    background: var(--panel); border: 1px solid #3a404b; border-radius: 12px;
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    flex-shrink: 0;
+  }
+  .insights-search input {
+    flex: 1; background: transparent; border: none; color: var(--fg);
+    font-size: 14px; font-family: inherit; outline: none;
+  }
+  .insights-search input::placeholder { color: var(--muted); }
+
+  .insights-filters {
+    display: flex; gap: 8px; padding: 0 20px 12px; overflow-x: auto; flex-shrink: 0;
+  }
+  .insights-filters::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    white-space: nowrap; padding: 6px 14px;
+    border-radius: 20px; font-size: 12px; font-weight: 500;
+    background: var(--panel); border: 1px solid #3a404b; color: var(--muted);
+    cursor: pointer;
+  }
+  .filter-chip.active { background: rgba(70,161,226,0.15); border-color: var(--brand); color: var(--brand); }
+
+  .insight-card {
+    margin: 0 20px 12px;
+    background: var(--panel); border: 1px solid #3a404b; border-radius: 18px;
+    padding: 16px; cursor: pointer;
+  }
+  .insight-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .insight-passage { font-size: 15px; font-weight: 700; color: var(--fg); }
+  .insight-version { font-size: 12px; color: var(--muted); }
+  .insight-excerpt { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; font-style: italic; }
+  .insight-themes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .insight-card-footer { display: flex; justify-content: space-between; align-items: center; }
+  .insight-date { font-size: 11px; color: var(--elevated); }
+  .insight-actions { display: flex; gap: 12px; }
+  .insight-action { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .insight-action:hover { color: var(--brand); }
+
+  .stats-row { display: flex; gap: 10px; padding: 0 20px 16px; flex-shrink: 0; }
+  .stat-box {
+    flex: 1; background: var(--panel); border: 1px solid #3a404b;
+    border-radius: 14px; padding: 12px; text-align: center;
+  }
+  .stat-num { font-size: 22px; font-weight: 700; color: var(--fg); }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ──────────────────────────────
+     SCREEN 5 — JOURNAL
+  ────────────────────────────── */
+  .journal-header-meta { display: flex; justify-content: space-between; align-items: center; }
+  .journal-new-btn {
+    background: var(--brand); color: white; border: none;
+    border-radius: 10px; padding: 7px 14px; font-size: 13px;
+    font-weight: 600; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  .journal-search {
+    margin: 12px 20px;
+    background: var(--panel); border: 1px solid #3a404b; border-radius: 12px;
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    flex-shrink: 0;
+  }
+  .journal-search input {
+    flex: 1; background: transparent; border: none; color: var(--fg);
+    font-size: 14px; font-family: inherit; outline: none;
+  }
+  .journal-search input::placeholder { color: var(--muted); }
+
+  .journal-filters {
+    display: flex; gap: 8px; padding: 0 20px 12px; overflow-x: auto; flex-shrink: 0;
+  }
+  .journal-filters::-webkit-scrollbar { display: none; }
+
+  .note-card {
+    margin: 0 20px 12px;
+    background: var(--panel); border: 1px solid #3a404b;
+    border-radius: 18px; padding: 16px; cursor: pointer;
+  }
+  .note-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .note-title { font-size: 15px; font-weight: 600; color: var(--fg); }
+  .note-menu { color: var(--muted); font-size: 18px; cursor: pointer; line-height: 1; }
+  .note-verse-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(70,161,226,0.12); border-radius: 8px;
+    padding: 4px 10px; margin-bottom: 8px;
+    font-size: 12px; color: var(--brand); font-weight: 500; cursor: pointer;
+  }
+  .note-preview { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
+  .note-footer { display: flex; justify-content: space-between; align-items: center; }
+  .note-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .note-date { font-size: 11px; color: var(--elevated); }
+
+  /* Note editor modal */
+  #screen-note-editor {
+    background: var(--canvas);
+  }
+  .editor-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid #2a2e38; flex-shrink: 0;
+  }
+  .editor-save {
+    background: var(--brand); color: white; border: none;
+    border-radius: 10px; padding: 7px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .editor-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .editor-body::-webkit-scrollbar { display: none; }
+  .editor-verse-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(70,161,226,0.1); border: 1px solid rgba(70,161,226,0.2);
+    border-radius: 12px; padding: 10px 14px; margin-bottom: 16px;
+  }
+  .editor-verse-chip span { font-size: 13px; color: var(--brand); font-weight: 500; }
+  .editor-verse-chip p { font-size: 13px; color: var(--muted); font-style: italic; }
+  .editor-title-input {
+    width: 100%; background: transparent; border: none; outline: none;
+    font-size: 22px; font-weight: 700; color: var(--fg); font-family: inherit;
+    margin-bottom: 16px;
+  }
+  .editor-title-input::placeholder { color: var(--elevated); }
+  .editor-content {
+    width: 100%; background: transparent; border: none; outline: none;
+    font-size: 15px; color: var(--fg); font-family: inherit; line-height: 1.7;
+    resize: none; min-height: 200px;
+  }
+  .editor-content::placeholder { color: var(--elevated); }
+  .editor-toolbar {
+    display: flex; gap: 0; padding: 10px 16px; border-top: 1px solid #2a2e38;
+    background: var(--canvas); overflow-x: auto; flex-shrink: 0;
+  }
+  .editor-toolbar::-webkit-scrollbar { display: none; }
+  .toolbar-btn {
+    width: 40px; height: 36px; display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; color: var(--muted); font-size: 14px;
+    font-weight: 600; cursor: pointer; border-radius: 8px; font-family: inherit;
+  }
+  .toolbar-btn:hover { background: var(--panel); color: var(--fg); }
+  .tag-row { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 16px 0; }
+
+  /* ── Animations ── */
+  .screen { animation: none; }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .screen.active { animation: slideUp 0.2s ease; }
+
+  /* Scrollbar hidden globally */
+  * { scrollbar-width: none; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <svg width="16" height="12" viewBox="0 0 16 12"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="0" width="2" height="12" rx="1" fill-opacity="0.3"/></svg>
+      <svg width="16" height="12" viewBox="0 0 24 12"><path d="M1 4C1 2.9 1.9 2 3 2h16a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3H3a2 2 0 0 1-2-2V4z" stroke="white" stroke-width="1.5" fill="none"/><rect x="20" y="5" width="3" height="2" rx="1"/><rect x="2.5" y="3.5" width="14" height="5" rx="1"/></svg>
+      <svg width="12" height="12" viewBox="0 0 24 24"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+
+  <!-- Screens -->
+  <div class="screens">
+
+    <!-- ── AUTH ── -->
+    <div class="screen active" id="screen-auth">
+      <div class="auth-glow"></div>
+      <div class="auth-logo">
+        <div class="shield-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/>
+            <path d="M11 8h2v3h3v2h-3v3h-2v-3H8v-2h3z" fill="#1A6CF8"/>
+          </svg>
+        </div>
+        <h1>Shield AI</h1>
+        <p>Your AI-powered Christian apologetics<br>companion & Bible study tool</p>
+      </div>
+
+      <div class="auth-features">
+        <div class="auth-feature">
+          <div class="auth-feature-icon">🛡️</div>
+          <div>
+            <strong>Apologetics Agent</strong>
+            <p>Gentle, scholarly & debate-ready responses</p>
+          </div>
+        </div>
+        <div class="auth-feature">
+          <div class="auth-feature-icon">📖</div>
+          <div>
+            <strong>Bible Study Tools</strong>
+            <p>AI insights, cross-references & study notes</p>
+          </div>
+        </div>
+        <div class="auth-feature">
+          <div class="auth-feature-icon">⛪</div>
+          <div>
+            <strong>Church Finder</strong>
+            <p>Discover local churches near you</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-buttons">
+        <button class="btn-primary" onclick="goToMain()">Get Started — It's Free</button>
+        <div class="auth-divider"><hr><span>Already have an account?</span><hr></div>
+        <button class="btn-secondary" onclick="goToMain()">Sign In</button>
+      </div>
+    </div>
+
+    <!-- ── CHAT LIST ── -->
+    <div class="screen" id="screen-chat">
+      <div class="screen-header">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="screen-title">Chat</div>
+            <div class="screen-subtitle">Your apologetics conversations</div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="width:34px;height:34px;background:var(--panel);border:1px solid #3a404b;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer">
+              <svg width="16" height="16" fill="none" stroke="var(--muted)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="mode-pill">
+          <button class="active">Gentle</button>
+          <button>Scholarly</button>
+          <button>Debate</button>
+        </div>
+      </div>
+
+      <div class="chat-search">
+        <svg width="16" height="16" fill="none" stroke="var(--muted)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input placeholder="Search conversations…" type="text">
+      </div>
+
+      <div class="scroll-content">
+        <div class="convo-item" onclick="showScreen('screen-chat-detail')">
+          <div class="convo-avatar">✝️</div>
+          <div class="convo-body">
+            <div class="convo-title">Is the Bible historically reliable?</div>
+            <div class="convo-preview">Shield AI: Archaeological evidence strongly supports…</div>
+          </div>
+          <div class="convo-meta">
+            <div class="convo-time">10:24 AM</div>
+            <div class="convo-badge">2</div>
+          </div>
+        </div>
+        <div class="convo-item" onclick="showScreen('screen-chat-detail')">
+          <div class="convo-avatar">🙏</div>
+          <div class="convo-body">
+            <div class="convo-title">Why does God allow suffering?</div>
+            <div class="convo-preview">This is the problem of evil, one of the most profound…</div>
+          </div>
+          <div class="convo-meta">
+            <div class="convo-time">Yesterday</div>
+          </div>
+        </div>
+        <div class="convo-item" onclick="showScreen('screen-chat-detail')">
+          <div class="convo-avatar">📜</div>
+          <div class="convo-body">
+            <div class="convo-title">Evidence for the Resurrection</div>
+            <div class="convo-preview">The minimal facts argument includes 5 widely accepted…</div>
+          </div>
+          <div class="convo-meta">
+            <div class="convo-time">Mon</div>
+          </div>
+        </div>
+        <div class="convo-item" onclick="showScreen('screen-chat-detail')">
+          <div class="convo-avatar">⭐</div>
+          <div class="convo-body">
+            <div class="convo-title">Can science and faith coexist?</div>
+            <div class="convo-preview">Many of history's greatest scientists were devout…</div>
+          </div>
+          <div class="convo-meta">
+            <div class="convo-time">Sun</div>
+          </div>
+        </div>
+        <div class="convo-item" onclick="showScreen('screen-chat-detail')">
+          <div class="convo-avatar">🔥</div>
+          <div class="convo-body">
+            <div class="convo-title">Who is Jesus according to history?</div>
+            <div class="convo-preview">Extra-biblical sources including Tacitus, Josephus…</div>
+          </div>
+          <div class="convo-meta">
+            <div class="convo-time">May 18</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="fab">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+
+    <!-- ── CHAT DETAIL ── -->
+    <div class="screen" id="screen-chat-detail">
+      <div class="chat-detail-header">
+        <button class="back-btn" onclick="showScreen('screen-chat')">‹</button>
+        <div class="chat-detail-title">
+          <h2>Is the Bible historically reliable?</h2>
+          <span>Gentle mode · 4 messages</span>
+        </div>
+        <div style="width:32px;height:32px;background:var(--panel);border:1px solid #3a404b;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--muted)">⋯</div>
+      </div>
+
+      <div class="chat-messages">
+        <div class="msg user">
+          <div class="msg-avatar">W</div>
+          <div class="msg-bubble">Is the Bible historically reliable? My friend says it's just myths.</div>
+        </div>
+        <div class="msg">
+          <div class="msg-avatar">🛡</div>
+          <div class="msg-bubble">
+            Great question. The Bible's historical reliability is actually well-supported by multiple lines of evidence.<br><br>
+            <span class="verse-ref">Archaeological confirmation:</span> Over 25,000 sites mentioned in the Bible have been confirmed by archaeology, including the Pool of Siloam (<span class="verse-ref">John 9:7</span>) and the Tel Dan Stele mentioning "the house of David."<br><br>
+            <span class="verse-ref">Manuscript evidence:</span> The New Testament has over 5,800 Greek manuscripts — far more than any other ancient work. Homer's Iliad has only ~650.
+          </div>
+        </div>
+        <div class="msg user">
+          <div class="msg-avatar">W</div>
+          <div class="msg-bubble">What about contradictions people point to?</div>
+        </div>
+        <div class="msg">
+          <div class="msg-avatar">🛡</div>
+          <div class="msg-bubble">
+            Most alleged contradictions dissolve under careful reading. Many are: differences in perspective between authors, figures of speech interpreted literally, or copyist variations in non-essential details.<br><br>
+            Scholar Gleason Archer examined hundreds of supposed contradictions in his <em>Encyclopedia of Bible Difficulties</em> and found resolutions for each one.
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-bar">
+        <textarea class="chat-input" placeholder="Ask a follow-up question…" rows="1"></textarea>
+        <button class="send-btn">
+          <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── BIBLE ── -->
+    <div class="screen" id="screen-bible">
+      <div class="screen-header">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="screen-title">Bible</div>
+            <div class="screen-subtitle">Read, study & explore scripture</div>
+          </div>
+          <div class="version-pill">KJV ▾</div>
+        </div>
+      </div>
+
+      <div class="bible-search-row">
+        <div class="bible-search-input" style="display:flex">
+          <svg width="16" height="16" fill="none" stroke="var(--muted)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input style="flex:1;background:transparent;border:none;outline:none;color:var(--fg);font-size:14px;margin-left:8px;font-family:inherit" placeholder="Search scripture…" type="text">
+        </div>
+      </div>
+
+      <div class="scroll-content">
+        <div class="daily-verse-card">
+          <div class="daily-verse-label">✦ Daily Verse</div>
+          <div class="daily-verse-text">"I can do all things through Christ who strengthens me."</div>
+          <div class="daily-verse-ref">Philippians 4:13 · KJV</div>
+        </div>
+
+        <div class="bible-tabs">
+          <div class="bible-tab active">Read</div>
+          <div class="bible-tab">AI Insights</div>
+          <div class="bible-tab">Study Q's</div>
+          <div class="bible-tab">Cross-Refs</div>
+        </div>
+
+        <div class="passage-nav">
+          <div class="nav-btn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="var(--fg)" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
+          <span class="passage-ref">John 1 · Verses 1–18</span>
+          <div class="nav-btn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" stroke="var(--fg)" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
+        </div>
+
+        <div class="verse"><span class="verse-number">1</span><span class="verse-text">In the beginning was the Word, and the Word was with God, and the Word was God.</span></div>
+        <div class="verse" style="margin-top:8px"><span class="verse-number">2</span><span class="verse-text">The same was in the beginning with God.</span></div>
+        <div class="verse" style="margin-top:8px"><span class="verse-number">3</span><span class="verse-text">All things were made by him; and without him was not any thing made that was made.</span></div>
+        <div class="verse" style="margin-top:8px"><span class="verse-number">14</span><span class="verse-text highlight">And the Word was made flesh, and dwelt among us, (and we beheld his glory, the glory as of the only begotten of the Father,) full of grace and truth.</span></div>
+
+        <div class="insights-panel">
+          <h3>🔍 AI Insight</h3>
+          <div class="insight-item"><div class="insight-dot"></div><div class="insight-text">The Greek <em>logos</em> (Word) establishes Christ's pre-existence and divine nature — a direct apologetic for the Trinity.</div></div>
+          <div class="insight-item"><div class="insight-dot"></div><div class="insight-text">Verse 14 is the Incarnation — God entering creation, central to Christian apologetics against Gnosticism.</div></div>
+          <button class="btn-primary" style="margin-top:12px;font-size:13px;padding:10px">Generate Full Insights</button>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+    </div>
+
+    <!-- ── INSIGHTS ── -->
+    <div class="screen" id="screen-insights">
+      <div class="screen-header">
+        <div class="journal-header-meta">
+          <div>
+            <div class="screen-title">Insights</div>
+            <div class="screen-subtitle">Your AI-generated Bible insights</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="width:34px;height:34px;background:var(--panel);border:1px solid #3a404b;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px">📊</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="insights-search">
+        <svg width="16" height="16" fill="none" stroke="var(--muted)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input placeholder="Search by passage, theme, or content…" type="text">
+      </div>
+
+      <div class="insights-filters">
+        <div class="filter-chip active">All</div>
+        <div class="filter-chip">Favorites</div>
+        <div class="filter-chip">Apologetics</div>
+        <div class="filter-chip">Prophecy</div>
+        <div class="filter-chip">Theology</div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-num">24</div><div class="stat-label">Total</div></div>
+        <div class="stat-box"><div class="stat-num">6</div><div class="stat-label">Favorites</div></div>
+        <div class="stat-box"><div class="stat-num">3</div><div class="stat-label">This Week</div></div>
+      </div>
+
+      <div class="scroll-content">
+        <div class="insight-card">
+          <div class="insight-card-header">
+            <div>
+              <div class="insight-passage">John 1:1–3</div>
+              <div class="insight-version">KJV · May 20</div>
+            </div>
+            <span style="font-size:18px;cursor:pointer">♡</span>
+          </div>
+          <div class="insight-excerpt">"In the beginning was the Word, and the Word was with God, and the Word was God…"</div>
+          <div class="insight-themes">
+            <span class="tag">Divinity of Christ</span>
+            <span class="tag">Logos Theology</span>
+          </div>
+          <div class="insight-card-footer">
+            <div class="insight-date">Generated May 20, 2026</div>
+            <div class="insight-actions">
+              <div class="insight-action">📋 Copy</div>
+              <div class="insight-action">↗ Share</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-card">
+          <div class="insight-card-header">
+            <div>
+              <div class="insight-passage">Romans 1:18–20</div>
+              <div class="insight-version">NIV · May 18</div>
+            </div>
+            <span style="font-size:18px;cursor:pointer;color:var(--accent)">♥</span>
+          </div>
+          <div class="insight-excerpt">"For since the creation of the world God's invisible qualities—his eternal power and divine nature—have been clearly seen…"</div>
+          <div class="insight-themes">
+            <span class="tag">Natural Theology</span>
+            <span class="tag gold">Apologetics</span>
+          </div>
+          <div class="insight-card-footer">
+            <div class="insight-date">Generated May 18, 2026</div>
+            <div class="insight-actions">
+              <div class="insight-action">📋 Copy</div>
+              <div class="insight-action">↗ Share</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-card">
+          <div class="insight-card-header">
+            <div>
+              <div class="insight-passage">1 Peter 3:15</div>
+              <div class="insight-version">ESV · May 15</div>
+            </div>
+            <span style="font-size:18px;cursor:pointer">♡</span>
+          </div>
+          <div class="insight-excerpt">"But in your hearts revere Christ as Lord. Always be prepared to give an answer to everyone who asks…"</div>
+          <div class="insight-themes">
+            <span class="tag gold">Apologetics</span>
+            <span class="tag">Evangelism</span>
+          </div>
+          <div class="insight-card-footer">
+            <div class="insight-date">Generated May 15, 2026</div>
+            <div class="insight-actions">
+              <div class="insight-action">📋 Copy</div>
+              <div class="insight-action">↗ Share</div>
+            </div>
+          </div>
+        </div>
+        <div style="height:16px"></div>
+      </div>
+    </div>
+
+    <!-- ── JOURNAL ── -->
+    <div class="screen" id="screen-journal">
+      <div class="screen-header">
+        <div class="journal-header-meta">
+          <div>
+            <div class="screen-title">Journal</div>
+            <div class="screen-subtitle">Your Bible study notes</div>
+          </div>
+          <button class="journal-new-btn" onclick="showScreen('screen-note-editor')">＋ New Note</button>
+        </div>
+      </div>
+
+      <div class="journal-search">
+        <svg width="16" height="16" fill="none" stroke="var(--muted)" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input placeholder="Search notes…" type="text">
+      </div>
+
+      <div class="journal-filters">
+        <div class="filter-chip active">All</div>
+        <div class="filter-chip">Study</div>
+        <div class="filter-chip">Sermon</div>
+        <div class="filter-chip">Devotional</div>
+        <div class="filter-chip">Apologetics</div>
+      </div>
+
+      <div class="scroll-content">
+        <div class="note-card" onclick="showScreen('screen-note-editor')">
+          <div class="note-card-top">
+            <div class="note-title">The Logos — A Study</div>
+            <div class="note-menu">⋯</div>
+          </div>
+          <div class="note-verse-link">📖 John 1:1–14</div>
+          <div class="note-preview">The Greek concept of Logos that John employs was understood by both Jewish and Hellenistic readers. For Jews it echoed the creative Word of Genesis; for Greeks it was the rational principle behind the cosmos…</div>
+          <div class="note-footer">
+            <div class="note-tags">
+              <span class="tag">theology</span>
+              <span class="tag">study</span>
+            </div>
+            <div class="note-date">Today 9:14 AM</div>
+          </div>
+        </div>
+
+        <div class="note-card" onclick="showScreen('screen-note-editor')">
+          <div class="note-card-top">
+            <div class="note-title">Faith Over Fear</div>
+            <div class="note-menu">⋯</div>
+          </div>
+          <div class="note-verse-link">📖 Isaiah 41:10</div>
+          <div class="note-preview">Do not fear, for I am with you. A devotional reflection on how God's presence transforms anxiety into confident trust. Applied this to the situation with…</div>
+          <div class="note-footer">
+            <div class="note-tags">
+              <span class="tag">devotional</span>
+              <span class="tag">faith</span>
+            </div>
+            <div class="note-date">Yesterday</div>
+          </div>
+        </div>
+
+        <div class="note-card" onclick="showScreen('screen-note-editor')">
+          <div class="note-card-top">
+            <div class="note-title">Resurrection Evidence — Sermon Prep</div>
+            <div class="note-menu">⋯</div>
+          </div>
+          <div class="note-verse-link">📖 1 Corinthians 15:3–8</div>
+          <div class="note-preview">Minimal facts argument by Gary Habermas: (1) Jesus died by crucifixion, (2) disciples believed they saw risen Jesus, (3) Paul's conversion, (4) James' conversion…</div>
+          <div class="note-footer">
+            <div class="note-tags">
+              <span class="tag gold">apologetics</span>
+              <span class="tag">sermon</span>
+            </div>
+            <div class="note-date">May 19</div>
+          </div>
+        </div>
+        <div style="height:16px"></div>
+      </div>
+    </div>
+
+    <!-- ── NOTE EDITOR ── -->
+    <div class="screen" id="screen-note-editor">
+      <div class="editor-header">
+        <button class="back-btn" onclick="showScreen('screen-journal')">‹</button>
+        <span style="font-size:15px;font-weight:600;color:var(--fg)">New Note</span>
+        <button class="editor-save" onclick="showScreen('screen-journal')">Save</button>
+      </div>
+      <div class="editor-body">
+        <div class="editor-verse-chip">
+          <span>📖 John 1:1</span>
+          <p style="margin-left:4px">"In the beginning was the Word…"</p>
+        </div>
+        <input class="editor-title-input" placeholder="Note title…" type="text">
+        <textarea class="editor-content" placeholder="Start writing your note…"></textarea>
+      </div>
+      <div class="tag-row">
+        <span class="tag">theology</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border:1px dashed #3a404b;border-radius:20px;font-size:11px;color:var(--muted);cursor:pointer">＋ Add tag</span>
+      </div>
+      <div class="editor-toolbar">
+        <button class="toolbar-btn">B</button>
+        <button class="toolbar-btn"><i>I</i></button>
+        <button class="toolbar-btn"><u>U</u></button>
+        <button class="toolbar-btn">H1</button>
+        <button class="toolbar-btn">•</button>
+        <button class="toolbar-btn">1.</button>
+        <button class="toolbar-btn">📖</button>
+        <button class="toolbar-btn">🔗</button>
+      </div>
+    </div>
+
+  </div><!-- /screens -->
+
+  <!-- Tab bar (hidden on auth + sub-screens) -->
+  <div class="tabbar" id="tabbar">
+    <div class="tab active" id="tab-chat" onclick="switchTab('chat')">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="currentColor"/></svg>
+      <span>Chat</span>
+    </div>
+    <div class="tab" id="tab-bible" onclick="switchTab('bible')">
+      <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6v6M9 9h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>Bible</span>
+    </div>
+    <div class="tab" id="tab-insights" onclick="switchTab('insights')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>Insights</span>
+    </div>
+    <div class="tab" id="tab-journal" onclick="switchTab('journal')">
+      <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>Journal</span>
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+  const SUB_SCREENS = ['screen-chat-detail', 'screen-note-editor'];
+  const TAB_MAP = {
+    'chat': 'screen-chat',
+    'bible': 'screen-bible',
+    'insights': 'screen-insights',
+    'journal': 'screen-journal',
+  };
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+
+    const tabbar = document.getElementById('tabbar');
+    if (id === 'screen-auth' || SUB_SCREENS.includes(id)) {
+      tabbar.style.display = id === 'screen-auth' ? 'none' : 'flex';
+    } else {
+      tabbar.style.display = 'flex';
+    }
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    showScreen(TAB_MAP[name]);
+  }
+
+  function goToMain() {
+    switchTab('chat');
+  }
+
+  // Hide tab bar on auth screen initially
+  document.getElementById('tabbar').style.display = 'none';
+
+  // Mode pill interactivity
+  document.querySelectorAll('.mode-pill button').forEach(btn => {
+    btn.addEventListener('click', function() {
+      this.closest('.mode-pill').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Bible tabs
+  document.querySelectorAll('.bible-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.bible-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Filter chips
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+      this.closest('.insights-filters, .journal-filters').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

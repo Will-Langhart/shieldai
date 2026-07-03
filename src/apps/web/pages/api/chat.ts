@@ -15,6 +15,7 @@ import { EmbeddingService } from '../../lib/embeddings';
 import { VideoService } from '../../lib/video-service';
 import { logger, withCorrelationId, devLogger } from '../../lib/logger';
 import { applyChatRateLimit } from '../../lib/rate-limit';
+import agenticHandler from './chat-agentic';
 
 // Initialize OpenAI client lazily
 let openai: OpenAI | null = null;
@@ -31,6 +32,40 @@ const getOpenAI = () => {
   return openai;
 };
 
+// --- A/B routing into the agentic pipeline (Phase 4) ---
+// Percentage of traffic routed to chat-agentic when no explicit flag is present.
+const AGENT_ROLLOUT_PCT = Math.min(Math.max(Number(process.env.AGENT_ROLLOUT_PCT || 0), 0), 100);
+
+// Explicit opt-in/out via ?agentic=1|0, body { agentic: true|false }, or
+// x-shield-agentic header. Returns undefined when unset (falls through to rollout).
+function agenticFlag(req: NextApiRequest): boolean | undefined {
+  const header = req.headers['x-shield-agentic'];
+  const raw =
+    (Array.isArray(header) ? header[0] : header) ??
+    (typeof req.query.agentic === 'string' ? req.query.agentic : undefined) ??
+    (typeof req.body?.agentic === 'boolean' ? String(req.body.agentic) : undefined);
+  if (raw === undefined) return undefined;
+  if (raw === '1' || raw === 'true') return true;
+  if (raw === '0' || raw === 'false') return false;
+  return undefined;
+}
+
+// Deterministic 0-99 bucket from the bearer token (stable within a session) so a
+// given client lands consistently in one arm of the experiment.
+function rolloutBucket(req: NextApiRequest): number {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : auth;
+  let h = 0;
+  for (let i = 0; i < token.length; i++) h = (h * 31 + token.charCodeAt(i)) >>> 0;
+  return h % 100;
+}
+
+function shouldRouteToAgentic(req: NextApiRequest): boolean {
+  const flag = agenticFlag(req);
+  if (flag !== undefined) return flag;
+  return AGENT_ROLLOUT_PCT > 0 && rolloutBucket(req) < AGENT_ROLLOUT_PCT;
+}
+
 // Memory service health check - disable if it fails consistently
 let memoryServiceDisabled = false;
 let memoryServiceFailureCount = 0;
@@ -40,6 +75,12 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // A/B: route to the agentic pipeline before any work, so rate-limit and auth
+  // run exactly once (in whichever handler ultimately serves the request).
+  if (shouldRouteToAgentic(req)) {
+    return agenticHandler(req, res);
+  }
+
   const cid = withCorrelationId(req, `chat_${Date.now()}`);
   const startedAt = Date.now();
   if (!(await applyChatRateLimit(req, res))) return;
