@@ -86,6 +86,87 @@
   will-change: transform, filter;
 }
 
+/* Scroll-reveal (see components/features/landing/Reveal.tsx) */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Live chat demo */
+.demo-message {
+  animation: demoMessageIn 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes demoMessageIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.demo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--shield-brand) 70%, transparent);
+  animation: demoDotBounce 1s ease-in-out infinite;
+}
+
+@keyframes demoDotBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.demo-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--shield-brand);
+  animation: demoCaretBlink 0.9s step-end infinite;
+}
+
+@keyframes demoCaretBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-message,
+  .demo-dot,
+  .demo-caret {
+    animation: none;
+  }
+}
+
 /* Fade in animation for question rotator */
 @keyframes fadeIn {
   from {
