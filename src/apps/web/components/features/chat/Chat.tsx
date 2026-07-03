@@ -388,9 +388,9 @@ export function Chat() {
   }
 
   return (
-    <div className="flex h-screen bg-shield-canvas text-shield-fg">
+    <div className="shield-page-bg flex h-screen text-shield-fg">
       {/* Sidebar */}
-      <div className={`${sidebarCollapsed ? 'w-0' : 'w-64'} transition-all duration-300 overflow-hidden bg-shield-panel border-r border-shield-edge flex flex-col flex-shrink-0`}>
+      <div className={`${sidebarCollapsed ? 'w-0' : 'w-64'} transition-all duration-300 overflow-hidden border-r border-white/[0.08] bg-shield-panel/75 backdrop-blur-xl flex flex-col flex-shrink-0`}>
         {/* Sidebar header */}
         <div className="flex items-center justify-between px-3 pt-3 pb-2">
           <button
@@ -429,7 +429,7 @@ export function Chat() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search your chats..."
-                className="w-full rounded-md border border-shield-edge bg-shield-canvas py-1.5 pl-8 pr-3 text-sm text-shield-fg placeholder-shield-muted focus:border-shield-brand focus:outline-none focus:ring-1 focus:ring-shield-brand"
+                className="shield-input w-full py-1.5 pl-8 pr-3 text-sm"
               />
               {searchQuery && (
                 <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-shield-muted hover:text-shield-fg">
@@ -545,9 +545,9 @@ export function Chat() {
       )}
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-gradient-to-br from-shield-canvas to-shield-panel min-w-0">
+      <div className="flex-1 flex flex-col bg-gradient-to-br from-shield-canvas/90 via-shield-canvas to-shield-panel/70 min-w-0">
         {/* Top Bar */}
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between border-b border-white/[0.06] bg-shield-panel/25 px-4 py-3 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             {sidebarCollapsed && (
               <button
@@ -574,8 +574,8 @@ export function Chat() {
         <div className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
-              <div className="text-center w-full max-w-2xl mx-auto">
-                <img src="/logo.png" alt="Shield AI" className="w-16 h-16 mx-auto mb-4 object-contain" />
+              <div className="shield-glass-panel text-center w-full max-w-2xl mx-auto px-8 py-10">
+                  <img src="/logo.png" alt="Shield AI" className="w-16 h-16 mx-auto mb-4 object-contain drop-shadow-[0_0_16px_rgba(70,161,226,0.35)]" />
                 <h2 className="text-xl font-semibold mb-2 text-shield-fg">What can I help with?</h2>
                 <p className="text-sm text-shield-muted">Ask a theological question, explore scripture, or test an argument.</p>
               </div>
@@ -618,9 +618,9 @@ export function Chat() {
         </div>
 
         {/* Input Area — always pinned to bottom */}
-        <div className="px-4 py-3">
+        <div className="border-t border-white/[0.06] bg-shield-panel/25 px-4 py-3 backdrop-blur-sm">
           <div className="max-w-2xl mx-auto">
-            <div className="flex items-center bg-shield-panel rounded-xl px-3 py-2 shadow-lg border border-shield-edge">
+            <div className="flex items-center rounded-2xl border border-white/[0.1] bg-shield-panel/85 px-3 py-2 shadow-shield-card backdrop-blur-md">
               <div className="flex-1 relative">
                 <input
                   type="text"
@@ -647,7 +647,7 @@ export function Chat() {
                 <button
                   onClick={handleSendMessage}
                   disabled={isLoading || !inputMessage.trim()}
-                  className="rounded-lg bg-shield-brand p-1.5 transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim p-1.5 transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send className="h-4 w-4 text-white" />
                 </button>

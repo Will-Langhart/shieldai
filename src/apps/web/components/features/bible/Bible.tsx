@@ -781,10 +781,10 @@ export function Bible() {
   )
 
   return (
-    <div className="flex bg-shield-canvas text-white" style={{ height: 'calc(100vh - 48px)' }}>
+    <div className="flex bg-shield-canvas/80 text-white" style={{ height: 'calc(100vh - 64px)' }}>
 
       {/* ── Left nav ───────────────────────────────────────────────────────── */}
-      <div className={`${navCollapsed ? 'w-0' : 'w-52'} flex-shrink-0 border-r border-shield-edge bg-shield-panel overflow-y-auto flex flex-col transition-all duration-300`}>
+      <div className={`${navCollapsed ? 'w-0' : 'w-56'} flex-shrink-0 border-r border-white/[0.08] bg-shield-panel/80 overflow-y-auto flex flex-col transition-all duration-300 backdrop-blur-xl`}>
         <div className="p-4 space-y-3 flex-1">
           <p className="text-xs font-semibold text-shield-fg uppercase tracking-wider">Navigation</p>
           <p className="text-[10px] text-shield-muted">⌘ + ← → to change chapter</p>
@@ -798,7 +798,7 @@ export function Bible() {
               <select
                 value={selectedBookId}
                 onChange={e => handleBookChange(e.target.value)}
-                className="w-full bg-shield-canvas border border-shield-edge text-white px-2 py-1.5 text-sm rounded focus:outline-none focus:border-blue-500"
+                className="shield-input w-full px-2 py-1.5 text-sm"
               >
                 {books.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
@@ -815,7 +815,7 @@ export function Bible() {
               <input
                 type="number" value={selectedChapter} min="1" max={chapters.length || 999}
                 onChange={e => handleChapterChange(parseInt(e.target.value) || 1)}
-                className="flex-1 bg-shield-canvas border border-shield-edge text-white px-2 py-1.5 text-sm rounded focus:outline-none focus:border-blue-500 text-center"
+                className="shield-input flex-1 px-2 py-1.5 text-sm text-center"
               />
               <button onClick={() => selectedChapter < chapters.length && handleChapterChange(selectedChapter + 1)} disabled={selectedChapter >= chapters.length} className="p-1 text-blue-400 hover:text-blue-300 disabled:text-gray-600">
                 <ChevronRight className="h-4 w-4" />
@@ -829,7 +829,7 @@ export function Bible() {
             <select
               value={selectedVersion}
               onChange={e => handleVersionChange(e.target.value)}
-              className="w-full bg-shield-canvas border border-shield-edge text-white px-2 py-1.5 text-sm rounded focus:outline-none focus:border-blue-500"
+              className="shield-input w-full px-2 py-1.5 text-sm"
             >
               {availableVersions.length > 0
                 ? availableVersions.map(v => <option key={v.id} value={v.id}>{v.name}</option>)
@@ -840,7 +840,7 @@ export function Bible() {
           <button
             onClick={() => loadPassage(selectedBook, selectedBookId, selectedChapter, selectedVerse)}
             disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white py-1.5 text-sm rounded transition-colors"
+            className="shield-btn-primary w-full py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
           >{isLoading ? 'Loading…' : 'Go to Passage'}</button>
 
           {/* Audio bible selector */}
@@ -850,7 +850,7 @@ export function Bible() {
               <select
                 value={selectedAudioId || ''}
                 onChange={e => setSelectedAudioId(e.target.value)}
-                className="w-full bg-shield-canvas border border-shield-edge text-white px-2 py-1.5 text-sm rounded focus:outline-none focus:border-blue-500"
+                className="shield-input w-full px-2 py-1.5 text-sm"
               >
                 {audioBibles.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
@@ -867,7 +867,7 @@ export function Bible() {
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
 
         {/* Toolbar */}
-        <div className="flex-shrink-0 px-3 py-2.5 border-b border-shield-edge flex items-center gap-2">
+        <div className="flex-shrink-0 px-3 py-2.5 border-b border-white/[0.07] bg-shield-panel/35 backdrop-blur-sm flex items-center gap-2">
           <button onClick={() => setNavCollapsed(c => !c)} className="p-1.5 rounded-md hover:bg-shield-elevated text-shield-muted hover:text-shield-fg transition-colors flex-shrink-0" title={navCollapsed ? 'Show navigation' : 'Hide navigation'}>
             <PanelLeft className="h-4 w-4" />
           </button>
@@ -877,9 +877,9 @@ export function Bible() {
             onChange={e => setSearchTerm(e.target.value)}
             onKeyPress={e => e.key === 'Enter' && handleSearch()}
             placeholder="Search scripture…"
-            className="flex-1 bg-shield-panel border border-shield-edge text-white px-3 py-1.5 text-sm rounded-lg focus:outline-none focus:border-blue-500"
+            className="shield-input flex-1 px-3 py-1.5 text-sm"
           />
-          <button onClick={handleSearch} disabled={isLoading || !searchTerm.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 transition-colors flex-shrink-0">
+          <button onClick={handleSearch} disabled={isLoading || !searchTerm.trim()} className="shield-btn-primary px-3 py-1.5 text-sm flex items-center gap-1.5 flex-shrink-0 disabled:cursor-not-allowed disabled:opacity-60">
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             Search
           </button>
@@ -915,7 +915,7 @@ export function Bible() {
         )}
 
         {/* Passage header */}
-        <div className="flex-shrink-0 px-5 py-2.5 border-b border-shield-edge flex items-center justify-between gap-3">
+        <div className="flex-shrink-0 px-5 py-2.5 border-b border-white/[0.07] bg-shield-panel/25 flex items-center justify-between gap-3">
           <h2 className="text-base font-bold truncate">
             {currentPassage ? currentPassage.reference : `${selectedBook} ${selectedChapter}`}
           </h2>
@@ -948,7 +948,7 @@ export function Bible() {
       </div>
 
       {/* ── Right margin notes ─────────────────────────────────────────────── */}
-      <div className={`${notesCollapsed ? 'w-0' : 'w-72'} flex-shrink-0 border-l border-shield-edge bg-shield-panel/50 overflow-hidden flex flex-col transition-all duration-300`}>
+      <div className={`${notesCollapsed ? 'w-0' : 'w-72'} flex-shrink-0 border-l border-white/[0.08] bg-shield-panel/60 overflow-hidden flex flex-col transition-all duration-300 backdrop-blur-xl`}>
         <MarginNotes
           book={selectedBook}
           chapter={selectedChapter}

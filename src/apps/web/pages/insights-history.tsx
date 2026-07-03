@@ -20,10 +20,10 @@ export default function InsightsHistoryPage({ userId }: InsightsHistoryPageProps
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="min-h-screen bg-shield-canvas">
+      <div className="shield-page-bg">
         <Header showNav />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
+        <main className="shield-page-shell py-10">
+          <div className="shield-glass-panel mb-8 px-8 py-8">
             <h1 className="text-3xl font-bold text-shield-fg mb-2">Insights History</h1>
             <p className="text-shield-muted">
               View, manage, and analyze your AI-generated Bible insights

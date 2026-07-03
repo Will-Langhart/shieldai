@@ -5,8 +5,13 @@
 /* Shield design tokens + theme variables */
 :root {
   --shield-canvas: #1a1d24;
+  --shield-canvas-soft: #151922;
+  --shield-canvas-deep: #0f1218;
   --shield-brand: #46a1e2;
   --shield-brand-soft: rgba(70, 161, 226, 0.14);
+  --shield-glass: rgba(34, 39, 51, 0.58);
+  --shield-glass-strong: rgba(41, 47, 62, 0.8);
+  --shield-ring: rgba(94, 176, 236, 0.35);
   --color-primary: #46a1e2;
   --color-secondary: #6b7280;
   --color-accent: #e8b44c;
@@ -44,9 +49,14 @@ html {
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--color-background);
+  background-color: var(--shield-canvas);
   color: var(--color-text);
   transition: background-color 0.3s ease, color 0.3s ease;
+  background-image:
+    radial-gradient(1200px 600px at 50% -18%, rgba(70, 161, 226, 0.2), transparent 62%),
+    radial-gradient(900px 460px at 100% 14%, rgba(232, 180, 76, 0.08), transparent 58%),
+    linear-gradient(180deg, var(--shield-canvas-deep) 0%, var(--shield-canvas) 36%, var(--shield-canvas-soft) 100%);
+  background-attachment: fixed;
 }
 
 /* Scrollbar styles */
@@ -140,3 +150,69 @@ body {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+@layer components {
+  .shield-page-bg {
+    @apply min-h-screen text-shield-fg;
+    background:
+      radial-gradient(1000px 520px at 50% -25%, rgba(70, 161, 226, 0.2), transparent 65%),
+      linear-gradient(180deg, rgba(13, 16, 23, 0.98) 0%, rgba(20, 24, 32, 0.98) 42%, rgba(25, 30, 40, 0.98) 100%);
+  }
+
+  .shield-page-shell {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .shield-glass-panel {
+    @apply rounded-2xl border border-shield-edge/80 bg-shield-panel/60 shadow-shield-card;
+    backdrop-filter: blur(14px);
+  }
+
+  .shield-glass-subtle {
+    @apply rounded-xl border border-white/[0.08] bg-shield-surface/55;
+    backdrop-filter: blur(8px);
+  }
+
+  .shield-interactive {
+    @apply transition-all duration-200;
+  }
+
+  .shield-interactive:hover {
+    @apply border-shield-brand/35 shadow-shield-glow-sm;
+    transform: translateY(-1px);
+  }
+
+  .shield-input {
+    @apply rounded-xl border border-shield-edge bg-shield-panel/85 px-3 py-2 text-shield-fg placeholder:text-shield-muted/60;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  }
+
+  .shield-input:focus {
+    outline: none;
+    border-color: rgba(94, 176, 236, 0.7);
+    box-shadow: 0 0 0 3px var(--shield-ring);
+    background-color: var(--shield-glass-strong);
+  }
+
+  .shield-btn-primary {
+    @apply rounded-xl bg-gradient-to-r from-shield-brand to-shield-brand-dim px-4 py-2 font-semibold text-white shadow-shield-glow-sm transition-all duration-200;
+  }
+
+  .shield-btn-primary:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 0 40px -10px rgba(70, 161, 226, 0.5);
+  }
+
+  .shield-btn-ghost {
+    @apply rounded-xl border border-shield-edge bg-shield-panel/80 px-4 py-2 font-medium text-shield-fg transition-colors;
+  }
+
+  .shield-btn-ghost:hover {
+    @apply border-shield-edge-strong bg-shield-elevated/80;
+  }
+
+  .shield-top-nav {
+    @apply sticky top-0 z-30 border-b border-white/[0.07];
+    background: linear-gradient(180deg, rgba(20, 24, 34, 0.92) 0%, rgba(20, 24, 34, 0.78) 100%);
+    backdrop-filter: blur(14px);
+  }
+}

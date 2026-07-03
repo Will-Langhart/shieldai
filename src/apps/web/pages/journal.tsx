@@ -249,11 +249,11 @@ export default function JournalPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <div className="min-h-screen bg-shield-canvas">
+      <div className="shield-page-bg">
         <Header showNav />
-        <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+        <main className="mx-auto max-w-3xl px-4 sm:px-6 py-10">
           {/* Page header */}
-          <div className="mb-8">
+          <div className="shield-glass-panel mb-8 px-6 py-6">
             <div className="flex items-center gap-3 mb-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg">
                 <BookMarked className="h-5 w-5 text-white" />
@@ -273,7 +273,7 @@ export default function JournalPage() {
                 { label: 'With notes', value: stats.withNotes, color: 'text-purple-400' },
                 { label: 'Favorites', value: stats.favorites, color: 'text-yellow-400' },
               ].map(({ label, value, color }) => (
-                <div key={label} className="rounded-xl border border-shield-panel bg-shield-surface/50 px-4 py-3 text-center">
+                <div key={label} className="rounded-xl border border-white/[0.08] bg-shield-panel/65 px-4 py-3 text-center backdrop-blur-md">
                   <p className={`text-2xl font-bold ${color}`}>{value}</p>
                   <p className="text-xs text-shield-muted mt-0.5">{label}</p>
                 </div>
@@ -290,7 +290,7 @@ export default function JournalPage() {
                 placeholder="Search passages, themes, notes…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-shield-panel bg-shield-surface text-shield-fg text-sm placeholder:text-shield-muted/50 focus:outline-none focus:border-shield-brand/50 focus:ring-1 focus:ring-shield-brand/30 transition-colors"
+                className="shield-input w-full pl-9 pr-4 py-2.5 text-sm"
               />
             </div>
             <div className="flex gap-2">

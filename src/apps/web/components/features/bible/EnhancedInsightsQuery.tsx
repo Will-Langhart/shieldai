@@ -525,7 +525,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6">
+      <div className="shield-glass-panel p-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-3">
             <Shield className="h-8 w-8 text-shield-brand" />
@@ -534,14 +534,14 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
           <div className="flex items-center space-x-2">
             <button
               onClick={loadInsights}
-              className="flex items-center space-x-2 px-3 py-2 bg-shield-panel hover:bg-shield-elevated text-shield-fg rounded-lg transition-colors"
+              className="shield-btn-ghost flex items-center space-x-2 px-3 py-2"
             >
               <RefreshCw className="h-4 w-4" />
               <span>Refresh</span>
             </button>
             <button
               onClick={() => setShowAnalytics(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-shield-brand hover:opacity-90 text-white rounded-lg transition-colors"
+              className="shield-btn-primary flex items-center space-x-2 px-4 py-2"
             >
               <BarChart3 className="h-4 w-4" />
               <span>Analytics</span>
@@ -554,7 +554,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
       </div>
 
       {/* Search and Filter Bar */}
-      <div className="bg-shield-canvas border border-shield-panel rounded-lg p-4">
+      <div className="shield-glass-panel p-4">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search Input */}
           <div className="flex-1 relative">
@@ -564,7 +564,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
               placeholder="Search insights by passage, theme, or content..."
               value={filters.query}
               onChange={(e) => setFilters(prev => ({ ...prev, query: e.target.value }))}
-              className="w-full pl-10 pr-4 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="shield-input w-full pl-10 pr-4 py-2"
             />
           </div>
 
@@ -575,7 +575,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
                 showFilters
                   ? 'bg-shield-brand text-white'
-                  : 'bg-shield-panel text-shield-muted hover:text-shield-fg'
+                  : 'bg-shield-panel/80 text-shield-muted hover:text-shield-fg'
               }`}
             >
               <Filter className="h-4 w-4" />
@@ -588,7 +588,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                 const [sort_by, sort_order] = e.target.value.split('-')
                 setFilters(prev => ({ ...prev, sort_by: sort_by as any, sort_order: sort_order as any }))
               }}
-              className="px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="shield-input px-3 py-2"
             >
               <option value="created_at-desc">Newest First</option>
               <option value="created_at-asc">Oldest First</option>
@@ -603,7 +603,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                 ...prev, 
                 view_mode: prev.view_mode === 'grid' ? 'list' : 'grid' 
               }))}
-              className="flex items-center space-x-2 px-3 py-2 bg-shield-panel text-shield-muted hover:text-shield-fg rounded-lg transition-colors"
+              className="shield-btn-ghost flex items-center space-x-2 px-3 py-2 text-shield-muted hover:text-shield-fg"
             >
               {filters.view_mode === 'grid' ? <List className="h-4 w-4" /> : <Grid3X3 className="h-4 w-4" />}
             </button>
@@ -620,7 +620,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                 <select
                   value={filters.bible_version}
                   onChange={(e) => setFilters(prev => ({ ...prev, bible_version: e.target.value }))}
-                  className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="shield-input w-full px-3 py-2"
                 >
                   <option value="">All Versions</option>
                   {availableFilters.versions.map(version => (
@@ -636,7 +636,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                   type="date"
                   value={filters.date_from}
                   onChange={(e) => setFilters(prev => ({ ...prev, date_from: e.target.value }))}
-                  className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="shield-input w-full px-3 py-2"
                 />
               </div>
 
@@ -646,7 +646,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                   type="date"
                   value={filters.date_to}
                   onChange={(e) => setFilters(prev => ({ ...prev, date_to: e.target.value }))}
-                  className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="shield-input w-full px-3 py-2"
                 />
               </div>
 
@@ -845,7 +845,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
   }
 
   return (
-    <div className={`bg-shield-canvas border border-shield-panel rounded-lg overflow-hidden transition-all duration-200 hover:border-shield-elevated ${
+    <div className={`rounded-2xl border border-white/[0.08] bg-shield-panel/55 overflow-hidden transition-all duration-200 backdrop-blur-md hover:border-shield-brand/30 hover:shadow-shield-glow-sm ${
       viewMode === 'list' ? 'flex' : ''
     }`}>
       <div className={`${viewMode === 'list' ? 'flex-1' : ''}`}>
@@ -915,7 +915,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
         {isExpanded && (
           <div className="p-4 space-y-4">
             {/* Shield AI Header */}
-            <div className="bg-shield-panel border border-shield-edge rounded-lg p-3">
+            <div className="rounded-lg border border-white/[0.08] bg-shield-panel/80 p-3">
               <div className="flex items-center space-x-2 mb-1">
                 <Shield className="h-5 w-5 text-shield-brand" />
                 <h4 className="font-semibold text-shield-fg">Shield AI Apologetics Insights</h4>
@@ -926,7 +926,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
             </div>
 
             {/* Interaction Bar */}
-            <div className="bg-shield-panel rounded-lg p-3">
+            <div className="rounded-lg border border-white/[0.06] bg-shield-panel/70 p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <button className="flex items-center space-x-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors">
@@ -957,7 +957,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
             </div>
 
             {/* Explanation */}
-            <div className="border border-shield-panel rounded-lg">
+            <div className="rounded-lg border border-white/[0.08] bg-shield-canvas/25">
               <button
                 onClick={onToggleExpansion}
                 className="w-full flex items-center justify-between p-3 text-left hover:bg-shield-panel transition-colors"
@@ -968,7 +968,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
                 </div>
                 <ChevronUp className="h-4 w-4 text-shield-muted" />
               </button>
-              <div className="p-3 border-t border-shield-panel">
+              <div className="border-t border-white/[0.08] p-3">
                 <p className="text-shield-fg text-sm leading-relaxed mb-2">{insight.explanation}</p>
                 <button
                   onClick={() => onCopy(insight.explanation)}
@@ -982,8 +982,8 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
 
             {/* Key Themes */}
             {insight.key_themes.length > 0 && (
-              <div className="border border-shield-panel rounded-lg">
-                <div className="p-3 border-b border-shield-panel">
+              <div className="rounded-lg border border-white/[0.08] bg-shield-canvas/20">
+                <div className="border-b border-white/[0.08] p-3">
                   <div className="flex items-center space-x-2">
                     <Lightbulb className="h-4 w-4 text-shield-brand" />
                     <span className="font-medium text-shield-fg">Key Themes</span>

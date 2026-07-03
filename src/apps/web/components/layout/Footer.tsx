@@ -3,7 +3,8 @@ import React from 'react'
 const Footer = () => {
   return (
     <footer className="landing-section relative bg-transparent">
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+      <div className="shield-page-shell relative z-10 py-10 sm:py-12">
+        <div className="shield-glass-panel px-6 py-8 sm:px-8 sm:py-10">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
@@ -63,7 +64,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-10 pt-10">
+        <div className="mt-10 border-t border-white/[0.07] pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-shield-muted text-sm">
               © 2024 Shield AI. All rights reserved.
@@ -74,6 +75,7 @@ const Footer = () => {
               </p>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </footer>

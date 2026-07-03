@@ -5,7 +5,7 @@ import { ProtectedRoute } from '../components/auth/ProtectedRoute'
 export default function BiblePage() {
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-shield-canvas">
+      <div className="shield-page-bg">
         <Header showNav />
         <Bible />
       </div>
