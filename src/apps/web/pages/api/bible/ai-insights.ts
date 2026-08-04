@@ -7,6 +7,8 @@ import { bibleService } from '../../../lib/bible-service';
 import { BiblePineconeService } from '../../../lib/bible-pinecone';
 import { EmbeddingService } from '../../../lib/embeddings';
 import { generateDenominationContext } from '../../../lib/prompt-engineering';
+import { runScriptureGuarded } from '../../../lib/graph/scripture-guard';
+import { extractScriptureReferences } from '../../../lib/reference-utils';
 
 // Initialize OpenAI client lazily
 let openai: OpenAI | null = null;
@@ -242,20 +244,45 @@ Guidelines:
 - Always reference scripture and maintain biblical accuracy
 - Return ONLY valid JSON — no markdown code fences`;
 
-    // Step 5: Generate AI insights
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    // Step 5: Generate AI insights, guarded so cross-references that don't
+    // resolve to real passages trigger a single corrective regeneration.
+    const baseMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: systemPrompt + contextMessage },
       { role: 'user', content: `Please analyze this Bible passage and provide comprehensive insights: ${passageReference}` }
     ];
 
-    const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o',
-      max_tokens: 3000,
-      temperature: 0.7,
-      messages: messages,
+    const guard = await runScriptureGuarded({
+      versionId: version || 'de4e12af7f28f599-02',
+      cid,
+      generate: async (correctionNote) => {
+        const messages = correctionNote
+          ? [...baseMessages, { role: 'system' as const, content: correctionNote }]
+          : baseMessages;
+        const response = await getOpenAI().chat.completions.create({
+          model: 'gpt-4o',
+          max_tokens: 3000,
+          temperature: 0.7,
+          messages,
+        });
+        return response.choices[0].message.content || '{}';
+      },
+      // Verify the model-generated cross-references (the hallucination-prone field).
+      extractReferences: (raw) => {
+        try {
+          const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+          const obj = JSON.parse(cleaned);
+          const refs: string[] = [];
+          for (const cr of obj.crossReferences || []) {
+            if (cr?.reference) refs.push(...extractScriptureReferences(String(cr.reference)));
+          }
+          return refs;
+        } catch {
+          return [];
+        }
+      },
     });
 
-    const aiResponse = response.choices[0].message.content;
+    const aiResponse = guard.raw;
 
     // Strip markdown code fences GPT-4o sometimes wraps JSON in
     const cleanedResponse = (aiResponse || '{}')
@@ -286,11 +313,13 @@ Guidelines:
     // Attach denomination so the client can display it
     insights.denomination = resolvedDenomination;
 
-    logger.info('AI insights generated successfully', { 
-      cid, 
+    logger.info('AI insights generated successfully', {
+      cid,
       reference: passageReference,
       themesCount: insights.keyThemes?.length || 0,
-      questionsCount: insights.studyQuestions?.length || 0
+      questionsCount: insights.studyQuestions?.length || 0,
+      citationCorrections: guard.corrections,
+      hallucinatedRefs: guard.verification?.hallucinated || [],
     });
 
     return res.status(200).json({
@@ -300,7 +329,9 @@ Guidelines:
         version: version,
         related_verses_count: relatedVerses.length,
         bible_search_results_count: bibleSearchResults.length,
-        generated_at: new Date().toISOString()
+        generated_at: new Date().toISOString(),
+        citations: guard.verification,
+        citation_corrections: guard.corrections,
       }
     });
 

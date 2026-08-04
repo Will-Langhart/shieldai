@@ -16,6 +16,11 @@ import {
   executeToolCalls,
   SCRIPTURE_TOOL_NAMES,
 } from '../../lib/agent-tools';
+import {
+  type CitationVerification,
+  verifyCitations,
+  formatCorrectionInstruction,
+} from '../../lib/citation-verifier';
 
 /**
  * Agentic chat route (A/B / experimental).
@@ -222,6 +227,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const answerMaxTokens = mode === 'gentle' ? 2000 : 4000;
     const answerTemperature = mode === 'gentle' ? 0.7 : 0.8;
 
+    // --- Citation verification (anti-hallucination gate) ---
+    // Off with CITATION_VERIFY=0. The rigorous modes buffer-verify-then-stream so
+    // fabricated verses can be corrected before the user sees them; gentle keeps
+    // its live-stream (fast path) and is verified post-hoc for telemetry only.
+    const citationVerifyEnabled = process.env.CITATION_VERIFY !== '0';
+    const verifyCorrectStreaming = new Set(['scholarly', 'debate']).has(mode);
+    const verifyVersionId = bibleVersion?.id || 'de4e12af7f28f599-02';
+    let verification: CitationVerification | null = null;
+    let citationCorrected = false;
+
+    // Verify `text`; on unresolved (fabricated) references, regenerate ONCE with a
+    // correction instruction and re-verify. Never throws. `corrected` reports
+    // whether a regeneration actually happened (for A/B parity with the graph).
+    const verifyAndMaybeCorrect = async (
+      text: string
+    ): Promise<{ text: string; verification: CitationVerification; corrected: boolean }> => {
+      const first = await verifyCitations(text, verifyVersionId, { cid });
+      if (first.ok || first.skipped) return { text, verification: first, corrected: false };
+
+      logger.warn('Citation check failed; regenerating', {
+        cid, hallucinated: first.hallucinated, misquoted: first.misquoted,
+      });
+      try {
+        const corrected = await getOpenAI().chat.completions.create({
+          model: answerModel,
+          max_tokens: answerMaxTokens,
+          temperature: answerTemperature,
+          messages: [
+            ...messages,
+            { role: 'assistant' as const, content: text },
+            { role: 'system' as const, content: formatCorrectionInstruction(first) },
+          ],
+        });
+        const correctedText = corrected.choices[0].message.content || text;
+        const reverify = await verifyCitations(correctedText, verifyVersionId, { cid });
+        return { text: correctedText, verification: reverify, corrected: true };
+      } catch (err) {
+        logger.error('Citation correction failed', { cid }, err);
+        return { text, verification: first, corrected: false };
+      }
+    };
+
     // Reuse the planning answer only when it exists AND the planner is already the
     // mode's answer model (gentle). For scholarly/debate, regenerate with gpt-4o
     // for quality; if we hit the round cap (no directAnswer), generate too.
@@ -256,7 +303,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       let fullText = '';
       try {
-        if (needsGeneration) {
+        if (needsGeneration && citationVerifyEnabled && verifyCorrectStreaming) {
+          // Rigorous modes: draft → verify → correct → stream. Trades
+          // time-to-first-token for citations checked before the user sees them.
+          logger.info('Draft-verify-stream start', { cid, answerModel });
+          const draftResp = await getOpenAI().chat.completions.create({
+            model: answerModel,
+            max_tokens: answerMaxTokens,
+            temperature: answerTemperature,
+            messages,
+          });
+          const draft = draftResp.choices[0].message.content || '';
+          const result = await verifyAndMaybeCorrect(draft);
+          verification = result.verification;
+          citationCorrected = result.corrected;
+          fullText = result.text;
+          res.write(result.text);
+        } else if (needsGeneration) {
           logger.info('Streaming start', { cid, answerModel });
           const streamResp = await getOpenAI().chat.completions.create({
             model: answerModel,
@@ -281,6 +344,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         logger.error('Streaming error', { cid }, streamErr);
       }
       aiResponse = fullText;
+
+      // Live-streamed tokens can't be retracted — verify post-hoc for telemetry.
+      if (citationVerifyEnabled && !verification && aiResponse) {
+        verification = await verifyCitations(aiResponse, verifyVersionId, { cid });
+      }
     } else if (needsGeneration) {
       const finalResp = await getOpenAI().chat.completions.create({
         model: answerModel,
@@ -289,6 +357,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         messages,
       });
       aiResponse = finalResp.choices[0].message.content;
+    }
+
+    // Non-streaming path: verify and correct before returning the answer.
+    if (!shouldStream && citationVerifyEnabled && aiResponse) {
+      const result = await verifyAndMaybeCorrect(aiResponse);
+      aiResponse = result.text;
+      verification = result.verification;
+      citationCorrected = result.corrected;
     }
 
     // --- Analytics ---
@@ -345,6 +421,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       tools: trace.map(t => `${t.name}:${t.ok ? 'ok' : 'fail'}:${t.ms}ms`),
       forcedScripture: isTheological,
       responseLength: aiResponse?.length || 0,
+      citations: verification
+        ? {
+            checked: verification.checked,
+            hallucinated: verification.hallucinated,
+            misquoted: verification.misquoted,
+            corrected: citationCorrected,
+          }
+        : null,
     });
 
     if (shouldStream) {
@@ -362,6 +446,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         forcedScripture: isTheological,
         generatedAnswer: needsGeneration,
         tools: trace,
+        citations: verification,
+        citationCorrected,
       },
       metadata: {
         planningModel: PLANNING_MODEL,

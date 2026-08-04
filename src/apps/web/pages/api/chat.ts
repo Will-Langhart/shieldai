@@ -16,6 +16,7 @@ import { VideoService } from '../../lib/video-service';
 import { logger, withCorrelationId, devLogger } from '../../lib/logger';
 import { applyChatRateLimit } from '../../lib/rate-limit';
 import agenticHandler from './chat-agentic';
+import graphHandler from './chat-graph';
 
 // Initialize OpenAI client lazily
 let openai: OpenAI | null = null;
@@ -50,6 +51,24 @@ function agenticFlag(req: NextApiRequest): boolean | undefined {
   return undefined;
 }
 
+// --- Explicit opt-in into the LangGraph pipeline (Step 2/A) ---
+// Reached via ?graph=1, x-shield-graph header, or body { graph: true }. Opt-in
+// only (no % rollout yet) so the new multi-agent path is exercised deliberately.
+// Takes precedence over agentic routing when set.
+const GRAPH_ROLLOUT_PCT = Math.min(Math.max(Number(process.env.GRAPH_ROLLOUT_PCT || 0), 0), 100);
+
+function graphFlag(req: NextApiRequest): boolean | undefined {
+  const header = req.headers['x-shield-graph'];
+  const raw =
+    (Array.isArray(header) ? header[0] : header) ??
+    (typeof req.query.graph === 'string' ? req.query.graph : undefined) ??
+    (typeof req.body?.graph === 'boolean' ? String(req.body.graph) : undefined);
+  if (raw === undefined) return undefined;
+  if (raw === '1' || raw === 'true') return true;
+  if (raw === '0' || raw === 'false') return false;
+  return undefined;
+}
+
 // Deterministic 0-99 bucket from the bearer token (stable within a session) so a
 // given client lands consistently in one arm of the experiment.
 function rolloutBucket(req: NextApiRequest): number {
@@ -66,6 +85,12 @@ function shouldRouteToAgentic(req: NextApiRequest): boolean {
   return AGENT_ROLLOUT_PCT > 0 && rolloutBucket(req) < AGENT_ROLLOUT_PCT;
 }
 
+function shouldRouteToGraph(req: NextApiRequest): boolean {
+  const flag = graphFlag(req);
+  if (flag !== undefined) return flag;
+  return GRAPH_ROLLOUT_PCT > 0 && rolloutBucket(req) < GRAPH_ROLLOUT_PCT;
+}
+
 // Memory service health check - disable if it fails consistently
 let memoryServiceDisabled = false;
 let memoryServiceFailureCount = 0;
@@ -75,8 +100,12 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // A/B: route to the agentic pipeline before any work, so rate-limit and auth
-  // run exactly once (in whichever handler ultimately serves the request).
+  // A/B: route to an alternate pipeline before any work, so rate-limit and auth
+  // run exactly once (in whichever handler ultimately serves the request). Graph
+  // (opt-in) takes precedence over agentic.
+  if (shouldRouteToGraph(req)) {
+    return graphHandler(req, res);
+  }
   if (shouldRouteToAgentic(req)) {
     return agenticHandler(req, res);
   }

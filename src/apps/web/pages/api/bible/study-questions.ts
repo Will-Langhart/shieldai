@@ -6,6 +6,8 @@ import { applyBibleRateLimit } from '../../../lib/rate-limit';
 import { bibleService } from '../../../lib/bible-service';
 import { BiblePineconeService } from '../../../lib/bible-pinecone';
 import { EmbeddingService } from '../../../lib/embeddings';
+import { runScriptureGuarded } from '../../../lib/graph/scripture-guard';
+import { extractScriptureReferences } from '../../../lib/reference-utils';
 
 // Initialize OpenAI client lazily
 let openai: OpenAI | null = null;
@@ -166,20 +168,46 @@ Guidelines for question creation:
 - Ensure questions encourage deeper thinking and spiritual growth
 - Avoid yes/no questions; prefer open-ended, thought-provoking questions`;
 
-    // Step 5: Generate study questions
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    // Step 5: Generate study questions, guarded so any related verses that
+    // don't resolve to real passages trigger a single corrective regeneration.
+    const baseMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: systemPrompt + contextMessage },
       { role: 'user', content: `Please generate comprehensive study questions for this Bible passage: ${passageReference}` }
     ];
 
-    const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o',
-      max_tokens: 2500,
-      temperature: 0.8,
-      messages: messages,
+    const guard = await runScriptureGuarded({
+      versionId: 'de4e12af7f28f599-02',
+      cid,
+      generate: async (correctionNote) => {
+        const messages = correctionNote
+          ? [...baseMessages, { role: 'system' as const, content: correctionNote }]
+          : baseMessages;
+        const response = await getOpenAI().chat.completions.create({
+          model: 'gpt-4o',
+          max_tokens: 2500,
+          temperature: 0.8,
+          messages,
+        });
+        return response.choices[0].message.content || '{}';
+      },
+      // Verify the model-generated relatedVerses on each question.
+      extractReferences: (raw) => {
+        try {
+          const obj = JSON.parse(raw || '{}');
+          const refs: string[] = [];
+          for (const q of obj.questions || []) {
+            for (const rv of q?.relatedVerses || []) {
+              refs.push(...extractScriptureReferences(String(rv)));
+            }
+          }
+          return refs;
+        } catch {
+          return [];
+        }
+      },
     });
 
-    const aiResponse = response.choices[0].message.content;
+    const aiResponse = guard.raw;
     
     // Parse the JSON response
     let questionsData;
@@ -215,10 +243,12 @@ Guidelines for question creation:
     // Ensure we have an array of questions
     const questions = Array.isArray(questionsData.questions) ? questionsData.questions : [];
 
-    logger.info('Study questions generated successfully', { 
-      cid, 
+    logger.info('Study questions generated successfully', {
+      cid,
       reference: passageReference,
-      questionsCount: questions.length
+      questionsCount: questions.length,
+      citationCorrections: guard.corrections,
+      hallucinatedRefs: guard.verification?.hallucinated || [],
     });
 
     return res.status(200).json({
@@ -227,7 +257,9 @@ Guidelines for question creation:
         passage: passageReference,
         related_verses_count: relatedVerses.length,
         bible_search_results_count: bibleSearchResults.length,
-        generated_at: new Date().toISOString()
+        generated_at: new Date().toISOString(),
+        citations: guard.verification,
+        citation_corrections: guard.corrections,
       }
     });
 
