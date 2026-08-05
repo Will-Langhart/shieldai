@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import Head from 'next/head'
 import { Header } from '../components/Header'
 import { ProtectedRoute } from '../components/auth/ProtectedRoute'
+import { Seo } from '../components/Seo'
 import { JournalNoteEditor } from '../components/features/bible/JournalNoteEditor'
 import {
   BookOpen,
@@ -241,14 +241,13 @@ export default function JournalPage() {
   }
 
   return (
-    <ProtectedRoute>
     <>
-      <Head>
-        <title>Study Journal – Shield AI</title>
-        <meta name="description" content="Your personal Bible study journal with AI insights and reflections" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
-
+      <Seo
+        title="Study Journal"
+        description="Your personal Bible study journal with Shield AI — capture reflections, save AI insights, and track your walk through Scripture over time."
+        path="/journal"
+      />
+      <ProtectedRoute>
       <div className="shield-page-bg">
         <Header showNav />
         <main className="mx-auto max-w-3xl px-4 sm:px-6 py-10">
@@ -356,8 +355,8 @@ export default function JournalPage() {
           ))}
         </main>
       </div>
+      </ProtectedRoute>
     </>
-    </ProtectedRoute>
   )
 }
 

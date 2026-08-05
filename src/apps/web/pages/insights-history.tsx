@@ -1,9 +1,9 @@
 import React from 'react'
 import { GetServerSideProps } from 'next'
-import Head from 'next/head'
 import { Header } from '../components/Header'
 import { EnhancedInsightsQuery } from '../components/features/bible/EnhancedInsightsQuery'
 import { ProtectedRoute } from '../components/auth/ProtectedRoute'
+import { Seo } from '../components/Seo'
 
 interface InsightsHistoryPageProps {
   userId?: string
@@ -11,15 +11,13 @@ interface InsightsHistoryPageProps {
 
 export default function InsightsHistoryPage({ userId }: InsightsHistoryPageProps) {
   return (
-    <ProtectedRoute>
     <>
-      <Head>
-        <title>Insights History - Shield AI</title>
-        <meta name="description" content="View and manage your AI Bible insights history" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
+      <Seo
+        title="Insights History"
+        description="View, manage, and analyze your AI-generated Bible insights history with Shield AI."
+        path="/insights-history"
+      />
+      <ProtectedRoute>
       <div className="shield-page-bg">
         <Header showNav />
         <main className="shield-page-shell py-10">
@@ -33,8 +31,8 @@ export default function InsightsHistoryPage({ userId }: InsightsHistoryPageProps
           <EnhancedInsightsQuery userId={userId} />
         </main>
       </div>
+      </ProtectedRoute>
     </>
-    </ProtectedRoute>
   )
 }
 
