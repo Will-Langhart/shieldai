@@ -2,6 +2,7 @@ import Link from 'next/link'
 import {
   ArrowRight,
   BookOpen,
+  ChevronDown,
   Church,
   MessageCircle,
   ShieldCheck,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 import { LiveChatDemo } from '../components/features/landing/LiveChatDemo'
 import { Reveal } from '../components/features/landing/Reveal'
+import { FAQ_ITEMS } from '../components/features/landing/faqData'
 
 const STEPS = [
   {
@@ -281,6 +283,45 @@ export function Home() {
               </Reveal>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="relative py-16 md:py-24">
+        <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="mb-12 text-center">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-shield-brand">
+                Common questions
+              </p>
+              <h2 className="mb-3 text-2xl font-bold tracking-tight text-shield-fg md:text-4xl">
+                Answers to the questions people actually ask
+              </h2>
+              <p className="mx-auto max-w-xl text-sm text-shield-muted md:text-base">
+                A few of the apologetics questions Shield AI is built to help you think
+                through — with more available in the chat.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={80}>
+            <div className="space-y-3">
+              {FAQ_ITEMS.map((item) => (
+                <details
+                  key={item.question}
+                  className="group rounded-xl border border-white/[0.06] bg-shield-panel/40 px-5 py-4 shadow-shield-card backdrop-blur-md transition-colors hover:border-shield-brand/25"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left text-base font-semibold text-shield-fg [&::-webkit-details-marker]:hidden">
+                    {item.question}
+                    <ChevronDown className="h-4 w-4 shrink-0 text-shield-brand transition-transform duration-300 group-open:rotate-180" />
+                  </summary>
+                  <p className="mt-3 text-sm leading-relaxed text-shield-muted">
+                    {item.answer}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </Reveal>
         </div>
       </section>
 
