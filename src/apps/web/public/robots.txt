@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Non-indexable / private surfaces
+Disallow: /api/
+Disallow: /EmailConfirm
+Disallow: /test-insights
+
+Sitemap: https://shieldai.cloud/sitemap.xml
