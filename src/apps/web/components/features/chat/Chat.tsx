@@ -59,6 +59,7 @@ export function Chat() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearch, setShowSearch] = useState(false)
   const [currentPlaceholderIndex, setCurrentPlaceholderIndex] = useState(0)
+  const [thinkingIdx, setThinkingIdx] = useState(0)
   const [pinnedIds, setPinnedIds] = useState<string[]>([])
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -68,6 +69,16 @@ export function Chat() {
   const renameRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Rotating labels shown while the multi-agent graph works before the first
+  // token (retrieval + specialists run first, ~a few seconds), so the wait reads
+  // as purposeful rather than slow.
+  const thinkingPhrases = [
+    'Searching Scripture…',
+    'Consulting the specialists…',
+    'Weighing the arguments…',
+    'Grounding the response…',
+  ]
 
   const apologeticsQuestions = [
     "How can we know God exists?",
@@ -176,6 +187,15 @@ export function Chat() {
 
     return () => clearInterval(interval)
   }, [])
+
+  // Rotate the "thinking" label while awaiting the assistant's first token.
+  useEffect(() => {
+    if (!isLoading) { setThinkingIdx(0); return }
+    const interval = setInterval(() => {
+      setThinkingIdx((prev) => (prev + 1) % thinkingPhrases.length)
+    }, 2200)
+    return () => clearInterval(interval)
+  }, [isLoading])
 
   // Auto-grow the composer textarea up to a max height.
   useEffect(() => {
@@ -641,10 +661,13 @@ export function Chat() {
                 )
               })}
               {isLoading && messages[messages.length - 1]?.role === 'user' && (
-                <div className="mb-6 flex items-center gap-1.5 py-1">
-                  <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted"></div>
-                  <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted" style={{ animationDelay: '0.15s' }}></div>
-                  <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted" style={{ animationDelay: '0.3s' }}></div>
+                <div className="mb-6 flex items-center gap-2.5 py-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted"></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted" style={{ animationDelay: '0.15s' }}></div>
+                    <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted" style={{ animationDelay: '0.3s' }}></div>
+                  </div>
+                  <span className="text-sm text-shield-muted transition-opacity duration-300">{thinkingPhrases[thinkingIdx]}</span>
                 </div>
               )}
               <div ref={messagesEndRef} />
