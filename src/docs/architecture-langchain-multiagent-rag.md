@@ -165,9 +165,11 @@ objection from a `struggler`).
 
 ---
 
-## 4. LangSmith integration `🚧 in progress` — Phase 1
+## 4. LangSmith integration — Phase 1 `✅ tracing live in production`
 
-**Option A (minimal, wrap the OpenAI client) is DONE.** Project name: **`langgraph-rag`**.
+**Tracing is DONE and VERIFIED in production (2026-08-11)** — traces flowing in
+project **`langgraph-rag`**. Shipped via PR #25 (merge commit `1301896`).
+Remaining Phase-1 item: the citation eval dataset (§4.1).
 
 What's wired (2026-08-10):
 - `langsmith@0.8.9` installed in `@shieldai/web`.
@@ -327,8 +329,8 @@ flowchart LR
 
 | Phase | Goal | Exit criteria | Status |
 |---|---|---|---|
-| **1** | LangSmith tracing | Every graph turn traced in `langgraph-rag`; citation eval dataset live | 🚧 tracing wired; needs key + eval dataset |
-| **2** | Modernize + populate | Pinecone v6; `bible-verses` index populated (native dims); apologetics KB vectorized | 📋 |
+| **1** | LangSmith tracing | Every graph turn traced in `langgraph-rag`; citation eval dataset live | 🚧 tracing ✅ live in prod (verified); eval dataset remaining |
+| **2** | Modernize + populate | `bible-verses` created + code built; ingest run + populated; apologetics KB vectorized | 🚧 KJV fully ingested (31,102 verses, 0 errors); graph wired; apologetics KB vectorization remaining |
 | **3** | Reasoning specialists | Specialist agents replace retrieval fetchers; synthesizer merges; all traced | 📋 |
 | **4** | A/B + promote | Graph beats `chat-rag` on citation faithfulness at acceptable latency; becomes default slice | 📋 |
 
@@ -357,4 +359,7 @@ architecture until we can *see* it.
 | 2026-08-10 | Initial draft. Decisions 1–5 locked. Current-state inventory + target architecture + 4-phase roadmap. |
 | 2026-08-10 | **Phase 1 started.** Installed `langsmith@0.8.9`; added `lib/observability/openai-traced.ts` (env-toggled `wrapOpenAI`); routed `apologetics-graph.ts`, `embeddings.ts`, `chat-agentic.ts` through it; added `LANGSMITH_*` to `env.example`. Project = `langgraph-rag`. Typecheck + smoke test pass. Remaining: user sets key, verify trace, build eval dataset. |
 | 2026-08-10 | **Full-surface tracing.** Routed the remaining 7 real OpenAI call sites through `getTracedOpenAI()`: `chat.ts`, `chat-rag.ts`, `vector-response.ts`, `bible/{ai-insights,cross-references,study-questions}.ts`, `lib/image-generation.ts`. Typecheck clean. Now every LLM/embedding/image call traces when enabled. |
+| 2026-08-11 | **KJV fully ingested.** Drove the resumable `import-verses` route over the preview deploy: **1,189 chapters / 31,102 verses / 0 errors** into namespace `de4e12af7f28f599-02` (31,102 = canonical KJV verse count → no gaps). Chapter-cursor split Psalms across calls as designed. Verified: describe-index-stats = 31,102 records; theodicy search returned whole-canon hits (Galatians, John, 1 Peter, Isaiah 45:7, Malachi). Leftover `smoke-test` namespace (5 records) is inert — the app only queries the version namespace. Next: merge to main. |
+| 2026-08-11 | **Phase 2 started.** Created integrated `bible-verses` index (llama-text-embed-v2, 1024, cosine, aws/us-east-1, host `bible-verses-smb4qh6...`). Validated end-to-end via MCP: upserted 5 KJV verses (text records) + semantic search returned correct theodicy verses with **zero OpenAI calls**. Built app-side code: `bible-verses-index.ts` (records REST query+upsert), `bible-verses-ingest.ts` (resumable), `bible-service.getChapterVersesWithText()` (wires the unused `extractVersesFromJSON` parser), `import-verses` route action, and pointed the graph scripture node at `bible-verses` (text search). Typecheck clean. Next: deploy to preview + run ingest for `de4e12af7f28f599-02`. |
+| 2026-08-11 | **Phase 1 tracing SHIPPED + VERIFIED.** PR #25 merged to main (commit `1301896`); production build green; traces confirmed flowing in `langgraph-rag`. Root cause of the earlier "no trace" was that the code was uncommitted/undeployed — keys alone don't trace raw SDK calls. |
 | 2026-08-10 | **Pinecone inspected (console).** `shieldai` = 1024/cosine, **integrated `llama-text-embed-v2`**, 98 records (all memory/insights/test; no Bible). Verified in code: app uses raw `/vectors/upsert`+`/query` with OpenAI-averaged vectors, **bypassing** the integrated model → misconfig. **DECISION: new dedicated Bible index, Option A (integrated llama-text-embed-v2, text-in/out).** SDK finding: `@pinecone-database/pinecone` imported in 1 admin route only; data plane is hand-rolled REST. |
