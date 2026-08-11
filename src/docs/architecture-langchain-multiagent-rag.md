@@ -387,6 +387,25 @@ scholarly/debate only, `chat-rag` for gentle (where speed matters most).
 - Decide the fate of the legacy `shieldai` index (memory/insights on OpenAI-averaged
   vectors) — leave, or migrate memory to an integrated index too.
 
+### First eval result (2026-08-11, local mode, N=24)
+| arm | citation | scripture-floor | quality (LLM-judge) | latency |
+|---|---|---|---|---|
+| **graph** | 1.00 | 1.00 | **0.854** | 10.7 s |
+| **chat-rag** | 1.00 | 1.00 | 0.833 | 7.6 s |
+
+**Read:** both arms are **perfectly citation-faithful** and honor the Scripture
+floor — so those metrics are at a ceiling and don't discriminate (a big win for
+the Phase-2 `bible-verses` grounding: no hallucinated verses even *without* the
+graph's critic). Quality: the graph is marginally higher (+0.02, ~4.42 vs 4.33 on
+1–5) but **within noise at N=24**. The graph costs **~40% more latency**.
+
+**Implication:** not enough signal to promote the graph past the 10% canary yet.
+The multi-agent value isn't being captured by this rubric/dataset. Before a
+promotion decision: (1) grow the dataset (100+), (2) sharpen the judge rubric /
+add harder discriminating cases (the current one ceilings at ~4.3–4.4), (3)
+consider human spot-checks. Leaning: keep graph scoped to scholarly/debate where
+latency is tolerated; hold gentle on `chat-rag`.
+
 ### Decision gate (exit criteria)
 Promote the graph to a higher % / default **only if**, on the eval set, it (1)
 matches or beats `chat-rag` on citation faithfulness AND the quality judge, and (2)
