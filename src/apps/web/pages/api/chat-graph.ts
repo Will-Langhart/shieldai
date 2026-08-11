@@ -4,7 +4,6 @@ import { AnalyticsService } from '../../lib/analytics-service';
 import { ChatService } from '../../lib/chat-service';
 import { MemoryService } from '../../lib/memory-service';
 import { createServerSupabaseClient } from '../../lib/supabase';
-import { SubscriptionMiddleware } from '../../lib/subscription-middleware';
 import { logger, withCorrelationId, devLogger } from '../../lib/logger';
 import { applyChatRateLimit } from '../../lib/rate-limit';
 import { runApologeticsGraph, runApologeticsGraphStream } from '../../lib/graph/apologetics-graph';
@@ -68,22 +67,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     devLogger.chat.request(message, user.id, mode, cid);
 
-    const developerEmails = (process.env.DEVELOPER_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
-    const isDeveloper = process.env.NODE_ENV !== 'production' && developerEmails.includes(user.email);
-
-    // --- Subscription / feature gating (mirrors chat-agentic.ts) ---
-    const featureAccess = await SubscriptionMiddleware.checkChatAccess(user.id, mode);
-    if (!isDeveloper && !featureAccess.allowed) {
-      return res.status(403).json({
-        error: 'Feature not available',
-        message: `${mode === 'scholarly' ? 'GPT-4 Scholarly mode' : mode === 'debate' ? 'GPT-4 Debate mode' : 'AI conversations'} not available on your current plan`,
-        upgrade_required: featureAccess.upgrade_required,
-        current_tier: featureAccess.current_tier,
-        required_tier: featureAccess.required_tier,
-        remaining: featureAccess.remaining,
-        limit: featureAccess.limit,
-      });
-    }
+    // No subscription/feature gate here. chat-graph is now the graph delegate for
+    // /api/chat-rag (the production entry point), which serves everyone with NO
+    // feature gate — so enforcing a stricter gate here 403'd users chat-rag would
+    // serve (that mismatch is exactly what broke the rollout). Keep access policy
+    // identical to chat-rag; if tier enforcement becomes a product requirement,
+    // add it to BOTH paths together.
 
     // Objection analysis in the route drives analytics; the graph re-derives its
     // own (deterministic, cheap) for prompt construction and the Scripture floor.
