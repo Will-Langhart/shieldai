@@ -234,6 +234,40 @@ export class ChatService {
     return data;
   }
 
+  // Delete a single message (and best-effort its Pinecone vector)
+  static async deleteMessage(
+    messageId: string,
+    supabaseClient?: SupabaseClient
+  ): Promise<void> {
+    const client = supabaseClient || supabase;
+
+    // Look up user_id first so we can clean up the namespaced Pinecone vector.
+    const { data: existing } = await client
+      .from('messages')
+      .select('user_id')
+      .eq('id', messageId)
+      .maybeSingle();
+
+    const { error } = await client
+      .from('messages')
+      .delete()
+      .eq('id', messageId);
+
+    if (error) {
+      console.error('Error deleting message:', error);
+      throw error;
+    }
+
+    try {
+      if (existing?.user_id) {
+        await PineconeService.deleteMessageVector(messageId, existing.user_id);
+      }
+    } catch (e) {
+      console.error('Error deleting message vector:', e);
+      // Best-effort — the DB row is already gone.
+    }
+  }
+
   // Update conversation title
   static async updateConversationTitle(
     conversationId: string,

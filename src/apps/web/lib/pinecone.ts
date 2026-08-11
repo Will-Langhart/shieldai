@@ -242,6 +242,34 @@ export class PineconeService {
     }
   }
 
+  // Delete a single message vector by id (namespaced by user)
+  static async deleteMessageVector(messageId: string, userId: string): Promise<void> {
+    try {
+      const { apiKey, indexHost } = await initializePinecone();
+
+      const response = await fetch(`https://${indexHost}/vectors/delete`, {
+        method: 'POST',
+        headers: {
+          'Api-Key': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ids: [messageId],
+          namespace: userId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete message vector: ${response.status}`);
+      }
+
+      console.log('✅ Deleted message vector from Pinecone:', messageId);
+    } catch (error) {
+      console.error('❌ Error deleting message vector:', error);
+      // Don't throw — vector cleanup is best-effort
+    }
+  }
+
   // Delete messages for a conversation
   static async deleteConversationMessages(conversationId: string): Promise<void> {
     try {

@@ -11,9 +11,7 @@ import {
   Plus,
   Search,
   ChevronDown,
-  Mic,
   Send,
-  Shield,
   Pin,
   PinOff,
   Pencil,
@@ -68,6 +66,8 @@ export function Chat() {
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const renameRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const apologeticsQuestions = [
     "How can we know God exists?",
@@ -177,6 +177,19 @@ export function Chat() {
     return () => clearInterval(interval)
   }, [])
 
+  // Auto-grow the composer textarea up to a max height.
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`
+  }, [inputMessage])
+
+  // Keep the latest message in view as the conversation grows.
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isLoading])
+
   // Load conversations on mount
   useEffect(() => {
     loadConversations()
@@ -236,30 +249,15 @@ export function Chat() {
     }
   }
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return
-
-    const userMessageId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    const userMessage: Message = {
-      id: userMessageId,
-      content: inputMessage,
-      role: 'user',
-      created_at: new Date().toISOString(),
-      timestamp: new Date().toISOString(),
-      metadata: {}
-    }
-
-    setMessages(prev => [...prev, userMessage])
-    setInputMessage('')
+  // Core streaming call — shared by send and regenerate.
+  const streamAssistantReply = async (text: string, opts?: { regenerate?: boolean }) => {
     setIsLoading(true)
-
     try {
-      // Create a placeholder for the assistant's response
       const assistantMessageId = `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       let assistantMessageAdded = false
-      
+
       await chatService.sendStreamingMessage(
-        inputMessage,
+        text,
         currentConversationId || undefined,
         selectedMode,
         // onChunk: Update the assistant message as chunks arrive
@@ -292,16 +290,16 @@ export function Chat() {
         // onError: Handle errors
         (error: Error) => {
           console.error('❌ Error in streaming:', error)
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessageId 
+          setMessages(prev => prev.map(msg =>
+            msg.id === assistantMessageId
               ? { ...msg, content: 'Sorry, I encountered an error. Please try again.' }
               : msg
           ))
-        }
+        },
+        { regenerate: opts?.regenerate }
       )
     } catch (error) {
       console.error('❌ Error sending message:', error)
-      // Add error message to chat
       const errorMessage: Message = {
         id: Date.now().toString(),
         content: 'Sorry, I encountered an error. Please try again.',
@@ -314,6 +312,37 @@ export function Chat() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return
+
+    const text = inputMessage
+    const userMessage: Message = {
+      id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      content: text,
+      role: 'user',
+      created_at: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+      metadata: {}
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setInputMessage('')
+    await streamAssistantReply(text)
+  }
+
+  // Regenerate the last assistant reply from the most recent user message.
+  // When the conversation is persisted we ask the server for a true
+  // regeneration (delete the old reply, regenerate off the same user turn);
+  // otherwise we just re-send the last user message.
+  const handleRetry = async () => {
+    if (isLoading) return
+    const lastUserIndex = messages.map(m => m.role).lastIndexOf('user')
+    if (lastUserIndex === -1) return
+    const lastUserText = messages[lastUserIndex].content
+    setMessages(prev => prev.slice(0, lastUserIndex + 1))
+    await streamAssistantReply(lastUserText, { regenerate: !!currentConversationId })
   }
 
   const handleNewTopic = () => {
@@ -573,86 +602,87 @@ export function Chat() {
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full px-4">
-              <div className="shield-glass-panel text-center w-full max-w-2xl mx-auto px-8 py-10">
-                  <img src="/logo.png" alt="Shield AI" className="w-16 h-16 mx-auto mb-4 object-contain drop-shadow-[0_0_16px_rgba(70,161,226,0.35)]" />
-                <h2 className="text-xl font-semibold mb-2 text-shield-fg">What can I help with?</h2>
+            <div className="flex h-full flex-col items-center justify-center px-4">
+              <div className="w-full max-w-3xl text-center">
+                <img src="/logo.png" alt="Shield AI" className="mx-auto mb-5 h-14 w-14 object-contain drop-shadow-[0_0_16px_rgba(70,161,226,0.35)]" />
+                <h2 className="mb-2 text-2xl font-semibold text-shield-fg">What can I help with?</h2>
                 <p className="text-sm text-shield-muted">Ask a theological question, explore scripture, or test an argument.</p>
+                <div className="mx-auto mt-7 flex max-w-xl flex-wrap justify-center gap-2">
+                  {apologeticsQuestions.slice(0, 4).map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => {
+                        setInputMessage(q)
+                        textareaRef.current?.focus()
+                      }}
+                      className="rounded-full border border-white/[0.08] bg-shield-panel/60 px-4 py-2 text-sm text-shield-muted transition-colors hover:border-shield-brand/40 hover:bg-shield-elevated hover:text-shield-fg"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (
-            <div className="max-w-2xl mx-auto px-4 py-4">
-              <div className="space-y-0">
-                {messages.map((message) => (
-                  <div key={message.id} className="w-full">
-                    <EnhancedMessage
-                      message={{
-                        ...message,
-                        created_at: message.created_at || message.timestamp || new Date().toISOString()
-                      }}
-                      onFeedback={(_messageId, _feedback) => {}}
-                    />
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="w-full flex justify-start">
-                    <div className="enhanced-message-wrapper assistant">
-                      <div className="message-icon">
-                        <div className="ai-icon-circle">
-                          <Shield className="h-4 w-4 text-shield-brand" />
-                        </div>
-                      </div>
-                      <div className="message-bubble assistant-bubble">
-                        <div className="flex space-x-1.5 py-1">
-                          <div className="w-1.5 h-1.5 bg-shield-muted rounded-full animate-bounce"></div>
-                          <div className="w-1.5 h-1.5 bg-shield-muted rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
-                          <div className="w-1.5 h-1.5 bg-shield-muted rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className="mx-auto max-w-3xl px-4 py-6">
+              {messages.map((message, index) => {
+                const isLastAssistant =
+                  message.role === 'assistant' && index === messages.length - 1
+                return (
+                  <EnhancedMessage
+                    key={message.id}
+                    message={{
+                      ...message,
+                      created_at: message.created_at || message.timestamp || new Date().toISOString()
+                    }}
+                    onRetry={handleRetry}
+                    isLast={isLastAssistant && !isLoading}
+                  />
+                )
+              })}
+              {isLoading && messages[messages.length - 1]?.role === 'user' && (
+                <div className="mb-6 flex items-center gap-1.5 py-1">
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted"></div>
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted" style={{ animationDelay: '0.15s' }}></div>
+                  <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted" style={{ animationDelay: '0.3s' }}></div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
 
         {/* Input Area — always pinned to bottom */}
-        <div className="border-t border-white/[0.06] bg-shield-panel/25 px-4 py-3 backdrop-blur-sm">
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center rounded-2xl border border-white/[0.1] bg-shield-panel/85 px-3 py-2 shadow-shield-card backdrop-blur-md">
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSendMessage()
-                    }
-                  }}
-                  className="w-full bg-transparent text-shield-fg placeholder-transparent focus:outline-none text-sm py-1"
-                  disabled={isLoading}
-                />
-                {!inputMessage && (
-                  <div className="absolute inset-0 pointer-events-none flex items-center">
-                    <span className="text-shield-muted text-sm">
-                      {apologeticsQuestions[currentPlaceholderIndex]}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-1 ml-2">
-                <button
-                  onClick={handleSendMessage}
-                  disabled={isLoading || !inputMessage.trim()}
-                  className="rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim p-1.5 transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Send className="h-4 w-4 text-white" />
-                </button>
-              </div>
+        <div className="px-4 pb-4 pt-2">
+          <div className="mx-auto max-w-3xl">
+            <div className="flex items-end gap-2 rounded-3xl border border-white/[0.1] bg-shield-panel/85 px-3 py-2.5 shadow-shield-card backdrop-blur-md transition-colors focus-within:border-shield-brand/45">
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSendMessage()
+                  }
+                }}
+                placeholder={apologeticsQuestions[currentPlaceholderIndex]}
+                disabled={isLoading}
+                className="max-h-[200px] flex-1 resize-none bg-transparent px-1.5 py-1.5 text-[15px] leading-6 text-shield-fg placeholder:text-shield-muted focus:outline-none scrollbar-hide"
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={isLoading || !inputMessage.trim()}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-shield-brand to-shield-brand-dim text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                title="Send"
+              >
+                <Send className="h-4 w-4" />
+              </button>
             </div>
+            <p className="mt-2 text-center text-[11px] text-shield-muted/70">
+              Shield AI can make mistakes. Verify important claims against Scripture.
+            </p>
           </div>
         </div>
       </div>

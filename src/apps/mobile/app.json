@@ -32,13 +32,6 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.com.shieldai.app",
-          "enableGooglePay": true
-        }
-      ],
       "react-native-maps"
     ],
     "experiments": {

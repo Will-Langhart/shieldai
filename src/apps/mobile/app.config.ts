@@ -34,14 +34,11 @@ const appConfig: ExpoConfig = {
   },
   plugins: [
     'expo-router',
-    [
-      '@stripe/stripe-react-native',
-      {
-        merchantIdentifier: 'merchant.com.shieldai.app',
-        enableGooglePay: true,
-      },
-    ],
-    'react-native-maps',
+    // Note: react-native-maps is autolinked and needs no config plugin at the
+    // Expo-53-pinned version (1.20.1). Only add it back (with a version that ships
+    // one) if you need to inject a Google Maps API key.
+    // Re-applies the fmt consteval build fix on every `expo prebuild` (Xcode 26).
+    './plugins/withFmtConstevalFix',
   ],
   experiments: {
     typedRoutes: true,

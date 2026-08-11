@@ -96,13 +96,15 @@ export class ChatService {
    * Send a streaming chat message with real-time updates
    */
   async sendStreamingMessage(
-    message: string, 
-    conversationId: string | undefined, 
+    message: string,
+    conversationId: string | undefined,
     mode: 'gentle' | 'scholarly' | 'debate' = 'gentle',
     onChunk: (chunk: string) => void,
     onComplete: (fullMessage: ChatMessage) => void,
-    onError: (error: Error) => void
+    onError: (error: Error) => void,
+    options?: { regenerate?: boolean }
   ): Promise<void> {
+    const regenerate = !!options?.regenerate;
     try {
       // Get auth token from Supabase
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -120,28 +122,13 @@ export class ChatService {
       }
       const token = session.access_token;
 
-      // Save user message first
-      if (conversationId) {
-        try {
-          await fetch('/api/messages', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              conversationId,
-              content: message,
-              role: 'user',
-              mode
-            })
-          });
-        } catch (error) {
-          console.warn('Failed to save user message:', error);
-        }
-      }
+      // NOTE: the user message is persisted server-side by the chat endpoint
+      // (after retrieval / before streaming completes), which is the single
+      // source of truth. We intentionally do NOT pre-save it here — doing so
+      // duplicated the row and the in-prompt user turn for existing
+      // conversations.
 
-      // Try RAG API first, fall back to regular chat API
+      // Try RAG API first, fall back to regular chat API.
       let response;
       try {
         response = await fetch('/api/chat-rag', {
@@ -154,12 +141,15 @@ export class ChatService {
             message,
             conversationId,
             mode,
-            stream: true
+            stream: true,
+            regenerate
           })
         });
       } catch (ragError) {
+        // The fallback endpoint has no regenerate semantics, so don't use it for
+        // regeneration — surface the error instead of duplicating the user turn.
+        if (regenerate) throw ragError;
         console.warn('RAG API failed, falling back to regular chat API:', ragError);
-        // Fall back to regular chat API
         response = await fetch('/api/chat', {
           method: 'POST',
           headers: {
