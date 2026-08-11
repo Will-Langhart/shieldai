@@ -4,8 +4,7 @@ import { createServerSupabaseClient } from '../../lib/supabase';
 import { logger, withCorrelationId } from '../../lib/logger';
 import { applyChatRateLimit } from '../../lib/rate-limit';
 import { bibleService } from '../../lib/bible-service';
-import { BiblePineconeService } from '../../lib/bible-pinecone';
-import { EmbeddingService } from '../../lib/embeddings';
+import { BibleVersesIndex } from '../../lib/bible-verses-index';
 import { ChatService } from '../../lib/chat-service';
 
 // LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
@@ -24,7 +23,7 @@ export default async function handler(
   }
 
   try {
-    const { message, conversationId, mode = 'gentle', stream = false } = req.body || {};
+    const { message, conversationId, mode = 'gentle', stream = false, regenerate = false } = req.body || {};
 
     if (!message) {
       logger.warn('Missing message', { cid });
@@ -65,37 +64,60 @@ export default async function handler(
       return res.status(401).json({ error: 'Authorization header required' });
     }
 
-    logger.info('Processing RAG chat request', { cid, userId: user.id, messageLength: message.length });
+    logger.info('Processing RAG chat request', { cid, userId: user.id, messageLength: message.length, regenerate });
 
-    // Step 1: Search for relevant Bible content using Pinecone
+    // The text used to drive retrieval + the final user turn. On regenerate we
+    // derive it from the stored history rather than trusting the client.
+    let queryText: string = message;
+
+    // Step 0 (regenerate): drop the previous assistant reply so we can produce a
+    // fresh one from the same user turn. Requires a persisted conversation.
+    if (regenerate) {
+      if (!conversationId || !serverSupabase) {
+        logger.warn('Regenerate requires a saved conversation', { cid, hasConvId: !!conversationId });
+        return res.status(400).json({ error: 'Regenerate requires an existing conversation' });
+      }
+      try {
+        const existing = await ChatService.getMessages(conversationId, serverSupabase);
+        // Delete the contiguous trailing assistant message(s).
+        let i = existing.length - 1;
+        const toDelete: string[] = [];
+        while (i >= 0 && existing[i].role === 'assistant') {
+          toDelete.push(existing[i].id);
+          i--;
+        }
+        if (i < 0 || existing[i].role !== 'user') {
+          return res.status(400).json({ error: 'Nothing to regenerate' });
+        }
+        queryText = existing[i].content;
+        for (const id of toDelete) {
+          await ChatService.deleteMessage(id, serverSupabase);
+        }
+        logger.info('Cleared previous assistant reply for regenerate', { cid, conversationId, deleted: toDelete.length });
+      } catch (error) {
+        logger.error('Failed to prepare regenerate', { cid }, error);
+        return res.status(500).json({ error: 'Failed to prepare regeneration' });
+      }
+    }
+
+    // Step 1: Retrieve relevant verses from the integrated `bible-verses` index.
+    // Text in / text out — Pinecone embeds the query with llama-text-embed-v2, so
+    // there is NO OpenAI embedding call here and no 1536->1024 averaging. Namespace
+    // is the ingested KJV version id.
+    const BIBLE_VERSES_NAMESPACE = 'de4e12af7f28f599-02';
     let relevantVerses: any[] = [];
     try {
-      // Generate embedding for the user's message
-      const embeddingResponse = await getOpenAI().embeddings.create({
-        model: 'text-embedding-3-small',
-        input: message
-      });
-      
-      const embedding = embeddingResponse.data[0].embedding;
-      
-      // Search Pinecone for relevant Bible content
-      const pineconeResults = await BiblePineconeService.searchBibleContent(
-        embedding,
-        5, // Get top 5 most relevant verses
-        { type: 'bible_verse' }
-      );
-      
-      relevantVerses = pineconeResults || [];
-      logger.debug('Pinecone search results', { cid, count: relevantVerses.length });
+      relevantVerses = await BibleVersesIndex.search(BIBLE_VERSES_NAMESPACE, queryText, 5);
+      logger.debug('bible-verses search results', { cid, count: relevantVerses.length });
     } catch (error) {
-      logger.error('Pinecone search failed', { cid }, error);
-      // Continue without Pinecone results
+      logger.error('bible-verses search failed', { cid }, error);
+      // Continue without vector results
     }
 
     // Step 2: Search Bible API for additional context
     let bibleSearchResults: any[] = [];
     try {
-      const searchResults = await bibleService.searchBible('de4e12af7f28f599-02', message, 5);
+      const searchResults = await bibleService.searchBible('de4e12af7f28f599-02', queryText, 5);
       bibleSearchResults = searchResults?.passages || [];
       logger.debug('Bible API search results', { cid, count: bibleSearchResults.length });
     } catch (error) {
@@ -201,8 +223,8 @@ IMPORTANT: Always include relevant Bible verses in your responses and explain ho
     
     if (relevantVerses.length > 0) {
       contextMessage += `\n\nRELEVANT BIBLE VERSES (from vector search):
-${relevantVerses.map((verse, index) => 
-  `${index + 1}. ${verse.metadata?.reference || 'Unknown'}: "${verse.metadata?.text || verse.text || 'No text available'}"`
+${relevantVerses.map((verse, index) =>
+  `${index + 1}. ${verse.reference || verse.metadata?.reference || 'Unknown'}: "${verse.text || verse.metadata?.text || 'No text available'}"`
 ).join('\n')}`;
     }
 
@@ -224,7 +246,9 @@ ${conversationHistory.slice(-6).map((msg: any) =>
     const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { role: 'system', content: systemPrompt + contextMessage },
       ...conversationHistory.slice(-10), // Last 10 messages for context
-      { role: 'user', content: message }
+      // On regenerate the stored history already ends with the user turn, so we
+      // must not append it a second time.
+      ...(regenerate ? [] : [{ role: 'user' as const, content: message }])
     ];
 
     // Configure OpenAI parameters based on mode
@@ -264,14 +288,17 @@ ${conversationHistory.slice(-6).map((msg: any) =>
           }
         }
 
-        // Save messages to Supabase
+        // Save messages to Supabase. On regenerate the user turn already exists,
+        // so we only persist the new assistant reply.
         if (user && currentConversationId && serverSupabase) {
           try {
-            await ChatService.addMessage(currentConversationId, message, 'user', mode, serverSupabase, undefined, undefined, undefined, user);
+            if (!regenerate) {
+              await ChatService.addMessage(currentConversationId, message, 'user', mode, serverSupabase, undefined, undefined, undefined, user);
+            }
             if (fullText) {
               await ChatService.addMessage(currentConversationId, fullText, 'assistant', mode, serverSupabase, undefined, undefined, undefined, user);
             }
-            logger.info('Conversation saved to Supabase', { cid, conversationId: currentConversationId });
+            logger.info('Conversation saved to Supabase', { cid, conversationId: currentConversationId, regenerate });
           } catch (error) {
             logger.error('Failed to save conversation', { cid }, error);
           }
@@ -295,10 +322,13 @@ ${conversationHistory.slice(-6).map((msg: any) =>
 
       const aiResponse = response.choices[0].message.content;
 
-      // Save messages to Supabase
+      // Save messages to Supabase. On regenerate the user turn already exists,
+      // so we only persist the new assistant reply.
       if (user && currentConversationId && serverSupabase) {
         try {
-          await ChatService.addMessage(currentConversationId, message, 'user', mode, serverSupabase, undefined, undefined, undefined, user);
+          if (!regenerate) {
+            await ChatService.addMessage(currentConversationId, message, 'user', mode, serverSupabase, undefined, undefined, undefined, user);
+          }
           await ChatService.addMessage(
             currentConversationId,
             aiResponse || 'I apologize, but I was unable to generate a response at this time.',
@@ -307,7 +337,7 @@ ${conversationHistory.slice(-6).map((msg: any) =>
             serverSupabase,
             undefined, undefined, undefined, user
           );
-          logger.info('Conversation saved to Supabase', { cid, conversationId: currentConversationId });
+          logger.info('Conversation saved to Supabase', { cid, conversationId: currentConversationId, regenerate });
         } catch (error) {
           logger.error('Failed to save conversation', { cid }, error);
         }
