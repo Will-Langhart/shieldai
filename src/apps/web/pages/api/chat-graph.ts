@@ -152,6 +152,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             searchQuery: message,
             searchTimestamp: new Date().toISOString(),
             graph: true,
+            specialists: result.specialists,
             corrections: result.corrections,
             evidence: result.evidence,
             citations: result.verification
@@ -190,6 +191,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       cid,
       ms: Date.now() - startedAt,
       objectionType: result.objectionType,
+      specialists: result.specialists,
       corrections: result.corrections,
       evidence: result.evidence,
       streamed: shouldStream,
@@ -226,6 +228,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       timestamp: new Date().toISOString(),
       graph: {
         objectionType: result.objectionType,
+        specialists: result.specialists,
         corrections: result.corrections,
         evidence: result.evidence,
         citations: result.verification,

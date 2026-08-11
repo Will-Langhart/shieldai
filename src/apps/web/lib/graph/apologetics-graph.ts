@@ -1,34 +1,31 @@
 /**
- * Apologetics reasoning graph (LangGraph.js skeleton — Step 2).
+ * Apologetics reasoning graph (LangGraph.js — Phase 3: reasoning specialists).
  *
- * This is the multi-agent successor to the flat tool loop in
- * `pages/api/chat-agentic.ts`. It models the same domain guarantees (Scripture
- * floor, citation verification) as an explicit `StateGraph` instead of an
- * imperative loop, which is what unlocks the reflection loop and parallel
- * specialists you can't cleanly express today.
+ * A deterministic router dispatches a small set of *reasoning specialist agents*
+ * (not thin retrieval fetchers). Each specialist retrieves its own scoped
+ * evidence AND produces a focused argument from its angle; a synthesizer weaves
+ * those arguments into one grounded answer; a citation critic verifies Scripture
+ * and can trigger a bounded revision.
  *
- *   analyze ──▶ (fan-out, parallel) ──▶ writer ──▶ critic ──┐
- *                ├─ scripture   (forced for theological)      │ unresolved refs
- *                ├─ apologetics                               │ & under cap?
- *                └─ memory      (only with a conversation)    ▼
- *                                                      revise → writer
- *                                                      done   → END
+ *   analyze ─▶ (fan-out, parallel) ─▶ synthesize ─▶ critic ─┐
+ *     (router)   ├─ exegete       (ALWAYS — Scripture floor)  │ unresolved refs
+ *                ├─ historian     (historical)                │ & under cap?
+ *                ├─ philosopher   (logical/philosophical/moral)▼
+ *                ├─ scientist     (scientific)          revise → synthesize
+ *                ├─ pastor        (emotional/personal)   done  → END
+ *                └─ culturalist   (cultural)
  *
- * Design choices worth calling out:
- *  - The ROUTER IS DETERMINISTIC. `classifyObjection` already decides the shape
- *    of the turn far more cheaply and reliably than an LLM supervisor would.
- *    We do NOT spend a model call to route.
- *  - Specialist nodes are thin wrappers over the SAME services the agent tools
- *    call (see `lib/agent-tools.ts`). No new retrieval logic. When you commit,
- *    consider exporting the tool handlers and reusing them here to stay DRY.
- *  - The Writer uses the raw `openai` SDK (already a dependency) rather than a
- *    LangChain LLM wrapper, so this file has no runtime dependency on the
- *    stale `@langchain/openai`. Swap in `ChatOpenAI` later if you want tracing.
- *  - The Critic reuses `verifyCitations` from the Step-1 verifier.
- *
- * NOT YET WIRED to a route. Install deps first (see repo notes):
- *   npm i @langchain/langgraph @langchain/core
- *   npm rm langchain @langchain/openai @langchain/pinecone   # unused, stale
+ * Design choices:
+ *  - The ROUTER IS DETERMINISTIC (`classifyObjection`). No model call to route —
+ *    the objection taxonomy is stable, so rules beat an LLM supervisor on cost,
+ *    latency, and reliability. We invest the model calls in the *specialists*.
+ *  - The exegete always runs, so every answer is grounded in retrieved Scripture
+ *    (the "floor"). It queries the integrated `bible-verses` index by text.
+ *  - Specialists run on a cheap model in PARALLEL, so added quality costs ~one
+ *    extra sequential LLM hop, not the sum. The synthesizer uses the mode's model.
+ *  - The Critic reuses `verifyCitations`; its reflection loop re-runs synthesize.
+ *  - LLM calls go through the LangSmith-traced client, so each specialist and the
+ *    synthesizer appear as their own spans in the `langgraph-rag` project.
  */
 
 import { Annotation, StateGraph, START, END } from '@langchain/langgraph';
@@ -42,25 +39,20 @@ import { MemoryService } from '../memory-service';
 import { verifyCitations, type CitationVerification } from '../citation-verifier';
 import { logger } from '../logger';
 
-// Objection types that require at least one Scripture lookup (the "floor").
-// Mirrors THEOLOGICAL_OBJECTION_TYPES in chat-agentic.ts.
-const THEOLOGICAL_OBJECTION_TYPES = new Set([
-  'logical', 'moral', 'scientific', 'historical', 'philosophical',
-]);
-
 const MAX_CORRECTIONS = Number(process.env.GRAPH_MAX_CORRECTIONS || 1);
+// Specialists reason on a cheap, fast model; the synthesizer uses the mode model.
+const SPECIALIST_MODEL = process.env.GRAPH_SPECIALIST_MODEL || 'gpt-4o-mini';
 
 // LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
 const getOpenAI = getTracedOpenAI;
 
-// ── Retrieved-evidence shapes (compact; mirror the tool results) ────────────
+// ── Retrieved-evidence shapes (compact) ─────────────────────────────────────
 interface ScriptureHit { reference: string; text: string; score?: number }
 interface ApologeticsHit { title: string; category: string; content: string; scriptures: string[] }
 interface MemoryContext { keyTopics: string[]; emotionalTone: string; relevant: string[] }
+interface SpecialistArgument { specialist: string; text: string }
 
 // ── Graph state ─────────────────────────────────────────────────────────────
-// Each channel written by exactly one node, except the evidence arrays (given a
-// concat reducer so the design tolerates future multi-source writes).
 const GraphState = Annotation.Root({
   // Inputs (carried through unchanged).
   message: Annotation<string>,
@@ -79,12 +71,15 @@ const GraphState = Annotation.Root({
   objection: Annotation<ObjectionAnalysis>,
   systemPrompt: Annotation<string>,
 
-  // Retrieved evidence (fan-out).
+  // Evidence + arguments written by the specialist fan-out (concat reducers so
+  // parallel specialists merge cleanly).
   scripture: Annotation<ScriptureHit[]>({ reducer: (a, b) => a.concat(b), default: () => [] }),
   apologetics: Annotation<ApologeticsHit[]>({ reducer: (a, b) => a.concat(b), default: () => [] }),
   memory: Annotation<MemoryContext | null>({ reducer: (_a, b) => b, default: () => null }),
+  argumentList: Annotation<SpecialistArgument[]>({ reducer: (a, b) => a.concat(b), default: () => [] }),
+  specialistsFired: Annotation<string[]>({ reducer: (a, b) => a.concat(b), default: () => [] }),
 
-  // Writer/critic loop.
+  // Synthesize/critic loop.
   draft: Annotation<string>({ reducer: (_a, b) => b, default: () => '' }),
   verification: Annotation<CitationVerification | null>({ reducer: (_a, b) => b, default: () => null }),
   corrections: Annotation<number>({ reducer: (_a, b) => b, default: () => 0 }),
@@ -94,6 +89,24 @@ const GraphState = Annotation.Root({
 });
 
 type State = typeof GraphState.State;
+
+// ── Specialist personas ───────────────────────────────────────────────────────
+// Each returns a concise (≤130-word) argument from its angle, grounded only in
+// the evidence handed to it. The synthesizer merges them.
+const PERSONAS: Record<string, string> = {
+  exegete:
+    'You are a careful biblical exegete. Interpret the retrieved verses in their literary and canonical context and explain how they bear on the question. Ground every claim in the provided verses and cite their references. Do not cite verses not provided.',
+  historian:
+    'You are a historical-evidence apologist. Address the question with historical reasoning — manuscript transmission and reliability, the resurrection, and extra-biblical corroboration — at a rigorous but accessible level.',
+  philosopher:
+    'You are an analytic philosopher of religion. Address the logical and philosophical structure of the question (e.g. the problem of evil, the moral argument, coherence of theism) with clear, valid reasoning.',
+  scientist:
+    'You are a science-and-faith specialist. Frame the question through the relationship of science and faith — the "how vs. why" distinction, cosmic fine-tuning, and non-overlapping domains — without overclaiming on either side.',
+  pastor:
+    'You are a pastoral counselor. Respond with warmth, empathy, and gentleness, honoring the person\'s lived experience. Offer comfort and hope more than argument, and keep any Scripture tender and apt.',
+  culturalist:
+    'You are a cultural-engagement specialist. Address the modern, cultural dimension of the question — why it resonates today and how the Christian view speaks into contemporary life — charitably and without caricature.',
+};
 
 // ── Nodes ────────────────────────────────────────────────────────────────────
 
@@ -109,73 +122,131 @@ function analyzeNode(state: State): Partial<State> {
   return { objection, systemPrompt };
 }
 
-async function scriptureNode(state: State): Promise<Partial<State>> {
+// Shared reasoning call for a specialist: focused persona + its own evidence.
+async function reason(
+  state: State,
+  name: string,
+  evidenceText: string
+): Promise<string> {
+  const persona = PERSONAS[name];
+  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+    { role: 'system', content: `${persona}\n\nBe concise: at most ~130 words. This is one perspective that will be merged with others, so do not write a full answer — contribute your angle.` },
+    { role: 'user', content: `Question: ${state.message}\n\nEvidence available to you:\n${evidenceText || '(no retrieval — reason from established knowledge and be explicit about uncertainty)'}` },
+  ];
   try {
-    // Integrated `bible-verses` index: text in, text out. Pinecone embeds the
-    // query with llama-text-embed-v2 — no OpenAI call. Namespace = version id.
+    const resp = await getOpenAI().chat.completions.create({
+      model: SPECIALIST_MODEL,
+      max_tokens: 400,
+      temperature: 0.5,
+      messages,
+    });
+    return resp.choices[0].message.content?.trim() || '';
+  } catch (err) {
+    logger.error(`graph.specialist.${name} failed`, { cid: state.cid }, err as Error);
+    return '';
+  }
+}
+
+// Exegete (ALWAYS): retrieves Scripture from bible-verses + reasons over it.
+async function exegeteNode(state: State): Promise<Partial<State>> {
+  let scripture: ScriptureHit[] = [];
+  try {
     const results = await BibleVersesIndex.search(state.versionId, state.message, 5);
-    const scripture = results.map(r => ({ reference: r.reference, text: r.text, score: Number(r.score.toFixed(3)) }));
-    return { scripture };
+    scripture = results.map(r => ({ reference: r.reference, text: r.text, score: Number(r.score.toFixed(3)) }));
   } catch (err) {
-    logger.error('graph.scripture failed', { cid: state.cid }, err as Error);
-    return { scripture: [] };
+    logger.error('graph.exegete.retrieval failed', { cid: state.cid }, err as Error);
   }
+  const evidence = scripture.length
+    ? scripture.map(s => `- ${s.reference}: "${s.text}"`).join('\n')
+    : '';
+  const text = await reason(state, 'exegete', evidence);
+  return { scripture, argumentList: [{ specialist: 'exegete', text }], specialistsFired: ['exegete'] };
 }
 
-async function apologeticsNode(state: State): Promise<Partial<State>> {
-  try {
-    const results = searchApologeticsContent(state.message).slice(0, 3);
-    const apologetics = results.map(r => ({
-      title: r.title,
-      category: r.category,
-      scriptures: r.scriptures,
-      content: r.content.length > 600 ? `${r.content.slice(0, 600)}…` : r.content,
-    }));
-    return { apologetics };
-  } catch (err) {
-    logger.error('graph.apologetics failed', { cid: state.cid }, err as Error);
-    return { apologetics: [] };
-  }
+// Knowledge-base specialists: retrieve apologetics KB (scoped by category) + reason.
+function makeKbSpecialist(name: string, category?: string) {
+  return async function (state: State): Promise<Partial<State>> {
+    let apologetics: ApologeticsHit[] = [];
+    try {
+      const results = searchApologeticsContent(state.message, category).slice(0, 3);
+      apologetics = results.map(r => ({
+        title: r.title,
+        category: r.category,
+        scriptures: r.scriptures,
+        content: r.content.length > 600 ? `${r.content.slice(0, 600)}…` : r.content,
+      }));
+    } catch (err) {
+      logger.error(`graph.${name}.retrieval failed`, { cid: state.cid }, err as Error);
+    }
+    const evidence = apologetics.length
+      ? apologetics.map(a => `- [${a.category}] ${a.title}: ${a.content}`).join('\n')
+      : '';
+    const text = await reason(state, name, evidence);
+    return { apologetics, argumentList: [{ specialist: name, text }], specialistsFired: [name] };
+  };
 }
 
-async function memoryNode(state: State): Promise<Partial<State>> {
-  if (!state.conversationId || !state.userId) return { memory: null };
-  try {
-    const mem = await MemoryService.getEnhancedConversationContext(
-      state.conversationId, state.userId, state.message, 10
-    );
-    if (!mem || !mem.messages?.length) return { memory: null };
-    const relevant = mem.messages
-      .filter((m: any) => m.relevance > 0.7).slice(0, 5)
-      .map((m: any) => `${m.role}: ${m.content}`);
-    return { memory: { keyTopics: mem.keyTopics || [], emotionalTone: mem.emotionalTone || 'neutral', relevant } };
-  } catch (err) {
-    logger.error('graph.memory failed', { cid: state.cid }, err as Error);
-    return { memory: null };
+// Pastor: pulls conversation memory (if any) + reasons with empathy.
+async function pastorNode(state: State): Promise<Partial<State>> {
+  let memory: MemoryContext | null = null;
+  if (state.conversationId && state.userId) {
+    try {
+      const mem = await MemoryService.getEnhancedConversationContext(
+        state.conversationId, state.userId, state.message, 10
+      );
+      if (mem && mem.messages?.length) {
+        const relevant = mem.messages
+          .filter((m: any) => m.relevance > 0.7).slice(0, 5)
+          .map((m: any) => `${m.role}: ${m.content}`);
+        memory = { keyTopics: mem.keyTopics || [], emotionalTone: mem.emotionalTone || 'neutral', relevant };
+      }
+    } catch (err) {
+      logger.error('graph.pastor.memory failed', { cid: state.cid }, err as Error);
+    }
   }
+  const evidence = memory
+    ? `Prior context — topics: ${memory.keyTopics.join(', ') || 'none'}; emotional tone: ${memory.emotionalTone}.`
+    : '';
+  const text = await reason(state, 'pastor', evidence);
+  return { memory, argumentList: [{ specialist: 'pastor', text }], specialistsFired: ['pastor'] };
 }
 
-// Synthesize the answer from retrieved evidence. Re-run on a critic revision.
-async function writerNode(state: State): Promise<Partial<State>> {
+// Synthesize the final answer from the specialists' arguments + evidence.
+async function synthesizeNode(state: State): Promise<Partial<State>> {
   const answerModel = state.mode === 'gentle' ? 'gpt-4o-mini' : 'gpt-4o';
   const maxTokens = state.mode === 'gentle' ? 2000 : 4000;
   const temperature = state.mode === 'gentle' ? 0.7 : 0.8;
 
   const evidence = buildEvidenceBlock(state);
+  const perspectives = state.argumentList
+    .filter(a => a.text)
+    .map(a => `[${a.specialist}] ${a.text}`)
+    .join('\n\n');
+
   const correction = state.verification && !state.verification.ok
     ? `\n\nYour previous draft cited unverifiable Scripture: ${state.verification.hallucinated.join('; ')}. ` +
       'Rewrite using ONLY verses from the evidence above. Keep the same tone and length.'
     : '';
 
+  const synthInstruction =
+    'Below are perspectives from specialist advisors and the retrieved evidence. ' +
+    'Weave them into ONE coherent, well-structured answer to the user in your own voice — ' +
+    'do not list the advisors or label sections by specialist. Ground every theological ' +
+    'claim in the provided Scripture and cite references explicitly; never cite a verse ' +
+    'that is not in the evidence.';
+
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     { role: 'system', content: state.systemPrompt },
     ...state.history,
-    { role: 'user', content: `${state.message}\n\n---\nRETRIEVED EVIDENCE:\n${evidence}${correction}` },
+    {
+      role: 'user',
+      content: `${state.message}\n\n---\n${synthInstruction}\n\nSPECIALIST PERSPECTIVES:\n${perspectives || '(none)'}\n\nRETRIEVED EVIDENCE:\n${evidence}${correction}`,
+    },
   ];
 
   const resp = await getOpenAI().chat.completions.create({ model: answerModel, max_tokens: maxTokens, temperature, messages });
   const draft = resp.choices[0].message.content || '';
-  logger.debug('graph.writer', { cid: state.cid, revision: state.corrections, len: draft.length });
+  logger.debug('graph.synthesize', { cid: state.cid, revision: state.corrections, specialists: state.specialistsFired, len: draft.length });
   return { draft };
 }
 
@@ -186,7 +257,6 @@ async function criticNode(state: State): Promise<Partial<State>> {
   logger.info('graph.critic', {
     cid: state.cid, ok: verification.ok, hallucinated: verification.hallucinated, revision: state.corrections,
   });
-  // Accept the draft as the answer; a following revision (if any) overwrites it.
   return {
     verification,
     answer: state.draft,
@@ -196,19 +266,30 @@ async function criticNode(state: State): Promise<Partial<State>> {
 
 // ── Edges ─────────────────────────────────────────────────────────────────────
 
-// Fan-out: which specialists to dispatch. Scripture is forced ("floor") for
-// theological objections; memory only runs with an existing conversation.
-// NB: node names must NOT collide with state channel names in LangGraph — hence
-// `retrieve_scripture` (node) vs `scripture` (channel).
+// Deterministic router: the exegete always fires (Scripture floor); add the
+// specialist(s) matching the objection's primary (and secondary) type.
 function dispatchSpecialists(state: State): string[] {
-  const targets: string[] = ['retrieve_apologetics'];
-  const isTheological = THEOLOGICAL_OBJECTION_TYPES.has(state.objection.primaryType);
-  if (isTheological || state.scripture.length === 0) targets.push('retrieve_scripture');
-  if (state.conversationId) targets.push('recall_memory');
-  return targets;
+  const targets = new Set<string>(['exegete']);
+  const add = (t: string | undefined) => {
+    switch (t) {
+      case 'historical': targets.add('historian'); break;
+      case 'logical':
+      case 'philosophical':
+      case 'moral': targets.add('philosopher'); break;
+      case 'scientific': targets.add('scientist'); break;
+      case 'emotional':
+      case 'personal': targets.add('pastor'); break;
+      case 'cultural': targets.add('culturalist'); break;
+    }
+  };
+  add(state.objection.primaryType);
+  add(state.objection.secondaryType);
+  // Pastoral support whenever there's an ongoing conversation to draw on.
+  if (state.conversationId) targets.add('pastor');
+  return Array.from(targets);
 }
 
-// After the critic: loop back to the writer while there are unresolved refs and
+// After the critic: loop back to synthesize while there are unresolved refs and
 // we're under the correction cap; otherwise finish.
 function decideAfterCritic(state: State): 'revise' | 'done' {
   const v = state.verification;
@@ -220,21 +301,29 @@ function decideAfterCritic(state: State): 'revise' | 'done' {
 export function buildApologeticsGraph() {
   const graph = new StateGraph(GraphState)
     .addNode('analyze', analyzeNode)
-    .addNode('retrieve_scripture', scriptureNode)
-    .addNode('retrieve_apologetics', apologeticsNode)
-    .addNode('recall_memory', memoryNode)
-    .addNode('writer', writerNode)
+    .addNode('exegete', exegeteNode)
+    .addNode('historian', makeKbSpecialist('historian', 'historical'))
+    // Philosopher covers logical/moral/philosophical — the "problem of evil" KB
+    // entry is category `theological`, so search unfiltered (relevance) here.
+    .addNode('philosopher', makeKbSpecialist('philosopher'))
+    .addNode('scientist', makeKbSpecialist('scientist', 'scientific'))
+    .addNode('pastor', pastorNode)
+    .addNode('culturalist', makeKbSpecialist('culturalist', 'cultural'))
+    .addNode('synthesize', synthesizeNode)
     .addNode('critic', criticNode)
     .addEdge(START, 'analyze')
-    // Fan-out from analyze to the specialists chosen at runtime.
-    .addConditionalEdges('analyze', dispatchSpecialists, ['retrieve_scripture', 'retrieve_apologetics', 'recall_memory'])
-    // Fan-in: writer runs once all dispatched specialists complete.
-    .addEdge('retrieve_scripture', 'writer')
-    .addEdge('retrieve_apologetics', 'writer')
-    .addEdge('recall_memory', 'writer')
-    .addEdge('writer', 'critic')
+    // Deterministic fan-out from analyze to the chosen specialists.
+    .addConditionalEdges('analyze', dispatchSpecialists, ['exegete', 'historian', 'philosopher', 'scientist', 'pastor', 'culturalist'])
+    // Fan-in: synthesize runs once all dispatched specialists complete.
+    .addEdge('exegete', 'synthesize')
+    .addEdge('historian', 'synthesize')
+    .addEdge('philosopher', 'synthesize')
+    .addEdge('scientist', 'synthesize')
+    .addEdge('pastor', 'synthesize')
+    .addEdge('culturalist', 'synthesize')
+    .addEdge('synthesize', 'critic')
     // Reflection loop.
-    .addConditionalEdges('critic', decideAfterCritic, { revise: 'writer', done: END });
+    .addConditionalEdges('critic', decideAfterCritic, { revise: 'synthesize', done: END });
 
   return graph.compile();
 }
@@ -256,14 +345,15 @@ export interface ApologeticsGraphResult {
   objectionType: string;
   corrections: number;
   verification: CitationVerification | null;
+  specialists: string[];
   evidence: { scripture: number; apologetics: number; memory: boolean };
 }
 
 /**
- * Run the graph to completion and return the answer + telemetry. This buffers
- * the full answer (no token streaming). Streaming is available via
- * `graph.stream(..., { streamMode: 'messages' })` on the compiled graph — wire
- * that into a route when you replace chat-agentic's streaming path.
+ * Run the graph to completion and return the answer + telemetry. Buffers the
+ * full answer (the critic must run before the answer is final). Streaming is
+ * available via `graph.stream(..., { streamMode: 'messages' })` when a route
+ * needs it.
  */
 export async function runApologeticsGraph(input: ApologeticsGraphInput): Promise<ApologeticsGraphResult> {
   const app = buildApologeticsGraph();
@@ -283,6 +373,7 @@ export async function runApologeticsGraph(input: ApologeticsGraphInput): Promise
     objectionType: final.objection?.primaryType ?? 'unknown',
     corrections: final.corrections,
     verification: final.verification,
+    specialists: final.specialistsFired,
     evidence: {
       scripture: final.scripture.length,
       apologetics: final.apologetics.length,
@@ -298,7 +389,10 @@ function buildEvidenceBlock(state: State): string {
     parts.push('Scripture:\n' + state.scripture.map(s => `- ${s.reference}: "${s.text}"`).join('\n'));
   }
   if (state.apologetics.length) {
-    parts.push('Apologetics knowledge base:\n' + state.apologetics
+    // De-duplicate apologetics entries (parallel specialists may fetch overlaps).
+    const seen = new Set<string>();
+    const unique = state.apologetics.filter(a => (seen.has(a.title) ? false : (seen.add(a.title), true)));
+    parts.push('Apologetics knowledge base:\n' + unique
       .map(a => `- [${a.category}] ${a.title}: ${a.content} (key: ${a.scriptures.join(', ') || 'none'})`)
       .join('\n'));
   }
