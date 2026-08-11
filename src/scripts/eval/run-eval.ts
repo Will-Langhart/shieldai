@@ -52,6 +52,22 @@ function requireEnv() {
   }
 }
 
+// Retry on 429 (TPM caps — this org's gpt-4o is 30k TPM), honoring the
+// "try again in Xms" hint when present, else exponential backoff.
+async function withRetry<T>(fn: () => Promise<T>, tries = 6): Promise<T> {
+  for (let i = 0; ; i++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      const is429 = err?.status === 429 || /rate limit/i.test(err?.message || '');
+      if (!is429 || i >= tries) throw err;
+      const hint = /try again in ([\d.]+)(ms|s)/i.exec(err?.message || '');
+      const waitMs = hint ? Number(hint[1]) * (hint[2] === 's' ? 1000 : 1) + 250 : Math.min(2 ** i * 500, 8000);
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+  }
+}
+
 // ── Targets (produce the outputs each evaluator scores) ─────────────────────
 async function graphTarget(inputs: Record<string, any>) {
   const started = Date.now();
@@ -83,7 +99,7 @@ async function chatragTarget(inputs: Record<string, any>) {
     'responses. Use the provided Bible verses to support your answer and cite specific ' +
     'references. Ground theological claims in the verses provided.' +
     (context ? `\n\nRELEVANT BIBLE VERSES:\n${context}` : '');
-  const resp = await getTracedOpenAI().chat.completions.create({
+  const resp = await withRetry(() => getTracedOpenAI().chat.completions.create({
     model,
     temperature: inputs.mode === 'gentle' ? 0.7 : 0.8,
     max_tokens: inputs.mode === 'gentle' ? 2000 : 4000,
@@ -91,7 +107,7 @@ async function chatragTarget(inputs: Record<string, any>) {
       { role: 'system', content: systemPrompt },
       { role: 'user', content: inputs.question },
     ],
-  });
+  }));
   const answer = resp.choices[0].message.content || '';
   const verification = await verifyCitations(answer, NS, { cid: `eval_chatrag_${Date.now()}` });
   return { answer, verification, latencyMs: Date.now() - started };
@@ -136,7 +152,7 @@ async function answerQuality({ inputs, outputs }: any) {
     '- tone: fits the requested mode and is pastorally appropriate where relevant.\n' +
     'Return JSON: {"groundedness":n,"addresses":n,"depth":n,"breadth":n,"tone":n,"reason":"<one sentence>"}.';
   try {
-    const resp = await getTracedOpenAI().chat.completions.create({
+    const resp = await withRetry(() => getTracedOpenAI().chat.completions.create({
       model: JUDGE_MODEL,
       temperature: 0,
       response_format: { type: 'json_object' },
@@ -144,7 +160,7 @@ async function answerQuality({ inputs, outputs }: any) {
         { role: 'system', content: rubric },
         { role: 'user', content: `Mode: ${inputs.mode}\nQuestion: ${inputs.question}\n\nAnswer:\n${outputs?.answer || '(empty)'}` },
       ],
-    });
+    }));
     const p = JSON.parse(resp.choices[0].message.content || '{}');
     const vals = QUALITY_DIMENSIONS.map((d) => Math.max(1, Math.min(10, Number(p[d]) || 1)));
     const mean10 = vals.reduce((a, b) => a + b, 0) / vals.length;
@@ -165,7 +181,7 @@ async function pairwiseJudge(question: string, mode: string, answerA: string, an
     'Avoid any bias toward length or verbosity — judge substance. If truly indistinguishable, say "tie". ' +
     'Return JSON: {"winner":"A"|"B"|"tie","margin":1-3,"reason":"<one sentence>"} (margin 1=slight, 3=decisive).';
   try {
-    const resp = await getTracedOpenAI().chat.completions.create({
+    const resp = await withRetry(() => getTracedOpenAI().chat.completions.create({
       model: JUDGE_MODEL,
       temperature: 0,
       response_format: { type: 'json_object' },
@@ -173,7 +189,7 @@ async function pairwiseJudge(question: string, mode: string, answerA: string, an
         { role: 'system', content: rubric },
         { role: 'user', content: `Mode: ${mode}\nQuestion: ${question}\n\n--- Answer A ---\n${answerA || '(empty)'}\n\n--- Answer B ---\n${answerB || '(empty)'}` },
       ],
-    });
+    }));
     const p = JSON.parse(resp.choices[0].message.content || '{}');
     const winner = p.winner === 'A' || p.winner === 'B' ? p.winner : 'tie';
     return { winner, margin: Math.max(1, Math.min(3, Number(p.margin) || 1)), reason: String(p.reason || '') };
@@ -227,7 +243,7 @@ async function runLocal() {
   const add = (acc: typeof accG, k: string, v: number) => { acc[k] ??= { n: 0, total: 0 }; acc[k].n += 1; acc[k].total += v; };
   let gWins = 0, cWins = 0, ties = 0, gMargin = 0, cMargin = 0, fails = 0;
 
-  const conc = Number(process.env.EVAL_CONCURRENCY || 4);
+  const conc = Number(process.env.EVAL_CONCURRENCY || 2);
   process.stdout.write(`\n▶ graph vs chat-rag, ${cases.length} cases @ concurrency ${conc} `);
 
   await mapPool(cases, conc, async (c) => {
