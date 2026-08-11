@@ -7,7 +7,7 @@ import { createServerSupabaseClient } from '../../lib/supabase';
 import { SubscriptionMiddleware } from '../../lib/subscription-middleware';
 import { logger, withCorrelationId, devLogger } from '../../lib/logger';
 import { applyChatRateLimit } from '../../lib/rate-limit';
-import { runApologeticsGraph } from '../../lib/graph/apologetics-graph';
+import { runApologeticsGraph, runApologeticsGraphStream } from '../../lib/graph/apologetics-graph';
 
 /**
  * Graph chat route (LangGraph.js, experimental — Step 2/A).
@@ -123,7 +123,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // --- Run the graph ---
-    const result = await runApologeticsGraph({
+    // Streaming: open the response first, then emit synthesizer tokens live as
+    // the graph produces them (retrieval + specialists run before any token, so
+    // TTFT ≈ retrieval + specialists + first synth token). Buffered otherwise.
+    const graphInput = {
       message,
       mode,
       versionId: bibleVersion?.id || 'de4e12af7f28f599-02',
@@ -132,7 +135,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       denomination: userDenomination,
       history: conversationHistory,
       cid,
-    });
+    };
+
+    if (shouldStream) {
+      res.writeHead(200, {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+        'X-Conversation-Id': currentConvId || '',
+        'Access-Control-Expose-Headers': 'X-Conversation-Id',
+      });
+    }
+
+    const result = shouldStream
+      ? await runApologeticsGraphStream(graphInput, (tok) => res.write(tok))
+      : await runApologeticsGraph(graphInput);
     const aiResponse = result.answer;
 
     // --- Analytics ---
@@ -205,18 +224,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         : null,
     });
 
-    // --- Respond (streamed answer is buffered, then emitted) ---
+    // --- Finish response (streaming already wrote headers + tokens live) ---
     if (shouldStream) {
-      res.writeHead(200, {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Transfer-Encoding': 'chunked',
-        'Cache-Control': 'no-cache, no-transform',
-        Connection: 'keep-alive',
-        'X-Accel-Buffering': 'no',
-        'X-Conversation-Id': currentConvId || '',
-        'Access-Control-Expose-Headers': 'X-Conversation-Id',
-      });
-      res.write(aiResponse || '');
       res.end();
       return;
     }

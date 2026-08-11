@@ -28,7 +28,7 @@
  *    synthesizer appear as their own spans in the `langgraph-rag` project.
  */
 
-import { Annotation, StateGraph, START, END } from '@langchain/langgraph';
+import { Annotation, StateGraph, START, END, getWriter } from '@langchain/langgraph';
 import type OpenAI from 'openai';
 import { getTracedOpenAI } from '../observability/openai-traced';
 import { analyzeQuestion, generateSpecializedPrompt, generateDenominationContext } from '../prompt-engineering';
@@ -66,6 +66,9 @@ const GraphState = Annotation.Root({
     default: () => [],
   }),
   cid: Annotation<string>,
+  // When true, the synthesizer streams its tokens via the custom stream and the
+  // critic runs post-hoc only (no reflection re-stream). Set by the streaming runner.
+  streaming: Annotation<boolean>({ reducer: (_a, b) => b, default: () => false }),
 
   // Derived by the deterministic analyze node.
   objection: Annotation<ObjectionAnalysis>,
@@ -215,7 +218,8 @@ async function pastorNode(state: State): Promise<Partial<State>> {
 }
 
 // Synthesize the final answer from the specialists' arguments + evidence.
-async function synthesizeNode(state: State): Promise<Partial<State>> {
+// When streaming, emit tokens via the custom stream (getWriter) as they generate.
+async function synthesizeNode(state: State, config?: any): Promise<Partial<State>> {
   const answerModel = state.mode === 'gentle' ? 'gpt-4o-mini' : 'gpt-4o';
   const maxTokens = state.mode === 'gentle' ? 2000 : 4000;
   const temperature = state.mode === 'gentle' ? 0.7 : 0.8;
@@ -246,6 +250,18 @@ async function synthesizeNode(state: State): Promise<Partial<State>> {
       content: `${state.message}\n\n---\n${synthInstruction}\n\nSPECIALIST PERSPECTIVES:\n${perspectives || '(none)'}\n\nRETRIEVED EVIDENCE:\n${evidence}${correction}`,
     },
   ];
+
+  if (state.streaming) {
+    const write = getWriter(config);
+    let draft = '';
+    const stream = await getOpenAI().chat.completions.create({ model: answerModel, max_tokens: maxTokens, temperature, messages, stream: true });
+    for await (const chunk of stream) {
+      const delta = (chunk as any)?.choices?.[0]?.delta?.content || '';
+      if (delta) { draft += delta; write?.(delta); }
+    }
+    logger.debug('graph.synthesize.stream', { cid: state.cid, specialists: state.specialistsFired, len: draft.length });
+    return { draft };
+  }
 
   const resp = await getOpenAI().chat.completions.create({ model: answerModel, max_tokens: maxTokens, temperature, messages });
   const draft = resp.choices[0].message.content || '';
@@ -295,6 +311,9 @@ function dispatchSpecialists(state: State): string[] {
 // After the critic: loop back to synthesize while there are unresolved refs and
 // we're under the correction cap; otherwise finish.
 function decideAfterCritic(state: State): 'revise' | 'done' {
+  // Never revise mid-stream — the tokens are already sent. The critic still runs,
+  // so verification is captured post-hoc (telemetry / correctness signal).
+  if (state.streaming) return 'done';
   const v = state.verification;
   if (v && !v.ok && !v.skipped && state.corrections <= MAX_CORRECTIONS) return 'revise';
   return 'done';
@@ -380,6 +399,57 @@ export async function runApologeticsGraph(input: ApologeticsGraphInput): Promise
     evidence: {
       scripture: final.scripture.length,
       apologetics: final.apologetics.length,
+      memory: Boolean(final.memory),
+    },
+  };
+}
+
+/**
+ * Streaming variant: runs the graph, invokes `onToken` for each synthesizer
+ * token as it generates (via the custom stream), and returns the same telemetry
+ * once complete. The critic runs post-hoc (no reflection re-stream), so citation
+ * verification is a signal rather than a gate — appropriate when tokens are
+ * already on the wire. Retrieval/specialist nodes run before any token emits, so
+ * time-to-first-token is retrieval + specialists + first synth token.
+ */
+export async function runApologeticsGraphStream(
+  input: ApologeticsGraphInput,
+  onToken: (token: string) => void
+): Promise<ApologeticsGraphResult> {
+  const app = buildApologeticsGraph();
+  let final: any = {};
+  const stream = await app.stream(
+    {
+      message: input.message,
+      mode: input.mode,
+      versionId: input.versionId,
+      userId: input.userId,
+      conversationId: input.conversationId,
+      denomination: input.denomination ?? null,
+      history: input.history ?? [],
+      cid: input.cid,
+      streaming: true,
+    },
+    { streamMode: ['custom', 'values'] }
+  );
+
+  for await (const [mode, data] of stream as AsyncIterable<[string, any]>) {
+    if (mode === 'custom') {
+      if (typeof data === 'string' && data) onToken(data);
+    } else if (mode === 'values') {
+      final = data; // keep the latest snapshot; the last one is the final state
+    }
+  }
+
+  return {
+    answer: final.answer ?? '',
+    objectionType: final.objection?.primaryType ?? 'unknown',
+    corrections: final.corrections ?? 0,
+    verification: final.verification ?? null,
+    specialists: final.specialistsFired ?? [],
+    evidence: {
+      scripture: final.scripture?.length ?? 0,
+      apologetics: final.apologetics?.length ?? 0,
       memory: Boolean(final.memory),
     },
   };
