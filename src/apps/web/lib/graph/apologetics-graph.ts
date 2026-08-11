@@ -36,8 +36,7 @@ import type OpenAI from 'openai';
 import { getTracedOpenAI } from '../observability/openai-traced';
 import { analyzeQuestion, generateSpecializedPrompt, generateDenominationContext } from '../prompt-engineering';
 import { classifyObjection, type ObjectionAnalysis } from '../objection-classifier';
-import { EmbeddingService } from '../embeddings';
-import { BiblePineconeService } from '../bible-pinecone';
+import { BibleVersesIndex } from '../bible-verses-index';
 import { searchApologeticsContent } from '../apologetics-knowledge';
 import { MemoryService } from '../memory-service';
 import { verifyCitations, type CitationVerification } from '../citation-verifier';
@@ -112,8 +111,9 @@ function analyzeNode(state: State): Partial<State> {
 
 async function scriptureNode(state: State): Promise<Partial<State>> {
   try {
-    const embedding = await EmbeddingService.generateEmbeddingForIndex(state.message);
-    const results = await BiblePineconeService.searchBibleContent(embedding, 5, { type: 'bible_verse' });
+    // Integrated `bible-verses` index: text in, text out. Pinecone embeds the
+    // query with llama-text-embed-v2 — no OpenAI call. Namespace = version id.
+    const results = await BibleVersesIndex.search(state.versionId, state.message, 5);
     const scripture = results.map(r => ({ reference: r.reference, text: r.text, score: Number(r.score.toFixed(3)) }));
     return { scripture };
   } catch (err) {

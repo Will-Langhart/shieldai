@@ -117,6 +117,35 @@ class BibleService {
     }
   }
 
+  // Get a full chapter's verses WITH text (one API call), parsed from the
+  // api.bible USFM-JSON chapter content via extractVersesFromJSON. This is the
+  // ingest path — unlike getVerses() (which returns verse ids/references only,
+  // no text) this returns { verseNumber, text, reference } ready to upsert.
+  async getChapterVersesWithText(
+    versionId: string,
+    bookId: string,
+    chapterId: string
+  ): Promise<BibleVerse[]> {
+    try {
+      const response = await axios.get(`${this.baseUrl}/bibles/${versionId}/chapters/${chapterId}`, {
+        headers: this.getHeaders(),
+        params: {
+          'content-type': 'json',
+          'include-verse-numbers': true,
+          'include-notes': false,
+          'include-titles': false,
+          'include-chapter-numbers': false,
+        },
+      });
+      const content = response.data?.data?.content;
+      if (!content) return [];
+      return this.extractVersesFromJSON(content, bookId, chapterId);
+    } catch (error) {
+      console.error(`Error fetching chapter verses (${chapterId}):`, error);
+      throw new Error('Failed to fetch chapter verses');
+    }
+  }
+
   // Get a specific verse
   async getVerse(versionId: string, verseId: string): Promise<BibleVerse | null> {
     try {
