@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import OpenAI from 'openai';
+import { getTracedOpenAI } from '../../lib/observability/openai-traced';
 import { analyzeQuestion, generateSpecializedPrompt, generateDenominationContext } from '../../lib/prompt-engineering';
 import { classifyObjection, generateSpecializedResponse, objectionHandlers } from '../../lib/objection-classifier';
 import { advancedPrompts, responseEnhancers } from '../../lib/advanced-prompts';
@@ -18,20 +18,8 @@ import { applyChatRateLimit } from '../../lib/rate-limit';
 import agenticHandler from './chat-agentic';
 import graphHandler from './chat-graph';
 
-// Initialize OpenAI client lazily
-let openai: OpenAI | null = null;
-
-const getOpenAI = () => {
-  if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
-    }
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-  return openai;
-};
+// LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
+const getOpenAI = getTracedOpenAI;
 
 // --- A/B routing into the agentic pipeline (Phase 4) ---
 // Percentage of traffic routed to chat-agentic when no explicit flag is present.

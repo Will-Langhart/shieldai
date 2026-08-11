@@ -1,7 +1,8 @@
 // Image Generation Service for Shield AI
 // Integrates with OpenAI DALL-E 3 for generating images based on AI insights
 
-import OpenAI from 'openai';
+import type OpenAI from 'openai';
+import { getTracedOpenAI } from './observability/openai-traced';
 import { logger, withCorrelationId } from './logger';
 
 export interface ImageGenerationRequest {
@@ -27,18 +28,9 @@ export interface ImageGenerationResult {
 }
 
 export class ImageGenerationService {
-  private static openai: OpenAI | null = null;
-
+  // LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
   private static getOpenAI(): OpenAI {
-    if (!this.openai) {
-      if (!process.env.OPENAI_API_KEY) {
-        throw new Error('OPENAI_API_KEY environment variable is not set');
-      }
-      this.openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-      });
-    }
-    return this.openai;
+    return getTracedOpenAI();
   }
 
   /**

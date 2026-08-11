@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import OpenAI from 'openai';
+import type OpenAI from 'openai';
+import { getTracedOpenAI } from '../../lib/observability/openai-traced';
 import { analyzeQuestion, generateSpecializedPrompt, generateDenominationContext } from '../../lib/prompt-engineering';
 import { classifyObjection } from '../../lib/objection-classifier';
 import { AnalyticsService } from '../../lib/analytics-service';
@@ -42,16 +43,8 @@ import {
 const MAX_ROUNDS = Number(process.env.AGENT_MAX_ROUNDS || 2);
 const PLANNING_MODEL = process.env.AGENT_PLANNING_MODEL || 'gpt-4o-mini';
 
-let openai: OpenAI | null = null;
-const getOpenAI = () => {
-  if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
-    }
-    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  }
-  return openai;
-};
+// LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
+const getOpenAI = getTracedOpenAI;
 
 // Objection types where we require at least one Scripture lookup.
 const THEOLOGICAL_OBJECTION_TYPES = new Set([
