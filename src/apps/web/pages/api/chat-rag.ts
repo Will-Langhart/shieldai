@@ -6,6 +6,8 @@ import { applyChatRateLimit } from '../../lib/rate-limit';
 import { bibleService } from '../../lib/bible-service';
 import { BibleVersesIndex } from '../../lib/bible-verses-index';
 import { ChatService } from '../../lib/chat-service';
+import { shouldRouteToGraph } from '../../lib/graph-routing';
+import graphHandler from './chat-graph';
 
 // LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
 const getOpenAI = getTracedOpenAI;
@@ -14,6 +16,14 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // A/B: route the GRAPH_ROLLOUT_PCT bucket (or explicit ?graph=1) through the
+  // multi-agent graph before any work here. This is the real production entry
+  // point (the client calls /api/chat-rag), so the rollout takes effect here.
+  // graphHandler runs its own rate-limit + auth, so we delegate first.
+  if (shouldRouteToGraph(req)) {
+    return graphHandler(req, res);
+  }
+
   const cid = withCorrelationId(req, `chat_rag_${Date.now()}`);
   const startedAt = Date.now();
   if (!(await applyChatRateLimit(req, res))) return;
