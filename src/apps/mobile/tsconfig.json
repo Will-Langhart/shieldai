@@ -6,15 +6,22 @@
       "@/*": [
         "./*"
       ],
-      "@services/*": ["../../packages/services/src/*"],
-      "@types/*": ["../../packages/types/src/*"],
-      "@ui/*": ["../../packages/ui/src/*"]
+      "@services/*": [
+        "../../packages/services/src/*"
+      ],
+      "@types/*": [
+        "../../packages/types/src/*"
+      ],
+      "@ui/*": [
+        "../../packages/ui/src/*"
+      ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
   ]
 }

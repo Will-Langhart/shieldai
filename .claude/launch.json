@@ -2,17 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "prototype",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-p", "4200", "../prototype"],
-      "port": 4200
-    },
-    {
       "name": "web",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:web"],
-      "port": 3001,
-      "cwd": "/Users/lang/shieldai/shieldai"
+      "port": 3001
     }
   ]
 }
