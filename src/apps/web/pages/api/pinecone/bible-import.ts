@@ -4,7 +4,7 @@ import { importVerses } from '../../../lib/bible-verses-ingest';
 import { logger } from '../../../lib/logger';
 
 // Allow a longer window for the (bounded, resumable) verse ingest.
-export const config = { maxDuration: 60 };
+export const config = { maxDuration: 120 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -30,14 +30,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           logger.warn('import-verses called without PINECONE_IMPORT_TOKEN set (unguarded)');
         }
 
-        const { bookIds, startBookIndex, maxBooks, maxChaptersPerBook } = req.body;
-        logger.info('Starting bible-verses ingest', { versionId, startBookIndex, maxBooks });
+        const { bookIds, startBookIndex, startChapterIndex, maxChapters } = req.body;
+        logger.info('Starting bible-verses ingest', { versionId, startBookIndex, startChapterIndex, maxChapters });
 
         const ingest = await importVerses(versionId, {
           bookIds,
           startBookIndex,
-          maxBooks,
-          maxChaptersPerBook,
+          startChapterIndex,
+          maxChapters,
         });
 
         return res.status(200).json({ success: true, ...ingest });
