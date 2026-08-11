@@ -1,18 +1,8 @@
-import OpenAI from 'openai';
+import { getTracedOpenAI } from './observability/openai-traced';
 
-let openai: OpenAI | null = null;
-
-const getOpenAI = () => {
-  if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
-    }
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-  return openai;
-};
+// LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
+// This makes embedding calls appear as spans under the surrounding graph run.
+const getOpenAI = getTracedOpenAI;
 
 export class EmbeddingService {
   // Generate embedding for a text using OpenAI

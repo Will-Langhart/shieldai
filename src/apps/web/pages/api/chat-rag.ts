@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import OpenAI from 'openai';
+import { getTracedOpenAI } from '../../lib/observability/openai-traced';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { logger, withCorrelationId } from '../../lib/logger';
 import { applyChatRateLimit } from '../../lib/rate-limit';
@@ -8,20 +8,8 @@ import { BiblePineconeService } from '../../lib/bible-pinecone';
 import { EmbeddingService } from '../../lib/embeddings';
 import { ChatService } from '../../lib/chat-service';
 
-// Initialize OpenAI client lazily
-let openai: OpenAI | null = null;
-
-const getOpenAI = () => {
-  if (!openai) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
-    }
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-  return openai;
-};
+// LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
+const getOpenAI = getTracedOpenAI;
 
 export default async function handler(
   req: NextApiRequest,

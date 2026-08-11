@@ -32,7 +32,8 @@
  */
 
 import { Annotation, StateGraph, START, END } from '@langchain/langgraph';
-import OpenAI from 'openai';
+import type OpenAI from 'openai';
+import { getTracedOpenAI } from '../observability/openai-traced';
 import { analyzeQuestion, generateSpecializedPrompt, generateDenominationContext } from '../prompt-engineering';
 import { classifyObjection, type ObjectionAnalysis } from '../objection-classifier';
 import { EmbeddingService } from '../embeddings';
@@ -50,14 +51,8 @@ const THEOLOGICAL_OBJECTION_TYPES = new Set([
 
 const MAX_CORRECTIONS = Number(process.env.GRAPH_MAX_CORRECTIONS || 1);
 
-let openai: OpenAI | null = null;
-const getOpenAI = () => {
-  if (!openai) {
-    if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set');
-    openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  }
-  return openai;
-};
+// LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
+const getOpenAI = getTracedOpenAI;
 
 // ── Retrieved-evidence shapes (compact; mirror the tool results) ────────────
 interface ScriptureHit { reference: string; text: string; score?: number }
