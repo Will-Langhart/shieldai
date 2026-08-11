@@ -1,0 +1,3 @@
+# Pulled Vercel secrets for running the eval locally — never commit.
+.env.eval
+.env*
