@@ -339,6 +339,69 @@ architecture until we can *see* it.
 
 ---
 
+## 6.5 Phase 4 — Evaluate, harden, decide `📋 draft`
+
+Phases 1–3 built the system and made it observable; the graph is at a **10%
+canary** with no rigorous scoring. Phase 4 closes the loop: turn the canary into
+a **data-driven ship/kill decision**, and do the hardening required for the graph
+to become the *default* rather than an experiment.
+
+**Goal:** a quantified answer to *"is the multi-agent graph better than `chat-rag`,
+and at what cost?"* — plus the streaming + KB depth to make it default-worthy.
+
+### Workstream A — Eval harness (core; the Phase-1 leftover) — do FIRST
+The critic already emits citation data; formalize it into a LangSmith eval.
+1. **Reference dataset** (LangSmith): 30–50 curated apologetics questions spanning
+   the 8 objection types × stances (seeker / skeptic / struggler), each tagged with
+   expected objection type and a few acceptable Scripture references. Seed from real
+   logged questions (mine the `langgraph-rag` traces) + hand-written hard cases.
+2. **Evaluators:**
+   - *Citation faithfulness* (deterministic, from the critic): `hallucinated==0 && misquoted==0`.
+   - *Scripture-floor honored*: theological Q ⇒ ≥1 real verse cited.
+   - *Answer quality* (LLM-judge, fixed rubric): groundedness, addresses-the-objection,
+     tone-matches-mode, pastoral sensitivity.
+   - *Latency + cost* per turn (from traces).
+3. **A/B run:** same dataset through both `chat-rag` and the graph; compare on every
+   evaluator. This is the ship/kill evidence.
+
+### Workstream B — Streaming for the graph
+The graph buffers (critic must finish before the answer is final); `chat-rag`
+streams. If the graph goes default, users lose streaming UX. Reuse the
+`chat-agentic` pattern: stream the *synthesizer* tokens with post-hoc verify for
+gentle; draft→verify→stream for scholarly/debate.
+
+### Workstream C — Deepen the apologetics KB
+6 entries is thin — the KB specialists are only as good as what they retrieve.
+Expand to ~40–60 entries across the taxonomy (multiple per objection type, varied
+difficulty). Pipeline is ready: add to `apologeticsKnowledgeBase` → `import-apologetics`.
+Content task — needs doctrinal review.
+
+### Workstream D — Cost & latency profile
+Graph = 2–3 specialist calls + synthesize + critic vs `chat-rag`'s single call.
+Quantify $/turn and p50/p95 from LangSmith. Possible outcome: graph for
+scholarly/debate only, `chat-rag` for gentle (where speed matters most).
+
+### Workstream E — Cleanup (small)
+- Delete the `smoke-test` namespace in `bible-verses`.
+- Remove now-dead `searchApologeticsContent` (verify no other callers first).
+- Decide the fate of the legacy `shieldai` index (memory/insights on OpenAI-averaged
+  vectors) — leave, or migrate memory to an integrated index too.
+
+### Decision gate (exit criteria)
+Promote the graph to a higher % / default **only if**, on the eval set, it (1)
+matches or beats `chat-rag` on citation faithfulness AND the quality judge, and (2)
+stays within an agreed latency/cost budget. Otherwise: iterate the specialists /
+synthesizer, or scope the graph to rigorous modes only.
+
+### Sequencing
+**A first** (it gates everything). B + C + D parallel once A sets a baseline. E anytime.
+
+### Open questions (Phase 4)
+- LLM-judge model + rubric wording (judge-bias risk); human spot-checks for doctrinal sensitivity?
+- Dataset sourcing — enough real logged questions yet, or hand-author?
+- Streaming approach per mode.
+- Cost/latency budget numbers to gate promotion.
+
 ## 7. Open questions (running list)
 
 - ✅ ~~Bible index dims / embedding model~~ → **RESOLVED: integrated `llama-text-embed-v2`, 1024** (§5.1).
@@ -359,6 +422,7 @@ architecture until we can *see* it.
 | 2026-08-10 | Initial draft. Decisions 1–5 locked. Current-state inventory + target architecture + 4-phase roadmap. |
 | 2026-08-10 | **Phase 1 started.** Installed `langsmith@0.8.9`; added `lib/observability/openai-traced.ts` (env-toggled `wrapOpenAI`); routed `apologetics-graph.ts`, `embeddings.ts`, `chat-agentic.ts` through it; added `LANGSMITH_*` to `env.example`. Project = `langgraph-rag`. Typecheck + smoke test pass. Remaining: user sets key, verify trace, build eval dataset. |
 | 2026-08-10 | **Full-surface tracing.** Routed the remaining 7 real OpenAI call sites through `getTracedOpenAI()`: `chat.ts`, `chat-rag.ts`, `vector-response.ts`, `bible/{ai-insights,cross-references,study-questions}.ts`, `lib/image-generation.ts`. Typecheck clean. Now every LLM/embedding/image call traces when enabled. |
+| 2026-08-11 | **Phase 4 Workstream A — eval harness built.** `src/scripts/eval/dataset.ts` (24 curated cases, 8 objection types × stances, `isTheological` flag) + `src/scripts/eval/run-eval.ts` — a LangSmith `evaluate()` harness that runs both arms IN-PROCESS (graph via `runApologeticsGraph`, chat-rag via mirrored bible-verses retrieve+generate; no HTTP/auth) and scores each with 4 evaluators: citation faithfulness (from the critic/verifier), Scripture floor, LLM-judged quality, latency. Uploads a reusable `apologetics-eval` dataset + two experiments to LangSmith. Import graph validated under `tsx`. Run: `vercel env pull` then `npx tsx --env-file=… run-eval.ts`. Not yet executed (needs real keys + incurs OpenAI spend + writes LangSmith experiments). |
 | 2026-08-11 | **Apologetics KB vectorized.** Created integrated `apologetics-kb` index (llama-text-embed-v2, 1024, cosine, host `apologetics-kb-smb4qh6...`), upserted the 6 in-code KB entries as text records (namespace `kb`) via MCP. New `apologetics-kb-index.ts` (records REST search/upsert, optional category filter) + `apologetics-kb-ingest.ts` (projects the in-code array; source of truth) + `import-apologetics` route action. Graph KB specialists (historian/philosopher/scientist/culturalist) now retrieve by MEANING instead of substring match — verified: "why do bad things happen to good people" → problem-of-evil (lexically matched nothing before). |
 | 2026-08-11 | **Phase 3 built — reasoning specialists.** Rewrote `apologetics-graph.ts`: deterministic router (unchanged) now fans out to reasoning specialist agents — exegete (ALWAYS; retrieves bible-verses + reasons), historian, philosopher, scientist, pastor, culturalist — each retrieves scoped evidence AND produces a ≤130-word argument (gpt-4o-mini, parallel). A `synthesize` node merges the arguments + evidence into one grounded answer (mode model); citation critic + reflection loop unchanged. Router maps primary+secondary objection type → specialist(s); pastor also fires when a conversation exists. New `specialists` telemetry surfaced in `chat-graph` (log + response + message metadata). Typecheck clean. Graph route needs real Supabase auth (no test-token bypass added — security), so runtime smoke test is authed on preview. |
 | 2026-08-11 | **KJV fully ingested.** Drove the resumable `import-verses` route over the preview deploy: **1,189 chapters / 31,102 verses / 0 errors** into namespace `de4e12af7f28f599-02` (31,102 = canonical KJV verse count → no gaps). Chapter-cursor split Psalms across calls as designed. Verified: describe-index-stats = 31,102 records; theodicy search returned whole-canon hits (Galatians, John, 1 Peter, Isaiah 45:7, Malachi). Leftover `smoke-test` namespace (5 records) is inert — the app only queries the version namespace. Next: merge to main. |
