@@ -36,8 +36,16 @@ const LIMIT = Number(process.env.EVAL_LIMIT || 0);
 
 const cases = LIMIT > 0 ? EVAL_CASES.slice(0, LIMIT) : EVAL_CASES;
 
+// Local mode tabulates in-process and skips the LangSmith dataset/experiment
+// upload — useful when only an ingest-scoped LANGSMITH_API_KEY is available (a
+// Vercel "Sensitive" var pulls back as "[SENSITIVE]", which can't manage datasets).
+const LANGSMITH_KEY_USABLE = !!process.env.LANGSMITH_API_KEY && process.env.LANGSMITH_API_KEY.length >= 20;
+const LOCAL = process.env.EVAL_LOCAL === '1' || !LANGSMITH_KEY_USABLE;
+
 function requireEnv() {
-  const missing = ['LANGSMITH_API_KEY', 'OPENAI_API_KEY', 'PINECONE_API_KEY', 'BIBLE_API_KEY'].filter((k) => !process.env[k]);
+  const needed = ['OPENAI_API_KEY', 'PINECONE_API_KEY', 'BIBLE_API_KEY'];
+  if (!LOCAL) needed.unshift('LANGSMITH_API_KEY');
+  const missing = needed.filter((k) => !process.env[k]);
   if (missing.length) {
     console.error(`Missing env: ${missing.join(', ')}. Pull them with \`vercel env pull\` (see header).`);
     process.exit(1);
@@ -111,12 +119,22 @@ function scriptureFloor({ outputs, referenceOutputs }: any) {
   return { key: 'scripture_floor', score: grounded ? 1 : 0, comment: `checked=${v?.checked ?? 0}` };
 }
 
-// LLM-judge: groundedness, addresses-objection, tone-match, pastoral care.
+// Multi-dimension LLM-judge (absolute). Scores 5 dimensions 1-10 with explicit
+// anchors and a spread instruction, then averages — this breaks the ceiling the
+// old single 1-5 score hit (both arms landed ~4.3). `breadth` specifically
+// rewards engaging multiple relevant angles (where multi-agent should show up).
+const QUALITY_DIMENSIONS = ['groundedness', 'addresses', 'depth', 'breadth', 'tone'] as const;
 async function answerQuality({ inputs, outputs }: any) {
   const rubric =
-    'Score this apologetics answer 1-5 (5 best) on: (a) groundedness in the cited Scripture, ' +
-    '(b) directly addressing the objection, (c) tone appropriate to the mode, (d) pastoral ' +
-    'sensitivity where relevant. Return JSON: {"score": <1-5>, "reason": "<one sentence>"}.';
+    'You are a demanding apologetics evaluator. Score the answer on each dimension 1-10 (10 best). ' +
+    'USE THE FULL RANGE: reserve 9-10 for genuinely excellent, 5-6 for adequate-but-generic, ≤4 for weak. ' +
+    'Do not reward length or verbosity — judge substance.\n' +
+    '- groundedness: claims supported by the cited Scripture; no fabricated or misapplied verses.\n' +
+    '- addresses: directly and specifically answers THIS objection, not a generic essay.\n' +
+    '- depth: substantive, specific reasoning vs surface-level platitudes.\n' +
+    '- breadth: engages the multiple relevant angles the question raises (e.g. historical AND moral).\n' +
+    '- tone: fits the requested mode and is pastorally appropriate where relevant.\n' +
+    'Return JSON: {"groundedness":n,"addresses":n,"depth":n,"breadth":n,"tone":n,"reason":"<one sentence>"}.';
   try {
     const resp = await getTracedOpenAI().chat.completions.create({
       model: JUDGE_MODEL,
@@ -127,11 +145,40 @@ async function answerQuality({ inputs, outputs }: any) {
         { role: 'user', content: `Mode: ${inputs.mode}\nQuestion: ${inputs.question}\n\nAnswer:\n${outputs?.answer || '(empty)'}` },
       ],
     });
-    const parsed = JSON.parse(resp.choices[0].message.content || '{}');
-    const raw = Math.max(1, Math.min(5, Number(parsed.score) || 1));
-    return { key: 'answer_quality', score: (raw - 1) / 4, comment: String(parsed.reason || '') };
+    const p = JSON.parse(resp.choices[0].message.content || '{}');
+    const vals = QUALITY_DIMENSIONS.map((d) => Math.max(1, Math.min(10, Number(p[d]) || 1)));
+    const mean10 = vals.reduce((a, b) => a + b, 0) / vals.length;
+    return { key: 'answer_quality', score: +((mean10 - 1) / 9).toFixed(4), comment: String(p.reason || '') };
   } catch (err) {
     return { key: 'answer_quality', score: 0, comment: `judge failed: ${(err as Error).message}` };
+  }
+}
+
+// Blinded pairwise judge — the discriminating metric. Sees both answers in a
+// RANDOMIZED order (caller supplies the mapping) and picks the better one with a
+// margin. Pairwise comparison avoids the absolute-score ceiling entirely.
+async function pairwiseJudge(question: string, mode: string, answerA: string, answerB: string) {
+  const rubric =
+    'Two answers (A and B) to the same apologetics question. Decide which BETTER satisfies: ' +
+    'groundedness in cited Scripture, directly addressing the objection, depth and specificity, ' +
+    'engaging the multiple relevant angles the question raises, and appropriate tone. ' +
+    'Avoid any bias toward length or verbosity — judge substance. If truly indistinguishable, say "tie". ' +
+    'Return JSON: {"winner":"A"|"B"|"tie","margin":1-3,"reason":"<one sentence>"} (margin 1=slight, 3=decisive).';
+  try {
+    const resp = await getTracedOpenAI().chat.completions.create({
+      model: JUDGE_MODEL,
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: rubric },
+        { role: 'user', content: `Mode: ${mode}\nQuestion: ${question}\n\n--- Answer A ---\n${answerA || '(empty)'}\n\n--- Answer B ---\n${answerB || '(empty)'}` },
+      ],
+    });
+    const p = JSON.parse(resp.choices[0].message.content || '{}');
+    const winner = p.winner === 'A' || p.winner === 'B' ? p.winner : 'tie';
+    return { winner, margin: Math.max(1, Math.min(3, Number(p.margin) || 1)), reason: String(p.reason || '') };
+  } catch (err) {
+    return { winner: 'tie' as const, margin: 1, reason: `judge failed: ${(err as Error).message}` };
   }
 }
 
@@ -159,9 +206,88 @@ async function ensureDataset(client: Client): Promise<string> {
   }
 }
 
+// Run an async fn over items with a bounded concurrency pool.
+async function mapPool<T, R>(items: T[], n: number, fn: (item: T, i: number) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      out[i] = await fn(items[i], i);
+    }
+  }));
+  return out;
+}
+
+// ── Local tabulation: per-arm absolute metrics + BLINDED PAIRWISE head-to-head ──
+async function runLocal() {
+  const accG: Record<string, { n: number; total: number }> = {};
+  const accC: Record<string, { n: number; total: number }> = {};
+  const add = (acc: typeof accG, k: string, v: number) => { acc[k] ??= { n: 0, total: 0 }; acc[k].n += 1; acc[k].total += v; };
+  let gWins = 0, cWins = 0, ties = 0, gMargin = 0, cMargin = 0, fails = 0;
+
+  const conc = Number(process.env.EVAL_CONCURRENCY || 4);
+  process.stdout.write(`\n▶ graph vs chat-rag, ${cases.length} cases @ concurrency ${conc} `);
+
+  await mapPool(cases, conc, async (c) => {
+    const inputs = { question: c.question, mode: c.mode };
+    const refOut = { isTheological: c.isTheological, expectedObjectionType: c.expectedObjectionType, stance: c.stance };
+    try {
+      const [outG, outC] = await Promise.all([graphTarget(inputs), chatragTarget(inputs)]);
+      // Per-arm absolute metrics.
+      for (const [acc, out] of [[accG, outG], [accC, outC]] as const) {
+        add(acc, 'citation_faithfulness', citationFaithfulness({ outputs: out }).score);
+        add(acc, 'scripture_floor', scriptureFloor({ outputs: out, referenceOutputs: refOut }).score);
+        add(acc, 'answer_quality', (await answerQuality({ inputs, outputs: out })).score);
+        add(acc, 'latency_ms', latency({ outputs: out }).score);
+      }
+      // Blinded pairwise: randomize which arm is shown as "A".
+      const gIsA = Math.random() < 0.5;
+      const j = await pairwiseJudge(c.question, c.mode, gIsA ? outG.answer : outC.answer, gIsA ? outC.answer : outG.answer);
+      if (j.winner === 'tie') ties++;
+      else {
+        const graphWon = (j.winner === 'A') === gIsA;
+        if (graphWon) { gWins++; gMargin += j.margin; } else { cWins++; cMargin += j.margin; }
+      }
+      process.stdout.write('.');
+    } catch (err) {
+      fails++; process.stdout.write('!');
+      console.error(`\n  ${c.id} failed: ${(err as Error).message}`);
+    }
+  });
+
+  const mean = (acc: typeof accG, k: string) => (acc[k] ? +(acc[k].total / acc[k].n).toFixed(3) : null);
+  const rows = [
+    { arm: 'graph', acc: accG }, { arm: 'chatrag', acc: accC },
+  ].map(({ arm, acc }) => ({ arm, n: acc['latency_ms']?.n ?? 0, citation: mean(acc, 'citation_faithfulness'), floor: mean(acc, 'scripture_floor'), quality: mean(acc, 'answer_quality'), latencyMs: mean(acc, 'latency_ms') }));
+
+  console.log('\n\n=== Per-arm means (citation/floor/quality 0–1, higher better) ===');
+  const head = ['arm', 'n', 'citation', 'floor', 'quality', 'latency ms'];
+  const data = rows.map(r => [r.arm, String(r.n), String(r.citation), String(r.floor), String(r.quality), String(Math.round(r.latencyMs ?? 0))]);
+  const w = head.map((h, i) => Math.max(h.length, ...data.map(d => d[i].length)));
+  const line = (cols: string[]) => cols.map((c, i) => c.padEnd(w[i])).join('  ');
+  console.log(line(head)); console.log(w.map(x => '─'.repeat(x)).join('  '));
+  for (const d of data) console.log(line(d));
+
+  const decided = gWins + cWins;
+  console.log('\n=== Blinded pairwise (graph vs chat-rag) ===');
+  console.log(`  graph wins:   ${gWins}  (avg margin ${gWins ? (gMargin / gWins).toFixed(2) : '—'})`);
+  console.log(`  chatrag wins: ${cWins}  (avg margin ${cWins ? (cMargin / cWins).toFixed(2) : '—'})`);
+  console.log(`  ties:         ${ties}${fails ? `   (fails: ${fails})` : ''}`);
+  if (decided) console.log(`  graph win-rate among decided: ${((gWins / decided) * 100).toFixed(0)}%`);
+}
+
 // ── Runner ───────────────────────────────────────────────────────────────────
 async function main() {
   requireEnv();
+  if (LOCAL) {
+    console.log(`LOCAL mode (no LangSmith dataset write). Cases: ${cases.length}, arms: ${ARMS.join(', ')}, judge: ${JUDGE_MODEL}.`);
+    if (process.env.EVAL_LOCAL !== '1') console.log('  (reason: no management-capable LANGSMITH_API_KEY — see header to enable the LangSmith UI.)');
+    await runLocal();
+    console.log('\n✓ Done.');
+    return;
+  }
   const client = new Client();
   await ensureDataset(client);
 
