@@ -30,7 +30,10 @@ process.env.LANGSMITH_PROJECT ||= 'langgraph-rag';
 
 const NS = process.env.BIBLE_VERSES_NAMESPACE_EVAL || 'de4e12af7f28f599-02';
 const DATASET_NAME = process.env.EVAL_DATASET || 'apologetics-eval';
-const JUDGE_MODEL = process.env.EVAL_JUDGE_MODEL || 'gpt-4o';
+// Default judge is gpt-4o-mini: far higher TPM and ~15× cheaper than gpt-4o, so
+// a full eval run costs cents (the earlier gpt-4o judge drained the balance).
+// Override with EVAL_JUDGE_MODEL=gpt-4o for a higher-fidelity (pricier) judge.
+const JUDGE_MODEL = process.env.EVAL_JUDGE_MODEL || 'gpt-4o-mini';
 const ARMS = (process.env.EVAL_ARMS || 'graph,chatrag').split(',').map((s) => s.trim());
 const LIMIT = Number(process.env.EVAL_LIMIT || 0);
 
