@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { BiblePineconeService } from '../../../lib/bible-pinecone';
 import { importVerses } from '../../../lib/bible-verses-ingest';
+import { importApologeticsKb } from '../../../lib/apologetics-kb-ingest';
 import { logger } from '../../../lib/logger';
 
 // Allow a longer window for the (bounded, resumable) verse ingest.
@@ -41,6 +42,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
 
         return res.status(200).json({ success: true, ...ingest });
+      }
+
+      // Re-ingest the apologetics KB (from the in-code array) into apologetics-kb.
+      case 'import-apologetics': {
+        const requiredToken = process.env.PINECONE_IMPORT_TOKEN;
+        if (requiredToken && req.headers['x-import-token'] !== requiredToken) {
+          return res.status(401).json({ error: 'Unauthorized: bad or missing x-import-token' });
+        }
+        logger.info('Starting apologetics-kb ingest');
+        const result = await importApologeticsKb();
+        return res.status(200).json({ success: true, ...result });
       }
 
       case 'import':

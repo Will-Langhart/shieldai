@@ -34,7 +34,7 @@ import { getTracedOpenAI } from '../observability/openai-traced';
 import { analyzeQuestion, generateSpecializedPrompt, generateDenominationContext } from '../prompt-engineering';
 import { classifyObjection, type ObjectionAnalysis } from '../objection-classifier';
 import { BibleVersesIndex } from '../bible-verses-index';
-import { searchApologeticsContent } from '../apologetics-knowledge';
+import { ApologeticsKbIndex } from '../apologetics-kb-index';
 import { MemoryService } from '../memory-service';
 import { verifyCitations, type CitationVerification } from '../citation-verifier';
 import { logger } from '../logger';
@@ -168,7 +168,10 @@ function makeKbSpecialist(name: string, category?: string) {
   return async function (state: State): Promise<Partial<State>> {
     let apologetics: ApologeticsHit[] = [];
     try {
-      const results = searchApologeticsContent(state.message, category).slice(0, 3);
+      // Semantic retrieval from the integrated `apologetics-kb` index (Pinecone
+      // embeds the query). `category` narrows results for the clean 1:1 mappings;
+      // the philosopher passes none (problem-of-evil is category `theological`).
+      const results = await ApologeticsKbIndex.search(state.message, { category, topK: 3 });
       apologetics = results.map(r => ({
         title: r.title,
         category: r.category,
