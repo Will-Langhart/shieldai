@@ -13,6 +13,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.116.0",
     "@langchain/core": "^1.2.4",
     "@langchain/langgraph": "^1.4.9",
     "@pinecone-database/pinecone": "^1.1.3",

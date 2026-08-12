@@ -42,6 +42,11 @@ export class ApologeticsKbIndex {
   private static host: string | null = null;
   private static maxRetries = Number(process.env.PINECONE_MAX_RETRIES || 3);
   private static backoffMs = Number(process.env.PINECONE_BACKOFF_MS || 300);
+  // Optional reranking (shared env with the Bible index). Higher value once the KB
+  // grows past its initial handful of entries; env-gated, dense fallback on failure.
+  private static rerankEnabled = /^(true|1)$/i.test(process.env.RERANK_ENABLED || '');
+  private static rerankModel = process.env.RERANK_MODEL || 'bge-reranker-v2-m3';
+  private static rerankPool = Number(process.env.RERANK_POOL || 20);
 
   private static sleep(ms: number) {
     return new Promise((res) => setTimeout(res, ms));
@@ -118,22 +123,30 @@ export class ApologeticsKbIndex {
       return [];
     }
     try {
-      const body: any = {
-        query: { inputs: { text: query }, top_k: topK },
-        fields: ['title', 'category', TEXT_FIELD, 'scriptures'],
+      const useRerank = this.rerankEnabled && topK < this.rerankPool;
+      const doFetch = (rerank: boolean) => {
+        const body: any = {
+          query: { inputs: { text: query }, top_k: rerank ? this.rerankPool : topK },
+          fields: ['title', 'category', TEXT_FIELD, 'scriptures'],
+        };
+        if (category) body.query.filter = { category: { $eq: category } };
+        if (rerank) body.rerank = { model: this.rerankModel, top_n: topK, rank_fields: [TEXT_FIELD] };
+        return fetch(`https://${host}/records/namespaces/${encodeURIComponent(APOLOGETICS_NAMESPACE)}/search`, {
+          method: 'POST',
+          headers: {
+            'Api-Key': this.apiKey(),
+            'X-Pinecone-Api-Version': PINECONE_API_VERSION,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
       };
-      if (category) body.query.filter = { category: { $eq: category } };
-
-      const res = await fetch(`https://${host}/records/namespaces/${encodeURIComponent(APOLOGETICS_NAMESPACE)}/search`, {
-        method: 'POST',
-        headers: {
-          'Api-Key': this.apiKey(),
-          'X-Pinecone-Api-Version': PINECONE_API_VERSION,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
+      let res = await doFetch(useRerank);
+      if (useRerank && !res.ok) {
+        console.warn(`apologetics-kb: rerank failed (${res.status}); falling back to dense`);
+        res = await doFetch(false);
+      }
       if (!res.ok) {
         console.warn(`apologetics-kb: search failed (${res.status})`);
         return [];

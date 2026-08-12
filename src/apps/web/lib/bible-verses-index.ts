@@ -50,6 +50,11 @@ export class BibleVersesIndex {
   private static maxRetries = Number(process.env.PINECONE_MAX_RETRIES || 3);
   private static backoffMs = Number(process.env.PINECONE_BACKOFF_MS || 300);
   private static minSimilarity = Number(process.env.BIBLE_MIN_SIMILARITY || 0);
+  // Optional reranking: retrieve a wider pool then let Pinecone's hosted reranker
+  // reorder to the requested topK. Env-gated; falls back to dense on any failure.
+  private static rerankEnabled = /^(true|1)$/i.test(process.env.RERANK_ENABLED || '');
+  private static rerankModel = process.env.RERANK_MODEL || 'bge-reranker-v2-m3';
+  private static rerankPool = Number(process.env.RERANK_POOL || 20);
 
   private static sleep(ms: number) {
     return new Promise((res) => setTimeout(res, ms));
@@ -132,8 +137,15 @@ export class BibleVersesIndex {
       console.warn('bible-verses: search skipped (no host)');
       return [];
     }
-    try {
-      const res = await fetch(`https://${host}/records/namespaces/${encodeURIComponent(namespace)}/search`, {
+    const fields = ['reference', TEXT_FIELD, 'book', 'chapter', 'verse', 'version'];
+    const useRerank = this.rerankEnabled && topK < this.rerankPool;
+    const doFetch = (rerank: boolean) => {
+      const body: any = {
+        query: { inputs: { text: query }, top_k: rerank ? this.rerankPool : topK },
+        fields,
+      };
+      if (rerank) body.rerank = { model: this.rerankModel, top_n: topK, rank_fields: [TEXT_FIELD] };
+      return fetch(`https://${host}/records/namespaces/${encodeURIComponent(namespace)}/search`, {
         method: 'POST',
         headers: {
           'Api-Key': this.apiKey(),
@@ -141,11 +153,16 @@ export class BibleVersesIndex {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({
-          query: { inputs: { text: query }, top_k: topK },
-          fields: ['reference', TEXT_FIELD, 'book', 'chapter', 'verse', 'version'],
-        }),
+        body: JSON.stringify(body),
       });
+    };
+    try {
+      let res = await doFetch(useRerank);
+      // A rerank failure (model/plan unavailable) must not drop retrieval — degrade to dense.
+      if (useRerank && !res.ok) {
+        console.warn(`bible-verses: rerank failed (${res.status}); falling back to dense`);
+        res = await doFetch(false);
+      }
       if (!res.ok) {
         console.warn(`bible-verses: search failed (${res.status})`);
         return [];

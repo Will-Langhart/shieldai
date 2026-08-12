@@ -29,22 +29,20 @@
  */
 
 import { Annotation, StateGraph, START, END, getWriter } from '@langchain/langgraph';
-import type OpenAI from 'openai';
-import { getTracedOpenAI } from '../observability/openai-traced';
+import { complete, completeStream, MODELS, type ChatMessage, type Effort } from '../llm';
+import { rewriteQuery } from '../query-rewrite';
 import { analyzeQuestion, generateSpecializedPrompt, generateDenominationContext } from '../prompt-engineering';
 import { classifyObjection, type ObjectionAnalysis } from '../objection-classifier';
-import { BibleVersesIndex } from '../bible-verses-index';
+import { hybridBibleSearch } from '../bible-hybrid';
 import { ApologeticsKbIndex } from '../apologetics-kb-index';
 import { MemoryService } from '../memory-service';
 import { verifyCitations, type CitationVerification } from '../citation-verifier';
 import { logger } from '../logger';
 
 const MAX_CORRECTIONS = Number(process.env.GRAPH_MAX_CORRECTIONS || 1);
-// Specialists reason on a cheap, fast model; the synthesizer uses the mode model.
-const SPECIALIST_MODEL = process.env.GRAPH_SPECIALIST_MODEL || 'gpt-4o-mini';
-
-// LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
-const getOpenAI = getTracedOpenAI;
+// Specialists reason on a cheap, fast model (Haiku); the synthesizer uses the
+// mode model (Sonnet gentle / Opus deep). Override via CLAUDE_SPECIALIST_MODEL.
+const SPECIALIST_MODEL = MODELS.specialist;
 
 // ── Retrieved-evidence shapes (compact) ─────────────────────────────────────
 interface ScriptureHit { reference: string; text: string; score?: number }
@@ -73,6 +71,8 @@ const GraphState = Annotation.Root({
   // Derived by the deterministic analyze node.
   objection: Annotation<ObjectionAnalysis>,
   systemPrompt: Annotation<string>,
+  // Retrieval-optimized query (history-aware); specialists search with this.
+  retrievalQuery: Annotation<string>({ reducer: (_a, b) => b, default: () => '' }),
 
   // Evidence + arguments written by the specialist fan-out (concat reducers so
   // parallel specialists merge cleanly).
@@ -98,7 +98,7 @@ type State = typeof GraphState.State;
 // the evidence handed to it. The synthesizer merges them.
 const PERSONAS: Record<string, string> = {
   exegete:
-    'You are a careful biblical exegete. Interpret the retrieved verses in their literary and canonical context and explain how they bear on the question. Ground every claim in the provided verses and cite their references. Do not cite verses not provided.',
+    'You are a careful biblical exegete. Interpret the retrieved verses in their literary and canonical context and explain how they bear on the question. Ground every claim in the provided verses and cite their references. Do not cite verses not provided. If the provided verses do not directly address the question, say so plainly rather than stretching a verse to fit.',
   historian:
     'You are a historical-evidence apologist. Address the question with historical reasoning — manuscript transmission and reliability, the resurrection, and extra-biblical corroboration — at a rigorous but accessible level.',
   philosopher:
@@ -113,16 +113,19 @@ const PERSONAS: Record<string, string> = {
 
 // ── Nodes ────────────────────────────────────────────────────────────────────
 
-// Deterministic pre-analysis. No model call — this is the "router".
-function analyzeNode(state: State): Partial<State> {
+// Deterministic pre-analysis (the "router"). The only model call here is the
+// optional query rewrite, which is a cheap Haiku hop and a no-op when disabled.
+async function analyzeNode(state: State): Promise<Partial<State>> {
   const objection = classifyObjection(state.message);
   const questionContext = analyzeQuestion(state.message);
   let systemPrompt = generateSpecializedPrompt(questionContext, state.mode);
   systemPrompt += generateDenominationContext(state.denomination as any);
   systemPrompt +=
     '\n\nGround theological claims in the Scripture provided to you below, and cite references explicitly. Do not cite verses that are not in the provided evidence.';
+  // History-aware retrieval query — drives every specialist's search below.
+  const retrievalQuery = await rewriteQuery({ message: state.message, history: state.history, cid: state.cid });
   logger.debug('graph.analyze', { cid: state.cid, type: objection.primaryType });
-  return { objection, systemPrompt };
+  return { objection, systemPrompt, retrievalQuery };
 }
 
 // Shared reasoning call for a specialist: focused persona + its own evidence.
@@ -132,18 +135,16 @@ async function reason(
   evidenceText: string
 ): Promise<string> {
   const persona = PERSONAS[name];
-  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: 'system', content: `${persona}\n\nBe concise: at most ~130 words. This is one perspective that will be merged with others, so do not write a full answer — contribute your angle.` },
-    { role: 'user', content: `Question: ${state.message}\n\nEvidence available to you:\n${evidenceText || '(no retrieval — reason from established knowledge and be explicit about uncertainty)'}` },
-  ];
+  const system = `${persona}\n\nBe concise: at most ~130 words. This is one perspective that will be merged with others, so do not write a full answer — contribute your angle.`;
+  const user = `Question: ${state.message}\n\nEvidence available to you:\n${evidenceText || '(no retrieval — reason from established knowledge and be explicit about uncertainty)'}`;
   try {
-    const resp = await getOpenAI().chat.completions.create({
+    // Haiku: no `effort` (rejected there); 512 tokens is ample for a ~130-word arg.
+    return await complete({
+      system,
+      messages: [{ role: 'user', content: user }],
       model: SPECIALIST_MODEL,
-      max_tokens: 400,
-      temperature: 0.5,
-      messages,
+      maxTokens: 512,
     });
-    return resp.choices[0].message.content?.trim() || '';
   } catch (err) {
     logger.error(`graph.specialist.${name} failed`, { cid: state.cid }, err as Error);
     return '';
@@ -154,7 +155,7 @@ async function reason(
 async function exegeteNode(state: State): Promise<Partial<State>> {
   let scripture: ScriptureHit[] = [];
   try {
-    const results = await BibleVersesIndex.search(state.versionId, state.message, 5);
+    const results = await hybridBibleSearch(state.versionId, state.retrievalQuery || state.message, 5);
     scripture = results.map(r => ({ reference: r.reference, text: r.text, score: Number(r.score.toFixed(3)) }));
   } catch (err) {
     logger.error('graph.exegete.retrieval failed', { cid: state.cid }, err as Error);
@@ -174,7 +175,7 @@ function makeKbSpecialist(name: string, category?: string) {
       // Semantic retrieval from the integrated `apologetics-kb` index (Pinecone
       // embeds the query). `category` narrows results for the clean 1:1 mappings;
       // the philosopher passes none (problem-of-evil is category `theological`).
-      const results = await ApologeticsKbIndex.search(state.message, { category, topK: 3 });
+      const results = await ApologeticsKbIndex.search(state.retrievalQuery || state.message, { category, topK: 3 });
       apologetics = results.map(r => ({
         title: r.title,
         category: r.category,
@@ -220,9 +221,11 @@ async function pastorNode(state: State): Promise<Partial<State>> {
 // Synthesize the final answer from the specialists' arguments + evidence.
 // When streaming, emit tokens via the custom stream (getWriter) as they generate.
 async function synthesizeNode(state: State, config?: any): Promise<Partial<State>> {
-  const answerModel = state.mode === 'gentle' ? 'gpt-4o-mini' : 'gpt-4o';
-  const maxTokens = state.mode === 'gentle' ? 2000 : 4000;
-  const temperature = state.mode === 'gentle' ? 0.7 : 0.8;
+  const answerModel = state.mode === 'gentle' ? MODELS.gentle : MODELS.deep;
+  // Thinking is ON by default on the 5-series, and `max_tokens` caps thinking +
+  // visible answer together — so size above the answer length to avoid truncation.
+  const maxTokens = state.mode === 'gentle' ? 3000 : 6000;
+  const effort: Effort = state.mode === 'gentle' ? 'medium' : 'high';
 
   const evidence = buildEvidenceBlock(state);
   const perspectives = state.argumentList
@@ -240,10 +243,13 @@ async function synthesizeNode(state: State, config?: any): Promise<Partial<State
     'Weave them into ONE coherent, well-structured answer to the user in your own voice — ' +
     'do not list the advisors or label sections by specialist. Ground every theological ' +
     'claim in the provided Scripture and cite references explicitly; never cite a verse ' +
-    'that is not in the evidence.';
+    'that is not in the evidence. If the evidence does not support a confident answer, ' +
+    'acknowledge the limit honestly rather than overstating. Be substantive but concise — ' +
+    'cover what matters without padding or repetition.';
 
-  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: 'system', content: state.systemPrompt },
+  // System prompt is hoisted to the top-level `system` param inside the helper;
+  // `messages` carries only the conversation + the composed user turn.
+  const messages: ChatMessage[] = [
     ...state.history,
     {
       role: 'user',
@@ -253,18 +259,15 @@ async function synthesizeNode(state: State, config?: any): Promise<Partial<State
 
   if (state.streaming) {
     const write = getWriter(config);
-    let draft = '';
-    const stream = await getOpenAI().chat.completions.create({ model: answerModel, max_tokens: maxTokens, temperature, messages, stream: true });
-    for await (const chunk of stream) {
-      const delta = (chunk as any)?.choices?.[0]?.delta?.content || '';
-      if (delta) { draft += delta; write?.(delta); }
-    }
+    const draft = await completeStream(
+      { system: state.systemPrompt, messages, model: answerModel, maxTokens, effort },
+      (delta) => write?.(delta)
+    );
     logger.debug('graph.synthesize.stream', { cid: state.cid, specialists: state.specialistsFired, len: draft.length });
     return { draft };
   }
 
-  const resp = await getOpenAI().chat.completions.create({ model: answerModel, max_tokens: maxTokens, temperature, messages });
-  const draft = resp.choices[0].message.content || '';
+  const draft = await complete({ system: state.systemPrompt, messages, model: answerModel, maxTokens, effort });
   logger.debug('graph.synthesize', { cid: state.cid, revision: state.corrections, specialists: state.specialistsFired, len: draft.length });
   return { draft };
 }

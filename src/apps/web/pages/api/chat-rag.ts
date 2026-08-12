@@ -1,16 +1,14 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getTracedOpenAI } from '../../lib/observability/openai-traced';
+import { complete, completeStream, MODELS, type ChatMessage, type Effort } from '../../lib/llm';
+import { rewriteQuery } from '../../lib/query-rewrite';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { logger, withCorrelationId } from '../../lib/logger';
 import { applyChatRateLimit } from '../../lib/rate-limit';
 import { bibleService } from '../../lib/bible-service';
-import { BibleVersesIndex } from '../../lib/bible-verses-index';
+import { hybridBibleSearch } from '../../lib/bible-hybrid';
 import { ChatService } from '../../lib/chat-service';
 import { shouldRouteToGraph } from '../../lib/graph-routing';
 import graphHandler from './chat-graph';
-
-// LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
-const getOpenAI = getTracedOpenAI;
 
 export default async function handler(
   req: NextApiRequest,
@@ -115,9 +113,13 @@ export default async function handler(
     // there is NO OpenAI embedding call here and no 1536->1024 averaging. Namespace
     // is the ingested KJV version id.
     const BIBLE_VERSES_NAMESPACE = 'de4e12af7f28f599-02';
+    // Rewrite the retrieval query (term expansion; no-op when disabled). Message-only
+    // here — history isn't loaded until Step 4; the graph path does the full
+    // history-aware rewrite.
+    const retrievalQuery = await rewriteQuery({ message: queryText, cid });
     let relevantVerses: any[] = [];
     try {
-      relevantVerses = await BibleVersesIndex.search(BIBLE_VERSES_NAMESPACE, queryText, 5);
+      relevantVerses = await hybridBibleSearch(BIBLE_VERSES_NAMESPACE, retrievalQuery, 5);
       logger.debug('bible-verses search results', { cid, count: relevantVerses.length });
     } catch (error) {
       logger.error('bible-verses search failed', { cid }, error);
@@ -127,7 +129,7 @@ export default async function handler(
     // Step 2: Search Bible API for additional context
     let bibleSearchResults: any[] = [];
     try {
-      const searchResults = await bibleService.searchBible('de4e12af7f28f599-02', queryText, 5);
+      const searchResults = await bibleService.searchBible('de4e12af7f28f599-02', retrievalQuery, 5);
       bibleSearchResults = searchResults?.passages || [];
       logger.debug('Bible API search results', { cid, count: bibleSearchResults.length });
     } catch (error) {
@@ -252,19 +254,21 @@ ${conversationHistory.slice(-6).map((msg: any) =>
 ).join('\n')}`;
     }
 
-    // Build messages array
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-      { role: 'system', content: systemPrompt + contextMessage },
+    // The system prompt (with retrieved context) is hoisted to Claude's top-level
+    // `system` param inside the helper; `messages` carries conversation turns only.
+    const systemContent = systemPrompt + contextMessage;
+    const messages: ChatMessage[] = [
       ...conversationHistory.slice(-10), // Last 10 messages for context
       // On regenerate the stored history already ends with the user turn, so we
       // must not append it a second time.
       ...(regenerate ? [] : [{ role: 'user' as const, content: message }])
     ];
 
-    // Configure OpenAI parameters based on mode
-    const model = mode === 'gentle' ? 'gpt-4o-mini' : 'gpt-4o';
-    const maxTokens = mode === 'gentle' ? 2000 : 4000;
-    const temperature = mode === 'gentle' ? 0.7 : 0.8;
+    // Tiered model by mode. No `temperature` (rejected on the 5-series). Thinking
+    // is ON by default, so `maxTokens` leaves headroom above the visible answer.
+    const model = mode === 'gentle' ? MODELS.gentle : MODELS.deep;
+    const maxTokens = mode === 'gentle' ? 3000 : 6000;
+    const effort: Effort = mode === 'gentle' ? 'medium' : 'high';
 
     // Step 5: Generate response from OpenAI
     if (stream) {
@@ -282,21 +286,10 @@ ${conversationHistory.slice(-6).map((msg: any) =>
       let fullText = '';
 
       try {
-        const streamResp = await getOpenAI().chat.completions.create({
-          model: model,
-          max_tokens: maxTokens,
-          temperature: temperature,
-          messages: messages,
-          stream: true,
-        });
-
-        for await (const chunk of streamResp) {
-          const delta = (chunk as any)?.choices?.[0]?.delta?.content || '';
-          if (delta) {
-            fullText += delta;
-            res.write(delta);
-          }
-        }
+        fullText = await completeStream(
+          { system: systemContent, messages, model, maxTokens, effort },
+          (delta) => { res.write(delta); }
+        );
 
         // Save messages to Supabase. On regenerate the user turn already exists,
         // so we only persist the new assistant reply.
@@ -323,14 +316,7 @@ ${conversationHistory.slice(-6).map((msg: any) =>
       }
     } else {
       // Non-streaming response
-      const response = await getOpenAI().chat.completions.create({
-        model: model,
-        max_tokens: maxTokens,
-        temperature: temperature,
-        messages: messages,
-      });
-
-      const aiResponse = response.choices[0].message.content;
+      const aiResponse = await complete({ system: systemContent, messages, model, maxTokens, effort });
 
       // Save messages to Supabase. On regenerate the user turn already exists,
       // so we only persist the new assistant reply.
@@ -374,7 +360,7 @@ ${conversationHistory.slice(-6).map((msg: any) =>
         metadata: {
           model: model,
           max_tokens: maxTokens,
-          temperature: temperature,
+          effort: effort,
           processing_time_ms: Date.now() - startedAt
         }
       });

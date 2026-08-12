@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getTracedOpenAI } from '../../../lib/observability/openai-traced';
+import { complete, extractJson, MODELS } from '../../../lib/llm';
 import { createServerSupabaseClient } from '../../../lib/supabase';
 import { logger, withCorrelationId } from '../../../lib/logger';
 import { applyBibleRateLimit } from '../../../lib/rate-limit';
@@ -8,9 +8,6 @@ import { BiblePineconeService } from '../../../lib/bible-pinecone';
 import { EmbeddingService } from '../../../lib/embeddings';
 import { runScriptureGuarded } from '../../../lib/graph/scripture-guard';
 import { extractScriptureReferences } from '../../../lib/reference-utils';
-
-// LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
-const getOpenAI = getTracedOpenAI;
 
 export default async function handler(
   req: NextApiRequest,
@@ -170,18 +167,13 @@ Guidelines for question creation:
         const messages = correctionNote
           ? [...baseMessages, { role: 'system' as const, content: correctionNote }]
           : baseMessages;
-        const response = await getOpenAI().chat.completions.create({
-          model: 'gpt-4o',
-          max_tokens: 2500,
-          temperature: 0.8,
-          messages,
-        });
-        return response.choices[0].message.content || '{}';
+        // Structured JSON generation → Sonnet 5 at low effort (system hoisted by complete()).
+        return await complete({ messages, model: MODELS.gentle, maxTokens: 3500, effort: 'low' });
       },
       // Verify the model-generated relatedVerses on each question.
       extractReferences: (raw) => {
         try {
-          const obj = JSON.parse(raw || '{}');
+          const obj = JSON.parse(extractJson(raw || '{}'));
           const refs: string[] = [];
           for (const q of obj.questions || []) {
             for (const rv of q?.relatedVerses || []) {
@@ -200,7 +192,7 @@ Guidelines for question creation:
     // Parse the JSON response
     let questionsData;
     try {
-      questionsData = JSON.parse(aiResponse || '{}');
+      questionsData = JSON.parse(extractJson(aiResponse || '{}'));
     } catch (parseError) {
       logger.error('Failed to parse study questions JSON', { cid }, parseError);
       // Fallback to basic questions

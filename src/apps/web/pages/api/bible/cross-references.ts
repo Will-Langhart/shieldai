@@ -1,14 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getTracedOpenAI } from '../../../lib/observability/openai-traced';
+import { complete, extractJson, MODELS } from '../../../lib/llm';
 import { createServerSupabaseClient } from '../../../lib/supabase';
 import { logger, withCorrelationId } from '../../../lib/logger';
 import { applyBibleRateLimit } from '../../../lib/rate-limit';
 import { bibleService } from '../../../lib/bible-service';
 import { BiblePineconeService } from '../../../lib/bible-pinecone';
 import { EmbeddingService } from '../../../lib/embeddings';
-
-// LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
-const getOpenAI = getTracedOpenAI;
 
 export default async function handler(
   req: NextApiRequest,
@@ -172,19 +169,13 @@ Guidelines for cross-reference identification:
       { role: 'user', content: `Please identify meaningful cross-references for this Bible passage: ${passageReference}` }
     ];
 
-    const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o',
-      max_tokens: 3000,
-      temperature: 0.7,
-      messages: messages,
-    });
+    // Structured JSON generation → Sonnet 5 at low effort (system hoisted by complete()).
+    const aiResponse = await complete({ messages, model: MODELS.gentle, maxTokens: 4000, effort: 'low' });
 
-    const aiResponse = response.choices[0].message.content;
-    
-    // Parse the JSON response
+    // Parse the JSON response (extractJson strips fences / preambles Claude may add)
     let referencesData;
     try {
-      referencesData = JSON.parse(aiResponse || '{}');
+      referencesData = JSON.parse(extractJson(aiResponse || '{}'));
     } catch (parseError) {
       logger.error('Failed to parse cross-references JSON', { cid }, parseError);
       // Fallback to basic references

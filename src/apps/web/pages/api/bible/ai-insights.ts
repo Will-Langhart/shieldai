@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getTracedOpenAI } from '../../../lib/observability/openai-traced';
+import { complete, extractJson, MODELS } from '../../../lib/llm';
 import { createServerSupabaseClient } from '../../../lib/supabase';
 import { logger, withCorrelationId } from '../../../lib/logger';
 import { applyBibleRateLimit } from '../../../lib/rate-limit';
@@ -9,9 +9,6 @@ import { EmbeddingService } from '../../../lib/embeddings';
 import { generateDenominationContext } from '../../../lib/prompt-engineering';
 import { runScriptureGuarded } from '../../../lib/graph/scripture-guard';
 import { extractScriptureReferences } from '../../../lib/reference-utils';
-
-// LangSmith-wrapped when tracing is enabled; transparent passthrough otherwise.
-const getOpenAI = getTracedOpenAI;
 
 export default async function handler(
   req: NextApiRequest,
@@ -246,19 +243,14 @@ Guidelines:
         const messages = correctionNote
           ? [...baseMessages, { role: 'system' as const, content: correctionNote }]
           : baseMessages;
-        const response = await getOpenAI().chat.completions.create({
-          model: 'gpt-4o',
-          max_tokens: 3000,
-          temperature: 0.7,
-          messages,
-        });
-        return response.choices[0].message.content || '{}';
+        // Structured JSON generation → Sonnet 5 at low effort. `complete()` hoists
+        // the system + correction-note turns into Claude's `system` param.
+        return await complete({ messages, model: MODELS.gentle, maxTokens: 4000, effort: 'low' });
       },
       // Verify the model-generated cross-references (the hallucination-prone field).
       extractReferences: (raw) => {
         try {
-          const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-          const obj = JSON.parse(cleaned);
+          const obj = JSON.parse(extractJson(raw));
           const refs: string[] = [];
           for (const cr of obj.crossReferences || []) {
             if (cr?.reference) refs.push(...extractScriptureReferences(String(cr.reference)));
@@ -272,14 +264,10 @@ Guidelines:
 
     const aiResponse = guard.raw;
 
-    // Strip markdown code fences GPT-4o sometimes wraps JSON in
-    const cleanedResponse = (aiResponse || '{}')
-      .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
-
-    // Parse the JSON response
+    // Parse the JSON response (extractJson strips fences / preambles Claude may add)
     let insights;
     try {
-      insights = JSON.parse(cleanedResponse);
+      insights = JSON.parse(extractJson(aiResponse || '{}'));
       // Normalize field name: API may return theologicalSignificance, frontend expects theologicalMeaning
       if (insights.theologicalSignificance && !insights.theologicalMeaning) {
         insights.theologicalMeaning = insights.theologicalSignificance;

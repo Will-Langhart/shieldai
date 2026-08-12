@@ -12,7 +12,12 @@
  *   cd src/apps/web && vercel env pull ../../scripts/eval/.env.eval
  *   cd ../../.. && npx tsx --env-file=src/scripts/eval/.env.eval src/scripts/eval/run-eval.ts
  *
- * Requires: LANGSMITH_API_KEY, OPENAI_API_KEY, PINECONE_API_KEY, BIBLE_API_KEY.
+ * Both TARGET arms (graph, chat-rag) now generate with Claude (see lib/llm.ts).
+ * The JUDGE stays on OpenAI (gpt-4o-mini) on purpose: a cross-provider judge
+ * avoids the self-preference bias a Claude judge would have over Claude answers.
+ *
+ * Requires: ANTHROPIC_API_KEY (targets) + OPENAI_API_KEY (judge) + PINECONE_API_KEY
+ * + BIBLE_API_KEY (+ LANGSMITH_API_KEY for the dataset/experiment UI).
  * Env knobs: EVAL_LIMIT (cap cases), EVAL_ARMS=graph,chatrag, EVAL_JUDGE_MODEL.
  */
 
@@ -22,6 +27,8 @@ import { EVAL_CASES } from './dataset';
 import { runApologeticsGraph } from '../../apps/web/lib/graph/apologetics-graph';
 import { verifyCitations } from '../../apps/web/lib/citation-verifier';
 import { BibleVersesIndex } from '../../apps/web/lib/bible-verses-index';
+import { complete, MODELS } from '../../apps/web/lib/llm';
+// The judge only — targets use Claude via `complete()` above.
 import { getTracedOpenAI } from '../../apps/web/lib/observability/openai-traced';
 
 // Trace the target runs into the same project the app uses.
@@ -30,8 +37,8 @@ process.env.LANGSMITH_PROJECT ||= 'langgraph-rag';
 
 const NS = process.env.BIBLE_VERSES_NAMESPACE_EVAL || 'de4e12af7f28f599-02';
 const DATASET_NAME = process.env.EVAL_DATASET || 'apologetics-eval';
-// Default judge is gpt-4o-mini: far higher TPM and ~15× cheaper than gpt-4o, so
-// a full eval run costs cents (the earlier gpt-4o judge drained the balance).
+// Judge is an OpenAI model on purpose (cross-provider = unbiased over Claude
+// answers). gpt-4o-mini: high TPM, ~15× cheaper than gpt-4o, run costs cents.
 // Override with EVAL_JUDGE_MODEL=gpt-4o for a higher-fidelity (pricier) judge.
 const JUDGE_MODEL = process.env.EVAL_JUDGE_MODEL || 'gpt-4o-mini';
 const ARMS = (process.env.EVAL_ARMS || 'graph,chatrag').split(',').map((s) => s.trim());
@@ -46,7 +53,8 @@ const LANGSMITH_KEY_USABLE = !!process.env.LANGSMITH_API_KEY && process.env.LANG
 const LOCAL = process.env.EVAL_LOCAL === '1' || !LANGSMITH_KEY_USABLE;
 
 function requireEnv() {
-  const needed = ['OPENAI_API_KEY', 'PINECONE_API_KEY', 'BIBLE_API_KEY'];
+  // ANTHROPIC_API_KEY → target arms; OPENAI_API_KEY → the judge.
+  const needed = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'PINECONE_API_KEY', 'BIBLE_API_KEY'];
   if (!LOCAL) needed.unshift('LANGSMITH_API_KEY');
   const missing = needed.filter((k) => !process.env[k]);
   if (missing.length) {
@@ -96,22 +104,20 @@ async function chatragTarget(inputs: Record<string, any>) {
   const started = Date.now();
   const verses = await BibleVersesIndex.search(NS, inputs.question, 5);
   const context = verses.map((v, i) => `${i + 1}. ${v.reference}: "${v.text}"`).join('\n');
-  const model = inputs.mode === 'gentle' ? 'gpt-4o-mini' : 'gpt-4o';
+  const gentle = inputs.mode === 'gentle';
   const systemPrompt =
     'You are Shield AI, a Christian AI assistant that provides biblically-grounded ' +
     'responses. Use the provided Bible verses to support your answer and cite specific ' +
     'references. Ground theological claims in the verses provided.' +
     (context ? `\n\nRELEVANT BIBLE VERSES:\n${context}` : '');
-  const resp = await withRetry(() => getTracedOpenAI().chat.completions.create({
-    model,
-    temperature: inputs.mode === 'gentle' ? 0.7 : 0.8,
-    max_tokens: inputs.mode === 'gentle' ? 2000 : 4000,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: inputs.question },
-    ],
+  // Mirror the updated chat-rag route: tiered model, no temperature, thinking headroom.
+  const answer = await withRetry(() => complete({
+    system: systemPrompt,
+    messages: [{ role: 'user', content: inputs.question }],
+    model: gentle ? MODELS.gentle : MODELS.deep,
+    maxTokens: gentle ? 3000 : 6000,
+    effort: gentle ? 'medium' : 'high',
   }));
-  const answer = resp.choices[0].message.content || '';
   const verification = await verifyCitations(answer, NS, { cid: `eval_chatrag_${Date.now()}` });
   return { answer, verification, latencyMs: Date.now() - started };
 }
