@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { flushLangeval } from '../../lib/observability/langeval';
 import { getTracedOpenAI } from '../../lib/observability/openai-traced';
 import { analyzeQuestion, generateSpecializedPrompt, generateDenominationContext } from '../../lib/prompt-engineering';
 import { classifyObjection, generateSpecializedResponse, objectionHandlers } from '../../lib/objection-classifier';
@@ -88,6 +89,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // Spans are batched and a serverless instance can freeze the moment the response is
+  // sent, so the trace this request produced is flushed when the socket closes.
+  res.on('close', () => { void flushLangeval(); });
+
   // A/B: route to an alternate pipeline before any work, so rate-limit and auth
   // run exactly once (in whichever handler ultimately serves the request). Graph
   // (opt-in) takes precedence over agentic.
