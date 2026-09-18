@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { flushLangeval } from '../../lib/observability/langeval';
 import { complete, completeStream, MODELS, type ChatMessage, type Effort } from '../../lib/llm';
 import { rewriteQuery } from '../../lib/query-rewrite';
 import { createServerSupabaseClient } from '../../lib/supabase';
@@ -14,6 +15,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // Spans are batched and a serverless instance can freeze the moment the response is
+  // sent, so the trace this request produced is flushed when the socket closes.
+  res.on('close', () => { void flushLangeval(); });
+
   // A/B: route the GRAPH_ROLLOUT_PCT bucket (or explicit ?graph=1) through the
   // multi-agent graph before any work here. This is the real production entry
   // point (the client calls /api/chat-rag), so the rollout takes effect here.

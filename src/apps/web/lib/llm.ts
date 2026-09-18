@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { wrapSDK } from 'langsmith/wrappers';
+import { traceModelCall } from './observability/langeval';
 
 /**
  * Shared Claude (Anthropic) client + a small OpenAI-shape-free helper.
@@ -82,6 +83,14 @@ export type Effort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 export interface CompleteParams {
   /** Top-level system prompt. Merged with any `system`-role entries in `messages`. */
   system?: string;
+  /**
+   * Conversation id, so langeval groups the turns of one chat together. Optional: without it a
+   * call is still traced, just as a trace of its own rather than part of a thread.
+   */
+  threadId?: string;
+  userId?: string;
+  /** What this call is for (`answer`, `triage`, `summarise`) — becomes the span name. */
+  operation?: string;
   /** Conversation turns. `system`-role entries are hoisted into `system`. */
   messages: ChatMessage[];
   model: string;
@@ -164,14 +173,25 @@ export function extractJson(raw: string): string {
 /** Non-streaming completion → the assistant's text. */
 export async function complete(p: CompleteParams): Promise<string> {
   const { system, msgs } = toAnthropic(p.system, p.messages);
-  const resp = await getClaude().messages.create({
-    model: p.model,
-    max_tokens: p.maxTokens,
-    ...(system ? { system } : {}),
-    messages: msgs,
-    ...outputConfig(p.effort),
-  } as Anthropic.MessageCreateParamsNonStreaming);
-  return textOf(resp);
+  return traceModelCall(
+    { ...traced(p), system, messages: msgs.map(flatten) },
+    () =>
+      getClaude().messages.create({
+        model: p.model,
+        max_tokens: p.maxTokens,
+        ...(system ? { system } : {}),
+        messages: msgs,
+        ...outputConfig(p.effort),
+      } as Anthropic.MessageCreateParamsNonStreaming),
+    (resp) => ({
+      text: textOf(resp),
+      model: resp.model,
+      inputTokens: resp.usage?.input_tokens,
+      outputTokens: resp.usage?.output_tokens,
+      cacheReadTokens: resp.usage?.cache_read_input_tokens ?? undefined,
+      cacheWriteTokens: resp.usage?.cache_creation_input_tokens ?? undefined,
+    })
+  ).then(textOf);
 }
 
 /**
@@ -184,24 +204,70 @@ export async function completeStream(
   onToken: (token: string) => void
 ): Promise<string> {
   const { system, msgs } = toAnthropic(p.system, p.messages);
-  let text = '';
-  const stream = await getClaude().messages.create({
-    model: p.model,
-    max_tokens: p.maxTokens,
-    ...(system ? { system } : {}),
-    messages: msgs,
-    ...outputConfig(p.effort),
-    stream: true,
-  } as Anthropic.MessageCreateParamsStreaming);
+  // The span has to stay open until the stream is drained, or its duration measures how long the
+  // request took to *start* rather than how long the user waited for an answer.
+  return traceModelCall(
+    { ...traced(p), system, messages: msgs.map(flatten) },
+    async () => {
+      let text = '';
+      let model: string | undefined;
+      const tokens: {
+        inputTokens?: number;
+        outputTokens?: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
+      } = {};
+      const stream = await getClaude().messages.create({
+        model: p.model,
+        max_tokens: p.maxTokens,
+        ...(system ? { system } : {}),
+        messages: msgs,
+        ...outputConfig(p.effort),
+        stream: true,
+      } as Anthropic.MessageCreateParamsStreaming);
 
-  for await (const event of stream) {
-    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-      const t = event.delta.text;
-      if (t) {
-        text += t;
-        onToken(t);
+      for await (const event of stream) {
+        if (event.type === 'message_start') {
+          model = event.message.model;
+          tokens.inputTokens = event.message.usage?.input_tokens ?? undefined;
+          tokens.outputTokens = event.message.usage?.output_tokens ?? undefined;
+          tokens.cacheReadTokens = event.message.usage?.cache_read_input_tokens ?? undefined;
+          tokens.cacheWriteTokens = event.message.usage?.cache_creation_input_tokens ?? undefined;
+        } else if (event.type === 'message_delta' && event.usage) {
+          // Output tokens are only final on the closing delta; input is not repeated there.
+          tokens.outputTokens = event.usage.output_tokens ?? tokens.outputTokens;
+        } else if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          const t = event.delta.text;
+          if (t) {
+            text += t;
+            onToken(t);
+          }
+        }
       }
-    }
-  }
-  return text;
+      return { text, model, ...tokens };
+    },
+    (r) => r
+  ).then((r) => r.text);
+}
+
+/** The identifiers langeval groups by, pulled off the caller's params. */
+function traced(p: CompleteParams) {
+  return {
+    model: p.model,
+    maxTokens: p.maxTokens,
+    threadId: p.threadId,
+    userId: p.userId,
+    operation: p.operation,
+  };
+}
+
+/** Anthropic message content can be blocks; the trace wants one readable string. */
+function flatten(m: Anthropic.MessageParam): { role: string; content: string } {
+  const content =
+    typeof m.content === 'string'
+      ? m.content
+      : m.content
+          .map((b) => ('text' in b && typeof b.text === 'string' ? b.text : `[${b.type}]`))
+          .join('');
+  return { role: m.role, content };
 }

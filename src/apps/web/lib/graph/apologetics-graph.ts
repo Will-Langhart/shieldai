@@ -260,14 +260,32 @@ async function synthesizeNode(state: State, config?: any): Promise<Partial<State
   if (state.streaming) {
     const write = getWriter(config);
     const draft = await completeStream(
-      { system: state.systemPrompt, messages, model: answerModel, maxTokens, effort },
+      {
+        system: state.systemPrompt,
+        messages,
+        model: answerModel,
+        maxTokens,
+        effort,
+        threadId: state.conversationId,
+        userId: state.userId,
+        operation: 'synthesize',
+      },
       (delta) => write?.(delta)
     );
     logger.debug('graph.synthesize.stream', { cid: state.cid, specialists: state.specialistsFired, len: draft.length });
     return { draft };
   }
 
-  const draft = await complete({ system: state.systemPrompt, messages, model: answerModel, maxTokens, effort });
+  const draft = await complete({
+    system: state.systemPrompt,
+    messages,
+    model: answerModel,
+    maxTokens,
+    effort,
+    threadId: state.conversationId,
+    userId: state.userId,
+    operation: 'synthesize',
+  });
   logger.debug('graph.synthesize', { cid: state.cid, revision: state.corrections, specialists: state.specialistsFired, len: draft.length });
   return { draft };
 }
