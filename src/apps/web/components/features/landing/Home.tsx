@@ -4,23 +4,26 @@ import {
   BookOpen,
   ChevronDown,
   Church,
+  HeartHandshake,
+  Languages,
   MessageCircle,
+  Search,
   ShieldCheck,
   StickyNote,
   Sparkles,
   Sunrise,
   Zap,
 } from 'lucide-react'
-import { LiveChatDemo } from '../components/features/landing/LiveChatDemo'
-import { Reveal } from '../components/features/landing/Reveal'
-import { FAQ_ITEMS } from '../components/features/landing/faqData'
+import { LiveChatDemo } from './LiveChatDemo'
+import { Reveal } from './Reveal'
+import { FAQ_ITEMS } from './faqData'
 
 const STEPS = [
   {
     number: '01',
     title: 'Ask your question',
     description:
-      'Bring the hard questions — skeptic challenges, doctrine, suffering. Choose gentle, scholarly, or debate mode to match the conversation you are in.',
+      'Bring the hard questions — skeptic challenges, doctrine, suffering. Start free in gentle mode, or step up to scholarly or debate mode on a paid plan.',
     icon: MessageCircle,
   },
   {
@@ -34,27 +37,71 @@ const STEPS = [
     number: '03',
     title: 'Go deeper',
     description:
-      'Save what you learn to study notes, keep reading in the Bible reader, and carry the conversation into your week with a daily verse.',
+      'Save what you learn to study notes, keep reading in the Bible reader, and pick the conversation back up whenever you are ready.',
     icon: BookOpen,
   },
 ]
 
-const MINI_FEATURES = [
+// `badge` marks features that aren't on the web yet, so the page never
+// promises something a visitor can't find after signing up.
+const MINI_FEATURES: {
+  title: string
+  description: string
+  icon: typeof StickyNote
+  badge?: string
+}[] = [
   {
     title: 'Study notes',
-    description: 'Capture insights as you read and revisit them anytime.',
+    description: 'Capture insights in the margins as you read and revisit them anytime.',
     icon: StickyNote,
   },
   {
     title: 'Daily verse',
     description: 'Start each day anchored in scripture chosen for you.',
     icon: Sunrise,
+    badge: 'Coming to iOS',
   },
   {
     title: 'Church finder',
     description: 'Find a congregation near you when study becomes community.',
     icon: Church,
+    badge: 'Coming to iOS',
   },
+]
+
+const TRUST_POINTS = [
+  {
+    title: 'Scripture first',
+    description:
+      'Before answering, Shield AI searches the Bible for the passages most relevant to your question and builds its answer on them.',
+    icon: BookOpen,
+  },
+  {
+    title: 'Your translation',
+    description:
+      'Answers quote from the Bible version you choose, so what you read matches the Bible on your shelf.',
+    icon: Languages,
+  },
+  {
+    title: 'References you can check',
+    description:
+      'Every answer names its passages so you can read them in context and test the reasoning yourself.',
+    icon: Search,
+  },
+  {
+    title: 'Honest about its limits',
+    description:
+      'Shield AI is a study companion, not a pastor. AI can be wrong — weigh everything against Scripture and bring the big questions to your church.',
+    icon: HeartHandshake,
+  },
+]
+
+// Mirrors the options in components/ui/DenominationSelector.tsx.
+const TRADITIONS = [
+  { name: 'Protestant', description: 'Reformed, Baptist, Lutheran, evangelical' },
+  { name: 'Catholic', description: 'Roman Catholic tradition & Magisterium' },
+  { name: 'Eastern Orthodox', description: 'Greek, Russian, Antiochian' },
+  { name: 'Oriental Orthodox', description: 'Coptic, Ethiopian, Armenian, Syriac' },
 ]
 
 export function Home() {
@@ -110,7 +157,7 @@ export function Home() {
                 answers grounded in the Bible and built for real conversations.
               </p>
 
-              <div className="mb-14 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+              <div className="mb-3 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
                 <Link
                   href="/chat"
                   className="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-7 py-3 text-sm font-semibold text-white shadow-shield-glow-sm transition-all duration-300 hover:brightness-110 hover:shadow-shield-glow"
@@ -128,6 +175,11 @@ export function Home() {
                   <span>Explore the Bible</span>
                 </Link>
               </div>
+              {/* Keep in sync with the 'basic' row in subscription_limits. */}
+              <p className="mb-14 text-xs text-shield-muted/80">
+                Free plan: 5 conversations a day in Gentle mode. Scholarly and Debate
+                modes come with paid plans.
+              </p>
             </Reveal>
 
             <Reveal delay={120}>
@@ -257,7 +309,7 @@ export function Home() {
                   </li>
                   <li className="flex items-center gap-2.5">
                     <span className="h-1 w-1 shrink-0 rounded-full bg-shield-accent" />
-                    Gentle, scholarly, or debate-style dialogue
+                    Gentle mode free; scholarly and debate on paid plans
                   </li>
                   <li className="flex items-center gap-2.5">
                     <span className="h-1 w-1 shrink-0 rounded-full bg-shield-accent" />
@@ -272,12 +324,91 @@ export function Home() {
             {MINI_FEATURES.map((feature, i) => (
               <Reveal key={feature.title} delay={i * 100}>
                 <div className="group h-full rounded-xl border border-white/[0.06] bg-shield-panel/40 p-5 shadow-shield-card backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-shield-brand/25">
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-shield-brand/20 bg-shield-brand/10">
-                    <feature.icon className="h-4 w-4 text-shield-brand" />
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-shield-brand/20 bg-shield-brand/10">
+                      <feature.icon className="h-4 w-4 text-shield-brand" />
+                    </div>
+                    {feature.badge && (
+                      <span className="rounded-full border border-shield-accent/30 bg-shield-accent/10 px-2 py-0.5 text-[10px] font-semibold text-shield-accent">
+                        {feature.badge}
+                      </span>
+                    )}
                   </div>
                   <h3 className="mb-1 text-sm font-bold text-shield-fg">{feature.title}</h3>
                   <p className="text-xs leading-relaxed text-shield-muted">
                     {feature.description}
+                  </p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trust */}
+      <section className="relative py-16 md:py-24">
+        <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="mb-12 text-center">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-shield-brand">
+                How we stay faithful
+              </p>
+              <h2 className="mb-3 text-2xl font-bold tracking-tight text-shield-fg md:text-4xl">
+                Answers you can test against Scripture
+              </h2>
+              <p className="mx-auto max-w-xl text-sm text-shield-muted md:text-base">
+                You should not have to take an AI&apos;s word for it. Here is how Shield AI
+                keeps the Bible at the center.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            {TRUST_POINTS.map((point, i) => (
+              <Reveal key={point.title} delay={i * 80}>
+                <div className="flex h-full gap-4 rounded-xl border border-white/[0.06] bg-shield-panel/40 p-6 shadow-shield-card backdrop-blur-md">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-shield-brand/20 bg-shield-brand/10">
+                    <point.icon className="h-5 w-5 text-shield-brand" />
+                  </div>
+                  <div>
+                    <h3 className="mb-1.5 text-base font-bold text-shield-fg">{point.title}</h3>
+                    <p className="text-sm leading-relaxed text-shield-muted">
+                      {point.description}
+                    </p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Traditions */}
+      <section className="relative py-16 md:py-24">
+        <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="mb-12 text-center">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-shield-accent">
+                Your tradition
+              </p>
+              <h2 className="mb-3 text-2xl font-bold tracking-tight text-shield-fg md:text-4xl">
+                Answers that respect where you worship
+              </h2>
+              <p className="mx-auto max-w-xl text-sm text-shield-muted md:text-base">
+                Choose your tradition in your profile and Shield AI frames its answers
+                through that church&apos;s theology and teachers, while noting where
+                Christians differ.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {TRADITIONS.map((tradition, i) => (
+              <Reveal key={tradition.name} delay={i * 80}>
+                <div className="h-full rounded-xl border border-shield-accent/15 bg-shield-panel/40 p-5 text-center shadow-shield-card backdrop-blur-md transition-colors hover:border-shield-accent/35">
+                  <h3 className="mb-1 text-sm font-bold text-shield-fg">{tradition.name}</h3>
+                  <p className="text-xs leading-relaxed text-shield-muted">
+                    {tradition.description}
                   </p>
                 </div>
               </Reveal>

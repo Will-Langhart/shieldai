@@ -1,4 +1,4 @@
-import { Home } from './Home'
+import { Home } from '../components/features/landing/Home'
 import { Header } from '../components/Header'
 import Footer from '../components/layout/Footer'
 import { Seo } from '../components/Seo'
