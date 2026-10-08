@@ -23,7 +23,7 @@ const STEPS = [
     number: '01',
     title: 'Ask your question',
     description:
-      'Bring the hard questions — skeptic challenges, doctrine, suffering. Choose gentle, scholarly, or debate mode to match the conversation you are in.',
+      'Bring the hard questions — skeptic challenges, doctrine, suffering. Start free in gentle mode, or step up to scholarly or debate mode on a paid plan.',
     icon: MessageCircle,
   },
   {
@@ -157,7 +157,7 @@ export function Home() {
                 answers grounded in the Bible and built for real conversations.
               </p>
 
-              <div className="mb-14 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+              <div className="mb-3 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
                 <Link
                   href="/chat"
                   className="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-7 py-3 text-sm font-semibold text-white shadow-shield-glow-sm transition-all duration-300 hover:brightness-110 hover:shadow-shield-glow"
@@ -175,6 +175,11 @@ export function Home() {
                   <span>Explore the Bible</span>
                 </Link>
               </div>
+              {/* Keep in sync with the 'basic' row in subscription_limits. */}
+              <p className="mb-14 text-xs text-shield-muted/80">
+                Free plan: 5 conversations a day in Gentle mode. Scholarly and Debate
+                modes come with paid plans.
+              </p>
             </Reveal>
 
             <Reveal delay={120}>
@@ -304,7 +309,7 @@ export function Home() {
                   </li>
                   <li className="flex items-center gap-2.5">
                     <span className="h-1 w-1 shrink-0 rounded-full bg-shield-accent" />
-                    Gentle, scholarly, or debate-style dialogue
+                    Gentle mode free; scholarly and debate on paid plans
                   </li>
                   <li className="flex items-center gap-2.5">
                     <span className="h-1 w-1 shrink-0 rounded-full bg-shield-accent" />
