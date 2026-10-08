@@ -312,7 +312,7 @@ export function Chat() {
           console.error('❌ Error in streaming:', error)
           setMessages(prev => prev.map(msg =>
             msg.id === assistantMessageId
-              ? { ...msg, content: 'Sorry, I encountered an error. Please try again.' }
+              ? { ...msg, content: error.name === 'UpgradeRequired' ? error.message : 'Sorry, I encountered an error. Please try again.' }
               : msg
           ))
         },
@@ -322,7 +322,9 @@ export function Chat() {
       console.error('❌ Error sending message:', error)
       const errorMessage: Message = {
         id: Date.now().toString(),
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: error instanceof Error && error.name === 'UpgradeRequired'
+          ? error.message
+          : 'Sorry, I encountered an error. Please try again.',
         role: 'assistant',
         created_at: new Date().toISOString(),
         timestamp: new Date().toISOString(),

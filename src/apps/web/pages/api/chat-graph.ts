@@ -6,6 +6,7 @@ import { MemoryService } from '../../lib/memory-service';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { logger, withCorrelationId, devLogger } from '../../lib/logger';
 import { applyChatRateLimit } from '../../lib/rate-limit';
+import { checkChatAccess, chatAccessDeniedBody } from '../../lib/chat-access';
 import { runApologeticsGraph, runApologeticsGraphStream } from '../../lib/graph/apologetics-graph';
 
 /**
@@ -67,12 +68,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     devLogger.chat.request(message, user.id, mode, cid);
 
-    // No subscription/feature gate here. chat-graph is now the graph delegate for
-    // /api/chat-rag (the production entry point), which serves everyone with NO
-    // feature gate — so enforcing a stricter gate here 403'd users chat-rag would
-    // serve (that mismatch is exactly what broke the rollout). Keep access policy
-    // identical to chat-rag; if tier enforcement becomes a product requirement,
-    // add it to BOTH paths together.
+    // Same tier gate as chat-rag (this route is its graph delegate), so both
+    // arms of the rollout enforce identical access policy.
+    const access = await checkChatAccess(serverSupabase, user.id, mode, !conversationId);
+    if (!access.allowed) {
+      logger.info('Chat blocked by plan', { cid, userId: user.id, plan: access.plan, reason: access.reason });
+      return res.status(403).json(chatAccessDeniedBody(access));
+    }
 
     // Objection analysis in the route drives analytics; the graph re-derives its
     // own (deterministic, cheap) for prompt construction and the Scripture floor.

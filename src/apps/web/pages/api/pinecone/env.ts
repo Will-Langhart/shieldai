@@ -1,9 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { requireAdmin } from '../../../lib/admin-guard';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (!requireAdmin(req, res)) return;
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

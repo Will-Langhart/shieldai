@@ -1,10 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { requireAdmin } from '../../../lib/admin-guard';
 import { Pinecone } from '@pinecone-database/pinecone';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (!requireAdmin(req, res)) return;
+
   try {
     const environment = process.env.PINECONE_ENVIRONMENT || 'us-east-1';
     const pc = new Pinecone({

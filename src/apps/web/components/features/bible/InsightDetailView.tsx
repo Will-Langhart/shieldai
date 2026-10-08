@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { JournalNoteEditor } from './JournalNoteEditor'
+import { devFallbackToken } from '../../../lib/test-token'
 import {
   Brain,
   BookOpen,
@@ -122,9 +123,9 @@ export function InsightDetailView({
   const getAuthToken = async (): Promise<string> => {
     try {
       const { data: { session } } = await import('../../../lib/supabase').then(m => m.supabase.auth.getSession())
-      return session?.access_token || 'test-token'
+      return session?.access_token || devFallbackToken()
     } catch (error) {
-      return 'test-token'
+      return devFallbackToken()
     }
   }
 

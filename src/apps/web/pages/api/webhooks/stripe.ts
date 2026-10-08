@@ -12,7 +12,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const sig = req.headers['stripe-signature'] as string;
-  const body = req.body;
 
   if (!sig) {
     return res.status(400).json({ error: 'No signature provided' });
@@ -21,6 +20,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let event: Stripe.Event;
 
   try {
+    // Signature verification needs the exact bytes Stripe sent, hence bodyParser: false.
+    const body = await readRawBody(req);
     event = stripe.webhooks.constructEvent(
       body,
       sig,
@@ -38,6 +39,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Error handling webhook event:', error);
     res.status(500).json({ error: 'Webhook handler failed' });
   }
+}
+
+async function readRawBody(req: NextApiRequest): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks);
 }
 
 // Disable body parsing for webhook endpoint

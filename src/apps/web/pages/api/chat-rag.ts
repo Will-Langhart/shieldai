@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { isTestToken } from '../../lib/test-token';
 import { flushLangeval } from '../../lib/observability/langeval';
 import { complete, completeStream, MODELS, type ChatMessage, type Effort } from '../../lib/llm';
 import { rewriteQuery } from '../../lib/query-rewrite';
@@ -9,6 +10,7 @@ import { bibleService } from '../../lib/bible-service';
 import { hybridBibleSearch } from '../../lib/bible-hybrid';
 import { ChatService } from '../../lib/chat-service';
 import { shouldRouteToGraph } from '../../lib/graph-routing';
+import { checkChatAccess, chatAccessDeniedBody } from '../../lib/chat-access';
 import graphHandler from './chat-graph';
 
 export default async function handler(
@@ -52,7 +54,7 @@ export default async function handler(
       const token = authHeader.substring(7);
       
       // Check for test token first
-      if (token === 'test-token') {
+      if (isTestToken(token)) {
         user = {
           id: '550e8400-e29b-41d4-a716-446655440000',
           email: 'test@example.com',
@@ -78,6 +80,12 @@ export default async function handler(
     }
 
     logger.info('Processing RAG chat request', { cid, userId: user.id, messageLength: message.length, regenerate });
+
+    const access = await checkChatAccess(serverSupabase, user.id, mode, !conversationId);
+    if (!access.allowed) {
+      logger.info('Chat blocked by plan', { cid, userId: user.id, plan: access.plan, reason: access.reason });
+      return res.status(403).json(chatAccessDeniedBody(access));
+    }
 
     // The text used to drive retrieval + the final user turn. On regenerate we
     // derive it from the stored history rather than trusting the client.

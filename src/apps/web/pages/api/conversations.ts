@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { isTestToken } from '../../lib/test-token';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { logger, withCorrelationId } from '../../lib/logger';
 import { conversationStorage } from '../../lib/conversation-storage';
@@ -22,7 +23,7 @@ export default async function handler(
       
       logger.info('Conversations API - token received', { cid, token: token.substring(0, 10) + '...', tokenLength: token.length });
       
-      if (token === 'test-token') {
+      if (isTestToken(token)) {
         logger.info('Using test token path', { cid });
         
         // Use in-memory storage for test user
@@ -76,7 +77,7 @@ export default async function handler(
       let serverSupabase;
       let userId;
 
-      if (token === 'test-token') {
+      if (isTestToken(token)) {
         // Use in-memory storage for test user
         const testUserId = '550e8400-e29b-41d4-a716-446655440000';
         const conversation = conversationStorage.createConversation(testUserId, title);

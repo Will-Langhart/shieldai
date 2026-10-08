@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { requireAdmin } from '../../../lib/admin-guard';
 import { PineconeService } from '../../../lib/pinecone';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (!requireAdmin(req, res)) return;
+
   try {
     if (req.method === 'POST') {
       const { action } = req.query;

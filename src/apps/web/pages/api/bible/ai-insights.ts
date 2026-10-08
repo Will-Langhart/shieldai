@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { isTestToken } from '../../../lib/test-token';
 import { complete, extractJson, MODELS } from '../../../lib/llm';
 import { createServerSupabaseClient } from '../../../lib/supabase';
 import { logger, withCorrelationId } from '../../../lib/logger';
@@ -50,7 +51,7 @@ export default async function handler(
       const token = authHeader.substring(7);
       
       // Check for test token first
-      if (token === 'test-token') {
+      if (isTestToken(token)) {
         user = {
           id: '550e8400-e29b-41d4-a716-446655440000',
           email: 'test@example.com',
@@ -123,7 +124,7 @@ export default async function handler(
     if (user && authHeader) {
       try {
         const token = (authHeader as string).substring(7);
-        if (token !== 'test-token') {
+        if (!isTestToken(token)) {
           const prefClient = createServerSupabaseClient(token);
           const { data: userData } = await prefClient
             .from('users')
