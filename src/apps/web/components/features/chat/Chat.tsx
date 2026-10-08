@@ -210,6 +210,19 @@ export function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
 
+  // Pre-fill the composer from ?q= (set by the landing-page demo), then drop
+  // the param so a refresh doesn't re-fill it. Not auto-sent, so it never
+  // spends a free-tier message without the user pressing send.
+  useEffect(() => {
+    if (!router.isReady) return
+    const q = router.query.q
+    if (typeof q !== 'string' || !q.trim()) return
+    setInputMessage(q.slice(0, 500))
+    textareaRef.current?.focus()
+    const { q: _q, ...rest } = router.query
+    router.replace({ pathname: router.pathname, query: rest }, undefined, { shallow: true })
+  }, [router.isReady, router.query.q])
+
   // Load conversations on mount
   useEffect(() => {
     loadConversations()

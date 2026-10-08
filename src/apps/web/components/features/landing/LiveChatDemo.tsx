@@ -25,6 +25,13 @@ const EXCHANGES: Exchange[] = [
     mode: 'Gentle',
   },
   {
+    question: "Isn't God just a 'God of the gaps' explanation?",
+    answer:
+      "That objection misreads the argument. The case for God doesn't rest on what science hasn't explained — it rests on what science has discovered: a universe with a beginning, and physical constants finely tuned for life. Those are findings, not gaps, and they call for an explanation.",
+    refs: ['Romans 1:20', 'Psalm 19:1'],
+    mode: 'Debate',
+  },
+  {
     question: 'Is the Bible historically reliable?',
     answer:
       'The New Testament is the best-attested text from the ancient world — thousands of early manuscripts, quoted extensively by writers within living memory, with archaeology repeatedly confirming its places, rulers, and customs.',
@@ -36,7 +43,7 @@ const EXCHANGES: Exchange[] = [
 const PLACEHOLDER_QUESTIONS = [
   'How can I explain the Trinity to non-Christians?',
   'What are the strongest arguments for Christianity?',
-  "How do I respond to 'God of the gaps' criticisms?",
+  'Why does God seem hidden from some people?',
   'How can I defend the moral argument for God?',
   "What's the best way to approach atheist friends?",
 ]
@@ -196,19 +203,23 @@ export function LiveChatDemo() {
           )}
         </div>
 
-        {/* Mock input */}
+        {/* Mock input — clicking opens the real chat with this question pre-filled */}
         <div className="border-t border-white/[0.06] bg-white/[0.02] px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3 rounded-xl border border-shield-edge/70 bg-shield-panel/60 px-4 py-2.5">
+          <Link
+            href={{ pathname: '/chat', query: { q: PLACEHOLDER_QUESTIONS[placeholderIndex] } }}
+            aria-label={`Ask Shield AI: ${PLACEHOLDER_QUESTIONS[placeholderIndex]}`}
+            className="group flex items-center gap-3 rounded-xl border border-shield-edge/70 bg-shield-panel/60 px-4 py-2.5 transition-colors hover:border-shield-brand/50 hover:bg-shield-panel/80"
+          >
             <p
               key={placeholderIndex}
-              className="flex-1 truncate text-left text-sm text-shield-muted/70 animate-fade-in"
+              className="flex-1 truncate text-left text-sm text-shield-muted/70 animate-fade-in group-hover:text-shield-fg/90"
             >
               {PLACEHOLDER_QUESTIONS[placeholderIndex]}
             </p>
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim transition-transform group-hover:scale-105">
               <Send className="h-3.5 w-3.5 text-white" />
             </span>
-          </div>
+          </Link>
         </div>
       </div>
 

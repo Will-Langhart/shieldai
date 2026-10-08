@@ -38,4 +38,9 @@ export const FAQ_ITEMS: FaqItem[] = [
     answer:
       'Lead with genuine questions and listening rather than winning a debate. Understand the actual objection, respond with clarity and charity, and be honest about what you do and do not know (1 Peter 3:15). Relationship and patience usually open more doors than argument alone.',
   },
+  {
+    question: 'Does Shield AI favor one denomination?',
+    answer:
+      'No. You can choose your tradition — Protestant, Catholic, Eastern Orthodox, or Oriental Orthodox — and Shield AI frames its answers through that tradition’s theology while noting where Christians differ. If you don’t choose one, it acknowledges the different denominational perspectives where they matter.',
+  },
 ]
