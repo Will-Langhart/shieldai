@@ -150,4 +150,5 @@ coverage/
 
 # Misc
 *.tgz
-*.tar.gz*.backup
+*.tar.gz
+*.backup

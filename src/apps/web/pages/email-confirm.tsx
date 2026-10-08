@@ -7,42 +7,25 @@ export function EmailConfirm() {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
+  const confirmed = Boolean(user?.email_confirmed_at);
 
+  // Supabase picks the session up from the link's URL fragment asynchronously,
+  // so the user may arrive a moment after mount. Each run cleans up its own
+  // timer, which keeps a stale "not yet confirmed" check from overwriting success.
   useEffect(() => {
-    const handleEmailConfirmation = async () => {
-      try {
-        // Check if user is already confirmed
-        if (user?.email_confirmed_at) {
-          setStatus('success');
-          setMessage('Your email has been confirmed! Redirecting to chat...');
-          setTimeout(() => {
-            router.push('/chat');
-          }, 2000);
-          return;
-        }
+    if (confirmed) {
+      setStatus('success');
+      setMessage('Your email has been confirmed! Redirecting to chat...');
+      const t = setTimeout(() => router.push('/chat'), 2000);
+      return () => clearTimeout(t);
+    }
 
-        // If not confirmed, wait a moment and check again
-        setTimeout(() => {
-          if (user?.email_confirmed_at) {
-            setStatus('success');
-            setMessage('Your email has been confirmed! Redirecting to chat...');
-            setTimeout(() => {
-              router.push('/chat');
-            }, 2000);
-          } else {
-            setStatus('error');
-            setMessage('Email confirmation failed. Please try signing up again.');
-          }
-        }, 3000);
-      } catch (error) {
-        console.error('Email confirmation error:', error);
-        setStatus('error');
-        setMessage('An error occurred during email confirmation.');
-      }
-    };
-
-    handleEmailConfirmation();
-  }, [user, router.push]);
+    const t = setTimeout(() => {
+      setStatus('error');
+      setMessage('This confirmation link is invalid or has expired. Please sign in or sign up again.');
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [confirmed, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-shield-canvas">

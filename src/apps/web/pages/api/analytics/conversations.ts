@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { requireAdmin } from '../../../lib/admin-guard';
 import { enhancedConversationStorage } from '../../../lib/enhanced-conversation-storage';
 import { logger, withCorrelationId } from '../../../lib/logger';
 
@@ -6,6 +7,8 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (!requireAdmin(req, res)) return;
+
   const cid = withCorrelationId(req, `conversation_analytics_${Date.now()}`);
 
   if (req.method !== 'GET') {

@@ -1,5 +1,22 @@
 import { apiService } from './api'
+import { devFallbackToken } from '../lib/test-token'
 import { ChatMessage, Conversation } from '../types/chat'
+
+/**
+ * Error for a failed chat request. Plan-limit denials (403 upgrade_required)
+ * carry the server's user-facing message and are named 'UpgradeRequired'.
+ */
+async function chatErrorFromResponse(response: Response): Promise<Error> {
+  try {
+    const body = await response.json()
+    if (body?.error === 'upgrade_required' && body.message) {
+      const err = new Error(body.message)
+      err.name = 'UpgradeRequired'
+      return err
+    }
+  } catch {}
+  return new Error(`HTTP error! status: ${response.status}`)
+}
 
 export class ChatService {
   /**
@@ -7,7 +24,7 @@ export class ChatService {
    */
   async sendMessage(message: string, conversationId?: string, mode: 'gentle' | 'scholarly' | 'debate' = 'gentle', session?: any): Promise<{ messages: ChatMessage[], conversationId?: string }> {
     try {
-      const token = session?.access_token || 'test-token';
+      const token = session?.access_token || devFallbackToken();
 
       // Try RAG API first, fall back to regular chat API
       let response;
@@ -44,7 +61,7 @@ export class ChatService {
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw await chatErrorFromResponse(response);
       }
 
       if (false) {
@@ -166,7 +183,7 @@ export class ChatService {
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw await chatErrorFromResponse(response);
       }
 
       // Capture conversation ID from response header before reading body
@@ -243,7 +260,7 @@ export class ChatService {
    */
   async getConversations(session?: any): Promise<Conversation[]> {
     try {
-      const token = session?.access_token || 'test-token';
+      const token = session?.access_token || devFallbackToken();
       const response = await fetch('/api/conversations', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -286,7 +303,7 @@ export class ChatService {
       const { createClient } = await import('@supabase/supabase-js');
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
       const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || 'test-token';
+      const token = session?.access_token || devFallbackToken();
 
       const response = await fetch('/api/conversations', {
         method: 'POST',

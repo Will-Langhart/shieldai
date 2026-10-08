@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { isTestToken } from '../../../lib/test-token';
 import { supabase } from '../../../lib/supabase';
 import { logger, withCorrelationId } from '../../../lib/logger';
 import { InsightsPineconeService } from '../../../lib/insights-pinecone';
@@ -31,7 +32,7 @@ export default async function handler(
       const token = authHeader.substring(7);
       
       // Check for test token first
-      if (token === 'test-token') {
+      if (isTestToken(token)) {
         user = {
           id: '550e8400-e29b-41d4-a716-446655440001',
           email: 'test@example.com',

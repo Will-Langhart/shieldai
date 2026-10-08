@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { requireAdmin } from '../../lib/admin-guard';
 import { getTracedOpenAI } from '../../lib/observability/openai-traced';
 import { EmbeddingService } from '../../lib/embeddings';
 import { PineconeService, SearchResult } from '../../lib/pinecone';
@@ -19,6 +20,8 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (!requireAdmin(req, res)) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
