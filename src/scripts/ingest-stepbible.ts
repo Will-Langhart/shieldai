@@ -8,9 +8,11 @@
  * parses them (lib/stepbible-parse.ts) and upserts into the tables created by
  * src/config/migrations/original-language.sql. Idempotent — safe to re-run.
  *
- * Run (needs SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY):
- *   cd src/apps/web && vercel env pull ../../scripts/eval/.env.eval
- *   cd ../../.. && npx tsx --env-file=src/scripts/eval/.env.eval src/scripts/ingest-stepbible.ts
+ * Run (needs SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY;
+ * Vercel blanks sensitive vars on pull, so check the key made it into the file):
+ *   vercel env pull .env.stepbible --environment=production   # from the repo root
+ *   npx tsx --env-file=.env.stepbible src/scripts/ingest-stepbible.ts
+ *   rm .env.stepbible
  *
  * Pass --dry-run to download and parse without writing.
  */

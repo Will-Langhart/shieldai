@@ -94,11 +94,21 @@ function matchesFocus(focus: string, word: OriginalVerse['words'][number], entry
   const f = focus.trim().toLowerCase();
   if (!f) return false;
   if (/^[hg]\d+[a-z]?$/.test(f)) return word.s.toLowerCase() === f || baseStrongs(word.s).toLowerCase() === f;
-  const haystack = [word.g, word.x, word.w, entry?.lemma, entry?.translit, entry?.gloss]
-    .filter(Boolean)
-    .join(' ')
+  const haystack = [word.g, word.x, word.w, entry?.lemma, entry?.translit, entry?.gloss].filter(Boolean).join(' ');
+  return foldTranslit(haystack).includes(foldTranslit(f));
+}
+
+/**
+ * Fold transliterations for matching: STEP writes Hebrew by syllable with
+ * stress marks ("'E.lo.Him") and Greek with macrons ("archē"), but users and
+ * models type "elohim" / "arche".
+ */
+function foldTranslit(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[.'’ʼ/]/g, '')
     .toLowerCase();
-  return haystack.includes(f);
 }
 
 /**
