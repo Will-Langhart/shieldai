@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   BookOpen, Search, ChevronLeft, ChevronRight, Loader2,
-  AlertCircle, Sparkles, X, PanelLeft, PanelRight,
-  Columns, Volume2, VolumeX,
+  AlertCircle, X, PanelLeft, PanelRight, Columns, Headphones,
+  Type, Copy, Check, PenLine, ArrowLeft, Minus, Plus,
 } from 'lucide-react'
 import { DenominationSelector } from '../../ui/DenominationSelector'
 import { MarginNotes } from './MarginNotes'
 import { AudioPlayer } from './AudioPlayer'
+import { BibleLibrary } from './BibleLibrary'
+import { PassageInsightCard, PassageInsight } from './PassageInsightCard'
+import { getBookMeta, TESTAMENT_LABEL } from './bookCatalog'
 import { useAuth } from '../../../contexts/AuthContext'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -27,15 +30,13 @@ interface BibleSearchResult {
   query: string; total: number
   passages: Array<{ id: string; reference: string; text: string; version: { name: string } }>
 }
-interface AIInsight {
-  explanation: string
-  keyThemes: string[]
-  crossReferences: Array<{ reference: string; text: string; relevance: string }>
-  studyQuestions: Array<{ question: string; category: string; difficulty?: string }>
-  historicalContext?: string
-  theologicalMeaning?: string
-  practicalApplication?: string
-  denomination?: string
+
+interface ReaderSettings {
+  size: number                       // index into FONT_SIZES
+  leading: 'compact' | 'relaxed' | 'airy'
+  font: 'serif' | 'sans'
+  layout: 'paragraph' | 'verse'
+  showNumbers: boolean
 }
 
 const DENOMINATION_VERSION_HINTS: Record<string, string[]> = {
@@ -44,6 +45,11 @@ const DENOMINATION_VERSION_HINTS: Record<string, string[]> = {
   'Oriental Orthodox': ['King James', 'New King James'],
   'Eastern Orthodox':  ['New King James', 'King James'],
 }
+
+const FONT_SIZES = [15, 17, 19, 21, 24]
+const LEADING = { compact: 1.65, relaxed: 1.9, airy: 2.15 }
+const DEFAULT_SETTINGS: ReaderSettings = { size: 2, leading: 'relaxed', font: 'serif', layout: 'paragraph', showNumbers: true }
+const SETTINGS_KEY = 'shield.bible.reader'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -104,6 +110,24 @@ function extractVersesFromPassage(passage: any, bookName: string, chapter: numbe
   return []
 }
 
+// "1 John 3:16-18" → { book: '1 John', chapter: 3, verse: 16 }
+function parseReference(ref: string): { book: string; chapter: number; verse?: number } | null {
+  const m = ref.trim().match(/^(.+?)\s+(\d+)(?::(\d+))?/)
+  if (!m) return null
+  return { book: m[1], chapter: parseInt(m[2], 10), verse: m[3] ? parseInt(m[3], 10) : undefined }
+}
+
+function highlight(text: string, query: string) {
+  const q = query.trim()
+  if (!q) return text
+  const parts = text.split(new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'))
+  return parts.map((p, i) =>
+    p.toLowerCase() === q.toLowerCase()
+      ? <mark key={i} className="rounded bg-shield-accent/25 px-0.5 text-shield-fg">{p}</mark>
+      : <React.Fragment key={i}>{p}</React.Fragment>
+  )
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function Bible() {
@@ -135,15 +159,19 @@ export function Bible() {
   const [searchTerm, setSearchTerm] = useState('')
   const [searchResults, setSearchResults] = useState<BibleSearchResult | null>(null)
   const [showSearchResults, setShowSearchResults] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   // Verse interaction / margin notes
   const [activeVerseNumber, setActiveVerseNumber] = useState<number | null>(null)
   const [verseInsight, setVerseInsight] = useState<string | null>(null)
   const [verseInsightLoading, setVerseInsightLoading] = useState(false)
   const verseInsightCache = useRef<Record<string, string>>({})
+  const [copied, setCopied] = useState(false)
+  const pendingVerseFocus = useRef<number | null>(null)
 
   // Ambient AI insight
-  const [ambientInsight, setAmbientInsight] = useState<AIInsight | null>(null)
+  const [ambientInsight, setAmbientInsight] = useState<PassageInsight | null>(null)
   const [ambientLoading, setAmbientLoading] = useState(false)
   const [insightFailed, setInsightFailed] = useState(false)
 
@@ -165,9 +193,15 @@ export function Bible() {
   const [denomination, setDenomination] = useState<string | null>(null)
   const [versionRecommendation, setVersionRecommendation] = useState<{ name: string; id: string } | null>(null)
 
-  // Sidebar collapse
+  // Layout
   const [navCollapsed, setNavCollapsed] = useState(false)
   const [notesCollapsed, setNotesCollapsed] = useState(false)
+  const [isNarrow, setIsNarrow] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settings, setSettings] = useState<ReaderSettings>(DEFAULT_SETTINGS)
+  const [scrollProgress, setScrollProgress] = useState(0)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const settingsRef = useRef<HTMLDivElement>(null)
 
   // Reading progress
   const [progressLoaded, setProgressLoaded] = useState(false)
@@ -178,6 +212,42 @@ export function Bible() {
   useEffect(() => { loadProgress() }, [user])
   useEffect(() => { if (progressLoaded) loadBooks() }, [selectedVersion, progressLoaded])
   useEffect(() => { loadAudioBibles() }, [])
+
+  // Side panels become overlay drawers below the lg breakpoint
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)')
+    const apply = () => {
+      setIsNarrow(mq.matches)
+      setNavCollapsed(mq.matches); setNotesCollapsed(mq.matches)
+    }
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SETTINGS_KEY)
+      if (saved) setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(saved) })
+    } catch { }
+  }, [])
+
+  const updateSettings = (patch: Partial<ReaderSettings>) => {
+    setSettings(prev => {
+      const next = { ...prev, ...patch }
+      try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(next)) } catch { }
+      return next
+    })
+  }
+
+  useEffect(() => {
+    if (!settingsOpen) return
+    const close = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) setSettingsOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [settingsOpen])
 
   // ── Versions ──────────────────────────────────────────────────────────────
 
@@ -213,17 +283,19 @@ export function Bible() {
 
   // ── Chapters (dynamic per book) ───────────────────────────────────────────
 
-  const loadChapters = useCallback(async (bookId: string, versionId: string) => {
+  const loadChapters = useCallback(async (bookId: string, versionId: string): Promise<BibleChapter[]> => {
     const key = `${versionId}-${bookId}`
-    if (chaptersCache.current[key]) { setChapters(chaptersCache.current[key]); return }
+    if (chaptersCache.current[key]) { setChapters(chaptersCache.current[key]); return chaptersCache.current[key] }
     try {
       const res = await fetch(`/api/bible/book-chapters?versionId=${versionId}&bookId=${bookId}`)
       const d = await res.json()
       if (d.chapters) {
         chaptersCache.current[key] = d.chapters
         setChapters(d.chapters)
+        return d.chapters
       }
     } catch { }
+    return []
   }, [])
 
   // ── Sections ──────────────────────────────────────────────────────────────
@@ -341,6 +413,7 @@ export function Bible() {
         },
       }
       setCurrentPassage(passage)
+      scrollRef.current?.scrollTo({ top: 0 })
       saveProgress(bookName, chapter, verse || 1)
 
       // Parallel: sections + ambient insight
@@ -384,7 +457,7 @@ export function Bible() {
 
       if (!ins.explanation) { setInsightFailed(true); return }
 
-      const insight: AIInsight = {
+      const insight: PassageInsight = {
         explanation: ins.explanation,
         keyThemes: ins.keyThemes || [],
         crossReferences: ins.crossReferences || [],
@@ -497,17 +570,25 @@ export function Bible() {
 
   // ── Navigation handlers ───────────────────────────────────────────────────
 
-  const handleBookChange = async (bookId: string) => {
+  // Jump to any book/chapter; 'last' resolves once that book's chapters load.
+  const goTo = async (bookId: string, chapter: number | 'last', focusVerse?: number) => {
     const book = books.find(b => b.id === bookId)
     if (!book) return
+    const chs = await loadChapters(book.id, selectedVersion)
+    const nums = chs.map(c => parseInt(c.number, 10)).filter(n => !isNaN(n))
+    const ch = chapter === 'last' ? (nums[nums.length - 1] || 1) : chapter
     setSelectedBook(book.name); setSelectedBookId(book.id)
-    setSelectedChapter(1); setSelectedVerse(1)
-    await loadChapters(book.id, selectedVersion)
-    loadPassage(book.name, book.id, 1)
+    setSelectedChapter(ch); setSelectedVerse(focusVerse || 1)
+    if (isNarrow) setNavCollapsed(true)
+    pendingVerseFocus.current = focusVerse ?? null
+    loadPassage(book.name, book.id, ch)
   }
+
+  const handleBookChange = (bookId: string) => goTo(bookId, 1)
 
   const handleChapterChange = (chapterNum: number) => {
     setSelectedChapter(chapterNum); setSelectedVerse(1)
+    if (isNarrow) setNavCollapsed(true)
     loadPassage(selectedBook, selectedBookId, chapterNum)
   }
 
@@ -517,38 +598,100 @@ export function Bible() {
     // Books will reload via useEffect on selectedVersion
   }
 
-  // Keyboard shortcuts
+  const openReference = (reference: string) => {
+    const parsed = parseReference(reference)
+    if (!parsed) return
+    const name = parsed.book.toLowerCase()
+    const book = books.find(b => b.name.toLowerCase() === name)
+      || books.find(b => b.nameLong?.toLowerCase().includes(name))
+      || books.find(b => b.name.toLowerCase().startsWith(name) || name.startsWith(b.name.toLowerCase()))
+    if (book) goTo(book.id, parsed.chapter, parsed.verse)
+  }
+
+  // Scroll to (and select) a verse requested by a cross-reference or search hit
+  useEffect(() => {
+    const v = pendingVerseFocus.current
+    if (!currentPassage || v == null) return
+    pendingVerseFocus.current = null
+    setActiveVerseNumber(v)
+    requestAnimationFrame(() => document.getElementById(`verse-${v}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+  }, [currentPassage])
+
+  // Prev / next chapter, crossing book boundaries
+  const chapterNums = useMemo(() => chapters.map(c => parseInt(c.number, 10)).filter(n => !isNaN(n)), [chapters])
+  const lastChapter = chapterNums.length ? chapterNums[chapterNums.length - 1] : 1
+  const bookIndex = books.findIndex(b => b.id === selectedBookId)
+  const prevTarget = selectedChapter > 1
+    ? { bookId: selectedBookId, label: `${selectedBook} ${selectedChapter - 1}`, chapter: selectedChapter - 1 as number | 'last' }
+    : bookIndex > 0 ? { bookId: books[bookIndex - 1].id, label: books[bookIndex - 1].name, chapter: 'last' as const } : null
+  const nextTarget = selectedChapter < lastChapter
+    ? { bookId: selectedBookId, label: `${selectedBook} ${selectedChapter + 1}`, chapter: selectedChapter + 1 as number | 'last' }
+    : bookIndex >= 0 && bookIndex < books.length - 1 ? { bookId: books[bookIndex + 1].id, label: `${books[bookIndex + 1].name} 1`, chapter: 1 } : null
+
+  const goPrev = () => {
+    if (!prevTarget) return
+    if (prevTarget.bookId === selectedBookId && typeof prevTarget.chapter === 'number') handleChapterChange(prevTarget.chapter)
+    else goTo(prevTarget.bookId, prevTarget.chapter)
+  }
+  const goNext = () => {
+    if (!nextTarget) return
+    if (nextTarget.bookId === selectedBookId && typeof nextTarget.chapter === 'number') handleChapterChange(nextTarget.chapter)
+    else goTo(nextTarget.bookId, nextTarget.chapter)
+  }
+  const navRef = useRef({ goPrev, goNext })
+  navRef.current = { goPrev, goNext }
+
+  // Keyboard shortcuts: ⌘←/→ chapters, / search, Esc clears selection
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target as HTMLElement)?.tagName)
       if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'ArrowLeft' && selectedChapter > 1) { e.preventDefault(); handleChapterChange(selectedChapter - 1) }
-        if (e.key === 'ArrowRight' && selectedChapter < chapters.length) { e.preventDefault(); handleChapterChange(selectedChapter + 1) }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); navRef.current.goPrev() }
+        if (e.key === 'ArrowRight') { e.preventDefault(); navRef.current.goNext() }
+        return
       }
+      if (typing) return
+      if (e.key === '/') { e.preventDefault(); searchInputRef.current?.focus() }
+      if (e.key === 'Escape') setActiveVerseNumber(null)
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [selectedChapter, chapters.length])
+  }, [])
 
   // ── Search ────────────────────────────────────────────────────────────────
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return
-    setIsLoading(true); setError(null)
+    setSearching(true); setError(null)
     try {
       const res = await fetch(`/api/bible/search?query=${encodeURIComponent(searchTerm)}&versionId=${selectedVersion}`)
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'Search failed')
       setSearchResults(d); setShowSearchResults(true)
+      scrollRef.current?.scrollTo({ top: 0 })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed')
-    } finally { setIsLoading(false) }
+    } finally { setSearching(false) }
   }
 
   // ── Verse click ───────────────────────────────────────────────────────────
 
   const handleVerseClick = (num: number, text: string) => {
+    if (activeVerseNumber === num) { setActiveVerseNumber(null); return }
     setActiveVerseNumber(num)
+    setCopied(false)
     loadVerseInsight(num, text)
+  }
+
+  const activeVerse = currentPassage?.verses.find(v => v.verseNumber === activeVerseNumber) || null
+
+  const copyActiveVerse = async () => {
+    if (!activeVerse) return
+    try {
+      await navigator.clipboard.writeText(`“${activeVerse.text}” — ${activeVerse.reference} (${currentPassage?.version.name})`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
+    } catch { }
   }
 
   // ── Section heading lookup ────────────────────────────────────────────────
@@ -558,407 +701,525 @@ export function Bible() {
     return s ? s.title : null
   }
 
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget
+    const max = el.scrollHeight - el.clientHeight
+    setScrollProgress(max > 0 ? Math.min(1, el.scrollTop / max) : 0)
+  }
+
   // ── Render helpers ────────────────────────────────────────────────────────
 
-  const renderVerseList = (verses: BibleVerse[], clickable = true) => (
-    <div className="space-y-0.5">
-      {verses.map((verse, i) => {
-        const heading = getSectionBefore(verse.verseNumber)
+  const meta = getBookMeta(selectedBookId)
+  const readingStyle: React.CSSProperties = {
+    fontSize: FONT_SIZES[settings.size],
+    lineHeight: LEADING[settings.leading],
+  }
+  const fontClass = settings.font === 'serif' ? 'font-scripture' : 'font-sans'
+  const wordCount = currentPassage ? currentPassage.text.split(/\s+/).length : 0
+
+  const SectionHeading = ({ title }: { title: string }) => (
+    <h3 className="mb-3 mt-9 flex items-center gap-3 font-sans text-[11px] font-semibold uppercase tracking-[0.18em] text-shield-accent/80 first:mt-0">
+      <span className="h-px w-6 bg-shield-accent/40" />{title}
+    </h3>
+  )
+
+  const verseTone = (num: number) =>
+    activeVerseNumber === num
+      ? 'bg-shield-accent/[0.16] text-shield-fg ring-1 ring-shield-accent/30'
+      : 'hover:bg-white/[0.045]'
+
+  // Flowing paragraph layout with superscript numbers and a drop-cap chapter numeral
+  const renderParagraphs = (verses: BibleVerse[]) => {
+    const blocks: Array<{ heading: string | null; verses: BibleVerse[] }> = []
+    for (const v of verses) {
+      const heading = getSectionBefore(v.verseNumber)
+      if (heading || blocks.length === 0) blocks.push({ heading, verses: [] })
+      blocks[blocks.length - 1].verses.push(v)
+    }
+    return blocks.map((block, bi) => (
+      <div key={bi}>
+        {block.heading && <SectionHeading title={block.heading} />}
+        <p className="mb-5 text-shield-fg/[0.88]">
+          {block.verses.map(v => {
+            const dropCap = v.verseNumber === 1 && bi === 0 && verses[0]?.verseNumber === 1
+            return (
+              <span
+                key={v.id}
+                id={`verse-${v.verseNumber}`}
+                onClick={() => handleVerseClick(v.verseNumber, v.text)}
+                className={`cursor-pointer rounded-md px-0.5 transition-colors [box-decoration-break:clone] ${verseTone(v.verseNumber)}`}
+              >
+                {dropCap ? (
+                  <span className="float-left mr-3 mt-1 font-scripture text-[3.6em] font-semibold leading-[0.8] text-shield-accent">
+                    {selectedChapter}
+                  </span>
+                ) : settings.showNumbers && (
+                  <sup className="mr-1 select-none font-sans text-[0.6em] font-semibold text-shield-brand/80">{v.verseNumber}</sup>
+                )}
+                {v.text}{' '}
+              </span>
+            )
+          })}
+        </p>
+      </div>
+    ))
+  }
+
+  // One verse per line with a gutter of verse numbers
+  const renderVerseLines = (verses: BibleVerse[], interactive = true) => (
+    <div className="space-y-1">
+      {verses.map(v => {
+        const heading = interactive ? getSectionBefore(v.verseNumber) : null
         return (
-          <React.Fragment key={verse.id || i}>
-            {heading && (
-              <p className="text-xs font-semibold uppercase tracking-wider text-shield-muted/70 mt-5 mb-2 pl-2 border-l-2 border-shield-brand/30">
-                {heading}
-              </p>
-            )}
-            <p className={`text-sm leading-relaxed py-1 px-2 rounded transition-colors ${
-              clickable && activeVerseNumber === verse.verseNumber
-                ? 'bg-shield-brand/8 border-l-2 border-shield-brand/50'
-                : 'hover:bg-shield-panel/40'
-            }`}>
-              {clickable ? (
-                <span
-                  className="text-blue-400 font-semibold mr-1.5 cursor-pointer hover:text-blue-300 select-none"
-                  onClick={() => handleVerseClick(verse.verseNumber, verse.text)}
-                  title="Click to annotate"
-                >{verse.verseNumber}.</span>
-              ) : (
-                <span className="text-shield-muted/60 font-semibold mr-1.5 select-none">{verse.verseNumber}.</span>
+          <React.Fragment key={v.id}>
+            {heading && <SectionHeading title={heading} />}
+            <div
+              id={interactive ? `verse-${v.verseNumber}` : undefined}
+              onClick={interactive ? () => handleVerseClick(v.verseNumber, v.text) : undefined}
+              className={`flex gap-4 rounded-lg px-3 py-1.5 transition-colors ${interactive ? `cursor-pointer ${verseTone(v.verseNumber)}` : ''}`}
+            >
+              {settings.showNumbers && (
+                <span className="w-6 flex-shrink-0 select-none pt-[0.35em] text-right font-sans text-[0.65em] font-semibold tabular-nums text-shield-brand/70">
+                  {v.verseNumber}
+                </span>
               )}
-              {verse.text}
-            </p>
+              <span className="text-shield-fg/[0.88]">{v.text}</span>
+            </div>
           </React.Fragment>
         )
       })}
     </div>
   )
 
-  const renderContent = () => {
-    if (isLoading) return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
-        <span className="ml-2 text-sm text-shield-muted">Loading scripture…</span>
-      </div>
-    )
-
-    if (showSearchResults && searchResults) return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold">Results for "{searchResults.query}"</h3>
-          <button onClick={() => setShowSearchResults(false)} className="text-sm text-blue-400 hover:text-blue-300">Back to passage</button>
+  // Parallel columns aligned verse-by-verse
+  const renderCompare = (primary: BiblePassage, secondary: BiblePassage) => {
+    const byNum = new Map(secondary.verses.map(v => [v.verseNumber, v]))
+    return (
+      <div className="overflow-hidden rounded-2xl border border-white/[0.07]">
+        <div className="grid grid-cols-2 border-b border-white/[0.07] bg-shield-void/40 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-shield-muted">
+          <div className="px-4 py-2.5">{primary.version.name}</div>
+          <div className="border-l border-white/[0.07] px-4 py-2.5 text-shield-accent/80">{secondary.version.name}</div>
         </div>
-        {searchResults.passages.map(p => (
-          <div key={p.id} className="p-3 bg-shield-canvas rounded-lg border border-shield-edge">
-            <h4 className="text-sm font-semibold text-blue-400 mb-1">{p.reference}</h4>
-            <p className="text-sm text-shield-fg leading-relaxed">{p.text}</p>
-            <button
-              onClick={() => {
-                const parts = p.reference.split(' '); const cv = parts.pop()?.split(':') || ['1']
-                const bookName = parts.join(' ')
-                const bookObj = books.find(b => b.name === bookName)
-                const bookId = bookObj?.id || 'GEN'
-                setSelectedBook(bookName); setSelectedBookId(bookId)
-                setSelectedChapter(parseInt(cv[0])); setSelectedVerse(parseInt(cv[1] || '1'))
-                setShowSearchResults(false)
-                loadPassage(bookName, bookId, parseInt(cv[0]), parseInt(cv[1] || '1'))
-              }}
-              className="mt-1.5 text-xs text-blue-400 hover:text-blue-300"
-            >Go to passage</button>
+        {primary.verses.map(v => (
+          <div
+            key={v.id}
+            id={`verse-${v.verseNumber}`}
+            onClick={() => handleVerseClick(v.verseNumber, v.text)}
+            className={`grid cursor-pointer grid-cols-2 border-b border-white/[0.04] last:border-0 transition-colors ${
+              activeVerseNumber === v.verseNumber ? 'bg-shield-accent/[0.12]' : 'hover:bg-white/[0.03]'
+            }`}
+            style={{ fontSize: '0.88em' }}
+          >
+            <p className="px-4 py-2.5 text-shield-fg/[0.88]">
+              <sup className="mr-1 font-sans text-[0.65em] font-semibold text-shield-brand/80">{v.verseNumber}</sup>{v.text}
+            </p>
+            <p className="border-l border-white/[0.06] px-4 py-2.5 text-shield-fg/75">
+              {byNum.get(v.verseNumber)?.text || <span className="text-shield-muted/50">—</span>}
+            </p>
           </div>
         ))}
       </div>
     )
+  }
+
+  const renderSearchResults = (results: BibleSearchResult) => (
+    <div className="mx-auto max-w-3xl">
+      <button
+        onClick={() => setShowSearchResults(false)}
+        className="mb-6 flex items-center gap-1.5 text-xs font-medium text-shield-muted transition-colors hover:text-shield-fg"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to {selectedBook} {selectedChapter}
+      </button>
+      <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-shield-accent/80">Search</p>
+      <h2 className="mb-1 font-scripture text-3xl font-semibold text-shield-fg">“{results.query}”</h2>
+      <p className="mb-8 text-sm text-shield-muted">{results.total ?? results.passages.length} results</p>
+
+      {results.passages.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-white/10 py-14 text-center text-sm text-shield-muted">
+          No passages found. Try a different word or phrase.
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {results.passages.map(p => (
+          <button
+            key={p.id}
+            onClick={() => openReference(p.reference)}
+            className="group block w-full rounded-2xl border border-white/[0.07] bg-shield-panel/30 p-5 text-left transition-all hover:-translate-y-0.5 hover:border-shield-brand/35 hover:bg-shield-panel/50 hover:shadow-shield-card"
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[13px] font-semibold text-shield-brand">{p.reference}</span>
+              <span className="text-[11px] text-shield-muted opacity-0 transition-opacity group-hover:opacity-100">Read in context →</span>
+            </div>
+            <p className="font-scripture text-[16px] leading-relaxed text-shield-fg/85">{highlight(p.text, results.query)}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  const renderSkeleton = () => (
+    <div className="mx-auto max-w-[42rem] animate-pulse pt-4">
+      <div className="mb-3 h-3 w-40 rounded-full bg-white/[0.06]" />
+      <div className="mb-4 h-12 w-64 rounded-xl bg-white/[0.08]" />
+      <div className="mb-12 h-3 w-56 rounded-full bg-white/[0.05]" />
+      <div className="mb-10 h-24 rounded-2xl bg-shield-brand/[0.06]" />
+      {Array.from({ length: 9 }).map((_, i) => (
+        <div key={i} className="mb-3 h-3.5 rounded-full bg-white/[0.05]" style={{ width: `${70 + ((i * 37) % 30)}%` }} />
+      ))}
+    </div>
+  )
+
+  const renderContent = () => {
+    if (isLoading) return renderSkeleton()
+    if (showSearchResults && searchResults) return renderSearchResults(searchResults)
 
     if (currentPassage) return (
-      <div>
-        {/* AI Insights panel */}
-        <div className="mb-6 rounded-lg border border-shield-brand/20 bg-shield-brand/5 overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-shield-brand/15">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-shield-brand" />
-              <span className="text-xs font-semibold text-shield-brand uppercase tracking-wider">AI Insights</span>
-              {ambientInsight?.denomination && (
-                <span className="text-[10px] text-shield-muted ml-1">· {ambientInsight.denomination}</span>
-              )}
-            </div>
-            {!ambientLoading && (
-              <button
-                onClick={() => currentPassage && loadAmbientInsight(currentPassage)}
-                className="flex items-center gap-1 text-[10px] font-medium text-shield-brand hover:opacity-70 transition-opacity"
-              >
-                <Sparkles className="h-3 w-3" />
-                {ambientInsight ? 'Regenerate' : 'Generate'}
-              </button>
-            )}
+      <article className={`mx-auto ${showCompare && comparePassage ? 'max-w-5xl' : 'max-w-[42rem]'}`}>
+        {/* Chapter title */}
+        <header className="mb-10 text-center">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-shield-accent/80">
+            {TESTAMENT_LABEL[meta.testament]} <span className="text-shield-muted/50">·</span> {meta.group}
+          </p>
+          <h1 className="font-scripture text-4xl font-semibold tracking-tight text-shield-fg sm:text-5xl">{selectedBook}</h1>
+          <p className="mt-2 font-scripture text-lg italic text-shield-muted">Chapter {selectedChapter}</p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-[11px] text-shield-muted">
+            <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">{currentPassage.version.name}</span>
+            <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">{currentPassage.verses.length} verses</span>
+            <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">~{Math.max(1, Math.round(wordCount / 230))} min read</span>
           </div>
+        </header>
 
-          <div className="px-4 py-3 space-y-4">
-            {/* Loading shimmer */}
-            {ambientLoading && (
-              <div className="space-y-2">
-                <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-full" />
-                <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-4/5" />
-                <div className="h-2.5 rounded bg-shield-muted/20 animate-pulse w-3/5" />
-              </div>
-            )}
-
-            {/* Failed / empty state */}
-            {!ambientLoading && !ambientInsight && (
-              <p className="text-xs text-shield-muted">
-                {insightFailed ? 'Could not generate insight. Click Generate to try again.' : 'Click Generate to create an AI insight for this passage.'}
-              </p>
-            )}
-
-            {/* Full structured insight */}
-            {!ambientLoading && ambientInsight && (<>
-              {/* Explanation */}
-              <p className="text-xs text-shield-fg/85 leading-relaxed">{ambientInsight.explanation}</p>
-
-              {/* Key Themes */}
-              {ambientInsight.keyThemes?.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-shield-muted mb-2">Key Themes</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {ambientInsight.keyThemes.map(t => (
-                      <span key={t} className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-shield-brand/10 text-shield-brand border border-shield-brand/20">
-                        <Sparkles className="h-2.5 w-2.5" />{t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Cross-References */}
-              {ambientInsight.crossReferences?.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-shield-muted mb-2">Cross-References</p>
-                  <div className="space-y-2">
-                    {ambientInsight.crossReferences.map((cr, i) => (
-                      <div key={i} className="rounded-md border border-shield-edge bg-shield-canvas/40 px-3 py-2">
-                        <p className="text-[10px] font-semibold text-shield-brand mb-0.5">{cr.reference}</p>
-                        <p className="text-[10px] text-shield-fg/75 leading-relaxed italic mb-1">"{cr.text}"</p>
-                        {cr.relevance && <p className="text-[10px] text-shield-muted leading-relaxed">{cr.relevance}</p>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Study Questions */}
-              {ambientInsight.studyQuestions?.length > 0 && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-shield-muted mb-2">Study Questions</p>
-                  <ol className="space-y-1.5 list-none">
-                    {ambientInsight.studyQuestions.map((q, i) => (
-                      <li key={i} className="flex gap-2 text-[11px] text-shield-fg/80 leading-relaxed">
-                        <span className="text-shield-brand font-semibold flex-shrink-0">{i + 1}.</span>
-                        <span>{typeof q === 'string' ? q : q.question}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-            </>)}
-          </div>
+        <div className="mx-auto max-w-[42rem]">
+          <PassageInsightCard
+            insight={ambientInsight}
+            loading={ambientLoading}
+            failed={insightFailed}
+            onGenerate={() => currentPassage && loadAmbientInsight(currentPassage)}
+            onOpenReference={openReference}
+          />
         </div>
 
-        {/* Main verses */}
-        {currentPassage.verses.length > 0 ? renderVerseList(currentPassage.verses) : (
-          <div className="text-center py-6">
-            <p className="text-sm text-shield-muted">No verses found for this passage</p>
+        {/* Compare chooser */}
+        {showCompare && (
+          <div className="mx-auto mb-8 flex max-w-[42rem] flex-wrap items-center gap-3 rounded-2xl border border-white/[0.07] bg-shield-panel/30 px-4 py-3">
+            <Columns className="h-4 w-4 text-shield-accent" />
+            <span className="text-sm text-shield-fg/85">Read alongside</span>
+            <select
+              value={compareVersion}
+              onChange={e => setCompareVersion(e.target.value)}
+              className="shield-input ml-auto max-w-[16rem] flex-1 py-1.5 text-sm"
+            >
+              <option value="">Choose a translation…</option>
+              {availableVersions.filter(v => v.id !== selectedVersion).map(v => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
+            {compareLoading && <Loader2 className="h-4 w-4 animate-spin text-shield-muted" />}
           </div>
         )}
 
-        {/* Compare panel */}
-        {showCompare && (
-          <div className="mt-6 pt-5 border-t border-shield-edge">
-            <div className="flex items-center gap-2 mb-3">
-              <Columns className="h-3.5 w-3.5 text-shield-muted" />
-              <span className="text-xs font-semibold text-shield-muted uppercase tracking-wider">Compare with</span>
-              <select
-                value={compareVersion}
-                onChange={e => setCompareVersion(e.target.value)}
-                className="ml-auto bg-shield-panel border border-shield-edge text-white px-2 py-1 text-xs rounded focus:outline-none focus:border-blue-500"
-              >
-                <option value="">Select version…</option>
-                {availableVersions.filter(v => v.id !== selectedVersion).map(v => (
-                  <option key={v.id} value={v.id}>{v.name}</option>
-                ))}
-              </select>
-            </div>
-            {compareLoading && <div className="flex items-center gap-2 py-4 text-xs text-shield-muted"><Loader2 className="h-4 w-4 animate-spin" />Loading…</div>}
-            {comparePassage && !compareLoading && (
-              <div className="rounded-lg border border-shield-edge bg-shield-canvas/40 px-4 py-3">
-                <p className="text-[10px] font-semibold text-shield-muted uppercase tracking-wider mb-2">{comparePassage.version.name}</p>
-                {renderVerseList(comparePassage.verses, false)}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        {/* Scripture */}
+        <div className={fontClass} style={readingStyle}>
+          {currentPassage.verses.length === 0 ? (
+            <p className="py-10 text-center font-sans text-sm text-shield-muted">No verses found for this passage.</p>
+          ) : showCompare && comparePassage && !compareLoading ? (
+            renderCompare(currentPassage, comparePassage)
+          ) : settings.layout === 'paragraph' ? (
+            renderParagraphs(currentPassage.verses)
+          ) : (
+            renderVerseLines(currentPassage.verses)
+          )}
+        </div>
+
+        {/* Chapter footer navigation */}
+        <nav className="mx-auto mt-16 grid max-w-[42rem] grid-cols-2 gap-3 border-t border-white/[0.06] pt-8">
+          {prevTarget ? (
+            <button onClick={goPrev} className="group rounded-2xl border border-white/[0.07] bg-shield-panel/25 p-4 text-left transition-all hover:border-shield-brand/30 hover:bg-shield-panel/50">
+              <span className="flex items-center gap-1 text-[11px] text-shield-muted"><ChevronLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />Previous</span>
+              <span className="mt-1 block truncate font-scripture text-base text-shield-fg">{prevTarget.label}</span>
+            </button>
+          ) : <span />}
+          {nextTarget ? (
+            <button onClick={goNext} className="group rounded-2xl border border-white/[0.07] bg-shield-panel/25 p-4 text-right transition-all hover:border-shield-brand/30 hover:bg-shield-panel/50">
+              <span className="flex items-center justify-end gap-1 text-[11px] text-shield-muted">Next<ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" /></span>
+              <span className="mt-1 block truncate font-scripture text-base text-shield-fg">{nextTarget.label}</span>
+            </button>
+          ) : <span />}
+        </nav>
+        <p className="mt-6 pb-4 text-center text-[11px] text-shield-muted/60">⌘ ← / → to turn chapters · / to search · click a verse to study it</p>
+      </article>
     )
 
     return (
-      <div className="text-center py-10">
-        <BookOpen className="h-10 w-10 text-shield-muted mx-auto mb-3" />
+      <div className="py-24 text-center">
+        <BookOpen className="mx-auto mb-3 h-10 w-10 text-shield-muted" />
         <p className="text-sm text-shield-muted">Select a passage to begin reading</p>
       </div>
     )
   }
 
+  const iconBtn = (active: boolean) =>
+    `flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
+      active ? 'bg-shield-brand/15 text-shield-brand' : 'text-shield-muted hover:bg-white/[0.06] hover:text-shield-fg'
+    }`
+
   // ── Layout ────────────────────────────────────────────────────────────────
 
   if (error && !currentPassage) return (
-    <div className="flex items-center justify-center h-[calc(100vh-48px)] bg-shield-canvas text-white">
-      <div className="text-center">
-        <AlertCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />
-        <h1 className="text-lg font-bold mb-1">Error Loading Bible</h1>
-        <p className="text-sm text-red-400 mb-3">{error}</p>
-        <button onClick={() => window.location.reload()} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 text-sm rounded">Reload</button>
+    <div className="flex h-[calc(100vh-64px)] items-center justify-center text-white">
+      <div className="max-w-sm rounded-2xl border border-white/[0.08] bg-shield-panel/50 p-8 text-center shadow-shield-card">
+        <AlertCircle className="mx-auto mb-3 h-10 w-10 text-red-400" />
+        <h1 className="mb-1 text-lg font-bold">Couldn’t load Scripture</h1>
+        <p className="mb-5 text-sm text-shield-muted">{error}</p>
+        <button onClick={() => window.location.reload()} className="shield-btn-primary px-5 py-2 text-sm">Try again</button>
       </div>
     </div>
   )
 
+  const drawer = isNarrow ? 'fixed bottom-0 top-16 z-40 shadow-2xl' : 'relative'
+
   return (
-    <div className="flex bg-shield-canvas/80 text-white" style={{ height: 'calc(100vh - 64px)' }}>
+    <div className="relative flex text-white" style={{ height: 'calc(100vh - 64px)' }}>
 
-      {/* ── Left nav ───────────────────────────────────────────────────────── */}
-      <div className={`${navCollapsed ? 'w-0' : 'w-56'} flex-shrink-0 border-r border-white/[0.08] bg-shield-panel/80 overflow-y-auto flex flex-col transition-all duration-300 backdrop-blur-xl`}>
-        <div className="p-4 space-y-3 flex-1">
-          <p className="text-xs font-semibold text-shield-fg uppercase tracking-wider">Navigation</p>
-          <p className="text-[10px] text-shield-muted">⌘ + ← → to change chapter</p>
+      {/* Drawer backdrop on small screens */}
+      {isNarrow && (!navCollapsed || !notesCollapsed) && (
+        <div className="fixed inset-x-0 bottom-0 top-16 z-30 bg-black/50 backdrop-blur-sm" onClick={() => { setNavCollapsed(true); setNotesCollapsed(true) }} />
+      )}
 
-          {/* Book selector */}
-          <div>
-            <label className="block text-xs font-medium text-shield-muted mb-1">Book</label>
-            {booksLoading ? (
-              <div className="flex items-center gap-2 text-xs text-shield-muted py-1.5"><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading…</div>
-            ) : (
-              <select
-                value={selectedBookId}
-                onChange={e => handleBookChange(e.target.value)}
-                className="shield-input w-full px-2 py-1.5 text-sm"
-              >
-                {books.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            )}
+      {/* ── Library ────────────────────────────────────────────────────────── */}
+      <aside className={`${drawer} left-0 flex-shrink-0 overflow-hidden border-r border-white/[0.07] bg-shield-deep/95 backdrop-blur-xl transition-all duration-300 ${
+        navCollapsed ? (isNarrow ? '-translate-x-full w-72' : 'w-0 border-r-0') : 'w-72 translate-x-0'
+      }`}>
+        <div className="flex h-full w-72 flex-col">
+          <div className="flex-1 overflow-hidden">
+            <BibleLibrary
+              books={books}
+              chapters={chapters}
+              booksLoading={booksLoading}
+              selectedBookId={selectedBookId}
+              selectedChapter={selectedChapter}
+              onSelectBook={handleBookChange}
+              onSelectChapter={handleChapterChange}
+            />
           </div>
+          <div className="border-t border-white/[0.06] p-3">
+            <DenominationSelector variant="sidebar" onDenominationChange={handleDenominationChange} />
+          </div>
+        </div>
+      </aside>
 
-          {/* Chapter selector */}
-          <div>
-            <label className="block text-xs font-medium text-shield-muted mb-1">Chapter</label>
-            <div className="flex items-center gap-1">
-              <button onClick={() => selectedChapter > 1 && handleChapterChange(selectedChapter - 1)} disabled={selectedChapter <= 1} className="p-1 text-blue-400 hover:text-blue-300 disabled:text-gray-600">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <input
-                type="number" value={selectedChapter} min="1" max={chapters.length || 999}
-                onChange={e => handleChapterChange(parseInt(e.target.value) || 1)}
-                className="shield-input flex-1 px-2 py-1.5 text-sm text-center"
-              />
-              <button onClick={() => selectedChapter < chapters.length && handleChapterChange(selectedChapter + 1)} disabled={selectedChapter >= chapters.length} className="p-1 text-blue-400 hover:text-blue-300 disabled:text-gray-600">
-                <ChevronRight className="h-4 w-4" />
-              </button>
+      {/* ── Reader ─────────────────────────────────────────────────────────── */}
+      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+
+        {/* Toolbar */}
+        <div className="relative z-20 flex-shrink-0 border-b border-white/[0.06] bg-shield-void/50 backdrop-blur-xl">
+          <div className="flex items-center gap-1.5 px-3 py-2">
+            <button onClick={() => setNavCollapsed(c => !c)} className={iconBtn(!navCollapsed)} title={navCollapsed ? 'Show library' : 'Hide library'}>
+              <PanelLeft className="h-4 w-4" />
+            </button>
+
+            <button
+              onClick={() => setNavCollapsed(false)}
+              className="flex min-w-0 items-center gap-1 rounded-lg px-2 py-1.5 font-scripture text-[15px] font-semibold text-shield-fg transition-colors hover:bg-white/[0.06]"
+            >
+              <span className="truncate">{selectedBook} {selectedChapter}</span>
+            </button>
+
+            <div className="hidden items-center sm:flex">
+              <button onClick={goPrev} disabled={!prevTarget} className={`${iconBtn(false)} disabled:opacity-30`} title="Previous chapter (⌘←)"><ChevronLeft className="h-4 w-4" /></button>
+              <button onClick={goNext} disabled={!nextTarget} className={`${iconBtn(false)} disabled:opacity-30`} title="Next chapter (⌘→)"><ChevronRight className="h-4 w-4" /></button>
             </div>
-          </div>
 
-          {/* Version selector */}
-          <div>
-            <label className="block text-xs font-medium text-shield-muted mb-1">Version</label>
+            <form
+              onSubmit={e => { e.preventDefault(); handleSearch() }}
+              className="relative mx-1 min-w-0 flex-1 sm:mx-3 sm:max-w-md md:ml-auto"
+            >
+              {searching
+                ? <Loader2 className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-shield-brand" />
+                : <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-shield-muted/70" />}
+              <input
+                ref={searchInputRef}
+                type="text" value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Search scripture…"
+                className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] py-1.5 pl-9 pr-10 text-sm text-shield-fg placeholder:text-shield-muted/60 transition-colors focus:border-shield-brand/50 focus:bg-white/[0.06] focus:outline-none"
+              />
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-white/10 px-1.5 text-[10px] text-shield-muted sm:block">/</kbd>
+            </form>
+
             <select
               value={selectedVersion}
               onChange={e => handleVersionChange(e.target.value)}
-              className="shield-input w-full px-2 py-1.5 text-sm"
+              title="Translation"
+              className="hidden max-w-[10rem] cursor-pointer truncate rounded-lg border border-white/[0.07] bg-white/[0.04] px-2 py-1.5 text-xs text-shield-fg focus:border-shield-brand/50 focus:outline-none md:block"
             >
               {availableVersions.length > 0
                 ? availableVersions.map(v => <option key={v.id} value={v.id}>{v.name}</option>)
                 : <option value="de4e12af7f28f599-01">King James Version</option>}
             </select>
+
+            {audioBibles.length > 0 && (
+              <button onClick={() => setShowAudio(a => !a)} className={iconBtn(showAudio)} title={showAudio ? 'Hide audio' : 'Listen'}>
+                <Headphones className="h-4 w-4" />
+              </button>
+            )}
+            <button onClick={() => setShowCompare(c => !c)} className={`${iconBtn(showCompare)} hidden sm:flex`} title="Compare translations">
+              <Columns className="h-4 w-4" />
+            </button>
+
+            {/* Reading settings */}
+            <div className="relative" ref={settingsRef}>
+              <button onClick={() => setSettingsOpen(o => !o)} className={iconBtn(settingsOpen)} title="Reading settings">
+                <Type className="h-4 w-4" />
+              </button>
+              {settingsOpen && (
+                <div className="absolute right-0 top-10 w-72 space-y-4 rounded-2xl border border-white/[0.08] bg-shield-layer/95 p-4 shadow-2xl backdrop-blur-xl">
+                  <div>
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-shield-muted">Text size</p>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => updateSettings({ size: Math.max(0, settings.size - 1) })} disabled={settings.size === 0} className={`${iconBtn(false)} border border-white/[0.08] disabled:opacity-30`}><Minus className="h-3.5 w-3.5" /></button>
+                      <div className="flex flex-1 justify-between px-1">
+                        {FONT_SIZES.map((_, i) => (
+                          <span key={i} className={`h-1.5 w-1.5 rounded-full ${i <= settings.size ? 'bg-shield-brand' : 'bg-white/15'}`} />
+                        ))}
+                      </div>
+                      <button onClick={() => updateSettings({ size: Math.min(FONT_SIZES.length - 1, settings.size + 1) })} disabled={settings.size === FONT_SIZES.length - 1} className={`${iconBtn(false)} border border-white/[0.08] disabled:opacity-30`}><Plus className="h-3.5 w-3.5" /></button>
+                    </div>
+                  </div>
+                  {([
+                    ['Typeface', 'font', [['serif', 'Serif'], ['sans', 'Sans']]],
+                    ['Layout', 'layout', [['paragraph', 'Paragraph'], ['verse', 'Verse by verse']]],
+                    ['Spacing', 'leading', [['compact', 'Snug'], ['relaxed', 'Relaxed'], ['airy', 'Airy']]],
+                  ] as Array<[string, keyof ReaderSettings, Array<[string, string]>]>).map(([label, key, opts]) => (
+                    <div key={key}>
+                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-shield-muted">{label}</p>
+                      <div className="flex rounded-xl border border-white/[0.06] bg-shield-void/40 p-1">
+                        {opts.map(([value, text]) => (
+                          <button
+                            key={value}
+                            onClick={() => updateSettings({ [key]: value } as Partial<ReaderSettings>)}
+                            className={`flex-1 rounded-lg py-1.5 text-[12px] font-medium transition-all ${
+                              settings[key] === value ? 'bg-shield-elevated text-shield-fg' : 'text-shield-muted hover:text-shield-fg'
+                            } ${key === 'font' && value === 'serif' ? 'font-scripture' : ''}`}
+                          >
+                            {text}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <label className="flex cursor-pointer items-center justify-between text-[13px] text-shield-fg/85">
+                    Verse numbers
+                    <button
+                      onClick={() => updateSettings({ showNumbers: !settings.showNumbers })}
+                      className={`relative h-5 w-9 rounded-full transition-colors ${settings.showNumbers ? 'bg-shield-brand' : 'bg-white/15'}`}
+                    >
+                      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${settings.showNumbers ? 'left-[18px]' : 'left-0.5'}`} />
+                    </button>
+                  </label>
+                  <div className="md:hidden">
+                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-shield-muted">Translation</p>
+                    <select value={selectedVersion} onChange={e => handleVersionChange(e.target.value)} className="shield-input w-full py-1.5 text-sm">
+                      {availableVersions.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button onClick={() => setNotesCollapsed(c => !c)} className={iconBtn(!notesCollapsed)} title={notesCollapsed ? 'Show study notes' : 'Hide study notes'}>
+              <PanelRight className="h-4 w-4" />
+            </button>
           </div>
 
-          <button
-            onClick={() => loadPassage(selectedBook, selectedBookId, selectedChapter, selectedVerse)}
-            disabled={isLoading}
-            className="shield-btn-primary w-full py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-          >{isLoading ? 'Loading…' : 'Go to Passage'}</button>
-
-          {/* Audio bible selector */}
-          {audioBibles.length > 0 && (
-            <div>
-              <label className="block text-xs font-medium text-shield-muted mb-1">Audio</label>
-              <select
-                value={selectedAudioId || ''}
-                onChange={e => setSelectedAudioId(e.target.value)}
-                className="shield-input w-full px-2 py-1.5 text-sm"
-              >
-                {audioBibles.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </div>
-          )}
-        </div>
-
-        <div className="border-t border-shield-edge p-3">
-          <DenominationSelector variant="panel" onDenominationChange={handleDenominationChange} />
-        </div>
-      </div>
-
-      {/* ── Centre content ─────────────────────────────────────────────────── */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-
-        {/* Toolbar */}
-        <div className="flex-shrink-0 px-3 py-2.5 border-b border-white/[0.07] bg-shield-panel/35 backdrop-blur-sm flex items-center gap-2">
-          <button onClick={() => setNavCollapsed(c => !c)} className="p-1.5 rounded-md hover:bg-shield-elevated text-shield-muted hover:text-shield-fg transition-colors flex-shrink-0" title={navCollapsed ? 'Show navigation' : 'Hide navigation'}>
-            <PanelLeft className="h-4 w-4" />
-          </button>
-
-          <input
-            type="text" value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            onKeyPress={e => e.key === 'Enter' && handleSearch()}
-            placeholder="Search scripture…"
-            className="shield-input flex-1 px-3 py-1.5 text-sm"
-          />
-          <button onClick={handleSearch} disabled={isLoading || !searchTerm.trim()} className="shield-btn-primary px-3 py-1.5 text-sm flex items-center gap-1.5 flex-shrink-0 disabled:cursor-not-allowed disabled:opacity-60">
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-            Search
-          </button>
-
-          {/* Audio toggle */}
-          {audioBibles.length > 0 && (
-            <button onClick={() => setShowAudio(a => !a)} className={`p-1.5 rounded-md transition-colors flex-shrink-0 ${showAudio ? 'bg-shield-brand/15 text-shield-brand' : 'hover:bg-shield-elevated text-shield-muted hover:text-shield-fg'}`} title={showAudio ? 'Hide audio player' : 'Play audio'}>
-              {showAudio ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </button>
-          )}
-
-          {/* Compare toggle */}
-          <button onClick={() => setShowCompare(c => !c)} className={`p-1.5 rounded-md transition-colors flex-shrink-0 ${showCompare ? 'bg-shield-brand/15 text-shield-brand' : 'hover:bg-shield-elevated text-shield-muted hover:text-shield-fg'}`} title={showCompare ? 'Hide compare' : 'Compare translations'}>
-            <Columns className="h-4 w-4" />
-          </button>
-
-          <button onClick={() => setNotesCollapsed(c => !c)} className="p-1.5 rounded-md hover:bg-shield-elevated text-shield-muted hover:text-shield-fg transition-colors flex-shrink-0" title={notesCollapsed ? 'Show study notes' : 'Hide study notes'}>
-            <PanelRight className="h-4 w-4" />
-          </button>
+          {/* Reading progress */}
+          <div className="absolute inset-x-0 -bottom-px h-[2px] bg-transparent">
+            <div className="h-full bg-gradient-to-r from-shield-brand to-shield-accent transition-[width] duration-150" style={{ width: `${scrollProgress * 100}%` }} />
+          </div>
         </div>
 
         {/* Version recommendation banner */}
         {versionRecommendation && (
-          <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-shield-brand/10 border-b border-shield-brand/20 text-xs">
+          <div className="flex flex-shrink-0 items-center justify-between border-b border-shield-accent/15 bg-shield-accent/[0.07] px-4 py-2 text-xs">
             <span className="text-shield-fg/80">
-              <span className="font-medium text-shield-brand">{denomination}</span> tradition typically reads the <span className="font-medium">{versionRecommendation.name}</span> — switch?
+              The <span className="font-medium text-shield-accent">{denomination}</span> tradition typically reads the <span className="font-medium">{versionRecommendation.name}</span>.
             </span>
-            <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-              <button onClick={() => { handleVersionChange(versionRecommendation.id); setVersionRecommendation(null) }} className="text-shield-brand font-medium hover:underline">Switch</button>
+            <div className="ml-4 flex flex-shrink-0 items-center gap-3">
+              <button onClick={() => { handleVersionChange(versionRecommendation.id); setVersionRecommendation(null) }} className="font-medium text-shield-accent hover:underline">Switch</button>
               <button onClick={() => setVersionRecommendation(null)} className="text-shield-muted hover:text-shield-fg"><X className="h-3.5 w-3.5" /></button>
             </div>
           </div>
         )}
 
-        {/* Passage header */}
-        <div className="flex-shrink-0 px-5 py-2.5 border-b border-white/[0.07] bg-shield-panel/25 flex items-center justify-between gap-3">
-          <h2 className="text-base font-bold truncate">
-            {currentPassage ? currentPassage.reference : `${selectedBook} ${selectedChapter}`}
-          </h2>
-          {currentPassage?.version?.name && (
-            <span className="bg-shield-panel px-2 py-0.5 rounded text-[10px] text-shield-muted flex-shrink-0">{currentPassage.version.name}</span>
-          )}
-        </div>
-
         {/* Audio player bar */}
         {showAudio && (
-          <div className="flex-shrink-0 px-5 py-2 border-b border-shield-edge">
-            {audioLoading && (
-              <div className="flex items-center gap-2 text-xs text-shield-muted py-1">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading audio…
-              </div>
-            )}
-            {audioUrl && !audioLoading && (
-              <AudioPlayer src={audioUrl} label={currentPassage?.reference} />
-            )}
-            {!audioUrl && !audioLoading && (
-              <p className="text-xs text-shield-muted py-1">Audio not available for this chapter in the selected audio Bible.</p>
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-white/[0.06] bg-shield-panel/30 px-5 py-2.5">
+            <div className="min-w-0 flex-1">
+              {audioLoading && (
+                <div className="flex items-center gap-2 py-1 text-xs text-shield-muted">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading audio…
+                </div>
+              )}
+              {audioUrl && !audioLoading && <AudioPlayer src={audioUrl} label={currentPassage?.reference} />}
+              {!audioUrl && !audioLoading && (
+                <p className="py-1 text-xs text-shield-muted">Audio isn’t available for this chapter in the selected recording.</p>
+              )}
+            </div>
+            {audioBibles.length > 1 && (
+              <select
+                value={selectedAudioId || ''}
+                onChange={e => setSelectedAudioId(e.target.value)}
+                className="max-w-[12rem] truncate rounded-lg border border-white/[0.07] bg-white/[0.04] px-2 py-1 text-xs text-shield-fg focus:outline-none"
+              >
+                {audioBibles.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
             )}
           </div>
         )}
 
         {/* Scrollable passage body */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          {renderContent()}
+        <div ref={scrollRef} onScroll={handleScroll} className="relative flex-1 overflow-y-auto px-5 py-10 sm:px-8 sm:py-14">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-shield-radial-soft opacity-60" />
+          <div className="relative">{renderContent()}</div>
         </div>
-      </div>
 
-      {/* ── Right margin notes ─────────────────────────────────────────────── */}
-      <div className={`${notesCollapsed ? 'w-0' : 'w-72'} flex-shrink-0 border-l border-white/[0.08] bg-shield-panel/60 overflow-hidden flex flex-col transition-all duration-300 backdrop-blur-xl`}>
-        <MarginNotes
-          book={selectedBook}
-          chapter={selectedChapter}
-          activeVerseNumber={activeVerseNumber}
-          userId={user?.id || null}
-          session={session}
-          verseInsight={verseInsight}
-          verseInsightLoading={verseInsightLoading}
-        />
-      </div>
+        {/* Selected-verse action bar */}
+        {activeVerse && !showSearchResults && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-5 z-20 flex justify-center px-4">
+            <div className="pointer-events-auto flex max-w-full items-center gap-1 rounded-full border border-white/[0.1] bg-shield-layer/95 py-1.5 pl-4 pr-1.5 shadow-2xl backdrop-blur-xl">
+              <span className="mr-2 truncate font-scripture text-sm font-semibold text-shield-fg">{activeVerse.reference}</span>
+              <button onClick={copyActiveVerse} className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-shield-fg/85 transition-colors hover:bg-white/[0.08]">
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+              <button onClick={() => setNotesCollapsed(false)} className="flex items-center gap-1.5 rounded-full bg-shield-brand/15 px-3 py-1.5 text-xs font-medium text-shield-brand transition-colors hover:bg-shield-brand/25">
+                <PenLine className="h-3.5 w-3.5" /> Note & insight
+              </button>
+              <button onClick={() => setActiveVerseNumber(null)} className="rounded-full p-1.5 text-shield-muted transition-colors hover:bg-white/[0.08] hover:text-shield-fg" title="Clear (Esc)">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* ── Margin notes ───────────────────────────────────────────────────── */}
+      <aside className={`${drawer} right-0 flex-shrink-0 overflow-hidden border-l border-white/[0.07] bg-shield-deep/95 backdrop-blur-xl transition-all duration-300 ${
+        notesCollapsed ? (isNarrow ? 'translate-x-full w-80' : 'w-0 border-l-0') : 'w-80 translate-x-0'
+      }`}>
+        <div className="flex h-full w-80 flex-col">
+          <MarginNotes
+            book={selectedBook}
+            chapter={selectedChapter}
+            activeVerseNumber={activeVerseNumber}
+            userId={user?.id || null}
+            session={session}
+            verseInsight={verseInsight}
+            verseInsightLoading={verseInsightLoading}
+          />
+        </div>
+      </aside>
     </div>
   )
 }

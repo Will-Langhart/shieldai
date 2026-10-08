@@ -35,6 +35,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        scripture: ['Literata', 'Georgia', 'Cambria', 'serif'],
       },
       backgroundImage: {
         'shield-radial':
