@@ -18,10 +18,15 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  /** Signed in anonymously to try chat without an account. */
+  isGuest: boolean;
+  /** Start an anonymous session so a visitor can chat before signing up. */
+  startGuestSession: () => Promise<Session | null>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (password: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -93,9 +98,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return { error };
   };
 
+  const isGuest = Boolean(user?.is_anonymous);
+
+  const startGuestSession = async () => {
+    if (!supabase) return null;
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if (error) {
+      console.error('Guest sign-in failed:', error);
+      return null;
+    }
+    return data.session;
+  };
+
   const signUp = async (email: string, password: string) => {
     if (!supabase) {
       return { error: new Error('Supabase not configured') };
+    }
+    // A guest converts in place so their conversations stay with them. Supabase
+    // only allows a password once the email is verified, so the confirmation
+    // link lands on a page that asks for one (password here is unused).
+    if (user?.is_anonymous) {
+      const { error } = await supabase.auth.updateUser(
+        { email },
+        { emailRedirectTo: `${window.location.origin}/email-confirm?set_password=1` }
+      );
+      return { error };
     }
     const { error } = await supabase.auth.signUp({
       email,
@@ -123,14 +150,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return { error };
   };
 
+  const updatePassword = async (password: string) => {
+    if (!supabase) {
+      return { error: new Error('Supabase not configured') };
+    }
+    const { error } = await supabase.auth.updateUser({ password });
+    return { error };
+  };
+
   const value = {
     user,
     session,
     loading,
+    isGuest,
+    startGuestSession,
     signIn,
     signUp,
     signOut,
     resetPassword,
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

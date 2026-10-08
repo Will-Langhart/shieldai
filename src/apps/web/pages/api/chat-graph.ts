@@ -70,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Same tier gate as chat-rag (this route is its graph delegate), so both
     // arms of the rollout enforce identical access policy.
-    const access = await checkChatAccess(serverSupabase, user.id, mode, !conversationId);
+    const access = await checkChatAccess(serverSupabase, user.id, mode, !conversationId, Boolean((user as any).is_anonymous));
     if (!access.allowed) {
       logger.info('Chat blocked by plan', { cid, userId: user.id, plan: access.plan, reason: access.reason });
       return res.status(403).json(chatAccessDeniedBody(access));

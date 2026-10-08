@@ -27,7 +27,9 @@ export function UserButton({ placement = 'down' }: { placement?: 'up' | 'down' }
     return <div className="h-9 w-20 animate-pulse rounded-lg bg-shield-elevated" />
   }
 
-  if (!user) {
+  // Guests (anonymous sessions) see the same sign-in / sign-up buttons;
+  // signing up from here converts the guest account in place.
+  if (!user || user.is_anonymous) {
     return (
       <>
         <div className="flex items-center gap-2">

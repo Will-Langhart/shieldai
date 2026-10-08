@@ -12,12 +12,26 @@ export const SignUpForm= ({ onSwitchToLogin }: SignUpFormProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const { signUp } = useAuth();
+  const { signUp, isGuest } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Guests verify their email first and choose a password from the link.
+    if (isGuest) {
+      const { error } = await signUp(email, '');
+      setLoading(false);
+      if (error) {
+        setError(/already/i.test(error.message)
+          ? 'That email already has an account. Sign in instead (this guest conversation won\'t carry over).'
+          : error.message);
+      } else {
+        setSuccess(true);
+      }
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -54,7 +68,9 @@ export const SignUpForm= ({ onSwitchToLogin }: SignUpFormProps) => {
           </div>
           <h2 className="text-2xl font-bold text-shield-fg mb-4">Check your email</h2>
           <p className="text-shield-muted mb-6">
-            We've sent you a confirmation link. Please check your email and click the link to verify your account.
+            {isGuest
+              ? "We've sent you a confirmation link. Open it to verify your email and choose a password. Your conversation is saved to your new account."
+              : "We've sent you a confirmation link. Please check your email and click the link to verify your account."}
           </p>
           <button
             onClick={onSwitchToLogin}
@@ -70,7 +86,11 @@ export const SignUpForm= ({ onSwitchToLogin }: SignUpFormProps) => {
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="bg-shield-panel rounded-lg p-8">
-        <h2 className="text-2xl font-bold text-shield-fg mb-6 text-center">Sign Up</h2>
+        <h2 className="text-2xl font-bold text-shield-fg mb-2 text-center">{isGuest ? 'Save your conversation' : 'Sign Up'}</h2>
+        {isGuest && (
+          <p className="mb-6 text-center text-sm text-shield-muted">Create a free account to keep chatting. Your conversation comes with you.</p>
+        )}
+        {!isGuest && <div className="mb-4" />}
         
         {error && (
           <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-4">
@@ -94,6 +114,7 @@ export const SignUpForm= ({ onSwitchToLogin }: SignUpFormProps) => {
             />
           </div>
 
+          {!isGuest && (<>
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-shield-fg mb-2">
               Password
@@ -123,13 +144,14 @@ export const SignUpForm= ({ onSwitchToLogin }: SignUpFormProps) => {
               placeholder="Confirm your password"
             />
           </div>
+          </>)}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim py-3 px-4 font-medium text-white shadow-shield-glow-sm hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-shield-brand focus:ring-offset-2 focus:ring-offset-shield-panel disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? 'Creating Account...' : 'Sign Up'}
+            {loading ? 'Creating Account...' : isGuest ? 'Create free account' : 'Sign Up'}
           </button>
         </form>
 
