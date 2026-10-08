@@ -66,6 +66,10 @@ export default async function handler(
           if (authError || !authUser) {
             return res.status(401).json({ error: 'Invalid authentication token' });
           }
+          // Guest (anonymous) sessions are for trying chat only.
+          if (authUser.is_anonymous) {
+            return res.status(403).json({ error: 'account_required', message: 'Create a free account to use AI study tools.' });
+          }
           user = authUser;
         } catch (error) {
           logger.error('Authentication failed', { cid }, error);

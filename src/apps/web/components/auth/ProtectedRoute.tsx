@@ -7,9 +7,14 @@ import LoadingSpinner from '../common/LoadingSpinner'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
+  /**
+   * Render children for signed-out visitors too (they become guests on first
+   * use). Without it, guest sessions are treated as signed out.
+   */
+  allowGuest?: boolean
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, allowGuest = false }: ProtectedRouteProps) {
   const { user, loading } = useAuth()
   const [view, setView] = useState<'login' | 'signup'>('login')
 
@@ -21,7 +26,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  if (!user) {
+  if (allowGuest) return <>{children}</>
+
+  if (!user || user.is_anonymous) {
     return (
       <div className="min-h-screen bg-shield-void flex items-center justify-center p-4">
         <div className="w-full max-w-md rounded-2xl border border-shield-edge bg-shield-panel shadow-2xl">

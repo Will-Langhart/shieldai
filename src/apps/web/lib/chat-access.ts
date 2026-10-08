@@ -6,13 +6,14 @@ export type ChatMode = 'gentle' | 'scholarly' | 'debate';
 export interface ChatAccess {
   allowed: boolean;
   plan: string;
-  reason?: 'mode_locked' | 'daily_limit';
+  reason?: 'mode_locked' | 'daily_limit' | 'guest_limit';
   requiredPlan?: string;
   limit?: number;
   message?: string;
 }
 
 const FREE_PLAN = 'basic';
+const GUEST_PLAN = 'guest';
 const PAID_STATUSES = ['active', 'trialing', 'trial'];
 
 /**
@@ -26,19 +27,27 @@ const PAID_STATUSES = ['active', 'trialing', 'trial'];
  * Fails open on infrastructure errors: a Supabase hiccup should not take chat
  * down for everyone, and the per-route rate limit still applies.
  *
+ * Guests (Supabase anonymous users, `is_anonymous` on the auth user) get
+ * gentle mode and GUEST_MESSAGE_LIMIT messages in total (default 5), then are
+ * asked to create a free account. Signing up converts the same user, so their
+ * conversation carries over.
+ *
  * Set CHAT_TIER_GATING=off to disable without a code change.
  */
 export async function checkChatAccess(
   db: SupabaseClient | undefined,
   userId: string,
   mode: ChatMode,
-  isNewConversation: boolean
+  isNewConversation: boolean,
+  isGuest = false
 ): Promise<ChatAccess> {
   if (process.env.CHAT_TIER_GATING === 'off' || !db) {
     return { allowed: true, plan: 'ungated' };
   }
 
   try {
+    if (isGuest) return await checkGuestAccess(db, userId, mode);
+
     const plan = await resolvePlan(db, userId);
 
     const { data: limits, error } = await db
@@ -86,6 +95,36 @@ export async function checkChatAccess(
     logger.error('Chat access check failed; allowing request', { userId }, error);
     return { allowed: true, plan: 'unknown' };
   }
+}
+
+export function guestMessageLimit(): number {
+  const n = Number(process.env.GUEST_MESSAGE_LIMIT);
+  return Number.isFinite(n) && n >= 0 ? n : 5;
+}
+
+async function checkGuestAccess(db: SupabaseClient, userId: string, mode: ChatMode): Promise<ChatAccess> {
+  if (mode !== 'gentle') {
+    return {
+      allowed: false, plan: GUEST_PLAN, reason: 'guest_limit', requiredPlan: FREE_PLAN,
+      message: 'Guest chat uses Gentle mode. Create a free account to explore more.',
+    };
+  }
+
+  const limit = guestMessageLimit();
+  const { count, error } = await db
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('role', 'user');
+  if (error) throw error;
+
+  if ((count ?? 0) >= limit) {
+    return {
+      allowed: false, plan: GUEST_PLAN, reason: 'guest_limit', requiredPlan: FREE_PLAN, limit,
+      message: `You've used your ${limit} free guest questions. Create a free account to keep going. Your conversation will be saved.`,
+    };
+  }
+  return { allowed: true, plan: GUEST_PLAN };
 }
 
 async function resolvePlan(db: SupabaseClient, userId: string): Promise<string> {

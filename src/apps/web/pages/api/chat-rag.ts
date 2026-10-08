@@ -81,7 +81,7 @@ export default async function handler(
 
     logger.info('Processing RAG chat request', { cid, userId: user.id, messageLength: message.length, regenerate });
 
-    const access = await checkChatAccess(serverSupabase, user.id, mode, !conversationId);
+    const access = await checkChatAccess(serverSupabase, user.id, mode, !conversationId, Boolean((user as any).is_anonymous));
     if (!access.allowed) {
       logger.info('Chat blocked by plan', { cid, userId: user.id, plan: access.plan, reason: access.reason });
       return res.status(403).json(chatAccessDeniedBody(access));

@@ -7,6 +7,7 @@ import { navItems, isActivePath } from '../../layout/navItems'
 import { EnhancedMessage } from './EnhancedMessage'
 import { DenominationSelector } from '../../ui/DenominationSelector'
 import { UserButton } from '../../auth/UserButton'
+import { AuthModal } from '../../auth/AuthModal'
 import {
   Plus,
   Search,
@@ -46,8 +47,13 @@ interface Conversation {
   updated_at: string
 }
 
+const GUEST_UNAVAILABLE = 'guest_session_unavailable'
+
 export function Chat() {
-  const { user, session } = useAuth()
+  const { user, session, isGuest, startGuestSession } = useAuth()
+  // Signed-out visitors chat as guests; these drive the sign-up prompt.
+  const [showSignup, setShowSignup] = useState(false)
+  const [guestLimitReached, setGuestLimitReached] = useState(false)
   const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -216,6 +222,10 @@ export function Chat() {
   }, [session])
 
   const loadConversations = async () => {
+    if (!session) {
+      setConversations([])
+      return
+    }
     try {
       const conversationsList = await chatService.getConversations(session)
       // Convert conversations to match component interface
@@ -276,6 +286,13 @@ export function Chat() {
       const assistantMessageId = `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       let assistantMessageAdded = false
 
+      // First message from a signed-out visitor: start a guest session so the
+      // normal authenticated chat path (and history) just works.
+      if (!session && !(await startGuestSession())) {
+        throw new Error(GUEST_UNAVAILABLE)
+      }
+      const chattingAsGuest = !session || isGuest
+
       await chatService.sendStreamingMessage(
         text,
         currentConversationId || undefined,
@@ -310,21 +327,47 @@ export function Chat() {
         // onError: Handle errors
         (error: Error) => {
           console.error('❌ Error in streaming:', error)
+          const upgrade = error.name === 'UpgradeRequired'
+          if (upgrade && chattingAsGuest) {
+            setGuestLimitReached(true)
+            setShowSignup(true)
+          }
+          const content = upgrade ? error.message : 'Sorry, I encountered an error. Please try again.'
+          // A request rejected up front (e.g. a plan limit) fails before any
+          // chunk arrives, so there is no assistant message to update yet.
+          if (!assistantMessageAdded) {
+            assistantMessageAdded = true
+            setMessages(prev => [...prev, {
+              id: assistantMessageId,
+              content,
+              role: 'assistant',
+              created_at: new Date().toISOString(),
+              timestamp: new Date().toISOString(),
+              metadata: {}
+            }])
+            return
+          }
           setMessages(prev => prev.map(msg =>
-            msg.id === assistantMessageId
-              ? { ...msg, content: error.name === 'UpgradeRequired' ? error.message : 'Sorry, I encountered an error. Please try again.' }
-              : msg
+            msg.id === assistantMessageId ? { ...msg, content } : msg
           ))
         },
         { regenerate: opts?.regenerate }
       )
     } catch (error) {
       console.error('❌ Error sending message:', error)
+      const upgrade = error instanceof Error && error.name === 'UpgradeRequired'
+      const guestUnavailable = error instanceof Error && error.message === GUEST_UNAVAILABLE
+      if ((upgrade && (isGuest || !session)) || guestUnavailable) {
+        setGuestLimitReached(upgrade)
+        setShowSignup(true)
+      }
       const errorMessage: Message = {
         id: Date.now().toString(),
-        content: error instanceof Error && error.name === 'UpgradeRequired'
-          ? error.message
-          : 'Sorry, I encountered an error. Please try again.',
+        content: upgrade
+          ? (error as Error).message
+          : guestUnavailable
+            ? 'Create a free account or sign in to start chatting.'
+            : 'Sorry, I encountered an error. Please try again.',
         role: 'assistant',
         created_at: new Date().toISOString(),
         timestamp: new Date().toISOString(),
@@ -680,6 +723,29 @@ export function Chat() {
         {/* Input Area — always pinned to bottom */}
         <div className="px-4 pb-4 pt-2">
           <div className="mx-auto max-w-3xl">
+            {(isGuest || (!user && messages.length > 0)) && (
+              guestLimitReached ? (
+                <div className="mb-3 flex flex-col items-center gap-3 rounded-2xl border border-shield-brand/30 bg-shield-brand/10 px-4 py-3 text-center sm:flex-row sm:text-left">
+                  <p className="flex-1 text-sm text-shield-fg">
+                    You've reached the guest limit. Create a free account to keep going. This conversation will be saved.
+                  </p>
+                  <button
+                    onClick={() => setShowSignup(true)}
+                    className="shrink-0 rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-4 py-2 text-sm font-semibold text-white shadow-shield-glow-sm hover:brightness-110"
+                  >
+                    Create free account
+                  </button>
+                </div>
+              ) : (
+                <p className="mb-2 text-center text-xs text-shield-muted">
+                  You're chatting as a guest.{' '}
+                  <button onClick={() => setShowSignup(true)} className="font-medium text-shield-brand hover:underline">
+                    Create a free account
+                  </button>{' '}
+                  to save your conversations.
+                </p>
+              )
+            )}
             <div className="flex items-end gap-2 rounded-3xl border border-white/[0.1] bg-shield-panel/85 px-3 py-2.5 shadow-shield-card backdrop-blur-md transition-colors focus-within:border-shield-brand/45">
               <textarea
                 ref={textareaRef}
@@ -711,6 +777,7 @@ export function Chat() {
           </div>
         </div>
       </div>
+      {showSignup && <AuthModal initialView="signup" onClose={() => setShowSignup(false)} />}
     </div>
   )
 }
