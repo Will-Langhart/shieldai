@@ -318,7 +318,6 @@ shieldai/
 │   │   │   ├── conversations-schema.sql
 │   │   │   ├── create-test-conversation.sql
 │   │   │   ├── create-test-user.sql
-│   │   │   ├── disable-rls-for-dev.sql
 │   │   │   ├── enhanced-analytics-schema.sql
 │   │   │   ├── enhanced-bible-notes.sql
 │   │   │   ├── enhanced-insights-responses.sql
