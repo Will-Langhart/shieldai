@@ -147,7 +147,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (bibleVersion?.id && bibleVersion?.name) {
       systemPrompt += `\n\nBIBLE VERSION CONTEXT: When referencing Scripture, use the ${bibleVersion.name} (${bibleVersion.id}) translation and note which version you are quoting.`;
     }
-    systemPrompt += `\n\nYou have retrieval tools (Scripture search, cross-references, apologetics knowledge base, memory, videos). Call only the tools you actually need to answer well — do not retrieve when the question is conversational or already answerable from context. Ground theological claims in Scripture you retrieve, and cite references explicitly.`;
+    systemPrompt += `\n\nYou have retrieval tools (Scripture search, cross-references, original Greek/Hebrew text and lexicon, apologetics knowledge base, memory, videos). Call only the tools you actually need to answer well — do not retrieve when the question is conversational or already answerable from context. Ground theological claims in Scripture you retrieve, and cite references explicitly.`;
 
     // --- Tool selection (tier/context gating) ---
     const includeMemory = Boolean(conversationId && typeof conversationId === 'string');
