@@ -3,6 +3,7 @@ import { bibleService } from './bible-service';
 import { BiblePineconeService } from './bible-pinecone';
 import { EmbeddingService } from './embeddings';
 import { searchApologeticsContent } from './apologetics-knowledge';
+import { getOriginalLanguage, formatOriginalLanguage } from './original-language';
 import { MemoryService } from './memory-service';
 import { VideoService } from './video-service';
 import type { ObjectionAnalysis } from './objection-classifier';
@@ -152,6 +153,42 @@ const REGISTRY: Record<string, ToolDefinition> = {
         ? refs.map((r: any, i: number) => `${i + 1}. ${r.reference}: "${r.text}"`).join('\n')
         : `No cross-references found for ${reference}.`;
       return { content, raw: refs };
+    },
+  },
+
+  get_original_language: {
+    tool: {
+      type: 'function',
+      function: {
+        name: 'get_original_language',
+        description:
+          'Return the original Greek (NT) or Hebrew (OT) text of a passage word by word: surface form, transliteration, contextual gloss, Strong\'s number, morphology, and lexical form. Use when the meaning of a specific word matters to the answer, or the user claims "the Greek/Hebrew actually says…" (e.g. logos in John 1:1, elohim in Genesis 1:1, almah in Isaiah 7:14). Pass `word` to also get the full lexicon definition for that term. Max 5 verses.',
+        parameters: {
+          type: 'object',
+          properties: {
+            reference: { type: 'string', description: 'A specific verse or short range, e.g. "John 1:1" or "Isaiah 7:14".' },
+            word: {
+              type: 'string',
+              description:
+                'Optional term to define in depth: an English gloss ("Word"), transliteration ("logos"), or Strong\'s number ("G3056").',
+            },
+          },
+          required: ['reference'],
+        },
+      },
+    },
+    handler: async args => {
+      const reference = str(args.reference);
+      if (!reference) return { content: 'No reference provided.', raw: null };
+      const lookup = await getOriginalLanguage(reference);
+      if (!lookup) {
+        return { content: `Could not parse "${reference}" as a verse reference (expected e.g. "John 1:1").`, raw: null };
+      }
+      const word = str(args.word) || undefined;
+      return {
+        content: formatOriginalLanguage(lookup, word),
+        raw: { reference: lookup.range.display, verses: lookup.verses.length, word },
+      };
     },
   },
 

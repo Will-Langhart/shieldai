@@ -110,6 +110,7 @@ const SINGLE_WORD_ALIASES: { [key: string]: string } = {
   Dan: 'Daniel', Zech: 'Zechariah', Mal: 'Malachi', Matt: 'Matthew',
   Rom: 'Romans', Gal: 'Galatians', Eph: 'Ephesians', Phil: 'Philippians',
   Col: 'Colossians', Heb: 'Hebrews', Jas: 'James', Rev: 'Revelation',
+  Mt: 'Matthew', Mk: 'Mark', Lk: 'Luke', Jn: 'John',
 };
 
 // Abbreviations for the numbered books, e.g. "1 Cor" → "1 Corinthians".
@@ -132,6 +133,12 @@ function resolveBookName(raw: string): string | null {
     if (BOOK_MAPPINGS[canonical]) return canonical;
   }
   return null;
+}
+
+/** Resolve a (possibly abbreviated) book name to its USFM code, e.g. "1 Cor" → "1CO". */
+export function resolveBookCode(raw: string): string | null {
+  const name = resolveBookName(raw);
+  return name ? BOOK_MAPPINGS[name] : null;
 }
 
 /**
