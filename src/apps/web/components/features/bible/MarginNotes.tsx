@@ -136,16 +136,16 @@ export function MarginNotes({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-shield-edge flex-shrink-0">
-        <div className="flex items-center gap-1.5">
-          <PenLine className="h-3.5 w-3.5 text-shield-brand" />
-          <span className="text-xs font-semibold text-shield-fg uppercase tracking-wider">Study Notes</span>
+      <div className="px-5 py-4 border-b border-white/[0.06] flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <PenLine className="h-3.5 w-3.5 text-shield-accent" />
+          <span className="text-[10px] font-semibold text-shield-accent/90 uppercase tracking-[0.16em]">Study Notes</span>
         </div>
-        <p className="text-xs text-shield-muted mt-0.5">{book} {chapter} · click a verse to annotate</p>
+        <p className="mt-1 font-scripture text-lg font-semibold text-shield-fg">{book} {chapter}</p>
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {loadingNotes && (
           <div className="flex items-center gap-2 text-xs text-shield-muted py-2">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -154,9 +154,11 @@ export function MarginNotes({
         )}
 
         {!loadingNotes && sortedVerses.length === 0 && (
-          <p className="text-xs text-shield-muted text-center py-6 leading-relaxed">
-            Click any verse number in the passage to start a margin note.
-          </p>
+          <div className="mt-6 rounded-2xl border border-dashed border-white/10 px-5 py-8 text-center">
+            <PenLine className="mx-auto mb-3 h-5 w-5 text-shield-muted/60" />
+            <p className="text-[13px] text-shield-fg/80">No notes in this chapter yet</p>
+            <p className="mt-1 text-xs text-shield-muted leading-relaxed">Tap any verse to write a margin note and see an AI insight for it.</p>
+          </div>
         )}
 
         {sortedVerses.map(verseNum => {
@@ -167,15 +169,15 @@ export function MarginNotes({
             <div
               key={verseNum}
               ref={isActive ? activeRef : undefined}
-              className={`rounded-lg border transition-all duration-200 ${
+              className={`rounded-xl border transition-all duration-200 ${
                 isActive
-                  ? 'border-shield-brand/40 bg-shield-brand/5'
-                  : 'border-shield-edge bg-shield-canvas/40'
+                  ? 'border-shield-accent/35 bg-shield-accent/[0.06] shadow-shield-card'
+                  : 'border-white/[0.07] bg-white/[0.02]'
               }`}
             >
               {/* Verse reference */}
               <div className="px-3 pt-2.5 pb-1 flex items-center justify-between">
-                <span className="text-xs font-semibold text-shield-brand">
+                <span className="font-scripture text-[13px] font-semibold text-shield-fg">
                   {book} {chapter}:{verseNum}
                 </span>
                 {slot.saving && <Loader2 className="h-3 w-3 animate-spin text-shield-muted" />}
@@ -212,7 +214,7 @@ export function MarginNotes({
                   onBlur={() => saveNote(verseNum)}
                   placeholder="Write a note…"
                   rows={isActive ? 4 : 2}
-                  className="w-full bg-transparent text-xs text-shield-fg placeholder-shield-muted/50 resize-none focus:outline-none leading-relaxed"
+                  className="w-full bg-transparent text-[13px] text-shield-fg placeholder-shield-muted/50 resize-none focus:outline-none leading-relaxed"
                 />
               </div>
             </div>
