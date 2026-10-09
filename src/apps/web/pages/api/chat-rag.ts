@@ -5,6 +5,7 @@ import { complete, completeStream, MODELS, type ChatMessage, type Effort } from 
 import { rewriteQuery } from '../../lib/query-rewrite';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { logger, withCorrelationId } from '../../lib/logger';
+import { writeStreamErrorNotice } from '../../lib/stream-error';
 import { applyChatRateLimit } from '../../lib/rate-limit';
 import { bibleService } from '../../lib/bible-service';
 import { hybridBibleSearch } from '../../lib/bible-hybrid';
@@ -297,11 +298,12 @@ ${conversationHistory.slice(-6).map((msg: any) =>
       });
 
       let fullText = '';
+      let streamedText = '';
 
       try {
         fullText = await completeStream(
           { system: systemContent, messages, model, maxTokens, effort },
-          (delta) => { res.write(delta); }
+          (delta) => { streamedText += delta; res.write(delta); }
         );
 
         // Save messages to Supabase. On regenerate the user turn already exists,
@@ -324,6 +326,7 @@ ${conversationHistory.slice(-6).map((msg: any) =>
         return;
       } catch (streamErr) {
         logger.error('Streaming error', { cid }, streamErr);
+        writeStreamErrorNotice(res, streamedText);
         res.end();
         return;
       }

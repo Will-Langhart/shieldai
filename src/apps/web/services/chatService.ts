@@ -14,6 +14,9 @@ async function chatErrorFromResponse(response: Response): Promise<Error> {
       err.name = 'UpgradeRequired'
       return err
     }
+    if (response.status === 429 && typeof body?.error === 'string') {
+      return new Error(body.error)
+    }
   } catch {}
   return new Error(`HTTP error! status: ${response.status}`)
 }
