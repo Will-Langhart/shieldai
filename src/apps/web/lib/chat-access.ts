@@ -65,9 +65,12 @@ export async function checkChatAccess(
     if (isNewConversation && limits.daily_conversations != null) {
       const startOfDay = new Date();
       startOfDay.setUTCHours(0, 0, 0, 0);
+      // Only count conversations that have messages. The chat route creates the
+      // conversation before calling the model, so a failed answer leaves an empty
+      // one behind and shouldn't use up the user's daily allowance.
       const { count, error: countError } = await db
         .from('conversations')
-        .select('id', { count: 'exact', head: true })
+        .select('id, messages!inner(id)', { count: 'exact', head: true })
         .eq('user_id', userId)
         .gte('created_at', startOfDay.toISOString());
       if (countError) throw countError;
