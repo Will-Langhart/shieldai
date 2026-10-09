@@ -2,21 +2,96 @@ import Link from 'next/link'
 import {
   ArrowRight,
   BookOpen,
+  Check,
   ChevronDown,
   Church,
+  GraduationCap,
+  Heart,
   HeartHandshake,
   Languages,
   MessageCircle,
   Search,
   ShieldCheck,
+  Smartphone,
   StickyNote,
   Sparkles,
   Sunrise,
+  Users,
   Zap,
 } from 'lucide-react'
 import { LiveChatDemo } from './LiveChatDemo'
 import { Reveal } from './Reveal'
 import { FAQ_ITEMS } from './faqData'
+import { trackCta } from './trackCta'
+
+const AUDIENCES = [
+  {
+    who: 'Youth & small-group leaders',
+    scenario:
+      'Sunday is coming and a student asked why God allows suffering. Prepare an answer that is honest, gentle, and rooted in the text.',
+    icon: Users,
+  },
+  {
+    who: 'Students',
+    scenario:
+      'A professor says the Gospels are legends. Work through the historical evidence before the next class, with the passages in front of you.',
+    icon: GraduationCap,
+  },
+  {
+    who: 'Parents',
+    scenario:
+      'Your child asks, “How do we know God is real?” Find words that are true and simple enough for the dinner table.',
+    icon: Heart,
+  },
+]
+
+// Mirrors the live subscription_plans / subscription_limits rows (checked
+// 2026-10-08). Only limits the API enforces are listed. The 'premium' and
+// 'ministry' rows are intentionally left out. There is no web checkout yet,
+// so paid plans show as coming soon.
+const PLANS = [
+  {
+    name: 'Explorer',
+    price: 'Free',
+    cadence: '',
+    features: [
+      '5 conversations a day',
+      'Gentle mode',
+      '20 study notes a month',
+      'Bible reader & search',
+    ],
+    available: true,
+  },
+  {
+    name: 'Bible Student',
+    price: '$9.99',
+    cadence: '/month',
+    features: [
+      'Unlimited conversations',
+      'Scholarly mode (10 a day)',
+      'Unlimited study notes',
+      'Advanced search & cross-references',
+    ],
+    available: false,
+  },
+  {
+    name: 'Bible Scholar',
+    price: '$19.99',
+    cadence: '/month',
+    features: [
+      'Everything in Bible Student',
+      'Unlimited Scholarly mode',
+      'Debate mode',
+    ],
+    available: false,
+  },
+]
+
+const IOS_FEATURES = [
+  { title: 'Church finder', description: 'Find a congregation near you.', icon: Church },
+  { title: 'Daily verse', description: 'A verse to start each morning.', icon: Sunrise },
+  { title: 'Notes on the go', description: 'Your study notes, synced.', icon: StickyNote },
+]
 
 const STEPS = [
   {
@@ -160,6 +235,7 @@ export function Home() {
               <div className="mb-3 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
                 <Link
                   href="/chat"
+                  onClick={() => trackCta('hero_chat')}
                   className="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-7 py-3 text-sm font-semibold text-white shadow-shield-glow-sm transition-all duration-300 hover:brightness-110 hover:shadow-shield-glow"
                 >
                   <MessageCircle className="h-4 w-4 shrink-0" />
@@ -169,6 +245,7 @@ export function Home() {
 
                 <Link
                   href="/bible"
+                  onClick={() => trackCta('hero_bible')}
                   className="group inline-flex items-center justify-center gap-2 rounded-lg border border-shield-edge bg-shield-panel/70 px-7 py-3 text-sm font-semibold text-shield-fg shadow-shield-inset backdrop-blur-sm transition-all duration-300 hover:border-shield-edge-strong hover:bg-shield-elevated/90"
                 >
                   <BookOpen className="h-4 w-4 shrink-0 text-shield-brand" />
@@ -236,6 +313,42 @@ export function Home() {
                   <h3 className="mb-2 text-base font-bold text-shield-fg">{step.title}</h3>
                   <p className="text-sm leading-relaxed text-shield-muted">
                     {step.description}
+                  </p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Who it's for */}
+      <section className="relative py-16 md:py-24">
+        <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="mb-12 text-center">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-shield-brand">
+                Who it&apos;s for
+              </p>
+              <h2 className="mb-3 text-2xl font-bold tracking-tight text-shield-fg md:text-4xl">
+                For the moment someone asks you
+              </h2>
+              <p className="mx-auto max-w-xl text-sm text-shield-muted md:text-base">
+                Hard questions rarely come with time to prepare. Shield AI helps you
+                get ready for them.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {AUDIENCES.map((audience, i) => (
+              <Reveal key={audience.who} delay={i * 100}>
+                <div className="h-full rounded-xl border border-white/[0.06] bg-shield-panel/40 p-6 shadow-shield-card backdrop-blur-md">
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-shield-accent/25 bg-shield-accent/10">
+                    <audience.icon className="h-5 w-5 text-shield-accent" />
+                  </div>
+                  <h3 className="mb-2 text-base font-bold text-shield-fg">{audience.who}</h3>
+                  <p className="text-sm leading-relaxed text-shield-muted">
+                    {audience.scenario}
                   </p>
                 </div>
               </Reveal>
@@ -417,6 +530,138 @@ export function Home() {
         </div>
       </section>
 
+      {/* iOS */}
+      <section className="relative py-16 md:py-24">
+        <div className="mx-auto grid w-full max-w-5xl grid-cols-1 items-center gap-12 px-4 sm:px-6 md:grid-cols-2 lg:px-8">
+          <Reveal>
+            <div className="text-center md:text-left">
+              <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-shield-accent/30 bg-shield-accent/10 px-3 py-1 text-xs font-semibold text-shield-accent">
+                <Smartphone className="h-3.5 w-3.5" />
+                Coming soon to iOS
+              </span>
+              <h2 className="mb-3 text-2xl font-bold tracking-tight text-shield-fg md:text-4xl">
+                Shield AI in your pocket
+              </h2>
+              <p className="mb-8 text-sm text-shield-muted md:text-base">
+                The same scripture-grounded answers on iPhone, with tools made for life
+                away from your desk. Your account and notes carry over.
+              </p>
+              <ul className="space-y-4">
+                {IOS_FEATURES.map((feature) => (
+                  <li key={feature.title} className="flex items-center gap-3 text-left">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-shield-brand/20 bg-shield-brand/10">
+                      <feature.icon className="h-4 w-4 text-shield-brand" />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-bold text-shield-fg">{feature.title}</span>
+                      <span className="block text-xs text-shield-muted">{feature.description}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+
+          <Reveal delay={120}>
+            {/* CSS phone mockup — no screenshot asset needed */}
+            <div className="relative mx-auto w-[240px]" aria-hidden>
+              <div className="pointer-events-none absolute -inset-10 rounded-full bg-shield-brand/15 blur-3xl" />
+              <div className="relative rounded-[40px] border border-white/10 bg-shield-deep p-3 shadow-shield-card">
+                <div className="mx-auto mb-3 h-5 w-20 rounded-full bg-black/60" />
+                <div className="flex h-[400px] flex-col gap-3 rounded-[28px] bg-shield-canvas p-3">
+                  <div className="flex items-center gap-2 border-b border-white/[0.06] pb-2">
+                    <ShieldCheck className="h-4 w-4 text-shield-brand" />
+                    <span className="text-xs font-semibold text-shield-fg">Shield AI</span>
+                  </div>
+                  <div className="ml-auto max-w-[80%] rounded-2xl rounded-br-md bg-gradient-to-r from-shield-brand to-shield-brand-dim px-3 py-2 text-[11px] font-medium text-white">
+                    Is the Bible historically reliable?
+                  </div>
+                  <div className="max-w-[90%] rounded-2xl rounded-bl-md border border-white/[0.06] bg-shield-panel/70 px-3 py-2 text-[11px] leading-relaxed text-shield-fg/90">
+                    The New Testament is the best-attested text from the ancient world —
+                    thousands of early manuscripts.
+                    <span className="mt-2 flex gap-1">
+                      <span className="rounded-full border border-shield-accent/25 bg-shield-accent/[0.08] px-2 py-0.5 text-[9px] text-shield-accent">
+                        Luke 1:1–4
+                      </span>
+                    </span>
+                  </div>
+                  <div className="mt-auto grid grid-cols-4 gap-1 border-t border-white/[0.06] pt-2 text-center text-[9px] text-shield-muted">
+                    <span className="text-shield-brand">Chat</span>
+                    <span>Bible</span>
+                    <span>Notes</span>
+                    <span>Church</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="relative py-16 md:py-24">
+        <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8">
+          <Reveal>
+            <div className="mb-12 text-center">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-shield-brand">
+                Pricing
+              </p>
+              <h2 className="mb-3 text-2xl font-bold tracking-tight text-shield-fg md:text-4xl">
+                Start free. Go deeper when you&apos;re ready.
+              </h2>
+              <p className="mx-auto max-w-xl text-sm text-shield-muted md:text-base">
+                No card needed to start. Paid plans add the scholarly and debate modes.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {PLANS.map((plan, i) => (
+              <Reveal key={plan.name} delay={i * 100}>
+                <div
+                  className={`flex h-full flex-col rounded-xl border p-6 shadow-shield-card backdrop-blur-md ${
+                    plan.available
+                      ? 'border-shield-brand/35 bg-shield-panel/60'
+                      : 'border-white/[0.06] bg-shield-panel/40'
+                  }`}
+                >
+                  <h3 className="mb-1 text-sm font-bold text-shield-fg">{plan.name}</h3>
+                  <p className="mb-5">
+                    <span className="text-3xl font-bold tracking-tight text-shield-fg">{plan.price}</span>
+                    <span className="text-sm text-shield-muted">{plan.cadence}</span>
+                  </p>
+                  <ul className="mb-6 flex-1 space-y-2.5">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2 text-sm text-shield-muted">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-shield-brand" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  {plan.available ? (
+                    <Link
+                      href="/chat"
+                      onClick={() => trackCta('pricing_free')}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-5 py-2.5 text-sm font-semibold text-white shadow-shield-glow-sm transition-all duration-300 hover:brightness-110"
+                    >
+                      Start free
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center justify-center rounded-lg border border-shield-edge px-5 py-2.5 text-sm font-semibold text-shield-muted">
+                      Upgrades coming soon
+                    </span>
+                  )}
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <p className="mt-6 text-center text-xs text-shield-muted">
+            Running a ministry or church? Team plans are on the way.
+          </p>
+        </div>
+      </section>
+
       {/* FAQ */}
       <section className="relative py-16 md:py-24">
         <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8">
@@ -478,6 +723,7 @@ export function Home() {
             <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/chat"
+                onClick={() => trackCta('footer_chat')}
                 className="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-7 py-3 text-sm font-semibold text-white shadow-shield-glow-sm transition-all duration-300 hover:brightness-110 hover:shadow-shield-glow"
               >
                 <Zap className="h-4 w-4 shrink-0" />
@@ -487,6 +733,7 @@ export function Home() {
 
               <Link
                 href="/bible"
+                onClick={() => trackCta('footer_bible')}
                 className="group inline-flex items-center justify-center gap-2 rounded-lg border border-shield-edge bg-transparent px-7 py-3 text-sm font-semibold text-shield-fg transition-all duration-300 hover:border-shield-brand hover:text-shield-brand"
               >
                 <BookOpen className="h-4 w-4 shrink-0" />

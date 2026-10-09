@@ -119,8 +119,8 @@ class NotificationService {
       if (data.verse) {
         await this.registration.showNotification('Daily Bible Verse', {
           body: `${data.verse.reference}: "${data.verse.text}"`,
-          icon: '/logo.png',
-          badge: '/logo.png',
+          icon: '/logo-256.png',
+          badge: '/logo-256.png',
           tag: 'daily-verse',
           requireInteraction: false
         });

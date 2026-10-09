@@ -639,7 +639,7 @@ export function Chat() {
           {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center px-4">
               <div className="w-full max-w-3xl text-center">
-                <img src="/logo.png" alt="Shield AI" className="mx-auto mb-5 h-14 w-14 object-contain drop-shadow-[0_0_16px_rgba(70,161,226,0.35)]" />
+                <img src="/logo-256.png" alt="Shield AI" className="mx-auto mb-5 h-14 w-14 object-contain drop-shadow-[0_0_16px_rgba(70,161,226,0.35)]" />
                 <h2 className="mb-2 text-2xl font-semibold text-shield-fg">What can I help with?</h2>
                 <p className="text-sm text-shield-muted">Ask a theological question, explore scripture, or test an argument.</p>
                 <div className="mx-auto mt-7 flex max-w-xl flex-wrap justify-center gap-2">

@@ -22,7 +22,7 @@ const Header = () => {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <Image
-              src="/logo.png"
+              src="/logo-256.png"
               alt="Shield AI"
               width={36}
               height={36}

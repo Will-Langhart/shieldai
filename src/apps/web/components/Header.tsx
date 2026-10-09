@@ -28,7 +28,7 @@ export function Header({ showNav = false }: HeaderProps = {}) {
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2.5">
               <Image
-                src="/logo.png"
+                src="/logo-256.png"
                 alt="Shield AI"
                 width={34}
                 height={34}

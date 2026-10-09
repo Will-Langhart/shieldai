@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, BookOpen, Send, ShieldCheck } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { trackCta } from './trackCta'
 
 interface Exchange {
   question: string
@@ -208,6 +209,7 @@ export function LiveChatDemo() {
           <Link
             href={{ pathname: '/chat', query: { q: PLACEHOLDER_QUESTIONS[placeholderIndex] } }}
             aria-label={`Ask Shield AI: ${PLACEHOLDER_QUESTIONS[placeholderIndex]}`}
+            onClick={() => trackCta('demo_question', { question: PLACEHOLDER_QUESTIONS[placeholderIndex] })}
             className="group flex items-center gap-3 rounded-xl border border-shield-edge/70 bg-shield-panel/60 px-4 py-2.5 transition-colors hover:border-shield-brand/50 hover:bg-shield-panel/80"
           >
             <p
@@ -226,6 +228,7 @@ export function LiveChatDemo() {
       <div className="mt-4 flex justify-center">
         <Link
           href="/chat"
+          onClick={() => trackCta('demo_try')}
           className="group inline-flex items-center gap-1.5 text-sm font-medium text-shield-brand transition-colors hover:text-shield-fg"
         >
           Try it yourself
