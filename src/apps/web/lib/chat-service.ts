@@ -361,7 +361,7 @@ export class ChatService {
       const conversation = await this.getOrCreateConversation(sessionId, supabaseClient);
 
       // Clear existing messages for this conversation
-      await supabase
+      await (supabaseClient || supabase)
         .from('messages')
         .delete()
         .eq('conversation_id', conversation.id);
