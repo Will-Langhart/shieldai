@@ -9,6 +9,7 @@ import { MemoryService } from '../../lib/memory-service';
 import { createServerSupabaseClient } from '../../lib/supabase';
 import { SubscriptionMiddleware } from '../../lib/subscription-middleware';
 import { logger, withCorrelationId, devLogger } from '../../lib/logger';
+import { writeStreamErrorNotice } from '../../lib/stream-error';
 import { applyChatRateLimit } from '../../lib/rate-limit';
 import {
   type ToolContext,
@@ -335,6 +336,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       } catch (streamErr) {
         logger.error('Streaming error', { cid }, streamErr);
+        writeStreamErrorNotice(res, fullText);
       }
       aiResponse = fullText;
 

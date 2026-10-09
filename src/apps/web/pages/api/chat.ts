@@ -15,6 +15,7 @@ import { BiblePineconeService } from '../../lib/bible-pinecone';
 import { EmbeddingService } from '../../lib/embeddings';
 import { VideoService } from '../../lib/video-service';
 import { logger, withCorrelationId, devLogger } from '../../lib/logger';
+import { writeStreamErrorNotice } from '../../lib/stream-error';
 import { applyChatRateLimit } from '../../lib/rate-limit';
 import agenticHandler from './chat-agentic';
 import graphHandler from './chat-graph';
@@ -641,9 +642,7 @@ Please mention these relevant videos in your response and explain how they can h
         return; // Important: stop further JSON response handling
       } catch (streamErr) {
         logger.error('Streaming error', { cid }, streamErr);
-        try {
-          res.write('\n');
-        } catch (_) {}
+        writeStreamErrorNotice(res, fullText);
         res.end();
         return;
       }
