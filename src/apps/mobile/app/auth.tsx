@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../contexts/auth';
+import { useAuth, OAuthProvider } from '../contexts/auth';
 
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -18,7 +18,7 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithProvider } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -45,6 +45,21 @@ export default function AuthScreen() {
     }
   };
 
+  const handleOAuth = async (provider: OAuthProvider) => {
+    setLoading(true);
+    try {
+      const { error } = await signInWithProvider(provider);
+      if (error) {
+        Alert.alert('Error', error.message);
+      }
+      // On success the auth listener updates the session and the layout redirects
+    } catch (error) {
+      Alert.alert('Error', 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -58,6 +73,33 @@ export default function AuthScreen() {
           <Text className="text-gray-600 text-center">
             Your AI-powered Bible companion
           </Text>
+        </View>
+
+        <View className="space-y-3 mb-6">
+          <TouchableOpacity
+            onPress={() => handleOAuth('google')}
+            disabled={loading}
+            className="border border-gray-300 rounded-lg py-3"
+          >
+            <Text className="text-center font-semibold text-base">
+              Continue with Google
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handleOAuth('azure')}
+            disabled={loading}
+            className="border border-gray-300 rounded-lg py-3"
+          >
+            <Text className="text-center font-semibold text-base">
+              Continue with Microsoft
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View className="flex-row items-center mb-6">
+          <View className="flex-1 h-px bg-gray-300" />
+          <Text className="mx-3 text-gray-500">or</Text>
+          <View className="flex-1 h-px bg-gray-300" />
         </View>
 
         <View className="space-y-4">

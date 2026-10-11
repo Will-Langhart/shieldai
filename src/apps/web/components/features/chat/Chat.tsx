@@ -7,6 +7,7 @@ import { navItems, isActivePath } from '../../layout/navItems'
 import { EnhancedMessage } from './EnhancedMessage'
 import { DenominationSelector } from '../../ui/DenominationSelector'
 import { UserButton } from '../../auth/UserButton'
+import { AuthModal } from '../../auth/AuthModal'
 import {
   Plus,
   Search,
@@ -39,6 +40,10 @@ interface Message {
   }
 }
 
+// Holds a signed-out user's message while they authenticate. sessionStorage
+// (not state) so it survives the full-page OAuth redirect.
+const PENDING_MESSAGE_KEY = 'shieldai-pending-message'
+
 interface Conversation {
   id: string
   title: string
@@ -47,7 +52,7 @@ interface Conversation {
 }
 
 export function Chat() {
-  const { user, session } = useAuth()
+  const { user, session, loading: authLoading } = useAuth()
   const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([])
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -65,6 +70,8 @@ export function Chat() {
   const [renameValue, setRenameValue] = useState('')
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const authSucceededRef = useRef(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const renameRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -229,6 +236,10 @@ export function Chat() {
   }, [session])
 
   const loadConversations = async () => {
+    if (!session) {
+      setConversations([])
+      return
+    }
     try {
       const conversationsList = await chatService.getConversations(session)
       // Convert conversations to match component interface
@@ -349,10 +360,7 @@ export function Chat() {
     }
   }
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return
-
-    const text = inputMessage
+  const sendText = async (text: string) => {
     const userMessage: Message = {
       id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       content: text,
@@ -366,6 +374,34 @@ export function Chat() {
     setInputMessage('')
     await streamAssistantReply(text)
   }
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return
+
+    // Signed-out users can compose, but must authenticate before sending.
+    if (!user) {
+      try { sessionStorage.setItem(PENDING_MESSAGE_KEY, inputMessage) } catch {}
+      setShowAuthModal(true)
+      return
+    }
+
+    await sendText(inputMessage)
+  }
+
+  // Once the user is signed in (via the modal or back from an OAuth redirect),
+  // send the message they tried to send while signed out.
+  useEffect(() => {
+    if (authLoading || !user) return
+    let pending: string | null = null
+    try {
+      pending = sessionStorage.getItem(PENDING_MESSAGE_KEY)
+      sessionStorage.removeItem(PENDING_MESSAGE_KEY)
+    } catch {}
+    if (pending?.trim()) {
+      setShowAuthModal(false)
+      sendText(pending)
+    }
+  }, [user, authLoading])
 
   // Regenerate the last assistant reply from the most recent user message.
   // When the conversation is persisted we ask the server for a true
@@ -724,6 +760,21 @@ export function Chat() {
           </div>
         </div>
       </div>
+
+      {showAuthModal && (
+        <AuthModal
+          initialView="signup"
+          // AuthModal calls onSuccess then onClose; keep the pending message on
+          // success so the signed-in effect can send it.
+          onSuccess={() => { authSucceededRef.current = true }}
+          onClose={() => {
+            setShowAuthModal(false)
+            if (!authSucceededRef.current) {
+              try { sessionStorage.removeItem(PENDING_MESSAGE_KEY) } catch {}
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

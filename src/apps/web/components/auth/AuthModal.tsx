@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Shield } from 'lucide-react'
 import { LoginForm } from './LoginForm'
 import { SignUpForm } from './SignUpForm'
@@ -25,18 +26,22 @@ export function AuthModal({ initialView = 'login', onClose, onSuccess }: AuthMod
     return () => { document.body.style.overflow = '' }
   }, [])
 
-  return (
+  // Portal to <body>: the modal is opened from the header, whose backdrop-blur
+  // would otherwise become the containing block for this fixed overlay.
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 overflow-y-auto"
       role="dialog"
       aria-modal="true"
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
+      {/* min-h-full keeps the panel centered but lets tall content scroll */}
+      <div className="flex min-h-full items-center justify-center p-4">
       {/* Panel */}
       <div className="relative w-full max-w-md rounded-2xl border border-shield-edge bg-shield-panel shadow-2xl">
         {/* Header */}
@@ -93,6 +98,8 @@ export function AuthModal({ initialView = 'login', onClose, onSuccess }: AuthMod
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </div>,
+    document.body
   )
 }
