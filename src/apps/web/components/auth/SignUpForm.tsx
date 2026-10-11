@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { OAuthButtons } from './OAuthButtons';
 
 interface SignUpFormProps {
   onSwitchToLogin?: () => void;
@@ -77,6 +78,8 @@ export const SignUpForm= ({ onSwitchToLogin }: SignUpFormProps) => {
             {error}
           </div>
         )}
+
+        <OAuthButtons onError={setError} />
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createClient, User, Session } from '@supabase/supabase-js';
 
+export type OAuthProvider = 'google' | 'azure';
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -20,6 +22,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithProvider: (provider: OAuthProvider) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
 }
@@ -107,6 +110,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return { error };
   };
 
+  // Redirects to the provider; Supabase sends the user back to the current
+  // page and the client picks the session up from the URL on load.
+  const signInWithProvider = async (provider: OAuthProvider) => {
+    if (!supabase) {
+      return { error: new Error('Supabase not configured') };
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}${window.location.pathname}`,
+        // Azure only returns an email claim when the email scope is requested
+        scopes: provider === 'azure' ? 'email' : undefined,
+      },
+    });
+    return { error };
+  };
+
   const signOut = async () => {
     if (supabase) {
       await supabase.auth.signOut();
@@ -129,6 +149,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
     signIn,
     signUp,
+    signInWithProvider,
     signOut,
     resetPassword,
   };
