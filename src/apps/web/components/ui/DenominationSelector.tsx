@@ -22,8 +22,9 @@ async function getToken(): Promise<string | null> {
 }
 
 interface DenominationSelectorProps {
-  /** 'sidebar' = compact pill for sidebars; 'panel' = full-width card for settings panels */
-  variant?: 'sidebar' | 'panel'
+  /** 'sidebar' = compact pill for sidebars; 'panel' = full-width card for settings panels;
+   *  'pill' = inline chip for the chat composer (menu opens upward) */
+  variant?: 'sidebar' | 'panel' | 'pill'
   onDenominationChange?: (denomination: Denomination | null) => void
 }
 
@@ -166,22 +167,31 @@ export function DenominationSelector({
     )
   }
 
-  // sidebar variant — compact pill dropdown
+  const isPill = variant === 'pill'
+
+  // sidebar / pill variants — compact dropdown
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(prev => !prev)}
-        className={`flex w-full items-center space-x-2 rounded-lg px-3 py-2 text-xs transition-colors ${
-          denomination
-            ? 'bg-shield-brand/10 border border-shield-brand/30 text-shield-fg hover:bg-shield-brand/15'
-            : 'bg-shield-elevated border border-shield-edge text-shield-muted hover:text-shield-fg hover:border-shield-edge-strong'
-        }`}
+        title="Denomination"
+        className={
+          isPill
+            ? `flex max-w-[11rem] items-center gap-1.5 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-shield-elevated ${
+                denomination ? 'text-shield-fg' : 'text-shield-muted hover:text-shield-fg'
+              }`
+            : `flex w-full items-center space-x-2 rounded-lg px-3 py-2 text-xs transition-colors ${
+                denomination
+                  ? 'bg-shield-brand/10 border border-shield-brand/30 text-shield-fg hover:bg-shield-brand/15'
+                  : 'bg-shield-elevated border border-shield-edge text-shield-muted hover:text-shield-fg hover:border-shield-edge-strong'
+              }`
+        }
       >
         <Church className="w-3.5 h-3.5 flex-shrink-0" />
         <span className="flex-1 text-left truncate">
           {status === 'saved'
             ? `${denomination ?? 'None'} ✓`
-            : denomination ?? 'Set denomination'}
+            : denomination ?? (isPill ? 'Tradition' : 'Set denomination')}
         </span>
         {saving ? (
           <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
@@ -193,7 +203,7 @@ export function DenominationSelector({
       </button>
 
       {open && (
-        <div className="absolute bottom-full mb-1 left-0 w-64 bg-shield-panel border border-shield-edge rounded-xl shadow-xl z-50 overflow-hidden">
+        <div className={`absolute bottom-full left-0 z-50 w-64 overflow-hidden rounded-xl border border-shield-edge shadow-xl ${isPill ? 'mb-2 bg-shield-surface' : 'mb-1 bg-shield-panel'}`}>
           <div className="px-3 py-2 border-b border-shield-edge">
             <p className="text-xs text-shield-muted font-medium">Denomination</p>
             {noSession ? (

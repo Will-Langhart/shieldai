@@ -8,24 +8,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Channel vars (see styles/globals.css) so a subtree — the chat — can
+        // re-skin every shield-* utility, opacity modifiers included.
         shield: {
-          void: '#0B0D12',
-          deep: '#0F1117',
-          canvas: '#1A1D24',
-          surface: '#1E2128',
-          layer: '#222530',
-          tier: '#262A36',
-          mist: '#2A2E3A',
-          panel: '#2C303A',
-          elevated: '#3A404B',
-          edge: '#3A404B',
-          'edge-strong': '#4A505B',
-          muted: '#9CA3AF',
-          fg: '#E8EAED',
-          brand: '#46A1E2',
-          'brand-dim': '#3A8BC9',
-          accent: '#E8B44C',
-          'accent-dim': '#C99A35',
+          void: 'rgb(var(--sh-void) / <alpha-value>)',
+          deep: 'rgb(var(--sh-deep) / <alpha-value>)',
+          canvas: 'rgb(var(--sh-canvas) / <alpha-value>)',
+          surface: 'rgb(var(--sh-surface) / <alpha-value>)',
+          layer: 'rgb(var(--sh-layer) / <alpha-value>)',
+          tier: 'rgb(var(--sh-tier) / <alpha-value>)',
+          mist: 'rgb(var(--sh-mist) / <alpha-value>)',
+          panel: 'rgb(var(--sh-panel) / <alpha-value>)',
+          elevated: 'rgb(var(--sh-elevated) / <alpha-value>)',
+          edge: 'rgb(var(--sh-edge) / <alpha-value>)',
+          'edge-strong': 'rgb(var(--sh-edge-strong) / <alpha-value>)',
+          muted: 'rgb(var(--sh-muted) / <alpha-value>)',
+          fg: 'rgb(var(--sh-fg) / <alpha-value>)',
+          brand: 'rgb(var(--sh-brand) / <alpha-value>)',
+          'brand-dim': 'rgb(var(--sh-brand-dim) / <alpha-value>)',
+          accent: 'rgb(var(--sh-accent) / <alpha-value>)',
+          'accent-dim': 'rgb(var(--sh-accent-dim) / <alpha-value>)',
+          'on-brand': 'rgb(var(--sh-on-brand) / <alpha-value>)',
         },
         'shield-black': '#000000',
         'shield-white': '#FFFFFF',
@@ -36,6 +39,7 @@ module.exports = {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         scripture: ['Literata', 'Georgia', 'Cambria', 'serif'],
+        serif: ['Literata', 'Georgia', 'Cambria', 'serif'],
       },
       backgroundImage: {
         'shield-radial':

@@ -4,6 +4,25 @@
 
 /* Shield design tokens + theme variables */
 :root {
+  /* shield-* palette as RGB channels (consumed by tailwind.config.js) */
+  --sh-void: 11 13 18;
+  --sh-deep: 15 17 23;
+  --sh-canvas: 26 29 36;
+  --sh-surface: 30 33 40;
+  --sh-layer: 34 37 48;
+  --sh-tier: 38 42 54;
+  --sh-mist: 42 46 58;
+  --sh-panel: 44 48 58;
+  --sh-elevated: 58 64 75;
+  --sh-edge: 58 64 75;
+  --sh-edge-strong: 74 80 91;
+  --sh-muted: 156 163 175;
+  --sh-fg: 232 234 237;
+  --sh-brand: 70 161 226;
+  --sh-brand-dim: 58 139 201;
+  --sh-accent: 232 180 76;
+  --sh-accent-dim: 201 154 53;
+  --sh-on-brand: 255 255 255;
   --shield-canvas: #1a1d24;
   --shield-canvas-soft: #151922;
   --shield-canvas-deep: #0f1218;
@@ -32,6 +51,148 @@
   --color-surface: #2c303a;
   --color-text: #e8eaed;
   --color-text-secondary: #9ca3af;
+}
+
+/* Chat re-skin: warm, Claude-like palette scoped to the chat page. Follows the
+   OS by default; data-chat-theme="light|dark" pins an explicit choice. */
+.chat-theme {
+  color-scheme: light;
+  --sh-void: 237 232 220;
+  --sh-deep: 240 236 226;
+  --sh-canvas: 245 242 234;
+  --sh-surface: 252 251 247;
+  --sh-layer: 240 236 226;
+  --sh-tier: 234 229 217;
+  --sh-mist: 230 225 212;
+  --sh-panel: 237 233 223;
+  --sh-elevated: 227 222 209;
+  --sh-edge: 220 213 198;
+  --sh-edge-strong: 200 192 174;
+  --sh-muted: 110 106 97;
+  --sh-fg: 31 30 28;
+  --sh-brand: 181 118 58;
+  --sh-brand-dim: 154 98 48;
+  --sh-accent: 181 118 58;
+  --sh-accent-dim: 154 98 48;
+  --sh-on-brand: 255 255 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  .chat-theme:not([data-chat-theme='light']) {
+    color-scheme: dark;
+    --sh-void: 26 26 24;
+    --sh-deep: 28 28 26;
+    --sh-canvas: 38 38 36;
+    --sh-surface: 48 48 46;
+    --sh-layer: 43 43 41;
+    --sh-tier: 46 46 43;
+    --sh-mist: 51 51 47;
+    --sh-panel: 31 30 29;
+    --sh-elevated: 56 55 51;
+    --sh-edge: 59 58 54;
+    --sh-edge-strong: 78 76 71;
+    --sh-muted: 163 158 147;
+    --sh-fg: 236 233 225;
+    --sh-brand: 212 162 106;
+    --sh-brand-dim: 191 138 82;
+    --sh-accent: 212 162 106;
+    --sh-accent-dim: 191 138 82;
+    --sh-on-brand: 31 30 28;
+  }
+}
+
+.chat-theme[data-chat-theme='dark'] {
+  color-scheme: dark;
+  --sh-void: 26 26 24;
+  --sh-deep: 28 28 26;
+  --sh-canvas: 38 38 36;
+  --sh-surface: 48 48 46;
+  --sh-layer: 43 43 41;
+  --sh-tier: 46 46 43;
+  --sh-mist: 51 51 47;
+  --sh-panel: 31 30 29;
+  --sh-elevated: 56 55 51;
+  --sh-edge: 59 58 54;
+  --sh-edge-strong: 78 76 71;
+  --sh-muted: 163 158 147;
+  --sh-fg: 236 233 225;
+  --sh-brand: 212 162 106;
+  --sh-brand-dim: 191 138 82;
+  --sh-accent: 212 162 106;
+  --sh-accent-dim: 191 138 82;
+  --sh-on-brand: 31 30 28;
+}
+
+.chat-theme ::selection {
+  background-color: rgb(var(--sh-brand) / 0.25);
+  color: inherit;
+}
+
+/* Chat motion: messages ease in, a soft caret trails streaming text, the
+   shield mark breathes while a reply is in flight, and the "thinking" label
+   shimmers. All disabled for reduced-motion users. */
+@keyframes chatMessageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes chatCaret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+@keyframes chatMarkPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.92); }
+}
+@keyframes chatShimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.chat-message-in {
+  animation: chatMessageIn 0.28s ease-out both;
+}
+
+.chat-streaming .shield-markdown > :last-child:not(ul):not(ol):not(pre):not(table)::after,
+.chat-streaming .shield-markdown > ul:last-child > li:last-child::after,
+.chat-streaming .shield-markdown > ol:last-child > li:last-child::after {
+  content: '';
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  margin-left: 0.3em;
+  border-radius: 9999px;
+  background: rgb(var(--sh-brand));
+  vertical-align: middle;
+  animation: chatCaret 1s ease-in-out infinite;
+}
+
+.chat-mark-pulse {
+  animation: chatMarkPulse 1.4s ease-in-out infinite;
+}
+
+.chat-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--sh-muted)) 0%,
+    rgb(var(--sh-muted)) 40%,
+    rgb(var(--sh-fg)) 50%,
+    rgb(var(--sh-muted)) 60%,
+    rgb(var(--sh-muted)) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: chatShimmer 2.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-message-in,
+  .chat-mark-pulse,
+  .chat-shimmer,
+  .chat-streaming .shield-markdown *::after {
+    animation: none !important;
+  }
 }
 
 /* Base styles */
