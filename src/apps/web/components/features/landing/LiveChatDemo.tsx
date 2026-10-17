@@ -51,9 +51,9 @@ const PLACEHOLDER_QUESTIONS = [
 type Phase = 'asking' | 'thinking' | 'answering' | 'done'
 
 const MODE_STYLES: Record<Exchange['mode'], string> = {
-  Gentle: 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300',
+  Gentle: 'border-shield-edge-strong bg-shield-elevated/60 text-shield-fg/80',
   Scholarly: 'border-shield-brand/30 bg-shield-brand/10 text-shield-brand',
-  Debate: 'border-shield-accent/30 bg-shield-accent/10 text-shield-accent',
+  Debate: 'border-shield-fg/20 bg-shield-fg/5 text-shield-fg',
 }
 
 /**
@@ -141,13 +141,13 @@ export function LiveChatDemo() {
         aria-hidden
       />
 
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-shield-deep/80 shadow-shield-card backdrop-blur-xl">
+      <div className="relative overflow-hidden rounded-2xl border border-shield-edge/60 bg-shield-deep/80 shadow-shield-card backdrop-blur-xl">
         {/* Window chrome */}
-        <div className="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.02] px-4 py-3">
+        <div className="flex items-center justify-between border-b border-shield-edge/60 bg-shield-elevated/30 px-4 py-3">
           <div className="flex items-center gap-1.5" aria-hidden>
-            <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
-            <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
-            <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
+            <span className="h-2.5 w-2.5 rounded-full bg-shield-elevated/60" />
+            <span className="h-2.5 w-2.5 rounded-full bg-shield-elevated/60" />
+            <span className="h-2.5 w-2.5 rounded-full bg-shield-elevated/60" />
           </div>
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-shield-muted">
             <ShieldCheck className="h-3.5 w-3.5 text-shield-brand" />
@@ -163,14 +163,14 @@ export function LiveChatDemo() {
         {/* Conversation */}
         <div className="flex h-[340px] flex-col gap-4 overflow-hidden px-4 py-5 sm:px-6 md:h-[320px]">
           <div key={`q-${index}`} className="flex justify-end demo-message">
-            <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-r from-shield-brand to-shield-brand-dim px-4 py-2.5 text-left text-sm font-medium text-white shadow-shield-glow-sm">
+            <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gradient-to-r from-shield-brand to-shield-brand-dim px-4 py-2.5 text-left text-sm font-medium text-shield-on-brand shadow-shield-glow-sm">
               {exchange.question}
             </div>
           </div>
 
           {effectivePhase === 'thinking' && (
             <div className="flex justify-start demo-message">
-              <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-white/[0.06] bg-shield-panel/70 px-4 py-3">
+              <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-shield-edge/60 bg-shield-panel/70 px-4 py-3">
                 <span className="demo-dot" />
                 <span className="demo-dot" style={{ animationDelay: '0.15s' }} />
                 <span className="demo-dot" style={{ animationDelay: '0.3s' }} />
@@ -180,7 +180,7 @@ export function LiveChatDemo() {
 
           {showAnswer && (
             <div className="flex justify-start demo-message">
-              <div className="max-w-[92%] rounded-2xl rounded-bl-md border border-white/[0.06] bg-shield-panel/70 px-4 py-3 text-left">
+              <div className="max-w-[92%] rounded-2xl rounded-bl-md border border-shield-edge/60 bg-shield-panel/70 px-4 py-3 text-left">
                 <p className="text-sm leading-relaxed text-shield-fg/95">
                   {answerText}
                   {effectivePhase === 'answering' && <span className="demo-caret" aria-hidden />}
@@ -204,7 +204,7 @@ export function LiveChatDemo() {
         </div>
 
         {/* Mock input — clicking opens the real chat with this question pre-filled */}
-        <div className="border-t border-white/[0.06] bg-white/[0.02] px-4 py-3 sm:px-6">
+        <div className="border-t border-shield-edge/60 bg-shield-elevated/30 px-4 py-3 sm:px-6">
           <Link
             href={{ pathname: '/chat', query: { q: PLACEHOLDER_QUESTIONS[placeholderIndex] } }}
             aria-label={`Ask Shield AI: ${PLACEHOLDER_QUESTIONS[placeholderIndex]}`}
@@ -217,7 +217,7 @@ export function LiveChatDemo() {
               {PLACEHOLDER_QUESTIONS[placeholderIndex]}
             </p>
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim transition-transform group-hover:scale-105">
-              <Send className="h-3.5 w-3.5 text-white" />
+              <Send className="h-3.5 w-3.5 text-shield-on-brand" />
             </span>
           </Link>
         </div>

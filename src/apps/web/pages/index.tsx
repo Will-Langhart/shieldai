@@ -3,6 +3,7 @@ import { Header } from '../components/Header'
 import Footer from '../components/layout/Footer'
 import { Seo } from '../components/Seo'
 import { FAQ_ITEMS } from '../components/features/landing/faqData'
+import { useWarmTheme } from '../hooks/useWarmTheme'
 
 const webApplicationSchema = {
   '@context': 'https://schema.org',
@@ -36,8 +37,9 @@ const faqSchema = {
 }
 
 export default function IndexPage() {
+  const { themeAttr } = useWarmTheme()
   return (
-    <div className="min-h-screen relative">
+    <div className="warm-theme min-h-screen relative" {...themeAttr}>
       <Seo
         title="Shield AI — AI-Powered Bible Study & Christian Apologetics"
         titleTemplate={false}

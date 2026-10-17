@@ -32,15 +32,15 @@ export function Header({ showNav = false }: HeaderProps = {}) {
                 alt="Shield AI"
                 width={34}
                 height={34}
-                className="rounded-lg shadow-shield-glow-sm"
+                className="rounded-lg"
                 priority
               />
-              <span className="text-2xl font-semibold text-shield-fg tracking-tight">Shield AI</span>
+              <span className="font-serif text-2xl font-semibold text-shield-fg tracking-tight">Shield AI</span>
             </Link>
           </div>
 
           {showNav && (
-            <nav aria-label="Primary" className="hidden md:flex items-center space-x-1.5 rounded-2xl border border-white/[0.06] bg-shield-panel/45 px-2 py-1.5 backdrop-blur-md">
+            <nav aria-label="Primary" className="hidden md:flex items-center space-x-1.5 rounded-2xl border border-shield-edge/60 bg-shield-panel/45 px-2 py-1.5 backdrop-blur-md">
               {navItems.map((item) => {
                 const Icon = item.icon
                 const active = isActivePath(pathname, item.path)
@@ -86,7 +86,7 @@ export function Header({ showNav = false }: HeaderProps = {}) {
           <nav
             id="header-mobile-nav"
             aria-label="Primary"
-            className="md:hidden border-t border-white/[0.07] py-2.5 space-y-1"
+            className="md:hidden border-t border-shield-edge/60 py-2.5 space-y-1"
           >
             {navItems.map((item) => {
               const Icon = item.icon

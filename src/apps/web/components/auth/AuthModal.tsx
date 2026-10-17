@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Shield } from 'lucide-react'
+import { X } from 'lucide-react'
 import { LoginForm } from './LoginForm'
 import { SignUpForm } from './SignUpForm'
 
@@ -47,10 +47,8 @@ export function AuthModal({ initialView = 'login', onClose, onSuccess }: AuthMod
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-shield-glow-sm">
-              <Shield className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-bold text-shield-fg">Shield AI</span>
+            <img src="/logo.png" alt="" className="h-8 w-8 rounded-lg" />
+            <span className="font-serif font-semibold text-shield-fg">Shield AI</span>
           </div>
           <button
             onClick={onClose}
@@ -66,7 +64,7 @@ export function AuthModal({ initialView = 'login', onClose, onSuccess }: AuthMod
             onClick={() => setView('login')}
             className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
               view === 'login'
-                ? 'bg-shield-brand text-white shadow-shield-glow-sm'
+                ? 'bg-shield-brand text-shield-on-brand shadow-shield-glow-sm'
                 : 'text-shield-muted hover:text-shield-fg'
             }`}
           >
@@ -76,7 +74,7 @@ export function AuthModal({ initialView = 'login', onClose, onSuccess }: AuthMod
             onClick={() => setView('signup')}
             className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
               view === 'signup'
-                ? 'bg-shield-brand text-white shadow-shield-glow-sm'
+                ? 'bg-shield-brand text-shield-on-brand shadow-shield-glow-sm'
                 : 'text-shield-muted hover:text-shield-fg'
             }`}
           >

@@ -9,10 +9,8 @@ const Footer = () => {
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-shield-glow-sm">
-                <span className="text-white font-bold text-lg">S</span>
-              </div>
-              <span className="text-xl font-bold text-shield-fg">Shield AI</span>
+              <img src="/logo.png" alt="" className="h-8 w-8 rounded-lg" />
+              <span className="font-serif text-xl font-semibold text-shield-fg">Shield AI</span>
             </div>
             <p className="text-shield-muted text-sm max-w-md">
               Your Christian AI assistant for Bible study and spiritual guidance. 
@@ -64,7 +62,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-white/[0.07] pt-8">
+        <div className="mt-10 border-t border-shield-edge/60 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-shield-muted text-sm">
               © 2024 Shield AI. All rights reserved.

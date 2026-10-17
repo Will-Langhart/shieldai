@@ -5,20 +5,30 @@ import { chatService } from '../../../services/chatService'
 import { useRouter } from 'next/router'
 import { navItems, isActivePath } from '../../layout/navItems'
 import { EnhancedMessage } from './EnhancedMessage'
+import { ShieldMark } from './ShieldMark'
 import { DenominationSelector } from '../../ui/DenominationSelector'
 import { UserButton } from '../../auth/UserButton'
 import { AuthModal } from '../../auth/AuthModal'
+import { useWarmTheme } from '../../../hooks/useWarmTheme'
 import {
   Plus,
   Search,
   ChevronDown,
-  Send,
-  Pin,
-  PinOff,
+  ArrowUp,
+  ArrowDown,
+  Check,
+  Feather,
+  GraduationCap,
+  Swords,
+  Star,
+  StarOff,
   Pencil,
   Trash2,
   MoreHorizontal,
-  X
+  X,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react'
 
 interface Message {
@@ -43,6 +53,51 @@ interface Message {
 // Holds a signed-out user's message while they authenticate. sessionStorage
 // (not state) so it survives the full-page OAuth redirect.
 const PENDING_MESSAGE_KEY = 'shieldai-pending-message'
+const SIDEBAR_KEY = 'shieldai-sidebar-collapsed'
+
+type ChatMode = 'gentle' | 'scholarly' | 'debate'
+
+// Plan gating is enforced server-side (lib/chat-access.ts); `plan` is just a hint.
+const MODES: { value: ChatMode; label: string; description: string; plan?: string; icon: typeof Feather }[] = [
+  { value: 'gentle', label: 'Gentle', description: 'Warm, pastoral answers', icon: Feather },
+  { value: 'scholarly', label: 'Scholarly', description: 'Deeper sources and argument', plan: 'Student', icon: GraduationCap },
+  { value: 'debate', label: 'Debate', description: 'Steel-man objections, then respond', plan: 'Scholar', icon: Swords },
+]
+
+function timeOfDayGreeting() {
+  const h = new Date().getHours()
+  if (h < 5) return 'Peace be with you'
+  if (h < 12) return 'Good morning'
+  if (h < 18) return 'Good afternoon'
+  return 'Good evening'
+}
+
+// Buckets conversations Claude-style by last activity. Input is assumed to be
+// sorted newest-first (as chatService returns it); order is preserved within
+// each bucket.
+function groupByRecency<T extends { updated_at: string }>(items: T[]) {
+  const startOfToday = new Date()
+  startOfToday.setHours(0, 0, 0, 0)
+  const day = 24 * 60 * 60 * 1000
+  const groups: { label: string; items: T[] }[] = [
+    { label: 'Today', items: [] },
+    { label: 'Yesterday', items: [] },
+    { label: 'Previous 7 days', items: [] },
+    { label: 'Previous 30 days', items: [] },
+    { label: 'Older', items: [] },
+  ]
+  for (const item of items) {
+    const t = new Date(item.updated_at).getTime()
+    const idx =
+      t >= startOfToday.getTime() ? 0
+      : t >= startOfToday.getTime() - day ? 1
+      : t >= startOfToday.getTime() - 7 * day ? 2
+      : t >= startOfToday.getTime() - 30 * day ? 3
+      : 4
+    groups[idx].items.push(item)
+  }
+  return groups.filter(g => g.items.length > 0)
+}
 
 interface Conversation {
   id: string
@@ -59,7 +114,10 @@ export function Chat() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedMode, setSelectedMode] = useState<'gentle' | 'scholarly' | 'debate'>('gentle')
+  const [selectedMode, setSelectedMode] = useState<ChatMode>('gentle')
+  const [modeMenuOpen, setModeMenuOpen] = useState(false)
+  const [showScrollDown, setShowScrollDown] = useState(false)
+  const [greeting, setGreeting] = useState('Welcome')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearch, setShowSearch] = useState(false)
@@ -71,11 +129,16 @@ export function Chat() {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const { pref: themePref, cycle: cycleTheme, themeAttr } = useWarmTheme()
   const authSucceededRef = useRef(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const renameRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const modeMenuRef = useRef<HTMLDivElement>(null)
+  // Follow the stream only while the reader is already at the bottom.
+  const stickToBottomRef = useRef(true)
 
   // Rotating labels shown while the multi-agent graph works before the first
   // token (retrieval + specialists run first, ~a few seconds), so the wait reads
@@ -118,13 +181,30 @@ export function Chat() {
     </svg>
   )
 
-  // Load pinned from localStorage on mount
+  // Load pinned and sidebar preferences from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem('shieldai-pinned')
       if (stored) setPinnedIds(JSON.parse(stored))
+      setGreeting(timeOfDayGreeting())
+      // The drawer always starts closed on phones; desktop remembers the rail state.
+      if (window.innerWidth >= 768 && localStorage.getItem(SIDEBAR_KEY) === 'false') {
+        setSidebarCollapsed(false)
+      }
     } catch {}
   }, [])
+
+  const setSidebar = (collapsed: boolean) => {
+    setSidebarCollapsed(collapsed)
+    try {
+      if (window.innerWidth >= 768) localStorage.setItem(SIDEBAR_KEY, String(collapsed))
+    } catch {}
+  }
+
+  // On phones the sidebar is an overlay drawer, so close it after navigating.
+  const closeDrawerOnMobile = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) setSidebarCollapsed(true)
+  }
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -132,6 +212,9 @@ export function Chat() {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpenId(null)
         setMenuPos(null)
+      }
+      if (modeMenuRef.current && !modeMenuRef.current.contains(e.target as Node)) {
+        setModeMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClick)
@@ -212,10 +295,26 @@ export function Chat() {
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`
   }, [inputMessage])
 
-  // Keep the latest message in view as the conversation grows.
+  // Keep the latest message in view as the conversation grows — unless the
+  // reader has scrolled up to re-read something.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (stickToBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: isLoading ? 'auto' : 'smooth', block: 'end' })
+    }
   }, [messages, isLoading])
+
+  const handleMessagesScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight
+    stickToBottomRef.current = distance < 80
+    setShowScrollDown(distance > 240)
+  }
+
+  const scrollToBottom = () => {
+    stickToBottomRef.current = true
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }
 
   // Pre-fill the composer from ?q= (set by the landing-page demo), then drop
   // the param so a refresh doesn't re-fill it. Not auto-sent, so it never
@@ -370,6 +469,7 @@ export function Chat() {
       metadata: {}
     }
 
+    stickToBottomRef.current = true
     setMessages(prev => [...prev, userMessage])
     setInputMessage('')
     await streamAssistantReply(text)
@@ -419,29 +519,52 @@ export function Chat() {
   const handleNewTopic = () => {
     setMessages([])
     setCurrentConversationId(null)
+    closeDrawerOnMobile()
+    setTimeout(() => textareaRef.current?.focus(), 0)
+  }
+
+  const openSearch = () => {
+    setSidebar(false)
+    setShowSearch(true)
   }
 
   const filteredConversations = conversations.filter(conv =>
     conv.title.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const pinnedConversations = filteredConversations.filter(c => pinnedIds.includes(c.id))
-  const recentConversations = filteredConversations.filter(c => !pinnedIds.includes(c.id))
+  const starredConversations = filteredConversations.filter(c => pinnedIds.includes(c.id))
+  const recencyGroups = groupByRecency(filteredConversations.filter(c => !pinnedIds.includes(c.id)))
+  const currentTitle = conversations.find(c => c.id === currentConversationId)?.title
+  // The chat page itself is where the user already is; the rest are app links.
+  const appLinks = navItems.filter(item => item.path !== '/chat')
 
-  const ConversationItem = ({ conv }: { conv: Conversation }) => {
+  const ThemeIcon = themePref === 'light' ? Sun : themePref === 'dark' ? Moon : Monitor
+  const themeLabel = themePref === 'light' ? 'Light' : themePref === 'dark' ? 'Dark' : 'System'
+
+  const userInitial =
+    (user?.user_metadata?.full_name as string | undefined)?.charAt(0)?.toUpperCase() ||
+    user?.email?.charAt(0)?.toUpperCase()
+
+  // Plain render function (not a component) so the rename input keeps focus
+  // across parent re-renders instead of remounting.
+  const renderConversation = (conv: Conversation) => {
     const isActive = currentConversationId === conv.id
-    const isPinned = pinnedIds.includes(conv.id)
     const isMenuOpen = menuOpenId === conv.id
     const isRenaming = renamingId === conv.id
 
     return (
       <div
-        className={`group relative flex items-center rounded-lg px-3 py-2 cursor-pointer transition-colors ${
+        key={conv.id}
+        className={`group relative flex items-center rounded-lg px-2.5 py-1.5 cursor-pointer transition-colors ${
           isActive
             ? 'bg-shield-elevated text-shield-fg'
-            : 'text-shield-muted hover:bg-shield-elevated hover:text-shield-fg'
+            : 'text-shield-fg/80 hover:bg-shield-elevated/70 hover:text-shield-fg'
         }`}
-        onClick={() => !isRenaming && loadConversation(conv.id)}
+        onClick={() => {
+          if (isRenaming) return
+          loadConversation(conv.id)
+          closeDrawerOnMobile()
+        }}
       >
         {isRenaming ? (
           <input
@@ -454,15 +577,14 @@ export function Chat() {
               if (e.key === 'Escape') setRenamingId(null)
             }}
             onClick={e => e.stopPropagation()}
-            className="flex-1 bg-shield-canvas border border-shield-brand rounded px-2 py-0.5 text-sm text-shield-fg focus:outline-none focus:ring-1 focus:ring-shield-brand"
+            className="flex-1 rounded border border-shield-brand bg-shield-surface px-2 py-0.5 text-[13px] text-shield-fg focus:outline-none focus:ring-1 focus:ring-shield-brand"
           />
         ) : (
-          <span className="flex-1 text-sm truncate pr-6">{conv.title}</span>
+          <span className="flex-1 truncate pr-6 text-[13px]">{conv.title}</span>
         )}
 
-        {/* "..." menu button — visible on hover or when menu is open */}
         {!isRenaming && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+          <div className="absolute right-1.5 top-1/2 -translate-y-1/2">
             <button
               onClick={e => {
                 e.stopPropagation()
@@ -475,9 +597,10 @@ export function Chat() {
                   setMenuOpenId(conv.id)
                 }
               }}
-              className={`p-1 rounded transition-opacity ${
+              className={`rounded p-1 transition-opacity ${
                 isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-              } hover:bg-shield-panel text-shield-muted hover:text-shield-fg`}
+              } text-shield-muted hover:bg-shield-canvas hover:text-shield-fg`}
+              title="More"
             >
               <MoreHorizontal className="h-3.5 w-3.5" />
             </button>
@@ -487,148 +610,288 @@ export function Chat() {
     )
   }
 
-  return (
-    <div className="shield-page-bg flex h-screen text-shield-fg">
-      {/* Sidebar */}
-      <div className={`${sidebarCollapsed ? 'w-0' : 'w-64'} transition-all duration-300 overflow-hidden border-r border-white/[0.08] bg-shield-panel/75 backdrop-blur-xl flex flex-col flex-shrink-0`}>
-        {/* Sidebar header */}
-        <div className="flex items-center justify-between px-3 pt-3 pb-2">
+  const firstName = (user?.user_metadata?.full_name as string | undefined)?.trim().split(/\s+/)[0]
+  const activeMode = MODES.find(m => m.value === selectedMode) ?? MODES[0]
+  const ActiveModeIcon = activeMode.icon
+
+  // Shared by the centered hero and the bottom-pinned layout.
+  const renderComposer = (hero: boolean) => (
+    <div className="rounded-2xl border border-shield-edge bg-shield-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_30px_-14px_rgba(0,0,0,0.18)] transition-colors focus-within:border-shield-edge-strong">
+      <textarea
+        ref={textareaRef}
+        rows={hero ? 2 : 1}
+        value={inputMessage}
+        onChange={(e) => setInputMessage(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            handleSendMessage()
+          }
+        }}
+        placeholder={hero ? apologeticsQuestions[currentPlaceholderIndex] : 'Reply to Shield AI…'}
+        className={`block max-h-[200px] w-full resize-none bg-transparent px-4 pt-3.5 text-[15px] leading-6 text-shield-fg placeholder:text-shield-muted/80 focus:outline-none scrollbar-hide ${
+          hero ? 'min-h-[60px]' : 'min-h-[28px]'
+        }`}
+      />
+      <div className="flex items-center gap-1 px-2.5 pb-2.5 pt-1.5">
+        {/* Mode pill */}
+        <div ref={modeMenuRef} className="relative">
           <button
-            onClick={() => setSidebarCollapsed(true)}
-            className="p-1.5 rounded-md hover:bg-shield-elevated transition-colors text-shield-muted hover:text-shield-fg"
-            title="Collapse sidebar"
+            onClick={() => setModeMenuOpen(o => !o)}
+            className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-shield-muted transition-colors hover:bg-shield-elevated hover:text-shield-fg"
+            title="Response style"
           >
-            <SidebarToggleIcon />
+            <ActiveModeIcon className="h-3.5 w-3.5" />
+            {activeMode.label}
+            <ChevronDown className={`h-3 w-3 transition-transform ${modeMenuOpen ? 'rotate-180' : ''}`} />
           </button>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => { setShowSearch(s => !s); setSearchQuery('') }}
-              className="p-1.5 rounded-md hover:bg-shield-elevated transition-colors text-shield-muted hover:text-shield-fg"
-              title="Search"
+          {modeMenuOpen && (
+            <div
+              className={`absolute left-0 z-50 w-64 overflow-hidden rounded-xl border border-shield-edge bg-shield-surface py-1 shadow-xl ${
+                hero ? 'top-full mt-2' : 'bottom-full mb-2'
+              }`}
             >
-              <Search className="h-4 w-4" />
+              {MODES.map(mode => {
+                const Icon = mode.icon
+                return (
+                  <button
+                    key={mode.value}
+                    onClick={() => { setSelectedMode(mode.value); setModeMenuOpen(false) }}
+                    className="flex w-full items-start gap-2.5 px-3 py-2 text-left transition-colors hover:bg-shield-elevated"
+                  >
+                    <Icon className="mt-0.5 h-4 w-4 shrink-0 text-shield-muted" />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5 text-[13px] font-medium text-shield-fg">
+                        {mode.label}
+                        {mode.plan && (
+                          <span className="rounded border border-shield-edge px-1 py-px text-[10px] font-normal text-shield-muted">
+                            {mode.plan}+
+                          </span>
+                        )}
+                      </span>
+                      <span className="block text-xs text-shield-muted">{mode.description}</span>
+                    </span>
+                    {selectedMode === mode.value && <Check className="mt-0.5 h-4 w-4 shrink-0 text-shield-brand" />}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        <DenominationSelector variant="pill" />
+
+        <div className="flex-1" />
+
+        <button
+          onClick={handleSendMessage}
+          disabled={isLoading || !inputMessage.trim()}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-shield-brand text-shield-on-brand transition-all hover:bg-shield-brand-dim disabled:cursor-not-allowed disabled:opacity-35"
+          title="Send"
+        >
+          <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+        </button>
+      </div>
+    </div>
+  )
+
+  const railButton = 'flex h-9 w-9 items-center justify-center rounded-lg text-shield-muted transition-colors hover:bg-shield-elevated hover:text-shield-fg'
+  const expanded = !sidebarCollapsed
+
+  return (
+    <div
+      className="warm-theme flex h-screen bg-shield-canvas text-shield-fg"
+      {...themeAttr}
+    >
+      {/* Mobile drawer backdrop */}
+      {expanded && (
+        <div
+          className="fixed inset-0 z-30 bg-black/30 md:hidden"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+
+      {/* Sidebar — full panel when expanded, icon rail when collapsed (desktop),
+          off-canvas drawer on phones. */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex flex-shrink-0 flex-col border-r border-shield-edge/70 bg-shield-panel transition-[width,transform] duration-200 ease-out md:static md:z-auto md:translate-x-0 ${
+          expanded ? 'w-72 translate-x-0' : 'w-72 -translate-x-full md:w-[52px]'
+        }`}
+      >
+        {expanded ? (
+          <>
+            {/* Header: brand + collapse */}
+            <div className="flex items-center justify-between px-3 pb-1 pt-3">
+              <Link href="/" className="flex items-center gap-2 rounded-lg px-1.5 py-1 transition-opacity hover:opacity-80">
+                <ShieldMark className="h-6 w-6 text-shield-brand" />
+                <span className="font-serif text-[17px] font-semibold tracking-tight text-shield-fg">Shield AI</span>
+              </Link>
+              <button onClick={() => setSidebar(true)} className={railButton} title="Close sidebar">
+                <SidebarToggleIcon />
+              </button>
+            </div>
+
+            {/* New chat — the primary action */}
+            <div className="px-2 pt-2">
+              <button
+                onClick={handleNewTopic}
+                className="group flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-[14px] font-medium text-shield-brand transition-colors hover:bg-shield-elevated/70"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-shield-brand text-shield-on-brand transition-transform group-hover:scale-105">
+                  <Plus className="h-4 w-4" strokeWidth={2.5} />
+                </span>
+                New chat
+              </button>
+            </div>
+
+            {/* Search + compact app links */}
+            <nav aria-label="Primary" className="space-y-px px-2 pb-2 pt-1">
+              {showSearch ? (
+                <div className="relative py-0.5">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-shield-muted" />
+                  <input
+                    autoFocus
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Escape') { setShowSearch(false); setSearchQuery('') }
+                    }}
+                    placeholder="Search chats…"
+                    className="w-full rounded-lg border border-shield-edge bg-shield-surface py-1.5 pl-8 pr-7 text-[13px] text-shield-fg placeholder:text-shield-muted focus:border-shield-brand/60 focus:outline-none"
+                  />
+                  <button
+                    onClick={() => { setShowSearch(false); setSearchQuery('') }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-shield-muted hover:text-shield-fg"
+                    title="Close search"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowSearch(true)}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-shield-fg/80 transition-colors hover:bg-shield-elevated/70 hover:text-shield-fg"
+                >
+                  <Search className="h-4 w-4 text-shield-muted" />
+                  Search chats
+                </button>
+              )}
+              {appLinks.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-shield-fg/80 transition-colors hover:bg-shield-elevated/70 hover:text-shield-fg"
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-shield-muted" />
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </nav>
+
+            {/* Conversation list */}
+            <div className="flex-1 space-y-4 overflow-y-auto px-2 pb-3 pt-2 scrollbar-hide">
+              {starredConversations.length > 0 && (
+                <section>
+                  <h3 className="px-2.5 pb-1 text-[11px] font-medium text-shield-muted">Starred</h3>
+                  <div className="space-y-px">{starredConversations.map(renderConversation)}</div>
+                </section>
+              )}
+
+              {recencyGroups.map(group => (
+                <section key={group.label}>
+                  <h3 className="px-2.5 pb-1 text-[11px] font-medium text-shield-muted">{group.label}</h3>
+                  <div className="space-y-px">{group.items.map(renderConversation)}</div>
+                </section>
+              ))}
+
+              {conversations.length === 0 && (
+                <p className="px-2.5 py-4 text-[12px] leading-relaxed text-shield-muted">
+                  {user ? 'Your conversations will appear here.' : 'Sign in to keep your conversations.'}
+                </p>
+              )}
+              {conversations.length > 0 && filteredConversations.length === 0 && (
+                <p className="px-2.5 py-4 text-[12px] text-shield-muted">No chats match “{searchQuery}”.</p>
+              )}
+            </div>
+
+            {/* Footer: account + theme */}
+            <div className="border-t border-shield-edge/70 px-2 py-2">
+              <div className="flex items-center gap-1">
+                <div className="min-w-0 flex-1">
+                  <UserButton placement="up" />
+                </div>
+                <button onClick={cycleTheme} className={railButton} title={`Theme: ${themeLabel}`}>
+                  <ThemeIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Collapsed icon rail (desktop only) */
+          <div className="flex h-full flex-col items-center gap-1 py-3">
+            <button onClick={() => setSidebar(false)} className={railButton} title="Open sidebar">
+              <SidebarToggleIcon />
             </button>
             <button
               onClick={handleNewTopic}
-              className="p-1.5 rounded-md hover:bg-shield-elevated transition-colors text-shield-muted hover:text-shield-fg"
+              className="my-1 flex h-8 w-8 items-center justify-center rounded-full bg-shield-brand text-shield-on-brand transition-transform hover:scale-105"
               title="New chat"
             >
-              <Pencil className="h-4 w-4" />
+              <Plus className="h-4 w-4" strokeWidth={2.5} />
             </button>
-          </div>
-        </div>
-
-        {/* Search bar (expandable) */}
-        {showSearch && (
-          <div className="px-3 pb-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-shield-muted pointer-events-none" />
-              <input
-                autoFocus
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search your chats..."
-                className="shield-input w-full py-1.5 pl-8 pr-3 text-sm"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-shield-muted hover:text-shield-fg">
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
+            <button onClick={openSearch} className={railButton} title="Search chats">
+              <Search className="h-4 w-4" />
+            </button>
+            {appLinks.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link key={item.path} href={item.path} className={railButton} title={item.label}>
+                  <Icon className="h-4 w-4" />
+                </Link>
+              )
+            })}
+            <div className="flex-1" />
+            <button onClick={cycleTheme} className={railButton} title={`Theme: ${themeLabel}`}>
+              <ThemeIcon className="h-4 w-4" />
+            </button>
+            {user && (
+              <button
+                onClick={() => setSidebar(false)}
+                className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-shield-fg text-[13px] font-semibold text-shield-canvas"
+                title={user.email || 'Account'}
+              >
+                {userInitial}
+              </button>
+            )}
           </div>
         )}
-
-        {/* New chat row */}
-        <button
-          onClick={handleNewTopic}
-          className="flex items-center gap-2.5 px-3 py-2 mx-2 mb-1 rounded-lg text-sm text-shield-muted hover:bg-shield-elevated hover:text-shield-fg transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          New chat
-        </button>
-
-        {/* App navigation */}
-        <nav aria-label="Primary" className="px-2 pb-1 space-y-0.5">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const active = isActivePath(router.pathname, item.path)
-            return (
-              <Link
-                key={item.path}
-                href={item.path}
-                aria-current={active ? 'page' : undefined}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  active
-                    ? 'bg-shield-elevated text-shield-fg'
-                    : 'text-shield-muted hover:bg-shield-elevated hover:text-shield-fg'
-                }`}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-
-        <div className="mx-3 my-1 border-t border-shield-edge" />
-
-        {/* Conversation list */}
-        <div className="flex-1 overflow-y-auto px-2 py-1 scrollbar-hide space-y-4">
-          {/* Pinned section */}
-          {pinnedConversations.length > 0 && (
-            <div>
-              <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-shield-muted">Pinned</p>
-              <div className="space-y-0.5">
-                {pinnedConversations.map(conv => <ConversationItem key={conv.id} conv={conv} />)}
-              </div>
-            </div>
-          )}
-
-          {/* Recents section */}
-          {recentConversations.length > 0 && (
-            <div>
-              <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-shield-muted">Recents</p>
-              <div className="space-y-0.5">
-                {recentConversations.map(conv => <ConversationItem key={conv.id} conv={conv} />)}
-              </div>
-            </div>
-          )}
-
-          {conversations.length === 0 && (
-            <p className="px-3 py-4 text-xs text-shield-muted text-center">No conversations yet</p>
-          )}
-        </div>
-
-        {/* Bottom: denomination + user */}
-        <div className="border-t border-shield-edge px-2 py-3 space-y-2">
-          <DenominationSelector variant="sidebar" />
-          <UserButton placement="up" />
-        </div>
-      </div>
+      </aside>
 
       {/* Fixed conversation context menu — rendered outside scroll container to avoid overflow clipping */}
       {menuOpenId && menuPos && (
         <div
           ref={menuRef}
-          style={{ position: 'fixed', top: menuPos.y + 4, left: menuPos.x - 168 }}
-          className="z-[200] w-42 min-w-[168px] rounded-lg border border-shield-edge bg-shield-panel shadow-xl py-1"
+          style={{ position: 'fixed', top: menuPos.y + 4, left: Math.max(8, menuPos.x - 168) }}
+          className="z-[200] min-w-[168px] rounded-xl border border-shield-edge bg-shield-surface py-1 shadow-xl"
           onClick={e => e.stopPropagation()}
         >
           <button
             onClick={() => togglePin(menuOpenId)}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-shield-fg hover:bg-shield-elevated transition-colors"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-shield-fg transition-colors hover:bg-shield-elevated"
           >
-            {pinnedIds.includes(menuOpenId) ? <PinOff className="h-3.5 w-3.5 text-shield-muted" /> : <Pin className="h-3.5 w-3.5 text-shield-muted" />}
-            {pinnedIds.includes(menuOpenId) ? 'Unpin' : 'Pin'}
+            {pinnedIds.includes(menuOpenId) ? <StarOff className="h-3.5 w-3.5 text-shield-muted" /> : <Star className="h-3.5 w-3.5 text-shield-muted" />}
+            {pinnedIds.includes(menuOpenId) ? 'Unstar' : 'Star'}
           </button>
           <button
             onClick={() => {
               const conv = conversations.find(c => c.id === menuOpenId)
               if (conv) startRename(conv)
             }}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-shield-fg hover:bg-shield-elevated transition-colors"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-shield-fg transition-colors hover:bg-shield-elevated"
           >
             <Pencil className="h-3.5 w-3.5 text-shield-muted" />
             Rename
@@ -636,7 +899,7 @@ export function Chat() {
           <div className="my-1 border-t border-shield-edge" />
           <button
             onClick={() => handleDelete(menuOpenId)}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-[13px] text-red-500 transition-colors hover:bg-red-500/10"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete
@@ -645,120 +908,111 @@ export function Chat() {
       )}
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-gradient-to-br from-shield-canvas/90 via-shield-canvas to-shield-panel/70 min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col bg-shield-canvas">
         {/* Top Bar */}
-        <div className="flex items-center justify-between border-b border-white/[0.06] bg-shield-panel/25 px-4 py-3 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            {sidebarCollapsed && (
-              <button
-                onClick={() => setSidebarCollapsed(false)}
-                className="p-1.5 rounded-md hover:bg-shield-elevated transition-colors text-shield-muted hover:text-shield-fg"
-                title="Open sidebar"
-              >
-                <SidebarToggleIcon />
-              </button>
-            )}
-            <div className="flex items-center gap-1.5">
-              <h1
-                className="cursor-pointer bg-gradient-to-r from-shield-brand via-sky-300 to-shield-brand-dim bg-clip-text text-lg font-semibold text-transparent transition-all duration-200 hover:brightness-125"
-                onClick={() => router.push('/')}
-              >
-                Shield AI
-              </h1>
-              <ChevronDown className="h-4 w-4 text-shield-muted" />
-            </div>
-          </div>
-        </div>
-
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto">
-          {messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center px-4">
-              <div className="w-full max-w-3xl text-center">
-                <img src="/logo.png" alt="Shield AI" className="mx-auto mb-5 h-14 w-14 object-contain drop-shadow-[0_0_16px_rgba(70,161,226,0.35)]" />
-                <h2 className="mb-2 text-2xl font-semibold text-shield-fg">What can I help with?</h2>
-                <p className="text-sm text-shield-muted">Ask a theological question, explore scripture, or test an argument.</p>
-                <div className="mx-auto mt-7 flex max-w-xl flex-wrap justify-center gap-2">
-                  {apologeticsQuestions.slice(0, 4).map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => {
-                        setInputMessage(q)
-                        textareaRef.current?.focus()
-                      }}
-                      className="rounded-full border border-white/[0.08] bg-shield-panel/60 px-4 py-2 text-sm text-shield-muted transition-colors hover:border-shield-brand/40 hover:bg-shield-elevated hover:text-shield-fg"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+        <div className="flex h-12 items-center gap-2 px-3">
+          <button
+            onClick={() => setSidebar(false)}
+            className={`${railButton} md:hidden`}
+            title="Open sidebar"
+          >
+            <SidebarToggleIcon />
+          </button>
+          {currentTitle ? (
+            <h1 className="flex min-w-0 items-center gap-1 truncate rounded-lg px-2 py-1 text-[14px] text-shield-fg">
+              <span className="truncate">{currentTitle}</span>
+            </h1>
           ) : (
-            <div className="mx-auto max-w-3xl px-4 py-6">
-              {messages.map((message, index) => {
-                const isLastAssistant =
-                  message.role === 'assistant' && index === messages.length - 1
-                return (
-                  <EnhancedMessage
-                    key={message.id}
-                    message={{
-                      ...message,
-                      created_at: message.created_at || message.timestamp || new Date().toISOString()
-                    }}
-                    onRetry={handleRetry}
-                    isLast={isLastAssistant && !isLoading}
-                  />
-                )
-              })}
-              {isLoading && messages[messages.length - 1]?.role === 'user' && (
-                <div className="mb-6 flex items-center gap-2.5 py-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted"></div>
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted" style={{ animationDelay: '0.15s' }}></div>
-                    <div className="h-2 w-2 animate-bounce rounded-full bg-shield-muted" style={{ animationDelay: '0.3s' }}></div>
-                  </div>
-                  <span className="text-sm text-shield-muted transition-opacity duration-300">{thinkingPhrases[thinkingIdx]}</span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+            <Link href="/" className="font-serif text-[16px] font-semibold text-shield-fg md:hidden">
+              Shield AI
+            </Link>
           )}
         </div>
 
-        {/* Input Area — always pinned to bottom */}
-        <div className="px-4 pb-4 pt-2">
-          <div className="mx-auto max-w-3xl">
-            <div className="flex items-end gap-2 rounded-3xl border border-white/[0.1] bg-shield-panel/85 px-3 py-2.5 shadow-shield-card backdrop-blur-md transition-colors focus-within:border-shield-brand/45">
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSendMessage()
-                  }
-                }}
-                placeholder={apologeticsQuestions[currentPlaceholderIndex]}
-                disabled={isLoading}
-                className="max-h-[200px] flex-1 resize-none bg-transparent px-1.5 py-1.5 text-[15px] leading-6 text-shield-fg placeholder:text-shield-muted focus:outline-none scrollbar-hide"
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={isLoading || !inputMessage.trim()}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-shield-brand to-shield-brand-dim text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-                title="Send"
-              >
-                <Send className="h-4 w-4" />
-              </button>
+        {messages.length === 0 ? (
+          /* Empty state — greeting hero with the composer centered under it */
+          <div className="flex flex-1 flex-col items-center overflow-y-auto px-4">
+            <div className="flex w-full max-w-2xl flex-1 flex-col justify-center pb-[10vh] pt-6">
+              <h2 className="chat-message-in mb-7 flex items-center justify-center gap-3 text-center font-serif text-[1.9rem] font-normal leading-tight tracking-tight text-shield-fg sm:text-[2.4rem]">
+                <ShieldMark className="h-9 w-9 shrink-0 text-shield-brand sm:h-10 sm:w-10" />
+                <span>
+                  {greeting}
+                  {firstName ? `, ${firstName}` : ''}
+                </span>
+              </h2>
+              {renderComposer(true)}
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {apologeticsQuestions.slice(0, 4).map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => {
+                      setInputMessage(q)
+                      textareaRef.current?.focus()
+                    }}
+                    className="rounded-lg border border-shield-edge px-3 py-1.5 text-[13px] text-shield-muted transition-colors hover:border-shield-edge-strong hover:bg-shield-elevated/60 hover:text-shield-fg"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
             </div>
-            <p className="mt-2 text-center text-[11px] text-shield-muted/70">
-              Shield AI can make mistakes. Verify important claims against Scripture.
-            </p>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Messages Area */}
+            <div className="relative min-h-0 flex-1">
+              <div ref={scrollRef} onScroll={handleMessagesScroll} className="h-full overflow-y-auto">
+                <div className="mx-auto max-w-3xl px-4 pb-4 pt-4 sm:px-6">
+                  {messages.map((message, index) => {
+                    const isLastAssistant =
+                      message.role === 'assistant' && index === messages.length - 1
+                    return (
+                      <EnhancedMessage
+                        key={message.id}
+                        message={{
+                          ...message,
+                          created_at: message.created_at || message.timestamp || new Date().toISOString()
+                        }}
+                        onRetry={handleRetry}
+                        isLast={isLastAssistant && !isLoading}
+                        isStreaming={isLastAssistant && isLoading}
+                      />
+                    )
+                  })}
+                  {isLoading && messages[messages.length - 1]?.role === 'user' && (
+                    <div className="chat-message-in mb-8 flex items-center gap-2.5">
+                      <ShieldMark className="chat-mark-pulse h-5 w-5 text-shield-brand" />
+                      <span key={thinkingIdx} className="chat-shimmer chat-message-in font-serif text-[15px] italic">
+                        {thinkingPhrases[thinkingIdx]}
+                      </span>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+
+              {showScrollDown && (
+                <button
+                  onClick={scrollToBottom}
+                  className="chat-message-in absolute bottom-3 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-shield-edge bg-shield-surface text-shield-muted shadow-md transition-colors hover:text-shield-fg"
+                  title="Scroll to latest"
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Composer — pinned to the bottom once a conversation starts */}
+            <div className="px-4 pb-3 pt-1 sm:px-6">
+              <div className="mx-auto max-w-3xl">
+                {renderComposer(false)}
+                <p className="mt-2 text-center text-[11px] text-shield-muted/80">
+                  Shield AI can make mistakes. Verify important claims against Scripture.
+                </p>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {showAuthModal && (
