@@ -321,7 +321,7 @@ export function InsightDetailView({
       <Star
         key={i}
         className={`h-4 w-4 ${
-          i < Math.round(rating) ? 'text-yellow-400 fill-current' : 'text-gray-400'
+          i < Math.round(rating) ? 'text-shield-accent fill-current' : 'text-shield-muted'
         }`}
       />
     ))
@@ -333,12 +333,12 @@ export function InsightDetailView({
       {onClose && (
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <Brain className="h-6 w-6 text-blue-400" />
+            <Brain className="h-6 w-6 text-shield-brand" />
             <h2 className="text-xl font-semibold text-shield-fg">Insight Details</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-shield-muted hover:text-white transition-colors"
+            className="text-shield-muted hover:text-shield-fg transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -371,8 +371,8 @@ export function InsightDetailView({
         {/* Metadata */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {insight.is_favorite && <Star className="h-4 w-4 text-yellow-400 fill-current" />}
-            {insight.is_shared && <Share2 className="h-4 w-4 text-blue-400" />}
+            {insight.is_favorite && <Star className="h-4 w-4 text-shield-accent fill-current" />}
+            {insight.is_shared && <Share2 className="h-4 w-4 text-shield-brand" />}
             {insight.average_rating && (
               <div className="flex items-center space-x-1">
                 {getRatingStars(insight.average_rating)}
@@ -386,7 +386,7 @@ export function InsightDetailView({
               onClick={() => onToggleFavorite?.(insight.id)}
               className={`p-2 rounded-lg transition-colors ${
                 insight.is_favorite 
-                  ? 'bg-yellow-600 text-white' 
+                  ? 'bg-shield-accent text-shield-on-brand' 
                   : 'bg-shield-panel text-shield-muted hover:text-shield-fg'
               }`}
             >
@@ -396,7 +396,7 @@ export function InsightDetailView({
               onClick={() => onToggleShare?.(insight.id)}
               className={`p-2 rounded-lg transition-colors ${
                 insight.is_shared 
-                  ? 'bg-blue-600 text-white' 
+                  ? 'bg-shield-brand text-shield-on-brand' 
                   : 'bg-shield-panel text-shield-muted hover:text-shield-fg'
               }`}
             >
@@ -408,12 +408,12 @@ export function InsightDetailView({
 
       <div className="space-y-6">
         {/* Shield AI Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-4 text-white">
+        <div className="bg-gradient-to-r from-shield-brand to-shield-brand-dim rounded-lg p-4 text-shield-on-brand">
           <div className="flex items-center space-x-3 mb-2">
             <Shield className="h-6 w-6" />
             <h3 className="text-lg font-semibold">Shield AI Apologetics Insights</h3>
           </div>
-          <p className="text-blue-100 text-sm">
+          <p className="text-shield-on-brand/80 text-sm">
             Defending faith through Scripture • Building understanding • Strengthening belief
           </p>
         </div>
@@ -424,7 +424,7 @@ export function InsightDetailView({
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => handleInteraction('like')}
-                className="flex items-center space-x-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 border border-shield-edge bg-shield-surface text-shield-fg hover:bg-shield-elevated rounded-lg transition-colors"
               >
                 <ThumbsUp className="h-4 w-4" />
                 <span>Helpful</span>
@@ -432,7 +432,7 @@ export function InsightDetailView({
               
               <button
                 onClick={() => setShowResponseForm(!showResponseForm)}
-                className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 bg-shield-brand hover:bg-shield-brand-dim text-shield-on-brand rounded-lg transition-colors"
               >
                 <MessageCircle className="h-4 w-4" />
                 <span>Respond</span>
@@ -440,7 +440,7 @@ export function InsightDetailView({
               
               <button
                 onClick={() => setShowFeedbackForm(!showFeedbackForm)}
-                className="flex items-center space-x-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 border border-shield-edge bg-shield-surface text-shield-fg hover:bg-shield-elevated rounded-lg transition-colors"
               >
                 <Award className="h-4 w-4" />
                 <span>Rate</span>
@@ -449,7 +449,7 @@ export function InsightDetailView({
               <button
                 onClick={generateImage}
                 disabled={isGeneratingImage}
-                className="flex items-center space-x-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 border border-shield-edge bg-shield-surface text-shield-fg hover:bg-shield-elevated disabled:opacity-50 rounded-lg transition-colors"
               >
                 {isGeneratingImage ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />
@@ -476,7 +476,7 @@ export function InsightDetailView({
               <select
                 value={newResponse.type}
                 onChange={(e) => setNewResponse(prev => ({ ...prev, type: e.target.value as any }))}
-                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-shield-brand/50"
               >
                 <option value="comment">💬 Comment</option>
                 <option value="question">❓ Question</option>
@@ -492,7 +492,7 @@ export function InsightDetailView({
                 onChange={(e) => setNewResponse(prev => ({ ...prev, text: e.target.value }))}
                 placeholder="Share your thoughts on this passage..."
                 rows={3}
-                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-shield-brand/50 resize-none"
               />
               
               <div className="flex items-center justify-between">
@@ -502,7 +502,7 @@ export function InsightDetailView({
                       type="checkbox"
                       checked={newResponse.is_helpful === true}
                       onChange={(e) => setNewResponse(prev => ({ ...prev, is_helpful: e.target.checked ? true : null }))}
-                      className="rounded border-shield-edge bg-shield-canvas text-green-600 focus:ring-green-500"
+                      className="rounded border-shield-edge bg-shield-canvas text-shield-brand focus:ring-shield-brand"
                     />
                     <span className="text-sm text-shield-fg">Helpful</span>
                   </label>
@@ -514,7 +514,7 @@ export function InsightDetailView({
                         <button
                           key={star}
                           onClick={() => setNewResponse(prev => ({ ...prev, rating: star }))}
-                          className={`text-lg ${newResponse.rating && star <= newResponse.rating ? 'text-yellow-400' : 'text-shield-muted'}`}
+                          className={`text-lg ${newResponse.rating && star <= newResponse.rating ? 'text-shield-accent' : 'text-shield-muted'}`}
                         >
                           ⭐
                         </button>
@@ -525,7 +525,7 @@ export function InsightDetailView({
                 
                 <button
                   onClick={submitResponse}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 bg-shield-brand hover:bg-shield-brand-dim text-shield-on-brand rounded-lg transition-colors"
                 >
                   <Send className="h-4 w-4" />
                   <span>Submit</span>
@@ -558,7 +558,7 @@ export function InsightDetailView({
                       <button
                         key={star}
                         onClick={() => setNewFeedback(prev => ({ ...prev, [key]: star }))}
-                        className={`text-lg ${newFeedback[key as keyof typeof newFeedback] && star <= (newFeedback[key as keyof typeof newFeedback] as number) ? 'text-yellow-400' : 'text-shield-muted'}`}
+                        className={`text-lg ${newFeedback[key as keyof typeof newFeedback] && star <= (newFeedback[key as keyof typeof newFeedback] as number) ? 'text-shield-accent' : 'text-shield-muted'}`}
                       >
                         ⭐
                       </button>
@@ -574,12 +574,12 @@ export function InsightDetailView({
                 onChange={(e) => setNewFeedback(prev => ({ ...prev, feedback_text: e.target.value }))}
                 placeholder="Additional feedback (optional)"
                 rows={2}
-                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-3 py-2 bg-shield-canvas border border-shield-edge rounded-lg text-shield-fg placeholder-shield-muted focus:outline-none focus:ring-2 focus:ring-shield-brand/50 resize-none"
               />
               
               <button
                 onClick={submitFeedback}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-shield-brand hover:bg-shield-brand-dim text-shield-on-brand rounded-lg transition-colors"
               >
                 <Award className="h-4 w-4" />
                 <span>Submit Rating</span>
@@ -595,7 +595,7 @@ export function InsightDetailView({
             className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
           >
             <div className="flex items-center space-x-3">
-              <BookOpen className="h-5 w-5 text-blue-400" />
+              <BookOpen className="h-5 w-5 text-shield-brand" />
               <span className="font-medium text-shield-fg">Explanation</span>
             </div>
             {expandedSections.has('explanation') ? (
@@ -609,7 +609,7 @@ export function InsightDetailView({
               <p className="text-shield-fg leading-relaxed">{insight.explanation}</p>
               <button
                 onClick={() => copyToClipboard(insight.explanation)}
-                className="mt-3 flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors"
+                className="mt-3 flex items-center space-x-2 text-shield-brand hover:text-shield-brand-dim transition-colors"
               >
                 <Copy className="h-4 w-4" />
                 <span className="text-sm">Copy</span>
@@ -626,7 +626,7 @@ export function InsightDetailView({
               className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
-                <Lightbulb className="h-5 w-5 text-yellow-400" />
+                <Lightbulb className="h-5 w-5 text-shield-accent" />
                 <span className="font-medium text-shield-fg">Key Themes</span>
                 <span className="text-sm text-shield-muted">({insight.key_themes.length})</span>
               </div>
@@ -642,7 +642,7 @@ export function InsightDetailView({
                   {insight.key_themes.map((theme, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm"
+                      className="px-3 py-1 bg-shield-brand text-shield-on-brand rounded-full text-sm"
                     >
                       {theme}
                     </span>
@@ -661,7 +661,7 @@ export function InsightDetailView({
               className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
-                <Cross className="h-5 w-5 text-green-400" />
+                <Cross className="h-5 w-5 text-shield-brand" />
                 <span className="font-medium text-shield-fg">Cross References</span>
                 <span className="text-sm text-shield-muted">({insight.cross_references.length})</span>
               </div>
@@ -675,7 +675,7 @@ export function InsightDetailView({
               <div className="p-4 border-t border-shield-panel space-y-3">
                 {insight.cross_references.map((ref, index) => (
                   <div key={index} className="p-3 bg-shield-canvas rounded border border-shield-edge">
-                    <div className="font-medium text-blue-400 mb-1">{ref.reference}</div>
+                    <div className="font-medium text-shield-brand mb-1">{ref.reference}</div>
                     <p className="text-shield-fg text-sm mb-2">{ref.text}</p>
                     <p className="text-shield-muted text-xs">{ref.relevance}</p>
                   </div>
@@ -693,7 +693,7 @@ export function InsightDetailView({
               className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
-                <MessageCircle className="h-5 w-5 text-purple-400" />
+                <MessageCircle className="h-5 w-5 text-shield-brand" />
                 <span className="font-medium text-shield-fg">Study Questions</span>
                 <span className="text-sm text-shield-muted">({insight.study_questions.length})</span>
               </div>
@@ -708,10 +708,10 @@ export function InsightDetailView({
                 {insight.study_questions.map((question, index) => (
                   <div key={index} className="p-3 bg-shield-canvas rounded border border-shield-edge">
                     <div className="flex items-start space-x-3">
-                      <span className="text-purple-400 font-medium text-sm mt-1">{index + 1}.</span>
+                      <span className="text-shield-brand font-medium text-sm mt-1">{index + 1}.</span>
                       <div className="flex-1">
                         <p className="text-shield-fg mb-1">{question.question}</p>
-                        <span className="text-xs text-shield-muted bg-purple-900 px-2 py-1 rounded">
+                        <span className="text-xs text-shield-muted bg-shield-elevated px-2 py-1 rounded">
                           {question.category}
                         </span>
                       </div>
@@ -731,7 +731,7 @@ export function InsightDetailView({
               className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
-                <Search className="h-5 w-5 text-orange-400" />
+                <Search className="h-5 w-5 text-shield-brand" />
                 <span className="font-medium text-shield-fg">Historical Context</span>
               </div>
               {expandedSections.has('history') ? (
@@ -756,7 +756,7 @@ export function InsightDetailView({
               className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
-                <Heart className="h-5 w-5 text-red-400" />
+                <Heart className="h-5 w-5 text-red-500" />
                 <span className="font-medium text-shield-fg">Theological Meaning</span>
               </div>
               {expandedSections.has('theology') ? (
@@ -781,7 +781,7 @@ export function InsightDetailView({
               className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
-                <Lightbulb className="h-5 w-5 text-green-400" />
+                <Lightbulb className="h-5 w-5 text-shield-brand" />
                 <span className="font-medium text-shield-fg">Practical Application</span>
               </div>
               {expandedSections.has('application') ? (
@@ -806,7 +806,7 @@ export function InsightDetailView({
               className="w-full flex items-center justify-between p-4 text-left hover:bg-shield-panel transition-colors"
             >
               <div className="flex items-center space-x-3">
-                <Heart className="h-5 w-5 text-pink-400" />
+                <Heart className="h-5 w-5 text-shield-brand" />
                 <span className="font-medium text-shield-fg">Prayer Points</span>
                 <span className="text-sm text-shield-muted">({insight.prayer_points.length})</span>
               </div>
@@ -820,7 +820,7 @@ export function InsightDetailView({
               <div className="p-4 border-t border-shield-panel space-y-2">
                 {insight.prayer_points.map((point, index) => (
                   <div key={index} className="flex items-start space-x-3">
-                    <span className="text-pink-400 font-medium text-sm mt-1">{index + 1}.</span>
+                    <span className="text-shield-brand font-medium text-sm mt-1">{index + 1}.</span>
                     <p className="text-shield-fg text-sm">{point}</p>
                   </div>
                 ))}
@@ -838,11 +838,11 @@ export function InsightDetailView({
 
       {/* Image Generation Modal */}
       {showImageModal && generatedImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-shield-canvas border border-shield-panel rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <Palette className="h-6 w-6 text-indigo-400" />
+                <Palette className="h-6 w-6 text-shield-brand" />
                 <div>
                   <h3 className="text-lg font-semibold text-shield-fg">Generated Image</h3>
                   <p className="text-sm text-shield-muted">{insight.passage_reference}</p>
@@ -850,7 +850,7 @@ export function InsightDetailView({
               </div>
               <button
                 onClick={() => setShowImageModal(false)}
-                className="text-shield-muted hover:text-white transition-colors"
+                className="text-shield-muted hover:text-shield-fg transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -864,7 +864,7 @@ export function InsightDetailView({
                   className="w-full rounded-lg shadow-lg"
                 />
                 <div className="absolute top-4 right-4">
-                  <div className="bg-black bg-opacity-50 rounded-lg p-2">
+                  <div className="bg-black/50 rounded-lg p-2">
                     <Wand2 className="h-4 w-4 text-white" />
                   </div>
                 </div>
@@ -885,7 +885,7 @@ export function InsightDetailView({
                     link.download = `bible-image-${insight.passage_reference.replace(/\s+/g, '-')}.png`
                     link.click()
                   }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 bg-shield-brand hover:bg-shield-brand-dim text-shield-on-brand rounded-lg transition-colors"
                 >
                   <Download className="h-4 w-4" />
                   <span>Download</span>
@@ -895,7 +895,7 @@ export function InsightDetailView({
                   onClick={() => {
                     navigator.clipboard.writeText(generatedImage.url)
                   }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 border border-shield-edge bg-shield-surface text-shield-fg hover:bg-shield-elevated rounded-lg transition-colors"
                 >
                   <Copy className="h-4 w-4" />
                   <span>Copy URL</span>
@@ -914,7 +914,7 @@ export function InsightDetailView({
                       navigator.clipboard.writeText(`${shareData.text}\n\n${shareData.url}`)
                     }
                   }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 bg-shield-brand hover:bg-shield-brand-dim text-shield-on-brand rounded-lg transition-colors"
                 >
                   <Share2 className="h-4 w-4" />
                   <span>Share</span>
@@ -927,10 +927,10 @@ export function InsightDetailView({
 
       {/* Image Error Display */}
       {imageError && (
-        <div className="mt-4 p-3 bg-red-900/20 border border-red-500/50 rounded-lg">
+        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
           <div className="flex items-center space-x-2">
-            <AlertTriangle className="h-4 w-4 text-red-400" />
-            <p className="text-red-400 text-sm">{imageError}</p>
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <p className="text-red-500 text-sm">{imageError}</p>
           </div>
         </div>
       )}

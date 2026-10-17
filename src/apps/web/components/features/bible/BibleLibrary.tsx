@@ -51,7 +51,7 @@ export function BibleLibrary({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="space-y-3 border-b border-white/[0.06] p-4">
+      <div className="space-y-3 border-b border-shield-edge/60 p-4">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-shield-muted/70" />
           <input
@@ -62,7 +62,7 @@ export function BibleLibrary({
           />
         </div>
         {!filter && (
-          <div className="flex rounded-xl border border-white/[0.06] bg-shield-void/40 p-1">
+          <div className="flex rounded-xl border border-shield-edge/60 bg-shield-void/40 p-1">
             {tabs.map(t => (
               <button
                 key={t}
@@ -98,7 +98,7 @@ export function BibleLibrary({
                   <button
                     onClick={() => !active && onSelectBook(book.id)}
                     className={`group flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-left text-[13px] transition-colors ${
-                      active ? 'bg-shield-brand/12 font-semibold text-shield-fg' : 'text-shield-fg/75 hover:bg-white/[0.04] hover:text-shield-fg'
+                      active ? 'bg-shield-brand/12 font-semibold text-shield-fg' : 'text-shield-fg/75 hover:bg-shield-fg/[0.04] hover:text-shield-fg'
                     }`}
                   >
                     <span className="truncate">{book.name}</span>
@@ -112,8 +112,8 @@ export function BibleLibrary({
                           onClick={() => onSelectChapter(n)}
                           className={`aspect-square rounded-md text-[11px] font-medium tabular-nums transition-all ${
                             n === selectedChapter
-                              ? 'bg-shield-brand text-white shadow-shield-glow-sm'
-                              : 'bg-white/[0.03] text-shield-muted hover:bg-white/[0.08] hover:text-shield-fg'
+                              ? 'bg-shield-brand text-shield-on-brand shadow-shield-glow-sm'
+                              : 'bg-shield-fg/[0.03] text-shield-muted hover:bg-shield-fg/[0.08] hover:text-shield-fg'
                           }`}
                         >
                           {n}

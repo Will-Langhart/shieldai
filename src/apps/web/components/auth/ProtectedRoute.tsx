@@ -27,7 +27,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         <div className="w-full max-w-md rounded-2xl border border-shield-edge bg-shield-panel shadow-2xl">
           <div className="flex items-center gap-2 px-6 pt-6 pb-4">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-shield-glow-sm">
-              <Shield className="h-4 w-4 text-white" />
+              <Shield className="h-4 w-4 text-shield-on-brand" />
             </div>
             <span className="font-bold text-shield-fg">Shield AI</span>
           </div>
@@ -37,7 +37,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
               onClick={() => setView('login')}
               className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
                 view === 'login'
-                  ? 'bg-shield-brand text-white shadow-shield-glow-sm'
+                  ? 'bg-shield-brand text-shield-on-brand shadow-shield-glow-sm'
                   : 'text-shield-muted hover:text-shield-fg'
               }`}
             >
@@ -47,7 +47,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
               onClick={() => setView('signup')}
               className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
                 view === 'signup'
-                  ? 'bg-shield-brand text-white shadow-shield-glow-sm'
+                  ? 'bg-shield-brand text-shield-on-brand shadow-shield-glow-sm'
                   : 'text-shield-muted hover:text-shield-fg'
               }`}
             >

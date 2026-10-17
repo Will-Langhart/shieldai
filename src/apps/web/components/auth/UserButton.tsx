@@ -39,7 +39,7 @@ export function UserButton({ placement = 'down' }: { placement?: 'up' | 'down' }
           </button>
           <button
             onClick={() => { setAuthView('signup'); setShowAuthModal(true) }}
-            className="rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-4 py-2 text-sm font-semibold text-white shadow-shield-glow-sm transition-all hover:brightness-110"
+            className="rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-4 py-2 text-sm font-semibold text-shield-on-brand shadow-shield-glow-sm transition-all hover:brightness-110"
           >
             Get started
           </button>
@@ -72,7 +72,7 @@ export function UserButton({ placement = 'down' }: { placement?: 'up' | 'down' }
           className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-shield-panel"
         >
           {/* Avatar */}
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-shield-brand to-shield-brand-dim text-sm font-bold text-white shadow-shield-glow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-shield-brand to-shield-brand-dim text-sm font-bold text-shield-on-brand shadow-shield-glow-sm">
             {initials}
           </div>
           <span className="hidden max-w-[120px] truncate text-sm font-medium text-shield-fg sm:block">
@@ -88,7 +88,7 @@ export function UserButton({ placement = 'down' }: { placement?: 'up' | 'down' }
               <p className="text-sm font-semibold text-shield-fg truncate">{displayName}</p>
               <p className="text-xs text-shield-muted truncate">{user.email}</p>
               {!user.email_confirmed_at && (
-                <p className="mt-1 text-xs text-amber-400">Email not verified</p>
+                <p className="mt-1 text-xs text-shield-accent">Email not verified</p>
               )}
             </div>
 
@@ -103,7 +103,7 @@ export function UserButton({ placement = 'down' }: { placement?: 'up' | 'down' }
               </button>
               <button
                 onClick={async () => { setDropdownOpen(false); await signOut() }}
-                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-500 transition-colors hover:bg-red-500/10 hover:text-red-600"
               >
                 <LogOut className="h-4 w-4" />
                 Sign out

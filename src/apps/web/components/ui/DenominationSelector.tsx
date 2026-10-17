@@ -117,10 +117,10 @@ export function DenominationSelector({
           <Church className="w-4 h-4 text-shield-muted" />
           <span className="text-sm font-medium text-shield-fg">Christian Denomination</span>
           {status === 'saved' && (
-            <span className="ml-auto text-xs text-green-400 font-medium">Saved ✓</span>
+            <span className="ml-auto text-xs text-shield-brand font-medium">Saved ✓</span>
           )}
           {status === 'error' && (
-            <span className="ml-auto text-xs text-red-400 flex items-center gap-1">
+            <span className="ml-auto text-xs text-red-500 flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
               {noSession ? 'Sign in to save' : 'Save failed'}
             </span>
@@ -196,7 +196,7 @@ export function DenominationSelector({
         {saving ? (
           <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
         ) : status === 'error' ? (
-          <AlertCircle className="w-3 h-3 text-red-400 flex-shrink-0" />
+          <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0" />
         ) : (
           <ChevronDown className={`w-3 h-3 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
         )}
@@ -207,7 +207,7 @@ export function DenominationSelector({
           <div className="px-3 py-2 border-b border-shield-edge">
             <p className="text-xs text-shield-muted font-medium">Denomination</p>
             {noSession ? (
-              <p className="text-xs text-red-400 mt-0.5">Sign in to save preferences</p>
+              <p className="text-xs text-red-500 mt-0.5">Sign in to save preferences</p>
             ) : (
               <p className="text-xs text-shield-muted opacity-60 mt-0.5">AI responses adapt to your tradition</p>
             )}
@@ -242,7 +242,7 @@ export function DenominationSelector({
           </div>
           {status === 'error' && !noSession && (
             <div className="px-3 py-2 border-t border-shield-edge">
-              <p className="text-xs text-red-400">Failed to save. Please try again.</p>
+              <p className="text-xs text-red-500">Failed to save. Please try again.</p>
             </div>
           )}
         </div>

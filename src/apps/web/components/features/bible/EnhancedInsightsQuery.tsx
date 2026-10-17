@@ -471,12 +471,12 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-        <div className="text-red-400 mb-2">Failed to load insights</div>
+        <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+        <div className="text-red-500 mb-2">Failed to load insights</div>
         <div className="text-sm text-shield-muted mb-4">{error}</div>
         <button 
           onClick={loadInsights}
-          className="flex items-center space-x-2 px-4 py-2 bg-shield-brand hover:opacity-90 text-white rounded-lg transition-colors"
+          className="flex items-center space-x-2 px-4 py-2 bg-shield-brand hover:opacity-90 text-shield-on-brand rounded-lg transition-colors"
         >
           <RefreshCw className="h-4 w-4" />
           <span>Try again</span>
@@ -574,7 +574,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
                 showFilters
-                  ? 'bg-shield-brand text-white'
+                  ? 'bg-shield-brand text-shield-on-brand'
                   : 'bg-shield-panel/80 text-shield-muted hover:text-shield-fg'
               }`}
             >
@@ -659,7 +659,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                     ...prev, 
                     is_favorite: e.target.value === '' ? null : e.target.value === 'true' 
                   }))}
-                  className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg focus:outline-none focus:ring-2 focus:ring-shield-brand/50"
                 >
                   <option value="">All</option>
                   <option value="true">Favorites Only</option>
@@ -684,7 +684,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                       }}
                       className={`px-3 py-1 rounded-full text-sm transition-colors ${
                         filters.tags.includes(tag)
-                          ? 'bg-shield-brand text-white'
+                          ? 'bg-shield-brand text-shield-on-brand'
                           : 'bg-shield-panel text-shield-muted hover:text-shield-fg'
                       }`}
                     >
@@ -708,7 +708,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                       }}
                       className={`px-3 py-1 rounded-full text-sm transition-colors ${
                         filters.themes.includes(theme)
-                          ? 'bg-shield-brand text-white'
+                          ? 'bg-shield-brand text-shield-on-brand'
                           : 'bg-shield-panel text-shield-muted hover:text-shield-fg'
                       }`}
                     >
@@ -730,11 +730,11 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-4 text-sm text-shield-muted">
             <div className="flex items-center space-x-1">
-              <Star className="h-4 w-4 text-yellow-400" />
+              <Star className="h-4 w-4 text-shield-accent" />
               <span>{insights.filter(i => i.is_favorite).length} favorites</span>
             </div>
             <div className="flex items-center space-x-1">
-              <Share2 className="h-4 w-4 text-blue-400" />
+              <Share2 className="h-4 w-4 text-shield-brand" />
               <span>{insights.filter(i => i.is_shared).length} shared</span>
             </div>
           </div>
@@ -786,7 +786,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
                 sort_order: 'desc',
                 view_mode: 'grid'
               })}
-              className="px-4 py-2 bg-shield-brand hover:opacity-90 text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-shield-brand hover:opacity-90 text-shield-on-brand rounded-lg transition-colors"
             >
               Clear Filters
             </button>
@@ -838,14 +838,14 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
       <Star
         key={i}
         className={`h-3 w-3 ${
-          i < Math.round(rating) ? 'text-yellow-400 fill-current' : 'text-gray-400'
+          i < Math.round(rating) ? 'text-shield-accent fill-current' : 'text-shield-muted'
         }`}
       />
     ))
   }
 
   return (
-    <div className={`rounded-2xl border border-white/[0.08] bg-shield-panel/55 overflow-hidden transition-all duration-200 backdrop-blur-md hover:border-shield-brand/30 hover:shadow-shield-glow-sm ${
+    <div className={`rounded-2xl border border-shield-edge bg-shield-panel/55 overflow-hidden transition-all duration-200 backdrop-blur-md hover:border-shield-brand/30 hover:shadow-shield-glow-sm ${
       viewMode === 'list' ? 'flex' : ''
     }`}>
       <div className={`${viewMode === 'list' ? 'flex-1' : ''}`}>
@@ -861,8 +861,8 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
               </p>
             </div>
             <div className="flex items-center space-x-2 ml-4">
-              {insight.is_favorite && <Star className="h-4 w-4 text-yellow-400 fill-current" />}
-              {insight.is_shared && <Share2 className="h-4 w-4 text-blue-400" />}
+              {insight.is_favorite && <Star className="h-4 w-4 text-shield-accent fill-current" />}
+              {insight.is_shared && <Share2 className="h-4 w-4 text-shield-brand" />}
             </div>
           </div>
 
@@ -898,7 +898,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
           {(insight.tags.length > 0 || insight.key_themes.length > 0) && (
             <div className="mt-3 flex flex-wrap gap-2">
               {insight.tags.slice(0, 3).map((tag, index) => (
-                <span key={index} className="px-2 py-1 bg-shield-brand text-white rounded-full text-xs">
+                <span key={index} className="px-2 py-1 bg-shield-brand text-shield-on-brand rounded-full text-xs">
                   {tag}
                 </span>
               ))}
@@ -915,7 +915,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
         {isExpanded && (
           <div className="p-4 space-y-4">
             {/* Shield AI Header */}
-            <div className="rounded-lg border border-white/[0.08] bg-shield-panel/80 p-3">
+            <div className="rounded-lg border border-shield-edge bg-shield-panel/80 p-3">
               <div className="flex items-center space-x-2 mb-1">
                 <Shield className="h-5 w-5 text-shield-brand" />
                 <h4 className="font-semibold text-shield-fg">Shield AI Apologetics Insights</h4>
@@ -926,10 +926,10 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
             </div>
 
             {/* Interaction Bar */}
-            <div className="rounded-lg border border-white/[0.06] bg-shield-panel/70 p-3">
+            <div className="rounded-lg border border-shield-edge/60 bg-shield-panel/70 p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <button className="flex items-center space-x-1 px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors">
+                  <button className="flex items-center space-x-1 px-2 py-1 bg-shield-brand hover:bg-shield-brand-dim text-shield-on-brand rounded text-sm transition-colors">
                     <ThumbsUp className="h-3 w-3" />
                     <span>Helpful</span>
                   </button>
@@ -957,7 +957,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
             </div>
 
             {/* Explanation */}
-            <div className="rounded-lg border border-white/[0.08] bg-shield-canvas/25">
+            <div className="rounded-lg border border-shield-edge bg-shield-canvas/25">
               <button
                 onClick={onToggleExpansion}
                 className="w-full flex items-center justify-between p-3 text-left hover:bg-shield-panel transition-colors"
@@ -968,7 +968,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
                 </div>
                 <ChevronUp className="h-4 w-4 text-shield-muted" />
               </button>
-              <div className="border-t border-white/[0.08] p-3">
+              <div className="border-t border-shield-edge p-3">
                 <p className="text-shield-fg text-sm leading-relaxed mb-2">{insight.explanation}</p>
                 <button
                   onClick={() => onCopy(insight.explanation)}
@@ -982,8 +982,8 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
 
             {/* Key Themes */}
             {insight.key_themes.length > 0 && (
-              <div className="rounded-lg border border-white/[0.08] bg-shield-canvas/20">
-                <div className="border-b border-white/[0.08] p-3">
+              <div className="rounded-lg border border-shield-edge bg-shield-canvas/20">
+                <div className="border-b border-shield-edge p-3">
                   <div className="flex items-center space-x-2">
                     <Lightbulb className="h-4 w-4 text-shield-brand" />
                     <span className="font-medium text-shield-fg">Key Themes</span>
@@ -993,7 +993,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
                 <div className="p-3">
                   <div className="flex flex-wrap gap-2">
                     {insight.key_themes.map((theme, index) => (
-                      <span key={index} className="px-2 py-1 bg-shield-brand text-white rounded-full text-xs">
+                      <span key={index} className="px-2 py-1 bg-shield-brand text-shield-on-brand rounded-full text-xs">
                         {theme}
                       </span>
                     ))}
@@ -1007,7 +1007,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
               {insight.cross_references.length > 0 && (
                 <div className="bg-shield-panel rounded-lg p-3">
                   <div className="flex items-center space-x-2 mb-1">
-                    <Cross className="h-4 w-4 text-green-400" />
+                    <Cross className="h-4 w-4 text-shield-brand" />
                     <span className="text-sm font-medium text-shield-fg">Cross References</span>
                   </div>
                   <span className="text-xs text-shield-muted">{insight.cross_references.length} references</span>
@@ -1030,7 +1030,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
               <div className="flex items-center space-x-2">
                 <button
                   onClick={onSelect}
-                  className="px-3 py-1 bg-shield-brand hover:opacity-90 text-white rounded text-sm transition-colors"
+                  className="px-3 py-1 bg-shield-brand hover:opacity-90 text-shield-on-brand rounded text-sm transition-colors"
                 >
                   View Full Insight
                 </button>

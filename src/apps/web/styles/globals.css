@@ -236,8 +236,8 @@ body {
   color: var(--color-text);
   transition: background-color 0.3s ease, color 0.3s ease;
   background-image:
-    radial-gradient(1200px 600px at 50% -18%, rgba(70, 161, 226, 0.2), transparent 62%),
-    radial-gradient(900px 460px at 100% 14%, rgba(232, 180, 76, 0.08), transparent 58%),
+    radial-gradient(1200px 600px at 50% -18%, rgb(var(--sh-brand) / 0.2), transparent 62%),
+    radial-gradient(900px 460px at 100% 14%, rgb(var(--sh-accent) / 0.08), transparent 58%),
     linear-gradient(180deg, var(--shield-canvas-deep) 0%, var(--shield-canvas) 36%, var(--shield-canvas-soft) 100%);
   background-attachment: fixed;
 }
