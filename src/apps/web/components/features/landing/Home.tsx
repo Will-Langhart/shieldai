@@ -112,7 +112,7 @@ export function Home() {
         className="fixed inset-0 -z-10"
         style={{
           background:
-            'linear-gradient(180deg, #12151C 0%, #171A22 18%, #1A1D24 38%, #1C2029 58%, #1E222C 78%, #20242E 100%)',
+            'linear-gradient(180deg, rgb(var(--sh-deep)) 0%, rgb(var(--sh-canvas)) 38%, rgb(var(--sh-canvas)) 70%, rgb(var(--sh-tier)) 100%)',
         }}
         aria-hidden
       />
@@ -146,7 +146,7 @@ export function Home() {
 
               <h1 className="mx-auto mb-5 max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight text-shield-fg sm:text-5xl md:text-6xl lg:text-7xl">
                 Answers for the{' '}
-                <span className="bg-gradient-to-r from-shield-brand via-sky-300 to-shield-brand-dim bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-shield-brand via-shield-accent to-shield-brand-dim bg-clip-text text-transparent">
                   hardest questions
                 </span>{' '}
                 of faith
@@ -160,7 +160,7 @@ export function Home() {
               <div className="mb-3 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
                 <Link
                   href="/chat"
-                  className="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-7 py-3 text-sm font-semibold text-white shadow-shield-glow-sm transition-all duration-300 hover:brightness-110 hover:shadow-shield-glow"
+                  className="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-7 py-3 text-sm font-semibold text-shield-on-brand shadow-shield-glow-sm transition-all duration-300 hover:brightness-110 hover:shadow-shield-glow"
                 >
                   <MessageCircle className="h-4 w-4 shrink-0" />
                   <span>Start chatting free</span>
@@ -224,7 +224,7 @@ export function Home() {
             />
             {STEPS.map((step, i) => (
               <Reveal key={step.number} delay={i * 120}>
-                <div className="relative h-full rounded-xl border border-white/[0.06] bg-shield-panel/40 p-6 shadow-shield-card backdrop-blur-md">
+                <div className="relative h-full rounded-xl border border-shield-edge/60 bg-shield-panel/40 p-6 shadow-shield-card backdrop-blur-md">
                   <div className="relative mb-5 flex items-center justify-between">
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-shield-brand/25 bg-shield-brand/10">
                       <step.icon className="h-5 w-5 text-shield-brand" />
@@ -264,10 +264,10 @@ export function Home() {
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <Reveal>
-              <div className="group relative h-full overflow-hidden rounded-xl border border-white/[0.06] bg-shield-panel/55 p-7 shadow-shield-card backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-shield-brand/25 hover:shadow-shield-glow-sm">
+              <div className="group relative h-full overflow-hidden rounded-xl border border-shield-edge/60 bg-shield-panel/55 p-7 shadow-shield-card backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-shield-brand/25 hover:shadow-shield-glow-sm">
                 <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-shield-brand/10 blur-3xl" />
                 <div className="relative mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-shield-glow-sm transition-transform duration-300 group-hover:scale-105">
-                  <BookOpen className="h-6 w-6 text-white" />
+                  <BookOpen className="h-6 w-6 text-shield-on-brand" />
                 </div>
                 <h3 className="relative mb-2 text-lg font-bold text-shield-fg">Bible study</h3>
                 <p className="relative mb-5 text-sm leading-relaxed text-shield-muted">
@@ -292,7 +292,7 @@ export function Home() {
             </Reveal>
 
             <Reveal delay={120}>
-              <div className="group relative h-full overflow-hidden rounded-xl border border-white/[0.06] bg-shield-panel/55 p-7 shadow-shield-card backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-shield-accent/30 hover:shadow-[0_0_40px_-12px_rgba(232,180,76,0.22)]">
+              <div className="group relative h-full overflow-hidden rounded-xl border border-shield-edge/60 bg-shield-panel/55 p-7 shadow-shield-card backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-shield-accent/30 hover:shadow-[0_0_40px_-12px_rgb(var(--sh-accent)/0.22)]">
                 <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-shield-accent/10 blur-3xl" />
                 <div className="relative mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-shield-accent to-shield-accent-dim shadow-lg transition-transform duration-300 group-hover:scale-105">
                   <MessageCircle className="h-6 w-6 text-shield-deep" />
@@ -323,7 +323,7 @@ export function Home() {
           <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
             {MINI_FEATURES.map((feature, i) => (
               <Reveal key={feature.title} delay={i * 100}>
-                <div className="group h-full rounded-xl border border-white/[0.06] bg-shield-panel/40 p-5 shadow-shield-card backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-shield-brand/25">
+                <div className="group h-full rounded-xl border border-shield-edge/60 bg-shield-panel/40 p-5 shadow-shield-card backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-shield-brand/25">
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-shield-brand/20 bg-shield-brand/10">
                       <feature.icon className="h-4 w-4 text-shield-brand" />
@@ -366,7 +366,7 @@ export function Home() {
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {TRUST_POINTS.map((point, i) => (
               <Reveal key={point.title} delay={i * 80}>
-                <div className="flex h-full gap-4 rounded-xl border border-white/[0.06] bg-shield-panel/40 p-6 shadow-shield-card backdrop-blur-md">
+                <div className="flex h-full gap-4 rounded-xl border border-shield-edge/60 bg-shield-panel/40 p-6 shadow-shield-card backdrop-blur-md">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-shield-brand/20 bg-shield-brand/10">
                     <point.icon className="h-5 w-5 text-shield-brand" />
                   </div>
@@ -440,7 +440,7 @@ export function Home() {
               {FAQ_ITEMS.map((item) => (
                 <details
                   key={item.question}
-                  className="group rounded-xl border border-white/[0.06] bg-shield-panel/40 px-5 py-4 shadow-shield-card backdrop-blur-md transition-colors hover:border-shield-brand/25"
+                  className="group rounded-xl border border-shield-edge/60 bg-shield-panel/40 px-5 py-4 shadow-shield-card backdrop-blur-md transition-colors hover:border-shield-brand/25"
                 >
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left text-base font-semibold text-shield-fg [&::-webkit-details-marker]:hidden">
                     {item.question}
@@ -478,7 +478,7 @@ export function Home() {
             <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/chat"
-                className="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-7 py-3 text-sm font-semibold text-white shadow-shield-glow-sm transition-all duration-300 hover:brightness-110 hover:shadow-shield-glow"
+                className="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim px-7 py-3 text-sm font-semibold text-shield-on-brand shadow-shield-glow-sm transition-all duration-300 hover:brightness-110 hover:shadow-shield-glow"
               >
                 <Zap className="h-4 w-4 shrink-0" />
                 <span>Get started free</span>

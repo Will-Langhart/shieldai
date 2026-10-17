@@ -43,11 +43,11 @@ module.exports = {
       },
       backgroundImage: {
         'shield-radial':
-          'radial-gradient(ellipse 120% 80% at 50% -30%, rgba(70, 161, 226, 0.22) 0%, transparent 55%)',
+          'radial-gradient(ellipse 120% 80% at 50% -30%, rgb(var(--sh-brand) / 0.22) 0%, transparent 55%)',
         'shield-radial-soft':
-          'radial-gradient(ellipse 90% 60% at 80% 20%, rgba(70, 161, 226, 0.12) 0%, transparent 50%)',
+          'radial-gradient(ellipse 90% 60% at 80% 20%, rgb(var(--sh-brand) / 0.12) 0%, transparent 50%)',
         'shield-mesh':
-          'radial-gradient(at 40% 20%, rgba(70, 161, 226, 0.08) 0px, transparent 50%), radial-gradient(at 80% 0%, rgba(232, 180, 76, 0.06) 0px, transparent 45%), radial-gradient(at 0% 50%, rgba(70, 161, 226, 0.05) 0px, transparent 40%)',
+          'radial-gradient(at 40% 20%, rgb(var(--sh-brand) / 0.08) 0px, transparent 50%), radial-gradient(at 80% 0%, rgb(var(--sh-accent) / 0.06) 0px, transparent 45%), radial-gradient(at 0% 50%, rgb(var(--sh-brand) / 0.05) 0px, transparent 40%)',
         'gradient-shield-brand':
           'linear-gradient(135deg, #46A1E2 0%, #2E8BC4 45%, #1E6A9E 100%)',
         'gradient-shield-hero':
@@ -56,8 +56,8 @@ module.exports = {
           'linear-gradient(to top, #12151C 0%, #1A1D24 45%, #2C303A 100%)',
       },
       boxShadow: {
-        'shield-glow': '0 0 60px -12px rgba(70, 161, 226, 0.35)',
-        'shield-glow-sm': '0 0 32px -8px rgba(70, 161, 226, 0.28)',
+        'shield-glow': '0 0 60px -12px rgb(var(--sh-brand) / 0.35)',
+        'shield-glow-sm': '0 0 32px -8px rgb(var(--sh-brand) / 0.28)',
         'shield-card':
           '0 20px 50px -24px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04)',
         'shield-inset': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.06)',

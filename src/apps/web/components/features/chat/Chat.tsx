@@ -9,6 +9,7 @@ import { ShieldMark } from './ShieldMark'
 import { DenominationSelector } from '../../ui/DenominationSelector'
 import { UserButton } from '../../auth/UserButton'
 import { AuthModal } from '../../auth/AuthModal'
+import { useWarmTheme } from '../../../hooks/useWarmTheme'
 import {
   Plus,
   Search,
@@ -52,10 +53,8 @@ interface Message {
 // Holds a signed-out user's message while they authenticate. sessionStorage
 // (not state) so it survives the full-page OAuth redirect.
 const PENDING_MESSAGE_KEY = 'shieldai-pending-message'
-const CHAT_THEME_KEY = 'shieldai-chat-theme'
 const SIDEBAR_KEY = 'shieldai-sidebar-collapsed'
 
-type ChatThemePref = 'system' | 'light' | 'dark'
 type ChatMode = 'gentle' | 'scholarly' | 'debate'
 
 // Plan gating is enforced server-side (lib/chat-access.ts); `plan` is just a hint.
@@ -72,7 +71,6 @@ function timeOfDayGreeting() {
   if (h < 18) return 'Good afternoon'
   return 'Good evening'
 }
-const THEME_ORDER: ChatThemePref[] = ['system', 'light', 'dark']
 
 // Buckets conversations Claude-style by last activity. Input is assumed to be
 // sorted newest-first (as chatService returns it); order is preserved within
@@ -131,7 +129,7 @@ export function Chat() {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [themePref, setThemePref] = useState<ChatThemePref>('system')
+  const { pref: themePref, cycle: cycleTheme, themeAttr } = useWarmTheme()
   const authSucceededRef = useRef(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const renameRef = useRef<HTMLInputElement>(null)
@@ -183,26 +181,18 @@ export function Chat() {
     </svg>
   )
 
-  // Load pinned, theme and sidebar preferences from localStorage on mount
+  // Load pinned and sidebar preferences from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem('shieldai-pinned')
       if (stored) setPinnedIds(JSON.parse(stored))
       setGreeting(timeOfDayGreeting())
-      const theme = localStorage.getItem(CHAT_THEME_KEY)
-      if (theme === 'light' || theme === 'dark') setThemePref(theme)
       // The drawer always starts closed on phones; desktop remembers the rail state.
       if (window.innerWidth >= 768 && localStorage.getItem(SIDEBAR_KEY) === 'false') {
         setSidebarCollapsed(false)
       }
     } catch {}
   }, [])
-
-  const cycleTheme = () => {
-    const next = THEME_ORDER[(THEME_ORDER.indexOf(themePref) + 1) % THEME_ORDER.length]
-    setThemePref(next)
-    try { localStorage.setItem(CHAT_THEME_KEY, next) } catch {}
-  }
 
   const setSidebar = (collapsed: boolean) => {
     setSidebarCollapsed(collapsed)
@@ -710,8 +700,8 @@ export function Chat() {
 
   return (
     <div
-      className="chat-theme flex h-screen bg-shield-canvas text-shield-fg"
-      data-chat-theme={themePref === 'system' ? undefined : themePref}
+      className="warm-theme flex h-screen bg-shield-canvas text-shield-fg"
+      {...themeAttr}
     >
       {/* Mobile drawer backdrop */}
       {expanded && (

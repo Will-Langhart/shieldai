@@ -53,9 +53,10 @@
   --color-text-secondary: #9ca3af;
 }
 
-/* Chat re-skin: warm, Claude-like palette scoped to the chat page. Follows the
-   OS by default; data-chat-theme="light|dark" pins an explicit choice. */
-.chat-theme {
+/* Warm, Claude-like palette for opted-in pages (chat, landing — see
+   hooks/useWarmTheme.ts). Follows the OS by default; data-warm-theme=
+   "light|dark" pins an explicit choice. */
+.warm-theme {
   color-scheme: light;
   --sh-void: 237 232 220;
   --sh-deep: 240 236 226;
@@ -78,7 +79,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .chat-theme:not([data-chat-theme='light']) {
+  .warm-theme:not([data-warm-theme='light']) {
     color-scheme: dark;
     --sh-void: 26 26 24;
     --sh-deep: 28 28 26;
@@ -101,7 +102,7 @@
   }
 }
 
-.chat-theme[data-chat-theme='dark'] {
+.warm-theme[data-warm-theme='dark'] {
   color-scheme: dark;
   --sh-void: 26 26 24;
   --sh-deep: 28 28 26;
@@ -123,7 +124,28 @@
   --sh-on-brand: 31 30 28;
 }
 
-.chat-theme ::selection {
+/* Re-point the legacy hex vars at the warm channels so plain CSS that reads
+   them (body/scrollbars/demo) follows along. */
+.warm-theme {
+  --shield-canvas: rgb(var(--sh-canvas));
+  --shield-canvas-soft: rgb(var(--sh-canvas));
+  --shield-canvas-deep: rgb(var(--sh-deep));
+  --shield-brand: rgb(var(--sh-brand));
+  --shield-brand-soft: rgb(var(--sh-brand) / 0.14);
+  --shield-glass: rgb(var(--sh-surface) / 0.6);
+  --shield-glass-strong: rgb(var(--sh-surface) / 0.85);
+  --shield-ring: rgb(var(--sh-brand) / 0.3);
+  --color-primary: rgb(var(--sh-brand));
+  --color-accent: rgb(var(--sh-accent));
+  --color-background: rgb(var(--sh-canvas));
+  --color-surface: rgb(var(--sh-surface));
+  --color-text: rgb(var(--sh-fg));
+  --color-text-secondary: rgb(var(--sh-muted));
+  background-color: rgb(var(--sh-canvas));
+  color: rgb(var(--sh-fg));
+}
+
+.warm-theme ::selection {
   background-color: rgb(var(--sh-brand) / 0.25);
   color: inherit;
 }
@@ -315,8 +337,8 @@ body {
   .shield-page-bg {
     @apply min-h-screen text-shield-fg;
     background:
-      radial-gradient(1000px 520px at 50% -25%, rgba(70, 161, 226, 0.2), transparent 65%),
-      linear-gradient(180deg, rgba(13, 16, 23, 0.98) 0%, rgba(20, 24, 32, 0.98) 42%, rgba(25, 30, 40, 0.98) 100%);
+      radial-gradient(1000px 520px at 50% -25%, rgb(var(--sh-brand) / 0.2), transparent 65%),
+      linear-gradient(180deg, rgb(var(--sh-deep) / 0.98) 0%, rgb(var(--sh-canvas) / 0.98) 42%, rgb(var(--sh-canvas) / 0.98) 100%);
   }
 
   .shield-page-shell {
@@ -329,7 +351,7 @@ body {
   }
 
   .shield-glass-subtle {
-    @apply rounded-xl border border-white/[0.08] bg-shield-surface/55;
+    @apply rounded-xl border border-shield-edge/60 bg-shield-surface/55;
     backdrop-filter: blur(8px);
   }
 
@@ -349,18 +371,18 @@ body {
 
   .shield-input:focus {
     outline: none;
-    border-color: rgba(94, 176, 236, 0.7);
+    border-color: rgb(var(--sh-brand) / 0.7);
     box-shadow: 0 0 0 3px var(--shield-ring);
     background-color: var(--shield-glass-strong);
   }
 
   .shield-btn-primary {
-    @apply rounded-xl bg-gradient-to-r from-shield-brand to-shield-brand-dim px-4 py-2 font-semibold text-white shadow-shield-glow-sm transition-all duration-200;
+    @apply rounded-xl bg-gradient-to-r from-shield-brand to-shield-brand-dim px-4 py-2 font-semibold text-shield-on-brand shadow-shield-glow-sm transition-all duration-200;
   }
 
   .shield-btn-primary:hover {
     filter: brightness(1.08);
-    box-shadow: 0 0 40px -10px rgba(70, 161, 226, 0.5);
+    box-shadow: 0 0 40px -10px rgb(var(--sh-brand) / 0.5);
   }
 
   .shield-btn-ghost {
@@ -372,8 +394,8 @@ body {
   }
 
   .shield-top-nav {
-    @apply sticky top-0 z-30 border-b border-white/[0.07];
-    background: linear-gradient(180deg, rgba(20, 24, 34, 0.92) 0%, rgba(20, 24, 34, 0.78) 100%);
+    @apply sticky top-0 z-30 border-b border-shield-edge/60;
+    background: linear-gradient(180deg, rgb(var(--sh-canvas) / 0.92) 0%, rgb(var(--sh-canvas) / 0.78) 100%);
     backdrop-filter: blur(14px);
   }
 }
