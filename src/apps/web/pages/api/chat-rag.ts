@@ -13,6 +13,7 @@ import { ChatService } from '../../lib/chat-service';
 import { shouldRouteToGraph } from '../../lib/graph-routing';
 import { checkChatAccess, chatAccessDeniedBody } from '../../lib/chat-access';
 import graphHandler from './chat-graph';
+import { generateModeInstructions } from '../../lib/prompt-engineering';
 
 export default async function handler(
   req: NextApiRequest,
@@ -231,7 +232,8 @@ The user identifies as Oriental Orthodox (Coptic, Ethiopian, Armenian, or Syriac
       ? `${denominationGuidance[denomination]}\n\n`
       : '';
 
-    // Step 4b: Build system prompt
+    // Step 4b: Build system prompt. The denomination block leads (highest priority);
+    // the mode block shapes tone/structure (e.g. debate steel-mans the objection first).
     const systemPrompt = `${denominationBlock}You are Shield AI, a Christian AI assistant that provides biblically-grounded responses.
 
 Your role is to:
@@ -242,7 +244,9 @@ Your role is to:
 5. When appropriate, reference specific Bible verses and explain their relevance
 ${denomination ? `6. Always respond through the lens of the user's ${denomination} tradition — this is the highest priority` : ''}
 
-IMPORTANT: Always include relevant Bible verses in your responses and explain how they relate to the user's question. Use the provided context to give accurate, helpful answers.`;
+IMPORTANT: Always include relevant Bible verses in your responses and explain how they relate to the user's question. Use the provided context to give accurate, helpful answers.
+
+${generateModeInstructions(mode)}`;
 
     // Build context from retrieved information
     let contextMessage = '';

@@ -106,7 +106,42 @@ export function generateDenominationContext(denomination: Denomination | null | 
   return `\n\n${DENOMINATION_CONTEXT[denomination]}`;
 }
 
-export function generateSpecializedPrompt(context: PromptContext, mode: 'gentle' | 'scholarly' | 'debate'): string {
+export type ChatMode = 'gentle' | 'scholarly' | 'debate';
+
+// Per-mode instructions shared by every chat pipeline (chat-rag, chat, chat-agentic,
+// graph). Unknown modes fall back to gentle, the free-tier default.
+export function generateModeInstructions(mode: ChatMode | string | null | undefined): string {
+  switch (mode) {
+    case 'scholarly':
+      return `## SCHOLARLY MODE INSTRUCTIONS 📚
+- Use academic, intellectual language and precise theological terminology
+- Go deeper on sources: cite Scripture with its literary and historical context, and name the scholars, Church Fathers, creeds, councils, and primary texts behind each claim
+- Include relevant original-language (Hebrew/Greek) insight where it clarifies meaning
+- Lay out the major interpretive positions fairly before explaining which is best supported and why
+- Provide comprehensive analysis, and point to specific works for further study`;
+
+    case 'debate':
+      return `## DEBATE MODE INSTRUCTIONS ⚔️
+Structure every answer as follows:
+1. Steel-man first: state the strongest, most charitable form of the objection — the version its best advocates would actually defend — in a short paragraph, before rebutting anything
+2. Then respond point by point: break the objection into its key claims and answer each one directly, grounding each response in specific Scripture (cited inline) alongside logical reasoning and historical evidence
+3. Close by summarizing why the Christian position holds up, and name any genuinely open questions honestly
+- Use sharper, more direct language and be assertive in defending positions
+- Never rebut a weaker version of the objection than the one you stated
+- Stay respectful toward the people who hold the view while being firm on the argument`;
+
+    case 'gentle':
+    default:
+      return `## GENTLE MODE INSTRUCTIONS 🤝
+- Use a pastoral, encouraging tone with deep empathy and understanding
+- Provide comfort and hope, emphasizing God's love and grace
+- Use gentle, nurturing language and keep explanations accessible
+- Offer practical steps for growth
+- Keep the answer concise: roughly 2–3 short paragraphs`;
+  }
+}
+
+export function generateSpecializedPrompt(context: PromptContext, mode: ChatMode): string {
   const basePrompt = `You are Shield AI, an apologetics companion that helps believers, seekers, and faith leaders explore and defend the Christian worldview with wisdom, compassion, and intellectual rigor.
 
 ## What a good response does
@@ -125,49 +160,9 @@ Match length to the question and mode. Write flowing prose, not rigid labeled se
 ## Awareness
 Honor the user's denominational tradition when one is provided, and build on earlier turns for consistency. You are here to educate and guide, not to argue or convert — respect other viewpoints and encourage personal study.`;
 
-  // Add mode-specific tone guidance
-  let modeGuidance = '';
-
-  switch (context.mode) {
-    case 'gentle':
-      modeGuidance = `
-## GENTLE MODE INSTRUCTIONS 🤝
-- Use a pastoral, encouraging tone
-- Show deep empathy and understanding
-- Provide comfort and hope
-- Use gentle, nurturing language
-- Focus on building up and encouraging
-- Be patient and understanding
-- Offer practical steps for growth
-- Emphasize God's love and grace`;
-      break;
-    
-    case 'scholarly':
-      modeGuidance = `
-## SCHOLARLY MODE INSTRUCTIONS 📚
-- Use academic, intellectual language
-- Provide detailed citations and references
-- Include historical and theological context
-- Reference scholars, theologians, and philosophers
-- Use precise theological terminology
-- Provide comprehensive analysis
-- Include multiple perspectives and viewpoints
-- Encourage deeper academic study`;
-      break;
-    
-    case 'debate':
-      modeGuidance = `
-## DEBATE MODE INSTRUCTIONS ⚔️
-- Use sharper, more direct language
-- Present strong apologetic arguments
-- Address objections head-on
-- Use logical reasoning and evidence
-- Be more assertive in defending positions
-- Present counter-arguments clearly
-- Use debate-style language and structure
-- Maintain respect while being firm`;
-      break;
-  }
+  // Add mode-specific tone guidance. Keyed on the `mode` argument: analyzeQuestion()
+  // never sets context.mode, so switching on it silently dropped every mode block.
+  const modeGuidance = `\n${generateModeInstructions(mode)}`;
 
   // Add specialized guidance based on context
   let specializedGuidance = '';
