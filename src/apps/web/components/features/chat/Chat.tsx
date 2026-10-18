@@ -433,10 +433,25 @@ export function Chat() {
         // onError: Handle errors
         (error: Error) => {
           console.error('❌ Error in streaming:', error)
+          const content = error.name === 'UpgradeRequired'
+            ? error.message
+            : 'Sorry, I encountered an error. Please try again.'
+          // A rejected request (e.g. a plan-locked mode) fails before any chunk
+          // arrives, so there is no assistant bubble to patch yet — add one.
+          if (!assistantMessageAdded) {
+            assistantMessageAdded = true
+            setMessages(prev => [...prev, {
+              id: assistantMessageId,
+              content,
+              role: 'assistant',
+              created_at: new Date().toISOString(),
+              timestamp: new Date().toISOString(),
+              metadata: {}
+            }])
+            return
+          }
           setMessages(prev => prev.map(msg =>
-            msg.id === assistantMessageId
-              ? { ...msg, content: error.name === 'UpgradeRequired' ? error.message : 'Sorry, I encountered an error. Please try again.' }
-              : msg
+            msg.id === assistantMessageId ? { ...msg, content } : msg
           ))
         },
         { regenerate: opts?.regenerate }
