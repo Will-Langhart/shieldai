@@ -165,7 +165,9 @@ export class ChatService {
     relevantVideos?: any[],
     bibleVerses?: any[],
     videoMetadata?: any,
-    user?: any
+    user?: any,
+    /** Merged into the top level of `metadata`, e.g. the agent's widgets. */
+    extraMetadata?: Record<string, unknown>
   ): Promise<Message> {
     const client = supabaseClient || supabase;
     console.log('Adding message to conversation:', conversationId, 'role:', role, 'content length:', content.length);
@@ -191,7 +193,8 @@ export class ChatService {
         metadata: {
           relevant_videos: relevantVideos || [],
           bible_verses: bibleVerses || [],
-          video_metadata: videoMetadata || {}
+          video_metadata: videoMetadata || {},
+          ...extraMetadata
         }
       })
       .select()

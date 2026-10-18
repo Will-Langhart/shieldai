@@ -10,9 +10,10 @@ import { applyChatRateLimit } from '../../lib/rate-limit';
 import { bibleService } from '../../lib/bible-service';
 import { hybridBibleSearch } from '../../lib/bible-hybrid';
 import { ChatService } from '../../lib/chat-service';
-import { shouldRouteToGraph } from '../../lib/graph-routing';
+import { shouldRouteToGraph, shouldRouteToAgent } from '../../lib/graph-routing';
 import { checkChatAccess, chatAccessDeniedBody } from '../../lib/chat-access';
 import graphHandler from './chat-graph';
+import agentHandler from './chat-agent';
 import { generateModeInstructions } from '../../lib/prompt-engineering';
 
 export default async function handler(
@@ -29,6 +30,11 @@ export default async function handler(
   // graphHandler runs its own rate-limit + auth, so we delegate first.
   if (shouldRouteToGraph(req)) {
     return graphHandler(req, res);
+  }
+  // A/B: the Scripture agent (tool-use loop over lib/scripture) replaces the eager
+  // retrieval below for the AGENT_ROLLOUT_PCT bucket or an explicit ?agent=1.
+  if (shouldRouteToAgent(req)) {
+    return agentHandler(req, res);
   }
 
   const cid = withCorrelationId(req, `chat_rag_${Date.now()}`);

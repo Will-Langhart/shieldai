@@ -44,3 +44,21 @@ export function shouldRouteToGraph(req: NextApiRequest): boolean {
   if (flag !== undefined) return flag;
   return GRAPH_ROLLOUT_PCT > 0 && rolloutBucket(req) < GRAPH_ROLLOUT_PCT;
 }
+
+/**
+ * Scripture-agent rollout (`AGENT_ROLLOUT_PCT`), same bucketing as the graph
+ * but taken from the TOP of the 0-99 range so the two arms don't overlap while
+ * both run. Override per request with ?agent=1|0 or the x-shield-agent header.
+ * Only fresh streaming turns qualify: the agent has no JSON response shape and
+ * no regenerate support yet, so those stay on chat-rag.
+ */
+export const AGENT_ROLLOUT_PCT = Math.min(Math.max(Number(process.env.AGENT_ROLLOUT_PCT || 0), 0), 100);
+
+export function shouldRouteToAgent(req: NextApiRequest): boolean {
+  if (!(req.body as any)?.stream || (req.body as any)?.regenerate) return false;
+  const header = req.headers['x-shield-agent'];
+  const raw = (Array.isArray(header) ? header[0] : header) ?? (typeof req.query.agent === 'string' ? req.query.agent : undefined);
+  if (raw === '1' || raw === 'true') return true;
+  if (raw === '0' || raw === 'false') return false;
+  return AGENT_ROLLOUT_PCT > 0 && rolloutBucket(req) >= 100 - AGENT_ROLLOUT_PCT;
+}
