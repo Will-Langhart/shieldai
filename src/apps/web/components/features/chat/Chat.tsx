@@ -723,7 +723,7 @@ export function Chat() {
             {/* Header: brand + collapse */}
             <div className="flex items-center justify-between px-3 pb-1 pt-3">
               <Link href="/" className="flex items-center gap-2 rounded-lg px-1.5 py-1 transition-opacity hover:opacity-80">
-                <ShieldMark className="h-6 w-6 text-shield-brand" />
+                <img src="/logo.png" alt="" className="h-7 w-7 rounded-lg" />
                 <span className="font-serif text-[17px] font-semibold tracking-tight text-shield-fg">Shield AI</span>
               </Link>
               <button onClick={() => setSidebar(true)} className={railButton} title="Close sidebar">

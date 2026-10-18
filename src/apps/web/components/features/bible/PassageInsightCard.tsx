@@ -65,7 +65,7 @@ export function PassageInsightCard({ insight, loading, failed, onGenerate, onOpe
       </header>
 
       {open && (
-        <div className="relative border-t border-white/[0.06] px-5 pb-5 pt-4">
+        <div className="relative border-t border-shield-edge/60 px-5 pb-5 pt-4">
           {loading && (
             <div className="space-y-2.5">
               {['w-full', 'w-11/12', 'w-4/5', 'w-2/3'].map(w => (
@@ -89,7 +89,7 @@ export function PassageInsightCard({ insight, loading, failed, onGenerate, onOpe
                       key={t.id}
                       onClick={() => setTab(t.id)}
                       className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
-                        tab === t.id ? 'bg-shield-fg text-shield-void' : 'text-shield-muted hover:bg-white/[0.06] hover:text-shield-fg'
+                        tab === t.id ? 'bg-shield-fg text-shield-void' : 'text-shield-muted hover:bg-shield-fg/[0.06] hover:text-shield-fg'
                       }`}
                     >
                       {t.label}
@@ -134,7 +134,7 @@ export function PassageInsightCard({ insight, loading, failed, onGenerate, onOpe
                     <button
                       key={i}
                       onClick={() => onOpenReference?.(cr.reference)}
-                      className="group rounded-xl border border-white/[0.07] bg-shield-void/30 p-3.5 text-left transition-colors hover:border-shield-brand/40 hover:bg-shield-brand/[0.06]"
+                      className="group rounded-xl border border-shield-edge/60 bg-shield-void/30 p-3.5 text-left transition-colors hover:border-shield-brand/40 hover:bg-shield-brand/[0.06]"
                     >
                       <p className="mb-1.5 flex items-center gap-1.5 text-[12px] font-semibold text-shield-brand">
                         <Quote className="h-3 w-3" />{cr.reference}
@@ -150,7 +150,7 @@ export function PassageInsightCard({ insight, loading, failed, onGenerate, onOpe
               {tab === 'questions' && (
                 <ol className="space-y-2.5">
                   {insight.studyQuestions.map((q, i) => (
-                    <li key={i} className="flex gap-3 rounded-xl bg-white/[0.03] p-3 text-[13.5px] leading-relaxed text-shield-fg/85">
+                    <li key={i} className="flex gap-3 rounded-xl bg-shield-fg/[0.03] p-3 text-[13.5px] leading-relaxed text-shield-fg/85">
                       <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-shield-accent/15 text-[11px] font-semibold text-shield-accent">{i + 1}</span>
                       <span>{typeof q === 'string' ? q : q.question}</span>
                     </li>

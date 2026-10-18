@@ -4,12 +4,14 @@ import { Header } from '../components/Header'
 import { EnhancedInsightsQuery } from '../components/features/bible/EnhancedInsightsQuery'
 import { ProtectedRoute } from '../components/auth/ProtectedRoute'
 import { Seo } from '../components/Seo'
+import { useWarmTheme } from '../hooks/useWarmTheme'
 
 interface InsightsHistoryPageProps {
   userId?: string
 }
 
 export default function InsightsHistoryPage({ userId }: InsightsHistoryPageProps) {
+  const { themeAttr } = useWarmTheme()
   return (
     <>
       <Seo
@@ -17,6 +19,7 @@ export default function InsightsHistoryPage({ userId }: InsightsHistoryPageProps
         description="View, manage, and analyze your AI-generated Bible insights history with Shield AI."
         path="/insights-history"
       />
+      <div className="warm-theme" {...themeAttr}>
       <ProtectedRoute>
       <div className="shield-page-bg">
         <Header showNav />
@@ -32,6 +35,7 @@ export default function InsightsHistoryPage({ userId }: InsightsHistoryPageProps
         </main>
       </div>
       </ProtectedRoute>
+      </div>
     </>
   )
 }

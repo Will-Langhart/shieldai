@@ -162,7 +162,7 @@ export function JournalNoteEditor({ insightId, initialNote = '', onSave }: Journ
       {/* Header toolbar */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-shield-panel bg-shield-layer/50">
         <div className="flex items-center gap-1">
-          <PenTool className="h-4 w-4 text-purple-400 mr-1.5 shrink-0" />
+          <PenTool className="h-4 w-4 text-shield-brand mr-1.5 shrink-0" />
           <span className="text-sm font-medium text-shield-fg">Journal Note</span>
         </div>
 
@@ -174,14 +174,14 @@ export function JournalNoteEditor({ insightId, initialNote = '', onSave }: Journ
             </span>
           )}
           {status === 'saved' && (
-            <span className="flex items-center gap-1 text-emerald-400 text-xs">
+            <span className="flex items-center gap-1 text-emerald-600 text-xs">
               <Check className="h-3 w-3" />Saved
             </span>
           )}
           {status === 'error' && (
             <button
               onClick={handleRetry}
-              className="flex items-center gap-1 text-red-400 text-xs hover:text-red-300 transition-colors"
+              className="flex items-center gap-1 text-red-500 text-xs hover:text-red-600 transition-colors"
               title={errorMsg ?? 'Save failed'}
             >
               <RefreshCw className="h-3 w-3" />
@@ -258,7 +258,7 @@ export function JournalNoteEditor({ insightId, initialNote = '', onSave }: Journ
 
       {/* Error banner */}
       {status === 'error' && errorMsg && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs">
+        <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border-b border-red-500/20 text-red-500 text-xs">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           <span>Save failed: {errorMsg}</span>
         </div>

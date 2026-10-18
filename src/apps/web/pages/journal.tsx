@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useWarmTheme } from '../hooks/useWarmTheme'
 
 interface Insight {
   id: string
@@ -101,7 +102,7 @@ function InsightCard({
             <span className="text-[10px] font-medium uppercase tracking-wider text-shield-muted/60 border border-shield-edge rounded px-1.5 py-0.5">
               {insight.bible_version}
             </span>
-            {insight.is_favorite && <Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" />}
+            {insight.is_favorite && <Star className="h-3.5 w-3.5 text-shield-accent fill-shield-accent" />}
           </div>
 
           <p className="text-shield-muted text-xs line-clamp-2 leading-relaxed mb-2">
@@ -134,7 +135,7 @@ function InsightCard({
         <div className="flex flex-col items-end gap-2 shrink-0">
           <div className={`flex items-center gap-1 text-[10px] font-medium rounded px-2 py-0.5 border ${
             hasNote
-              ? 'border-purple-500/30 bg-purple-500/10 text-purple-400'
+              ? 'border-shield-brand/30 bg-shield-brand/10 text-shield-brand'
               : 'border-shield-edge bg-transparent text-shield-muted/50'
           }`}>
             <PenTool className="h-2.5 w-2.5" />
@@ -170,6 +171,7 @@ function InsightCard({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function JournalPage() {
+  const { themeAttr } = useWarmTheme()
   const [insights, setInsights] = useState<Insight[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -247,6 +249,7 @@ export default function JournalPage() {
         description="Your personal Bible study journal with Shield AI — capture reflections, save AI insights, and track your walk through Scripture over time."
         path="/journal"
       />
+      <div className="warm-theme" {...themeAttr}>
       <ProtectedRoute>
       <div className="shield-page-bg">
         <Header showNav />
@@ -254,8 +257,8 @@ export default function JournalPage() {
           {/* Page header */}
           <div className="shield-glass-panel mb-8 px-6 py-6">
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg">
-                <BookMarked className="h-5 w-5 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-shield-brand to-shield-brand-dim shadow-lg">
+                <BookMarked className="h-5 w-5 text-shield-on-brand" />
               </div>
               <h1 className="text-3xl font-bold text-shield-fg">Study Journal</h1>
             </div>
@@ -269,10 +272,10 @@ export default function JournalPage() {
             <div className="grid grid-cols-3 gap-3 mb-6">
               {[
                 { label: 'Insights', value: stats.total, color: 'text-shield-brand' },
-                { label: 'With notes', value: stats.withNotes, color: 'text-purple-400' },
-                { label: 'Favorites', value: stats.favorites, color: 'text-yellow-400' },
+                { label: 'With notes', value: stats.withNotes, color: 'text-shield-brand' },
+                { label: 'Favorites', value: stats.favorites, color: 'text-shield-accent' },
               ].map(({ label, value, color }) => (
-                <div key={label} className="rounded-xl border border-white/[0.08] bg-shield-panel/65 px-4 py-3 text-center backdrop-blur-md">
+                <div key={label} className="rounded-xl border border-shield-edge bg-shield-panel/65 px-4 py-3 text-center backdrop-blur-md">
                   <p className={`text-2xl font-bold ${color}`}>{value}</p>
                   <p className="text-xs text-shield-muted mt-0.5">{label}</p>
                 </div>
@@ -317,7 +320,7 @@ export default function JournalPage() {
           )}
 
           {error && (
-            <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-red-400 text-sm">
+            <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-red-500 text-sm">
               <AlertTriangle className="h-5 w-5 shrink-0" />
               {error}
             </div>
@@ -356,6 +359,7 @@ export default function JournalPage() {
         </main>
       </div>
       </ProtectedRoute>
+      </div>
     </>
   )
 }
