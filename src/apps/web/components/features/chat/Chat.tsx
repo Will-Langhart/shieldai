@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useAuth } from '../../../contexts/AuthContext'
-import { chatService } from '../../../services/chatService'
+import { chatService, AGENT_CHAT_ENABLED } from '../../../services/chatService'
 import { useRouter } from 'next/router'
 import { navItems, isActivePath } from '../../layout/navItems'
-import { EnhancedMessage } from './EnhancedMessage'
+import { EnhancedMessage, type AgentState } from './EnhancedMessage'
+import type { WidgetEnvelope } from '../../../lib/scripture/widgets'
 import { ShieldMark } from './ShieldMark'
 import { DenominationSelector } from '../../ui/DenominationSelector'
 import { UserButton } from '../../auth/UserButton'
@@ -47,7 +48,10 @@ interface Message {
       feedback?: string
       reaction?: string
     }
+    widgets?: WidgetEnvelope[]
   }
+  /** Live Scripture-agent state while the reply streams. */
+  agent?: AgentState
 }
 
 // Holds a signed-out user's message while they authenticate. sessionStorage
@@ -392,8 +396,57 @@ export function Chat() {
     }
   }
 
+  // Scripture-agent reply over AG-UI: tool activity, widgets, then the answer.
+  const streamAgentReply = async (text: string) => {
+    const id = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+    let added = false
+    const update = (fn: (m: Message) => Message) => {
+      if (!added) {
+        added = true
+        const base: Message = {
+          id, content: '', role: 'assistant', created_at: new Date().toISOString(),
+          timestamp: new Date().toISOString(), metadata: {}, agent: { tools: [], widgets: [] },
+        }
+        setMessages(prev => [...prev, fn(base)])
+        return
+      }
+      setMessages(prev => prev.map(m => (m.id === id ? fn(m) : m)))
+    }
+    const agent = (m: Message): AgentState => m.agent ?? { tools: [], widgets: [] }
+
+    try {
+      const result = await chatService.sendAgentMessage(text, currentConversationId || undefined, selectedMode, {
+        onText: delta => update(m => ({ ...m, content: m.content + delta })),
+        onToolStart: (toolId, name) => update(m => ({
+          ...m, agent: { ...agent(m), tools: [...agent(m).tools, { id: toolId, name, status: 'Searching Scripture', done: false }] },
+        })),
+        onToolStatus: (toolId, status) => update(m => ({
+          ...m, agent: { ...agent(m), tools: agent(m).tools.map(t => (t.id === toolId ? { ...t, status } : t)) },
+        })),
+        onToolDone: toolId => update(m => ({
+          ...m, agent: { ...agent(m), tools: agent(m).tools.map(t => (t.id === toolId ? { ...t, done: true } : t)) },
+        })),
+        onWidget: envelope => update(m => ({ ...m, agent: { ...agent(m), widgets: [...agent(m).widgets, envelope] } })),
+        onActivity: label => update(m => ({ ...m, agent: { ...agent(m), activity: label } })),
+      })
+      if (result.conversationId) setCurrentConversationId(result.conversationId)
+      loadConversations()
+    } catch (error) {
+      console.error('❌ Error in agent stream:', error)
+      const content = error instanceof Error && error.name === 'UpgradeRequired'
+        ? error.message
+        : 'Sorry, I encountered an error. Please try again.'
+      update(m => ({ ...m, content, agent: { ...agent(m), activity: null } }))
+    }
+  }
+
   // Core streaming call — shared by send and regenerate.
   const streamAssistantReply = async (text: string, opts?: { regenerate?: boolean }) => {
+    if (AGENT_CHAT_ENABLED && !opts?.regenerate) {
+      setIsLoading(true)
+      try { await streamAgentReply(text) } finally { setIsLoading(false) }
+      return
+    }
     setIsLoading(true)
     try {
       const assistantMessageId = `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`

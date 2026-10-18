@@ -1,6 +1,20 @@
 import { apiService } from './api'
 import { devFallbackToken } from '../lib/test-token'
 import { ChatMessage, Conversation } from '../types/chat'
+import { readAguiStream } from './agui-stream'
+import type { WidgetEnvelope } from '../lib/scripture/widgets'
+
+/** True when the web chat should talk to the Scripture agent over AG-UI. */
+export const AGENT_CHAT_ENABLED = process.env.NEXT_PUBLIC_AGUI_CHAT === '1'
+
+export interface AgentStreamHandlers {
+  onText: (delta: string) => void
+  onToolStart: (toolCallId: string, name: string) => void
+  onToolStatus: (toolCallId: string, status: string) => void
+  onToolDone: (toolCallId: string) => void
+  onWidget: (envelope: WidgetEnvelope) => void
+  onActivity: (label: string | null) => void
+}
 
 /**
  * Error for a failed chat request. Plan-limit denials (403 upgrade_required)
@@ -223,6 +237,73 @@ export class ChatService {
       console.error('Error sending streaming message:', error);
       onError(error as Error);
     }
+  }
+
+  /**
+   * Stream a reply from the Scripture agent as AG-UI events. Errors (including a
+   * plan-locked mode) reject with the same Error shapes as sendStreamingMessage.
+   */
+  async sendAgentMessage(
+    message: string,
+    conversationId: string | undefined,
+    mode: 'gentle' | 'scholarly' | 'debate',
+    handlers: AgentStreamHandlers
+  ): Promise<{ conversationId?: string; text: string }> {
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) throw new Error('Please sign in to send messages')
+
+    const response = await fetch('/api/chat-agent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ message, conversationId, mode, stream: true, protocol: 'ag-ui' }),
+    })
+    if (!response.ok) throw await chatErrorFromResponse(response)
+    if (!response.body) throw new Error('No response body reader available')
+
+    let returnedId = response.headers.get('x-conversation-id') || conversationId || undefined
+    let text = ''
+    let failure: string | null = null
+
+    await readAguiStream(response.body, event => {
+      switch (event.type) {
+        case 'TEXT_MESSAGE_START':
+          handlers.onActivity(null)
+          // Separate consecutive model turns (narration, then the answer).
+          if (text) { text += '\n\n'; handlers.onText('\n\n') }
+          break
+        case 'TEXT_MESSAGE_CONTENT':
+          text += event.delta || ''
+          handlers.onText(event.delta || '')
+          break
+        case 'TOOL_CALL_START':
+          handlers.onToolStart(event.toolCallId, event.toolCallName)
+          break
+        case 'TOOL_CALL_RESULT':
+          handlers.onToolDone(event.toolCallId)
+          break
+        case 'STATE_SNAPSHOT':
+          if (event.snapshot?.conversationId) returnedId = event.snapshot.conversationId
+          break
+        case 'CUSTOM':
+          if (event.name === 'tool_status') handlers.onToolStatus(event.value.toolCallId, event.value.status)
+          else if (event.name === 'widget') handlers.onWidget(event.value)
+          else if (event.name === 'activity') handlers.onActivity(event.value?.label ?? null)
+          break
+        case 'RUN_ERROR':
+          failure = event.message || 'Sorry, I encountered an error. Please try again.'
+          break
+      }
+    })
+
+    handlers.onActivity(null)
+    if (failure && !text) throw new Error(failure)
+    return { conversationId: returnedId, text }
   }
 
   /**
