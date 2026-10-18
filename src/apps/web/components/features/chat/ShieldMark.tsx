@@ -1,22 +1,26 @@
 import React from 'react'
 
+// Traced from public/brand/shieldai-brand-original.png on a 24-unit grid.
+const SHIELD =
+  'M12 2C9.6 3.76 6.9 4.66 4.6 5.07Q3.88 5.2 3.88 6.02V7.6C3.88 13.92 6.86 19.11 12 22C17.14 19.11 20.12 13.92 20.12 7.6V6.02Q20.12 5.2 19.4 5.07C17.1 4.66 14.4 3.76 12 2Z'
+const CROSS =
+  'M11.48 5H12.52A.6.6 0 0 1 13.12 5.6V8.77H16.39A.6.6 0 0 1 16.99 9.37V10.27A.6.6 0 0 1 16.39 10.87H13.12V18.9A.6.6 0 0 1 12.52 19.5H11.48A.6.6 0 0 1 10.88 18.9V10.87H7.57A.6.6 0 0 1 6.97 10.27V9.37A.6.6 0 0 1 7.57 8.77H10.88V5.6A.6.6 0 0 1 11.48 5Z'
+
 /**
- * Single-color shield-and-cross mark for the chat. Uses currentColor so it
- * picks up the warm brand tone in both chat themes (the full-color logo.png
- * stays the identity mark elsewhere on the site).
+ * Single-color brand shield with the cross knocked out (evenodd), so it reads
+ * on any background and takes its color from currentColor.
  */
 export function ShieldMark({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
       <path
-        d="M12 2.25 4.5 5.1v6.15c0 4.7 3.15 8.85 7.5 10.5 4.35-1.65 7.5-5.8 7.5-10.5V5.1L12 2.25Z"
+        d={`${SHIELD} ${CROSS}`}
         fill="currentColor"
-        fillOpacity="0.14"
+        fillRule="evenodd"
         stroke="currentColor"
-        strokeWidth="1.6"
+        strokeWidth="0.35"
         strokeLinejoin="round"
       />
-      <path d="M12 7.25v9M8.75 10.5h6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   )
 }
