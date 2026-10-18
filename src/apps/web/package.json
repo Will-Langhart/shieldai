@@ -8,11 +8,13 @@
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "next lint",
-    "test": "echo 'No tests yet' && exit 0",
-    "test:ci": "echo 'No tests yet' && exit 0",
+    "test": "vitest run",
+    "test:ci": "vitest run",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@ag-ui/core": "1.0.3",
+    "@ag-ui/encoder": "1.0.3",
     "@anthropic-ai/sdk": "^0.116.0",
     "@langchain/core": "^1.2.4",
     "@langchain/langgraph": "^1.4.9",
@@ -55,7 +57,8 @@
     "eslint-config-next": "14.0.0",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
   },
   "engines": {
     "node": ">=18.0.0",
