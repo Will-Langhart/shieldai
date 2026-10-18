@@ -71,10 +71,10 @@
   --sh-edge-strong: 200 192 174;
   --sh-muted: 110 106 97;
   --sh-fg: 31 30 28;
-  --sh-brand: 181 118 58;
-  --sh-brand-dim: 154 98 48;
-  --sh-accent: 181 118 58;
-  --sh-accent-dim: 154 98 48;
+  --sh-brand: 184 23 45;
+  --sh-brand-dim: 142 11 34;
+  --sh-accent: 217 43 61;
+  --sh-accent-dim: 184 23 45;
   --sh-on-brand: 255 255 255;
 }
 
@@ -94,11 +94,11 @@
     --sh-edge-strong: 78 76 71;
     --sh-muted: 163 158 147;
     --sh-fg: 236 233 225;
-    --sh-brand: 212 162 106;
-    --sh-brand-dim: 191 138 82;
-    --sh-accent: 212 162 106;
-    --sh-accent-dim: 191 138 82;
-    --sh-on-brand: 31 30 28;
+    --sh-brand: 229 72 77;
+    --sh-brand-dim: 196 43 58;
+    --sh-accent: 242 107 114;
+    --sh-accent-dim: 229 72 77;
+    --sh-on-brand: 255 255 255;
   }
 }
 
@@ -117,11 +117,11 @@
   --sh-edge-strong: 78 76 71;
   --sh-muted: 163 158 147;
   --sh-fg: 236 233 225;
-  --sh-brand: 212 162 106;
-  --sh-brand-dim: 191 138 82;
-  --sh-accent: 212 162 106;
-  --sh-accent-dim: 191 138 82;
-  --sh-on-brand: 31 30 28;
+  --sh-brand: 229 72 77;
+  --sh-brand-dim: 196 43 58;
+  --sh-accent: 242 107 114;
+  --sh-accent-dim: 229 72 77;
+  --sh-on-brand: 255 255 255;
 }
 
 /* Re-point the legacy hex vars at the warm channels so plain CSS that reads
