@@ -127,6 +127,35 @@ export class BibleVersesIndex {
   }
 
   /**
+   * Fetch verse records by id (e.g. "de4e12af7f28f599-02_JHN_3_16"). Integrated
+   * indexes return each record's fields as vector metadata. Ids that don't exist
+   * are simply absent, so an empty list means "no such verses"; an unreachable
+   * index throws instead, so callers can tell the two apart.
+   */
+  static async fetchVerses(namespace: string, ids: string[]): Promise<BibleVerseHit[]> {
+    if (!ids.length) return [];
+    const host = await this.resolveHost();
+    if (!host) throw new Error('bible-verses index host unavailable');
+    const params = new URLSearchParams({ namespace });
+    for (const id of ids) params.append('ids', id);
+    const res = await fetch(`https://${host}/vectors/fetch?${params}`, {
+      headers: { 'Api-Key': this.apiKey(), 'X-Pinecone-Api-Version': PINECONE_API_VERSION },
+    });
+    if (!res.ok) throw new Error(`bible-verses fetch failed (${res.status})`);
+    const data = await res.json();
+    return Object.entries<any>(data?.vectors || {}).map(([id, v]) => ({
+      id,
+      score: 1,
+      reference: String(v.metadata?.reference ?? ''),
+      text: String(v.metadata?.[TEXT_FIELD] ?? ''),
+      book: String(v.metadata?.book ?? ''),
+      chapter: Number(v.metadata?.chapter ?? 0),
+      verse: Number(v.metadata?.verse ?? 0),
+      version: String(v.metadata?.version ?? ''),
+    }));
+  }
+
+  /**
    * Semantic search over a version namespace. Pinecone embeds `query` with the
    * index's model. Returns compact hits shaped like the legacy service so the
    * graph's scripture node is a drop-in swap.

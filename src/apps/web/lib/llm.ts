@@ -271,3 +271,83 @@ function flatten(m: Anthropic.MessageParam): { role: string; content: string } {
           .join('');
   return { role: m.role, content };
 }
+
+export interface ToolRoundParams {
+  system: string;
+  /** Full Anthropic-shape history, including prior tool_use / tool_result blocks. */
+  messages: Anthropic.MessageParam[];
+  tools: Anthropic.Tool[];
+  /** `{ type: 'none' }` makes the model answer from what it has. Forcing a tool conflicts with thinking. */
+  toolChoice?: Anthropic.ToolChoiceAuto | Anthropic.ToolChoiceNone;
+  model: string;
+  maxTokens: number;
+  effort?: Effort;
+  threadId?: string;
+  userId?: string;
+  operation?: string;
+}
+
+export interface ToolRoundResult {
+  /** The assistant's content blocks verbatim (thinking included), to append to history. */
+  content: Anthropic.ContentBlock[];
+  text: string;
+  toolUses: Anthropic.ToolUseBlock[];
+  stopReason: string | null;
+}
+
+/**
+ * One streamed model turn of a tool-use loop. Text deltas go to `onText` as
+ * they arrive; `onToolStart` fires when the model opens a tool call, before its
+ * arguments finish, so the UI can show activity immediately. The caller runs
+ * the tools and calls again with the results appended.
+ */
+export async function streamToolRound(
+  p: ToolRoundParams,
+  handlers: { onText?: (delta: string) => void; onToolStart?: (id: string, name: string) => void } = {}
+): Promise<ToolRoundResult> {
+  return traceModelCall(
+    {
+      ...traced({ ...p, messages: [] }),
+      system: p.system,
+      messages: p.messages.map(flatten),
+    },
+    async () => {
+      const stream = getClaude().messages.stream({
+        model: p.model,
+        max_tokens: p.maxTokens,
+        system: p.system,
+        messages: p.messages,
+        tools: p.tools,
+        ...(p.toolChoice ? { tool_choice: p.toolChoice } : {}),
+        ...outputConfig(p.effort),
+      } as Anthropic.MessageStreamParams);
+
+      stream.on('streamEvent', (event) => {
+        if (event.type === 'content_block_start' && event.content_block.type === 'tool_use') {
+          handlers.onToolStart?.(event.content_block.id, event.content_block.name);
+        } else if (event.type === 'content_block_delta' && event.delta.type === 'text_delta' && event.delta.text) {
+          handlers.onText?.(event.delta.text);
+        }
+      });
+
+      const message = await stream.finalMessage();
+      return {
+        message,
+        result: {
+          content: message.content,
+          text: textOf(message),
+          toolUses: message.content.filter((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'),
+          stopReason: message.stop_reason,
+        },
+      };
+    },
+    ({ message, result }) => ({
+      text: result.text,
+      model: message.model,
+      inputTokens: message.usage?.input_tokens,
+      outputTokens: message.usage?.output_tokens,
+      cacheReadTokens: message.usage?.cache_read_input_tokens ?? undefined,
+      cacheWriteTokens: message.usage?.cache_creation_input_tokens ?? undefined,
+    })
+  ).then((r) => r.result);
+}
