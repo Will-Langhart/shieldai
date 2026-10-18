@@ -27,7 +27,23 @@ export function useWarmTheme() {
     root.classList.add('warm-theme')
     if (pref === 'system') root.removeAttribute('data-warm-theme')
     else root.setAttribute('data-warm-theme', pref)
+
+    // Tint the mobile browser chrome to the page canvas, and keep it in sync
+    // if the OS scheme flips while we're on 'system'.
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    const original = meta?.content
+    const syncThemeColor = () => {
+      if (!meta) return
+      const channels = getComputedStyle(root).getPropertyValue('--sh-canvas').trim()
+      if (channels) meta.content = `rgb(${channels.split(/\s+/).join(', ')})`
+    }
+    syncThemeColor()
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    mq.addEventListener('change', syncThemeColor)
+
     return () => {
+      mq.removeEventListener('change', syncThemeColor)
+      if (meta && original) meta.content = original
       root.classList.remove('warm-theme')
       root.removeAttribute('data-warm-theme')
     }

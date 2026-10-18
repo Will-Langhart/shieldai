@@ -111,7 +111,7 @@ export const UserProfile= ({ onClose }: UserProfileProps) => {
           <div className={`mb-4 px-4 py-3 rounded-lg ${
             message.includes('Error') 
               ? 'bg-red-500/20 border border-red-500 text-red-200' 
-              : 'bg-green-500/20 border border-green-500 text-green-200'
+              : 'bg-green-500/10 border border-green-500/40 text-shield-fg'
           }`}>
             {message}
           </div>
@@ -120,8 +120,8 @@ export const UserProfile= ({ onClose }: UserProfileProps) => {
         <div className="space-y-4">
           {/* User Info */}
           <div className="flex items-center space-x-3 p-4 bg-shield-canvas rounded-lg">
-            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-shield-brand rounded-full flex items-center justify-center">
+              <User className="w-6 h-6 text-shield-on-brand" />
             </div>
             <div>
               <p className="text-shield-fg font-medium">
@@ -165,7 +165,7 @@ export const UserProfile= ({ onClose }: UserProfileProps) => {
               value={denomination}
               onChange={e => handleSaveDenomination(e.target.value as Denomination | '')}
               disabled={denominationSaving}
-              className="w-full mt-1 px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full mt-1 px-3 py-2 bg-shield-panel border border-shield-edge rounded-lg text-shield-fg text-sm focus:outline-none focus:ring-2 focus:ring-shield-brand/50 disabled:opacity-50"
             >
               <option value="">No preference</option>
               {DENOMINATIONS.map(d => (
