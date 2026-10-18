@@ -182,7 +182,7 @@ export function MarginNotes({
                 </span>
                 {slot.saving && <Loader2 className="h-3 w-3 animate-spin text-shield-muted" />}
                 {slot.saved && !slot.dirty && !slot.saving && (
-                  <span className="flex items-center gap-1 text-[10px] text-shield-brand/80">
+                  <span className="flex items-center gap-1 text-[10px] text-emerald-600/90">
                     <Check className="h-3 w-3" /> Saved
                   </span>
                 )}

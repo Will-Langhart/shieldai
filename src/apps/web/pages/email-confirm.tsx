@@ -44,8 +44,8 @@ export function EmailConfirm() {
 
         {status === 'success' && (
           <>
-            <div className="w-16 h-16 bg-shield-brand rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-shield-on-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>

@@ -117,7 +117,7 @@ export function DenominationSelector({
           <Church className="w-4 h-4 text-shield-muted" />
           <span className="text-sm font-medium text-shield-fg">Christian Denomination</span>
           {status === 'saved' && (
-            <span className="ml-auto text-xs text-shield-brand font-medium">Saved ✓</span>
+            <span className="ml-auto text-xs text-emerald-600 font-medium">Saved ✓</span>
           )}
           {status === 'error' && (
             <span className="ml-auto text-xs text-red-500 flex items-center gap-1">

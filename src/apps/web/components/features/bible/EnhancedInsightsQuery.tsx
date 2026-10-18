@@ -29,7 +29,6 @@ import {
   Cross, 
   Clock, 
   BookOpen,
-  Shield,
   Sparkles,
   BarChart3,
   Users,
@@ -41,6 +40,7 @@ import {
 import { supabase } from '../../../lib/supabase'
 import { InsightDetailView } from './InsightDetailView'
 import { InsightsAnalytics } from './InsightsAnalytics'
+import { ShieldMark } from '../chat/ShieldMark'
 
 interface Insight {
   id: string
@@ -528,7 +528,7 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
       <div className="shield-glass-panel p-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-3">
-            <Shield className="h-8 w-8 text-shield-brand" />
+            <ShieldMark className="h-8 w-8 text-shield-brand" />
             <h1 className="text-2xl font-bold text-shield-fg">Shield AI Apologetics Insights</h1>
           </div>
           <div className="flex items-center space-x-2">
@@ -917,7 +917,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
             {/* Shield AI Header */}
             <div className="rounded-lg border border-shield-edge bg-shield-panel/80 p-3">
               <div className="flex items-center space-x-2 mb-1">
-                <Shield className="h-5 w-5 text-shield-brand" />
+                <ShieldMark className="h-5 w-5 text-shield-brand" />
                 <h4 className="font-semibold text-shield-fg">Shield AI Apologetics Insights</h4>
               </div>
               <p className="text-shield-muted text-sm">

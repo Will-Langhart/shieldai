@@ -174,7 +174,7 @@ export function JournalNoteEditor({ insightId, initialNote = '', onSave }: Journ
             </span>
           )}
           {status === 'saved' && (
-            <span className="flex items-center gap-1 text-shield-brand text-xs">
+            <span className="flex items-center gap-1 text-emerald-600 text-xs">
               <Check className="h-3 w-3" />Saved
             </span>
           )}

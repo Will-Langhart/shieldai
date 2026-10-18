@@ -1190,7 +1190,7 @@ export function Bible() {
             <div className="pointer-events-auto flex max-w-full items-center gap-1 rounded-full border border-shield-edge bg-shield-layer/95 py-1.5 pl-4 pr-1.5 shadow-2xl backdrop-blur-xl">
               <span className="mr-2 truncate font-scripture text-sm font-semibold text-shield-fg">{activeVerse.reference}</span>
               <button onClick={copyActiveVerse} className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-shield-fg/85 transition-colors hover:bg-shield-fg/[0.08]">
-                {copied ? <Check className="h-3.5 w-3.5 text-shield-brand" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                 {copied ? 'Copied' : 'Copy'}
               </button>
               <button onClick={() => setNotesCollapsed(false)} className="flex items-center gap-1.5 rounded-full bg-shield-brand/15 px-3 py-1.5 text-xs font-medium text-shield-brand transition-colors hover:bg-shield-brand/25">

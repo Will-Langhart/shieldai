@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { JournalNoteEditor } from './JournalNoteEditor'
 import { devFallbackToken } from '../../../lib/test-token'
+import { ShieldMark } from '../chat/ShieldMark'
 import {
   Brain,
   BookOpen,
@@ -15,7 +16,6 @@ import {
   Share2,
   Bookmark,
   Star,
-  Shield,
   Target,
   Users,
   Award,
@@ -410,7 +410,7 @@ export function InsightDetailView({
         {/* Shield AI Header */}
         <div className="bg-gradient-to-r from-shield-brand to-shield-brand-dim rounded-lg p-4 text-shield-on-brand">
           <div className="flex items-center space-x-3 mb-2">
-            <Shield className="h-6 w-6" />
+            <ShieldMark className="h-6 w-6" />
             <h3 className="text-lg font-semibold">Shield AI Apologetics Insights</h3>
           </div>
           <p className="text-shield-on-brand/80 text-sm">
