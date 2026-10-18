@@ -110,7 +110,7 @@ export const UserProfile= ({ onClose }: UserProfileProps) => {
         {message && (
           <div className={`mb-4 px-4 py-3 rounded-lg ${
             message.includes('Error') 
-              ? 'bg-red-500/20 border border-red-500 text-red-200' 
+              ? 'bg-red-500/10 border border-red-500/40 text-shield-fg' 
               : 'bg-green-500/10 border border-green-500/40 text-shield-fg'
           }`}>
             {message}
@@ -188,7 +188,7 @@ export const UserProfile= ({ onClose }: UserProfileProps) => {
             <button
               onClick={handleSignOut}
               disabled={loading}
-              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-600/20 border border-red-500 text-red-200 rounded-lg hover:bg-red-600/30 transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 border border-red-500/40 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors disabled:opacity-50"
             >
               <LogOut className="w-4 h-4" />
               <span>{loading ? 'Signing Out...' : 'Sign Out'}</span>

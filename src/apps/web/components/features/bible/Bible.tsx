@@ -726,7 +726,7 @@ export function Bible() {
   const verseTone = (num: number) =>
     activeVerseNumber === num
       ? 'bg-shield-accent/[0.16] text-shield-fg ring-1 ring-shield-accent/30'
-      : 'hover:bg-white/[0.045]'
+      : 'hover:bg-shield-fg/[0.045]'
 
   // Flowing paragraph layout with superscript numbers and a drop-cap chapter numeral
   const renderParagraphs = (verses: BibleVerse[]) => {
@@ -795,25 +795,25 @@ export function Bible() {
   const renderCompare = (primary: BiblePassage, secondary: BiblePassage) => {
     const byNum = new Map(secondary.verses.map(v => [v.verseNumber, v]))
     return (
-      <div className="overflow-hidden rounded-2xl border border-white/[0.07]">
-        <div className="grid grid-cols-2 border-b border-white/[0.07] bg-shield-void/40 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-shield-muted">
+      <div className="overflow-hidden rounded-2xl border border-shield-edge/60">
+        <div className="grid grid-cols-2 border-b border-shield-edge/60 bg-shield-void/40 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-shield-muted">
           <div className="px-4 py-2.5">{primary.version.name}</div>
-          <div className="border-l border-white/[0.07] px-4 py-2.5 text-shield-accent/80">{secondary.version.name}</div>
+          <div className="border-l border-shield-edge/60 px-4 py-2.5 text-shield-accent/80">{secondary.version.name}</div>
         </div>
         {primary.verses.map(v => (
           <div
             key={v.id}
             id={`verse-${v.verseNumber}`}
             onClick={() => handleVerseClick(v.verseNumber, v.text)}
-            className={`grid cursor-pointer grid-cols-2 border-b border-white/[0.04] last:border-0 transition-colors ${
-              activeVerseNumber === v.verseNumber ? 'bg-shield-accent/[0.12]' : 'hover:bg-white/[0.03]'
+            className={`grid cursor-pointer grid-cols-2 border-b border-shield-edge/60 last:border-0 transition-colors ${
+              activeVerseNumber === v.verseNumber ? 'bg-shield-accent/[0.12]' : 'hover:bg-shield-fg/[0.03]'
             }`}
             style={{ fontSize: '0.88em' }}
           >
             <p className="px-4 py-2.5 text-shield-fg/[0.88]">
               <sup className="mr-1 font-sans text-[0.65em] font-semibold text-shield-brand/80">{v.verseNumber}</sup>{v.text}
             </p>
-            <p className="border-l border-white/[0.06] px-4 py-2.5 text-shield-fg/75">
+            <p className="border-l border-shield-edge/60 px-4 py-2.5 text-shield-fg/75">
               {byNum.get(v.verseNumber)?.text || <span className="text-shield-muted/50">—</span>}
             </p>
           </div>
@@ -835,7 +835,7 @@ export function Bible() {
       <p className="mb-8 text-sm text-shield-muted">{results.total ?? results.passages.length} results</p>
 
       {results.passages.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-white/10 py-14 text-center text-sm text-shield-muted">
+        <div className="rounded-2xl border border-dashed border-shield-edge py-14 text-center text-sm text-shield-muted">
           No passages found. Try a different word or phrase.
         </div>
       )}
@@ -845,7 +845,7 @@ export function Bible() {
           <button
             key={p.id}
             onClick={() => openReference(p.reference)}
-            className="group block w-full rounded-2xl border border-white/[0.07] bg-shield-panel/30 p-5 text-left transition-all hover:-translate-y-0.5 hover:border-shield-brand/35 hover:bg-shield-panel/50 hover:shadow-shield-card"
+            className="group block w-full rounded-2xl border border-shield-edge/60 bg-shield-panel/30 p-5 text-left transition-all hover:-translate-y-0.5 hover:border-shield-brand/35 hover:bg-shield-panel/50 hover:shadow-shield-card"
           >
             <div className="mb-2 flex items-center justify-between">
               <span className="text-[13px] font-semibold text-shield-brand">{p.reference}</span>
@@ -860,12 +860,12 @@ export function Bible() {
 
   const renderSkeleton = () => (
     <div className="mx-auto max-w-[42rem] animate-pulse pt-4">
-      <div className="mb-3 h-3 w-40 rounded-full bg-white/[0.06]" />
-      <div className="mb-4 h-12 w-64 rounded-xl bg-white/[0.08]" />
-      <div className="mb-12 h-3 w-56 rounded-full bg-white/[0.05]" />
+      <div className="mb-3 h-3 w-40 rounded-full bg-shield-fg/[0.06]" />
+      <div className="mb-4 h-12 w-64 rounded-xl bg-shield-fg/[0.08]" />
+      <div className="mb-12 h-3 w-56 rounded-full bg-shield-fg/[0.05]" />
       <div className="mb-10 h-24 rounded-2xl bg-shield-brand/[0.06]" />
       {Array.from({ length: 9 }).map((_, i) => (
-        <div key={i} className="mb-3 h-3.5 rounded-full bg-white/[0.05]" style={{ width: `${70 + ((i * 37) % 30)}%` }} />
+        <div key={i} className="mb-3 h-3.5 rounded-full bg-shield-fg/[0.05]" style={{ width: `${70 + ((i * 37) % 30)}%` }} />
       ))}
     </div>
   )
@@ -884,9 +884,9 @@ export function Bible() {
           <h1 className="font-scripture text-4xl font-semibold tracking-tight text-shield-fg sm:text-5xl">{selectedBook}</h1>
           <p className="mt-2 font-scripture text-lg italic text-shield-muted">Chapter {selectedChapter}</p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-[11px] text-shield-muted">
-            <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">{currentPassage.version.name}</span>
-            <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">{currentPassage.verses.length} verses</span>
-            <span className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1">~{Math.max(1, Math.round(wordCount / 230))} min read</span>
+            <span className="rounded-full border border-shield-edge bg-shield-fg/[0.03] px-2.5 py-1">{currentPassage.version.name}</span>
+            <span className="rounded-full border border-shield-edge bg-shield-fg/[0.03] px-2.5 py-1">{currentPassage.verses.length} verses</span>
+            <span className="rounded-full border border-shield-edge bg-shield-fg/[0.03] px-2.5 py-1">~{Math.max(1, Math.round(wordCount / 230))} min read</span>
           </div>
         </header>
 
@@ -902,7 +902,7 @@ export function Bible() {
 
         {/* Compare chooser */}
         {showCompare && (
-          <div className="mx-auto mb-8 flex max-w-[42rem] flex-wrap items-center gap-3 rounded-2xl border border-white/[0.07] bg-shield-panel/30 px-4 py-3">
+          <div className="mx-auto mb-8 flex max-w-[42rem] flex-wrap items-center gap-3 rounded-2xl border border-shield-edge/60 bg-shield-panel/30 px-4 py-3">
             <Columns className="h-4 w-4 text-shield-accent" />
             <span className="text-sm text-shield-fg/85">Read alongside</span>
             <select
@@ -933,15 +933,15 @@ export function Bible() {
         </div>
 
         {/* Chapter footer navigation */}
-        <nav className="mx-auto mt-16 grid max-w-[42rem] grid-cols-2 gap-3 border-t border-white/[0.06] pt-8">
+        <nav className="mx-auto mt-16 grid max-w-[42rem] grid-cols-2 gap-3 border-t border-shield-edge/60 pt-8">
           {prevTarget ? (
-            <button onClick={goPrev} className="group rounded-2xl border border-white/[0.07] bg-shield-panel/25 p-4 text-left transition-all hover:border-shield-brand/30 hover:bg-shield-panel/50">
+            <button onClick={goPrev} className="group rounded-2xl border border-shield-edge/60 bg-shield-panel/25 p-4 text-left transition-all hover:border-shield-brand/30 hover:bg-shield-panel/50">
               <span className="flex items-center gap-1 text-[11px] text-shield-muted"><ChevronLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />Previous</span>
               <span className="mt-1 block truncate font-scripture text-base text-shield-fg">{prevTarget.label}</span>
             </button>
           ) : <span />}
           {nextTarget ? (
-            <button onClick={goNext} className="group rounded-2xl border border-white/[0.07] bg-shield-panel/25 p-4 text-right transition-all hover:border-shield-brand/30 hover:bg-shield-panel/50">
+            <button onClick={goNext} className="group rounded-2xl border border-shield-edge/60 bg-shield-panel/25 p-4 text-right transition-all hover:border-shield-brand/30 hover:bg-shield-panel/50">
               <span className="flex items-center justify-end gap-1 text-[11px] text-shield-muted">Next<ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" /></span>
               <span className="mt-1 block truncate font-scripture text-base text-shield-fg">{nextTarget.label}</span>
             </button>
@@ -961,15 +961,15 @@ export function Bible() {
 
   const iconBtn = (active: boolean) =>
     `flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
-      active ? 'bg-shield-brand/15 text-shield-brand' : 'text-shield-muted hover:bg-white/[0.06] hover:text-shield-fg'
+      active ? 'bg-shield-brand/15 text-shield-brand' : 'text-shield-muted hover:bg-shield-fg/[0.06] hover:text-shield-fg'
     }`
 
   // ── Layout ────────────────────────────────────────────────────────────────
 
   if (error && !currentPassage) return (
-    <div className="flex h-[calc(100vh-64px)] items-center justify-center text-white">
-      <div className="max-w-sm rounded-2xl border border-white/[0.08] bg-shield-panel/50 p-8 text-center shadow-shield-card">
-        <AlertCircle className="mx-auto mb-3 h-10 w-10 text-red-400" />
+    <div className="flex h-[calc(100vh-64px)] items-center justify-center text-shield-fg">
+      <div className="max-w-sm rounded-2xl border border-shield-edge bg-shield-panel/50 p-8 text-center shadow-shield-card">
+        <AlertCircle className="mx-auto mb-3 h-10 w-10 text-red-500" />
         <h1 className="mb-1 text-lg font-bold">Couldn’t load Scripture</h1>
         <p className="mb-5 text-sm text-shield-muted">{error}</p>
         <button onClick={() => window.location.reload()} className="shield-btn-primary px-5 py-2 text-sm">Try again</button>
@@ -980,7 +980,7 @@ export function Bible() {
   const drawer = isNarrow ? 'fixed bottom-0 top-16 z-40 shadow-2xl' : 'relative'
 
   return (
-    <div className="relative flex text-white" style={{ height: 'calc(100vh - 64px)' }}>
+    <div className="relative flex text-shield-fg" style={{ height: 'calc(100vh - 64px)' }}>
 
       {/* Drawer backdrop on small screens */}
       {isNarrow && (!navCollapsed || !notesCollapsed) && (
@@ -988,7 +988,7 @@ export function Bible() {
       )}
 
       {/* ── Library ────────────────────────────────────────────────────────── */}
-      <aside className={`${drawer} left-0 flex-shrink-0 overflow-hidden border-r border-white/[0.07] bg-shield-deep/95 backdrop-blur-xl transition-all duration-300 ${
+      <aside className={`${drawer} left-0 flex-shrink-0 overflow-hidden border-r border-shield-edge/60 bg-shield-deep/95 backdrop-blur-xl transition-all duration-300 ${
         navCollapsed ? (isNarrow ? '-translate-x-full w-72' : 'w-0 border-r-0') : 'w-72 translate-x-0'
       }`}>
         <div className="flex h-full w-72 flex-col">
@@ -1003,7 +1003,7 @@ export function Bible() {
               onSelectChapter={handleChapterChange}
             />
           </div>
-          <div className="border-t border-white/[0.06] p-3">
+          <div className="border-t border-shield-edge/60 p-3">
             <DenominationSelector variant="sidebar" onDenominationChange={handleDenominationChange} />
           </div>
         </div>
@@ -1013,7 +1013,7 @@ export function Bible() {
       <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
 
         {/* Toolbar */}
-        <div className="relative z-20 flex-shrink-0 border-b border-white/[0.06] bg-shield-void/50 backdrop-blur-xl">
+        <div className="relative z-20 flex-shrink-0 border-b border-shield-edge/60 bg-shield-void/50 backdrop-blur-xl">
           <div className="flex items-center gap-1.5 px-3 py-2">
             <button onClick={() => setNavCollapsed(c => !c)} className={iconBtn(!navCollapsed)} title={navCollapsed ? 'Show library' : 'Hide library'}>
               <PanelLeft className="h-4 w-4" />
@@ -1021,7 +1021,7 @@ export function Bible() {
 
             <button
               onClick={() => setNavCollapsed(false)}
-              className="flex min-w-0 items-center gap-1 rounded-lg px-2 py-1.5 font-scripture text-[15px] font-semibold text-shield-fg transition-colors hover:bg-white/[0.06]"
+              className="flex min-w-0 items-center gap-1 rounded-lg px-2 py-1.5 font-scripture text-[15px] font-semibold text-shield-fg transition-colors hover:bg-shield-fg/[0.06]"
             >
               <span className="truncate">{selectedBook} {selectedChapter}</span>
             </button>
@@ -1043,16 +1043,16 @@ export function Bible() {
                 type="text" value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="Search scripture…"
-                className="w-full rounded-lg border border-white/[0.07] bg-white/[0.04] py-1.5 pl-9 pr-10 text-sm text-shield-fg placeholder:text-shield-muted/60 transition-colors focus:border-shield-brand/50 focus:bg-white/[0.06] focus:outline-none"
+                className="w-full rounded-lg border border-shield-edge/60 bg-shield-fg/[0.04] py-1.5 pl-9 pr-10 text-sm text-shield-fg placeholder:text-shield-muted/60 transition-colors focus:border-shield-brand/50 focus:bg-shield-fg/[0.06] focus:outline-none"
               />
-              <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-white/10 px-1.5 text-[10px] text-shield-muted sm:block">/</kbd>
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-shield-edge px-1.5 text-[10px] text-shield-muted sm:block">/</kbd>
             </form>
 
             <select
               value={selectedVersion}
               onChange={e => handleVersionChange(e.target.value)}
               title="Translation"
-              className="hidden max-w-[10rem] cursor-pointer truncate rounded-lg border border-white/[0.07] bg-white/[0.04] px-2 py-1.5 text-xs text-shield-fg focus:border-shield-brand/50 focus:outline-none md:block"
+              className="hidden max-w-[10rem] cursor-pointer truncate rounded-lg border border-shield-edge/60 bg-shield-fg/[0.04] px-2 py-1.5 text-xs text-shield-fg focus:border-shield-brand/50 focus:outline-none md:block"
             >
               {availableVersions.length > 0
                 ? availableVersions.map(v => <option key={v.id} value={v.id}>{v.name}</option>)
@@ -1074,17 +1074,17 @@ export function Bible() {
                 <Type className="h-4 w-4" />
               </button>
               {settingsOpen && (
-                <div className="absolute right-0 top-10 w-72 space-y-4 rounded-2xl border border-white/[0.08] bg-shield-layer/95 p-4 shadow-2xl backdrop-blur-xl">
+                <div className="absolute right-0 top-10 w-72 space-y-4 rounded-2xl border border-shield-edge bg-shield-layer/95 p-4 shadow-2xl backdrop-blur-xl">
                   <div>
                     <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-shield-muted">Text size</p>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => updateSettings({ size: Math.max(0, settings.size - 1) })} disabled={settings.size === 0} className={`${iconBtn(false)} border border-white/[0.08] disabled:opacity-30`}><Minus className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => updateSettings({ size: Math.max(0, settings.size - 1) })} disabled={settings.size === 0} className={`${iconBtn(false)} border border-shield-edge disabled:opacity-30`}><Minus className="h-3.5 w-3.5" /></button>
                       <div className="flex flex-1 justify-between px-1">
                         {FONT_SIZES.map((_, i) => (
-                          <span key={i} className={`h-1.5 w-1.5 rounded-full ${i <= settings.size ? 'bg-shield-brand' : 'bg-white/15'}`} />
+                          <span key={i} className={`h-1.5 w-1.5 rounded-full ${i <= settings.size ? 'bg-shield-brand' : 'bg-shield-fg/15'}`} />
                         ))}
                       </div>
-                      <button onClick={() => updateSettings({ size: Math.min(FONT_SIZES.length - 1, settings.size + 1) })} disabled={settings.size === FONT_SIZES.length - 1} className={`${iconBtn(false)} border border-white/[0.08] disabled:opacity-30`}><Plus className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => updateSettings({ size: Math.min(FONT_SIZES.length - 1, settings.size + 1) })} disabled={settings.size === FONT_SIZES.length - 1} className={`${iconBtn(false)} border border-shield-edge disabled:opacity-30`}><Plus className="h-3.5 w-3.5" /></button>
                     </div>
                   </div>
                   {([
@@ -1094,7 +1094,7 @@ export function Bible() {
                   ] as Array<[string, keyof ReaderSettings, Array<[string, string]>]>).map(([label, key, opts]) => (
                     <div key={key}>
                       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-shield-muted">{label}</p>
-                      <div className="flex rounded-xl border border-white/[0.06] bg-shield-void/40 p-1">
+                      <div className="flex rounded-xl border border-shield-edge/60 bg-shield-void/40 p-1">
                         {opts.map(([value, text]) => (
                           <button
                             key={value}
@@ -1113,7 +1113,7 @@ export function Bible() {
                     Verse numbers
                     <button
                       onClick={() => updateSettings({ showNumbers: !settings.showNumbers })}
-                      className={`relative h-5 w-9 rounded-full transition-colors ${settings.showNumbers ? 'bg-shield-brand' : 'bg-white/15'}`}
+                      className={`relative h-5 w-9 rounded-full transition-colors ${settings.showNumbers ? 'bg-shield-brand' : 'bg-shield-fg/15'}`}
                     >
                       <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${settings.showNumbers ? 'left-[18px]' : 'left-0.5'}`} />
                     </button>
@@ -1154,7 +1154,7 @@ export function Bible() {
 
         {/* Audio player bar */}
         {showAudio && (
-          <div className="flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-white/[0.06] bg-shield-panel/30 px-5 py-2.5">
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-3 border-b border-shield-edge/60 bg-shield-panel/30 px-5 py-2.5">
             <div className="min-w-0 flex-1">
               {audioLoading && (
                 <div className="flex items-center gap-2 py-1 text-xs text-shield-muted">
@@ -1170,7 +1170,7 @@ export function Bible() {
               <select
                 value={selectedAudioId || ''}
                 onChange={e => setSelectedAudioId(e.target.value)}
-                className="max-w-[12rem] truncate rounded-lg border border-white/[0.07] bg-white/[0.04] px-2 py-1 text-xs text-shield-fg focus:outline-none"
+                className="max-w-[12rem] truncate rounded-lg border border-shield-edge/60 bg-shield-fg/[0.04] px-2 py-1 text-xs text-shield-fg focus:outline-none"
               >
                 {audioBibles.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
@@ -1187,16 +1187,16 @@ export function Bible() {
         {/* Selected-verse action bar */}
         {activeVerse && !showSearchResults && (
           <div className="pointer-events-none absolute inset-x-0 bottom-5 z-20 flex justify-center px-4">
-            <div className="pointer-events-auto flex max-w-full items-center gap-1 rounded-full border border-white/[0.1] bg-shield-layer/95 py-1.5 pl-4 pr-1.5 shadow-2xl backdrop-blur-xl">
+            <div className="pointer-events-auto flex max-w-full items-center gap-1 rounded-full border border-shield-edge bg-shield-layer/95 py-1.5 pl-4 pr-1.5 shadow-2xl backdrop-blur-xl">
               <span className="mr-2 truncate font-scripture text-sm font-semibold text-shield-fg">{activeVerse.reference}</span>
-              <button onClick={copyActiveVerse} className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-shield-fg/85 transition-colors hover:bg-white/[0.08]">
-                {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+              <button onClick={copyActiveVerse} className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-shield-fg/85 transition-colors hover:bg-shield-fg/[0.08]">
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                 {copied ? 'Copied' : 'Copy'}
               </button>
               <button onClick={() => setNotesCollapsed(false)} className="flex items-center gap-1.5 rounded-full bg-shield-brand/15 px-3 py-1.5 text-xs font-medium text-shield-brand transition-colors hover:bg-shield-brand/25">
                 <PenLine className="h-3.5 w-3.5" /> Note & insight
               </button>
-              <button onClick={() => setActiveVerseNumber(null)} className="rounded-full p-1.5 text-shield-muted transition-colors hover:bg-white/[0.08] hover:text-shield-fg" title="Clear (Esc)">
+              <button onClick={() => setActiveVerseNumber(null)} className="rounded-full p-1.5 text-shield-muted transition-colors hover:bg-shield-fg/[0.08] hover:text-shield-fg" title="Clear (Esc)">
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -1205,7 +1205,7 @@ export function Bible() {
       </main>
 
       {/* ── Margin notes ───────────────────────────────────────────────────── */}
-      <aside className={`${drawer} right-0 flex-shrink-0 overflow-hidden border-l border-white/[0.07] bg-shield-deep/95 backdrop-blur-xl transition-all duration-300 ${
+      <aside className={`${drawer} right-0 flex-shrink-0 overflow-hidden border-l border-shield-edge/60 bg-shield-deep/95 backdrop-blur-xl transition-all duration-300 ${
         notesCollapsed ? (isNarrow ? 'translate-x-full w-80' : 'w-0 border-l-0') : 'w-80 translate-x-0'
       }`}>
         <div className="flex h-full w-80 flex-col">

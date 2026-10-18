@@ -136,7 +136,7 @@ export function MarginNotes({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-white/[0.06] flex-shrink-0">
+      <div className="px-5 py-4 border-b border-shield-edge/60 flex-shrink-0">
         <div className="flex items-center gap-2">
           <PenLine className="h-3.5 w-3.5 text-shield-accent" />
           <span className="text-[10px] font-semibold text-shield-accent/90 uppercase tracking-[0.16em]">Study Notes</span>
@@ -154,7 +154,7 @@ export function MarginNotes({
         )}
 
         {!loadingNotes && sortedVerses.length === 0 && (
-          <div className="mt-6 rounded-2xl border border-dashed border-white/10 px-5 py-8 text-center">
+          <div className="mt-6 rounded-2xl border border-dashed border-shield-edge px-5 py-8 text-center">
             <PenLine className="mx-auto mb-3 h-5 w-5 text-shield-muted/60" />
             <p className="text-[13px] text-shield-fg/80">No notes in this chapter yet</p>
             <p className="mt-1 text-xs text-shield-muted leading-relaxed">Tap any verse to write a margin note and see an AI insight for it.</p>
@@ -172,7 +172,7 @@ export function MarginNotes({
               className={`rounded-xl border transition-all duration-200 ${
                 isActive
                   ? 'border-shield-accent/35 bg-shield-accent/[0.06] shadow-shield-card'
-                  : 'border-white/[0.07] bg-white/[0.02]'
+                  : 'border-shield-edge/60 bg-shield-fg/[0.02]'
               }`}
             >
               {/* Verse reference */}
@@ -182,7 +182,7 @@ export function MarginNotes({
                 </span>
                 {slot.saving && <Loader2 className="h-3 w-3 animate-spin text-shield-muted" />}
                 {slot.saved && !slot.dirty && !slot.saving && (
-                  <span className="flex items-center gap-1 text-[10px] text-emerald-400/80">
+                  <span className="flex items-center gap-1 text-[10px] text-emerald-600/90">
                     <Check className="h-3 w-3" /> Saved
                   </span>
                 )}

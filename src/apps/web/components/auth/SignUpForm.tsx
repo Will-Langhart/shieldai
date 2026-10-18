@@ -59,7 +59,7 @@ export const SignUpForm= ({ onSwitchToLogin }: SignUpFormProps) => {
           </p>
           <button
             onClick={onSwitchToLogin}
-            className="font-medium text-shield-brand hover:text-sky-300"
+            className="font-medium text-shield-brand hover:text-shield-brand-dim"
           >
             Back to Sign In
           </button>
@@ -74,7 +74,7 @@ export const SignUpForm= ({ onSwitchToLogin }: SignUpFormProps) => {
         <h2 className="text-2xl font-bold text-shield-fg mb-6 text-center">Sign Up</h2>
         
         {error && (
-          <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-4">
+          <div className="bg-red-500/10 border border-red-500/40 text-shield-fg px-4 py-3 rounded-lg mb-4">
             {error}
           </div>
         )}
@@ -130,7 +130,7 @@ export const SignUpForm= ({ onSwitchToLogin }: SignUpFormProps) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim py-3 px-4 font-medium text-white shadow-shield-glow-sm hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-shield-brand focus:ring-offset-2 focus:ring-offset-shield-panel disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-gradient-to-r from-shield-brand to-shield-brand-dim py-3 px-4 font-medium text-shield-on-brand shadow-shield-glow-sm hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-shield-brand focus:ring-offset-2 focus:ring-offset-shield-panel disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
@@ -141,7 +141,7 @@ export const SignUpForm= ({ onSwitchToLogin }: SignUpFormProps) => {
             Already have an account?{' '}
             <button
               onClick={onSwitchToLogin}
-              className="font-medium text-shield-brand hover:text-sky-300"
+              className="font-medium text-shield-brand hover:text-shield-brand-dim"
             >
               Sign in
             </button>
