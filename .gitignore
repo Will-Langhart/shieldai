@@ -28,6 +28,9 @@ out/
 config/env/
 !config/env/.gitkeep
 
+# Local secret files. Keys belong in env vars (Vercel), never in the repo.
+src/config/secrets/
+
 # Logs
 logs/
 *.log
