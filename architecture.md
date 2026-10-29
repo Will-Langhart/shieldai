@@ -330,7 +330,6 @@ shieldai/
 │   │   │   ├── setup-storage.sql
 │   │   │   └── study-plans.sql
 │   │   ├── secrets/                          # Secrets (gitignored)
-│   │   │   └── temp_key.txt
 │   │   └── env.example                        # Environment template
 │   │
 │   ├── docs/                                 # Documentation

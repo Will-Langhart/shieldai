@@ -152,3 +152,8 @@ coverage/
 *.tgz
 *.tar.gz
 *.backup
+
+# Secrets: never commit keys or env files
+.env*
+!.env.example
+src/config/secrets/
