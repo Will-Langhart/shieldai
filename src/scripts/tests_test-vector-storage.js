@@ -3,7 +3,7 @@
 // Test storing vectors in Pinecone and then searching for them
 const fetch = require('node-fetch');
 
-const PINECONE_API_KEY = 'pcsk_3MJJaR_EjBt6ktRBUfLAmCTa8DTtQpRBKtwDKB657XofsBYVY6S9aWXxrLCtpvkUGuCULy';
+const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 const SHIELDAI_INDEX_HOST = 'shieldai-smb4qh6.svc.aped-4627-b74a.pinecone.io';
 
 async function testVectorStorage() {

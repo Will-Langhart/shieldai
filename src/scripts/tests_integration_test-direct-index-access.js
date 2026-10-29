@@ -4,7 +4,7 @@ async function testDirectIndexAccess() {
   console.log('🧪 Direct Index Access Test with Working Environment\n');
   
   try {
-    const apiKey = 'pcsk_6La4fD_KxUwby6c62E93h7pPAdgjhSG5szTKgqh9Pych3nSwCPVx1Ze5mFEzuFixbqszw1';
+    const apiKey = process.env.PINECONE_API_KEY;
     const environment = 'us-east-1-aws'; // This environment worked
     const indexName = 'shieldai';
     
