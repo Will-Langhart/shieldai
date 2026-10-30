@@ -152,3 +152,10 @@ coverage/
 *.tgz
 *.tar.gz
 *.backup
+
+# Agent pipeline (docs/agent-pipeline.md) and Playwright output
+planner/
+refill/
+flag-watch/
+playwright-report/
+test-results/

@@ -22,7 +22,7 @@ export default async function handler(
       // Get user-specific insights
       const insights = enhancedConversationStorage.getUserInsights(userId as string);
       
-      logger.info('Retrieved user insights', { cid, userId });
+      logger.info('Retrieved user insights', { cid, userId: userId as string });
       return res.status(200).json({ insights });
 
     } else if (type === 'conversation-analytics' && conversationId) {

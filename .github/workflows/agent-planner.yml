@@ -1,0 +1,118 @@
+name: agent-planner
+
+# Nightly planner, an hour before the builder. Reads ROADMAP.md, picks the next
+# unfinished item (up to config.limits.maxInFlight at once) and files small
+# issues for it, labeled `agent` (plus `agent:low-risk` when they stay clear of
+# the gate). Queues the flip that turns a finished feature's flag on once its
+# PRs passed Preview e2e. Maintenance (TODOs, lint) fills any room left.
+#
+# Two jobs on purpose: Claude plans read-only and its output is untrusted; a
+# deterministic script files the issues and enforces every rule.
+# Off switches: repo variable AGENT_PLANNER = "false"; AGENT_FLAG_FLIPS = "false" stops flips only.
+
+on:
+  schedule:
+    - cron: "30 5 * * *" # 1:30am New York (EDT); builder runs an hour later
+  workflow_dispatch:
+
+concurrency:
+  group: agent-planner
+  cancel-in-progress: false
+
+env:
+  APP_DIR: src/apps/web # same as appDir in config.mjs
+
+jobs:
+  plan:
+    name: Plan
+    if: ${{ vars.AGENT_PLANNER != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      # For the lint output and `npm outdated` in the context.
+      - run: npm ci # workspaces install from the root
+
+      - name: Gather context
+        id: context
+        run: node .github/claude-agent/scripts/planner.mjs context
+
+      - uses: anthropics/claude-code-action@v1
+        if: ${{ steps.context.outputs.run_claude == 'true' }}
+        continue-on-error: true # no plan just means flips and nothing else tonight
+        with:
+          anthropic_api_key: ${{ secrets.AGENT_ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          prompt: |
+            You are this repo's nightly planner. Nobody is awake to answer questions.
+
+            1. Read .github/claude-agent/PLANNER.md (binding), then
+               .github/claude-agent/RULES.md, .github/claude-agent/config.mjs and
+               .claude/CLAUDE.md.
+            2. Read planner/context.md: tonight's roadmap item, earlier issues,
+               lint output, TODOs and dependency updates.
+            3. Read ROADMAP.md and the code the work touches.
+            4. Write planner/plan.json exactly as PLANNER.md describes, then stop.
+          claude_args: |
+            --max-turns 40
+            --allowedTools "Read,Glob,Grep,Write"
+            --disallowedTools "Bash,Edit,WebFetch,WebSearch"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: planner
+          path: |
+            planner/context.md
+            planner/plan.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+  file:
+    name: File issues
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+      checks: read
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      AGENT_FLAG_FLIPS: ${{ vars.AGENT_FLAG_FLIPS }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Only plan.json is used from the artifact; everything else is recomputed.
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: planner
+          path: planner-artifact
+
+      - name: File issues and queue flag flips
+        run: |
+          mkdir -p planner
+          if [ -f planner-artifact/plan.json ]; then cp planner-artifact/plan.json planner/plan.json; fi
+          node .github/claude-agent/scripts/planner.mjs file
