@@ -1,0 +1,124 @@
+name: roadmap-refill
+
+# Weekly roadmap refill. Sundays, if ROADMAP.md has fewer than 3 unticked
+# items, Claude proposes 3 to 5 new ones from the code, README and what shipped,
+# and a script opens a PR appending them. It never pushes to main or merges:
+# the owner edits and merges. Off switch: repo variable ROADMAP_REFILL = "false".
+
+on:
+  schedule:
+    - cron: "0 9 * * 0" # Sundays 5am New York (EDT)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Propose items even if 3 or more are still unticked"
+        type: boolean
+        default: false
+
+concurrency:
+  group: roadmap-refill
+  cancel-in-progress: false
+
+jobs:
+  propose:
+    name: Propose
+    if: ${{ vars.ROADMAP_REFILL != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      run_claude: ${{ steps.context.outputs.run_claude }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Gather context
+        id: context
+        run: node .github/claude-agent/scripts/roadmap.mjs context
+        env:
+          REFILL_FORCE: ${{ inputs.force && 'true' || 'false' }}
+
+      - uses: anthropics/claude-code-action@v1
+        if: ${{ steps.context.outputs.run_claude == 'true' }}
+        with:
+          anthropic_api_key: ${{ secrets.AGENT_ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          prompt: |
+            You are this repo's weekly roadmap planner. Nobody is awake to answer questions.
+
+            1. Read .github/claude-agent/ROADMAP-REFILL.md (binding), README.md and .claude/CLAUDE.md.
+            2. Read refill/context.md, ROADMAP.md, and the code your ideas touch.
+            3. Write refill/items.md exactly as ROADMAP-REFILL.md describes, then stop.
+          claude_args: |
+            --max-turns 40
+            --allowedTools "Read,Glob,Grep,Write"
+            --disallowedTools "Bash,Edit,WebFetch,WebSearch"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ steps.context.outputs.run_claude == 'true' }}
+        with:
+          name: refill
+          path: |
+            refill/context.md
+            refill/items.md
+          retention-days: 14
+          if-no-files-found: ignore
+
+  open-pr:
+    name: Open PR
+    needs: propose
+    if: ${{ needs.propose.outputs.run_claude == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: refill
+          path: refill-artifact
+
+      - name: Merge proposals into ROADMAP.md
+        id: apply
+        run: |
+          mkdir -p refill
+          if [ -f refill-artifact/items.md ]; then cp refill-artifact/items.md refill/items.md; fi
+          node .github/claude-agent/scripts/roadmap.mjs apply
+
+      - name: Open PR
+        if: ${{ steps.apply.outputs.count != '0' }}
+        env:
+          COUNT: ${{ steps.apply.outputs.count }}
+        run: |
+          branch="chore/roadmap-refill-$(date -u +%Y-%m-%d)-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add ROADMAP.md
+          git commit -m "chore(roadmap): propose $COUNT new items"
+          git push -u origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "chore(roadmap): propose $COUNT new items" \
+            --body-file refill/pr-body.md

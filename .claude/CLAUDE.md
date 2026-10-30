@@ -201,6 +201,25 @@ Key tables: `conversations`, `messages`, `bible_notes`, `ai_insights`, `subscrip
 
 ---
 
+## Feature flags and the agent pipeline
+
+Claude plans and builds this repo on a schedule (`docs/agent-pipeline.md`).
+
+- New web features ship behind a flag in `src/apps/web/lib/feature-flags.ts`
+  that starts `on: false`. Key = the `ROADMAP.md` item id. Check it with
+  `isFeatureOn("key")`; the site must behave exactly as before with it off.
+- Vercel previews turn every flag on. Never set `on: true` outside a flag-flip PR.
+- Each feature adds a new browser spec
+  `src/apps/web/e2e/preview/<key>-<what>.spec.ts`. Existing specs there are the
+  regression suite: don't edit them to make a change pass.
+- Preview specs run signed out against previews and production, where
+  /bible, /chat, /journal and /insights-history show the sign-in prompt. Assert
+  on what a signed-out visitor sees.
+- Checks, in order (all must pass): `npm run type-check --workspace src/apps/web`,
+  `npm run lint --workspace src/apps/web`, `npm run test --workspace src/apps/web`,
+  `npm run build --workspace src/apps/web`, `node .github/claude-agent/scripts/preview-local.mjs`.
+- Add a line to `CHANGELOG.md` per PR.
+
 ## Known issues / gotchas
 
 - `package-lock.json` at root is frequently dirty (workspace hoisting). Safe to leave unstaged unless intentionally updating deps.

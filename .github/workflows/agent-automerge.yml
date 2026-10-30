@@ -1,0 +1,75 @@
+name: agent-automerge
+
+# Decides whether a builder PR may merge without the owner. It turns on GitHub
+# auto-merge (squash) only when ALL of these hold (see guardReasons in
+# .github/claude-agent/scripts/lib.mjs and the gate in config.mjs):
+#   - repo variable AGENT_AUTOMERGE is "true" (kill switch)
+#   - the PR is claude[bot]'s, from branch agent/issue-<n> in this repo
+#   - the owner or the planner (github-actions[bot]) put `agent:low-risk` on issue <n>
+#   - no gated path is touched and the diff is within the size limits
+#   - no feature flag turns on, unless issue <n> is a planner flip issue and the
+#     PR changes only that flag, ROADMAP.md and CHANGELOG.md
+# Auto-merge then waits for the checks main's ruleset requires. Anything else
+# gets `agent:needs-review` and waits. Re-runs on every push.
+#
+# pull_request_target on purpose: this workflow and the gate always come from
+# main, so a PR can't loosen its own guard. It never checks out or runs PR code;
+# it only reads the PR's file list through the API.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: agent-automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Agent auto-merge guard
+    if: >-
+      startsWith(github.head_ref, 'agent/issue-') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login == 'claude[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      HEAD: ${{ github.head_ref }}
+      AGENT_AUTOMERGE: ${{ vars.AGENT_AUTOMERGE }}
+    steps:
+      # main's copy of the gate, never the PR's.
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          sparse-checkout: .github/claude-agent
+
+      - name: Check
+        id: check
+        run: node .github/claude-agent/scripts/guard.mjs
+
+      - name: Enable auto-merge
+        if: ${{ steps.check.outputs.ok == 'true' }}
+        run: |
+          gh pr ready "$PR" || true
+          gh pr edit "$PR" --remove-label agent:needs-review || true
+          gh pr merge "$PR" --auto --squash
+
+      - name: Hold for review
+        if: ${{ steps.check.outputs.ok != 'true' }}
+        env:
+          REASONS: ${{ steps.check.outputs.reasons }}
+        run: |
+          gh pr merge "$PR" --disable-auto 2>/dev/null || true
+          already=$(gh pr view "$PR" --json labels --jq '[.labels[].name] | index("agent:needs-review") != null')
+          gh pr edit "$PR" --add-label agent:needs-review
+          if [ "$already" != "true" ]; then
+            printf 'Holding this PR for the owner:\n%s\n' "$REASONS" | gh pr comment "$PR" --body-file -
+          fi

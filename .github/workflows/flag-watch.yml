@@ -1,0 +1,169 @@
+name: flag-watch
+
+# Rollback watcher. Every hour, for each feature flag turned on in the last 72
+# hours, runs that feature's preview specs (<previewSpecDir>/<flag>-*.spec.*)
+# plus smoke.spec against production (config.siteUrl). If they fail twice,
+# 5 minutes apart, it opens a PR that turns the flag back off, merges it as soon
+# as the required checks pass (Vercel then redeploys main), and files a fix issue
+# for the builder. After 2 rollbacks of one flag it leaves it off for the owner.
+#
+# Off switch: repo variable FLAG_WATCH = "false". Rollback PRs merge only while
+# AGENT_AUTOMERGE is "true". Opening PRs needs "Allow GitHub Actions to create
+# and approve pull requests" (Settings → Actions → General).
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: flag-watch
+  cancel-in-progress: false
+
+env:
+  APP_DIR: src/apps/web # same as appDir in config.mjs
+  # The workflow files whose jobs main's ruleset requires (they must accept workflow_dispatch).
+  REQUIRED_WORKFLOWS: "ci.yml"
+
+jobs:
+  plan:
+    name: Find live flags to watch
+    if: ${{ vars.FLAG_WATCH != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      watch: ${{ steps.plan.outputs.watch }}
+      site_url: ${{ steps.plan.outputs.site_url }}
+      spec_dir: ${{ steps.plan.outputs.spec_dir }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 200
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - id: plan
+        run: node .github/claude-agent/scripts/flag-watch.mjs plan
+
+  watch:
+    name: Watch ${{ matrix.flag.key }}
+    needs: plan
+    if: ${{ needs.plan.outputs.watch != '[]' && needs.plan.outputs.watch != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      matrix:
+        flag: ${{ fromJSON(needs.plan.outputs.watch) }}
+      max-parallel: 1
+      fail-fast: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write # dispatch the required checks on the rollback branch
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      KEY: ${{ matrix.flag.key }}
+      SPECS: ${{ matrix.flag.specs }}
+      SMOKE: ${{ needs.plan.outputs.spec_dir }}/smoke.spec.ts
+      PLAYWRIGHT_BASE_URL: ${{ needs.plan.outputs.site_url }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci # workspaces install from the root
+
+      - run: npx playwright install --with-deps chromium
+        working-directory: ${{ env.APP_DIR }}
+
+      # Production isn't behind Vercel's login, so no bypass secret is needed.
+      - name: Run specs on production
+        id: first
+        continue-on-error: true
+        working-directory: ${{ env.APP_DIR }}
+        run: npx playwright test $SPECS "$SMOKE"
+
+      - name: Run again in 5 minutes
+        id: second
+        if: ${{ steps.first.outcome == 'failure' }}
+        continue-on-error: true
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          sleep 300
+          npx playwright test $SPECS "$SMOKE"
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ steps.first.outcome == 'failure' }}
+        with:
+          name: flag-watch-${{ matrix.flag.key }}
+          path: ${{ env.APP_DIR }}/playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Healthy
+        if: ${{ steps.first.outcome == 'success' || steps.second.outcome == 'success' }}
+        run: echo "\`$KEY\` passes on $PLAYWRIGHT_BASE_URL." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Turn the flag off
+        id: rollback
+        if: ${{ steps.second.outcome == 'failure' }}
+        run: node .github/claude-agent/scripts/flag-watch.mjs rollback "$KEY"
+
+      - name: Open and merge the rollback PR
+        if: ${{ steps.second.outcome == 'failure' }}
+        env:
+          AUTOMERGE: ${{ vars.AGENT_AUTOMERGE }}
+          GIVE_UP: ${{ steps.rollback.outputs.give_up }}
+          LOW_RISK: ${{ steps.rollback.outputs.low_risk }}
+          ATTEMPT: ${{ steps.rollback.outputs.attempt }}
+        run: |
+          gh label create agent:rollback --color B60205 --description "Flag watcher turned a live feature off" --force
+          flags_file=$(node --input-type=module -e "import c from './.github/claude-agent/config.mjs'; console.log(c.flagsFile)")
+          branch="rollback/$KEY-$GITHUB_RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add "$flags_file" ROADMAP.md
+          git commit -m "fix(flags): turn $KEY off after it failed on production"
+          git push -u origin "$branch"
+          pr=$(gh pr create --base main --head "$branch" --label agent:rollback \
+            --title "fix(flags): turn $KEY off after it failed on production" \
+            --body-file flag-watch/pr-body.md)
+          echo "Rollback PR: $pr" >> "$GITHUB_STEP_SUMMARY"
+
+          # PRs opened with the workflow token don't trigger CI, so start the
+          # required checks on the branch directly.
+          for wf in $REQUIRED_WORKFLOWS; do gh workflow run "$wf" --ref "$branch"; done
+          if [ "$AUTOMERGE" = "true" ]; then
+            gh pr merge "$pr" --auto --squash
+          else
+            gh pr edit "$pr" --add-label agent:needs-review
+          fi
+
+          if [ "$GIVE_UP" = "true" ]; then
+            gh issue create --title "$KEY failed on production again (rollback $ATTEMPT)" \
+              --body "$(printf 'The flag watcher turned `%s` off for the %s time: %s\n\nNo fix is queued after this many rollbacks. Look at the failing run, then fix it or re-queue it yourself.' "$KEY" "$ATTEMPT" "$pr")"
+          else
+            labels="agent,agent:planned"
+            [ "$LOW_RISK" = "true" ] && labels="$labels,agent:low-risk"
+            gh issue create --title "Fix $KEY on production so it can go live again" \
+              --label "$labels" --body-file flag-watch/issue-body.md
+          fi
