@@ -33,7 +33,7 @@ import {
   BarChart3,
   Users,
   ThumbsUp,
-  Image,
+  Image as ImageIcon,
   PenTool,
   AlertTriangle
 } from 'lucide-react'
@@ -945,7 +945,7 @@ function InsightCard({ insight, isExpanded, onToggleExpansion, onSelect, viewMod
                   </button>
 
                   <button className="flex items-center space-x-1 px-2 py-1 bg-shield-panel hover:bg-shield-elevated text-shield-fg rounded text-sm transition-colors">
-                    <Image className="h-3 w-3" />
+                    <ImageIcon className="h-3 w-3" />
                     <span>Generate Image</span>
                   </button>
                 </div>

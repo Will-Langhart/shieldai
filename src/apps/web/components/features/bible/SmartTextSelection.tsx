@@ -3,8 +3,8 @@ import {
   Brain, 
   X, 
   Loader2, 
-  Image, 
-  Copy, 
+  Image as ImageIcon,
+  Copy,
   Share2, 
   Bookmark,
   Sparkles,
@@ -353,7 +353,7 @@ export function SmartTextSelection({ passage, onInsightGenerated, onImageGenerat
                 {isGeneratingImage ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Image className="h-4 w-4" />
+                  <ImageIcon className="h-4 w-4" />
                 )}
                 <span>{isGeneratingImage ? 'Generating...' : 'Generate Image'}</span>
               </button>
@@ -426,7 +426,7 @@ export function SmartTextSelection({ passage, onInsightGenerated, onImageGenerat
             {generatedImage && (
               <div className="mb-4">
                 <div className="flex items-center space-x-2 mb-3">
-                  <Image className="h-5 w-5 text-purple-400" />
+                  <ImageIcon className="h-5 w-5 text-purple-400" />
                   <h4 className="text-lg font-semibold text-shield-fg">Generated Image</h4>
                 </div>
                 
