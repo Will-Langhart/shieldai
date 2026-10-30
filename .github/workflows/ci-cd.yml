@@ -92,7 +92,7 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/prod'
     environment:
       name: production
-      url: https://shieldai-bice.vercel.app
+      url: https://shieldai.cloud
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -122,11 +122,11 @@ jobs:
         run: |
           echo "Waiting for deployment to be ready..."
           sleep 30
-          curl -f https://shieldai-bice.vercel.app/api/health || exit 1
+          curl -f https://shieldai.cloud/api/health || exit 1
           echo "✅ Production deployment is healthy!"
 
       - name: 📢 Deployment Success
         run: |
           echo "🎉 Production deployment successful!"
-          echo "🔗 URL: https://shieldai-bice.vercel.app"
+          echo "🔗 URL: https://shieldai.cloud"
           echo "📊 Deployment: ${{ steps.deploy.outputs.deployment_url }}"
