@@ -434,8 +434,6 @@ shieldai/
         │   ├── setup-database.sql
         │   ├── setup-storage.sql
         │   └── study-plans.sql
-        ├── secrets/                 # Secret files (secure)
-        │   └── temp_key.txt
         └── env.example              # Environment template
 ```
 
