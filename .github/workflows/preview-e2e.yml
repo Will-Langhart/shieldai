@@ -5,10 +5,11 @@ name: preview-e2e
 # pass them, and the planner turns a flag on only after the PRs that built it
 # passed here.
 #
-# Vercel previews sit behind Vercel's login. The tests need the repo secret
-# VERCEL_AUTOMATION_BYPASS_SECRET (Vercel → project → Settings → Deployment
-# Protection → Protection Bypass for Automation). Until it's set this check is
-# skipped and no flag turns on by itself.
+# Shield AI's previews are public (no Deployment Protection), so no secret is
+# needed. If you turn protection on, also create a bypass secret (Vercel →
+# project → Settings → Deployment Protection → Protection Bypass for Automation)
+# and save it as the repo secret VERCEL_AUTOMATION_BYPASS_SECRET; the tests
+# send it when it's set.
 #
 # Skipped (which counts as passing) on flag-watch's rollback/* branches: their
 # preview still has every flag on, so the broken feature's specs would block the
@@ -42,15 +43,11 @@ jobs:
     steps:
       - id: check
         env:
-          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.event.deployment.sha }}
         run: |
           branch=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" --jq '.[0].head.ref // ""' || true)
-          if [ -z "$BYPASS" ]; then
-            echo "::notice::VERCEL_AUTOMATION_BYPASS_SECRET isn't set, so preview tests are skipped."
-            echo "ok=false" >> "$GITHUB_OUTPUT"
-          elif [[ "$branch" == rollback/* ]]; then
+          if [[ "$branch" == rollback/* ]]; then
             echo "::notice::$branch is a flag-watch rollback, so preview tests are skipped."
             echo "ok=false" >> "$GITHUB_OUTPUT"
           else
