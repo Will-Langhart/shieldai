@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
@@ -47,7 +47,7 @@ jobs:
     if: github.ref == 'refs/heads/dev'
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
@@ -95,7 +95,7 @@ jobs:
       url: https://shieldai-bice.vercel.app
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4

@@ -46,7 +46,7 @@ jobs:
       AGENT_AUTOMERGE: ${{ vars.AGENT_AUTOMERGE }}
     steps:
       # main's copy of the gate, never the PR's.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
           sparse-checkout: .github/claude-agent
