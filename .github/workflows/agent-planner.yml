@@ -73,7 +73,7 @@ jobs:
             --allowedTools "Read,Glob,Grep,Write"
             --disallowedTools "Bash,Edit,WebFetch,WebSearch"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: planner
           path: |
