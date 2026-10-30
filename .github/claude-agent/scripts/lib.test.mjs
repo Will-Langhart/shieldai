@@ -121,10 +121,18 @@ describe("sensitiveMention", () => {
     assert.equal(sensitiveMention("Add an FAQ. Never use `affiliate_url` or sponsorship fields.", gate), null);
     assert.equal(sensitiveMention("Build the list (do not touch auth).", gate), null);
     assert.equal(sensitiveMention("Avoid: calling Stripe, editing the schema.", gate), null);
+    assert.equal(sensitiveMention("Section ids must be unique. No pricing, tier or sign-in copy.", gate), null);
+    assert.equal(sensitiveMention("The page must work signed out:\n- no Supabase calls\n- no ProtectedRoute", gate), null);
+    assert.equal(sensitiveMention("The page must work signed out: no ProtectedRoute and no Supabase calls.", gate), null);
+    assert.equal(sensitiveMention("Keep the layout, or never touch the checkout flow.", gate), null);
   });
   it("still counts what follows a guard rail", () => {
     assert.equal(sensitiveMention("Never touch the header, and add Stripe checkout", gate), "Stripe");
     assert.equal(sensitiveMention("Users who don't have admin rights see a banner", gate), "admin");
+    assert.equal(sensitiveMention("No new copy, and add a Stripe checkout button", gate), "Stripe");
+    assert.equal(sensitiveMention("Pages with no login prompt get a banner", gate), "login");
+    assert.equal(sensitiveMention("Note: add admin tools", gate), "admin");
+    assert.equal(sensitiveMention("No-op wrapper around auth", gate), "auth");
   });
   it("leaves plain work alone", () => assert.equal(sensitiveMention("Add an empty state to /changes", gate), null));
 });

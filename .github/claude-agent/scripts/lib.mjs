@@ -9,14 +9,15 @@
 /**
  * Guard-rail clauses ("never use `affiliate_url`", "do not touch auth") fence
  * work off; they don't ask for it. A clause starts a sentence, line, list item
- * or parenthetical (or follows a comma or semicolon) with never / do not /
- * don't / must not / avoid (an "Avoid:" note too), and runs to the next sentence break or
+ * or parenthetical (or follows a comma, semicolon, "and" or "or") with never / do not /
+ * don't / must not / avoid (an "Avoid:" note too) / no ("No pricing copy",
+ * "- no Supabase calls"), and runs to the next sentence break or
  * "and/but/then", so "never touch X, and add Stripe checkout" still counts the
- * second half. Mid-sentence negations ("users who don't have admin rights")
- * still count.
+ * second half. Mid-sentence negations ("users who don't have admin rights",
+ * "pages with no login") still count.
  */
 const GUARD_CLAUSE =
-  /(^|[\n(;:,.!?*-])(\s*)(?:never|do not|don't|must not|must never|avoid)\b:?(?:(?!\b(?:and|but|then|so|while)\b)[^.;:!?\n()])*/gim;
+  /(^|[\n(;:,.!?*-]|\b(?:and|or)\b)(\s*)(?:never|do not|don't|must not|must never|avoid|no(?=\s))\b:?(?:(?!\b(?:and|but|then|so|while)\b)[^.;:!?\n()])*/gim;
 
 /** First sensitive word in the text, ignoring guard-rail clauses; null if none. */
 export function sensitiveMention(text, gate) {
