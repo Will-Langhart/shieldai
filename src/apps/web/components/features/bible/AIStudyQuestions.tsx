@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { 
   MessageCircle, 
   Lightbulb, 
@@ -11,6 +11,7 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react'
+import { apiErrorMessage } from '../../../lib/api-error-message'
 
 interface StudyQuestion {
   id: string
@@ -60,14 +61,7 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
     { id: 'advanced', label: 'Advanced' }
   ]
 
-  // Generate study questions when passage changes
-  useEffect(() => {
-    if (passage) {
-      generateQuestions()
-    }
-  }, [passage])
-
-  const generateQuestions = async () => {
+  const generateQuestions = useCallback(async () => {
     setLoading(true)
     setError(null)
 
@@ -98,7 +92,7 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `Failed to generate study questions (${response.status})`)
+        throw new Error(apiErrorMessage(errorData, response.status, 'generate study questions'))
       }
 
       const data = await response.json()
@@ -109,7 +103,14 @@ export function AIStudyQuestions({ passage, onQuestionSelect }: AIStudyQuestions
     } finally {
       setLoading(false)
     }
-  }
+  }, [passage])
+
+  // Generate study questions when passage changes
+  useEffect(() => {
+    if (passage) {
+      generateQuestions()
+    }
+  }, [passage, generateQuestions])
 
   const toggleAnswer = (questionId: string) => {
     const newShowAnswers = new Set(showAnswers)
