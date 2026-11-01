@@ -126,6 +126,18 @@ describe("sensitiveMention", () => {
     assert.equal(sensitiveMention("The page must work signed out: no ProtectedRoute and no Supabase calls.", gate), null);
     assert.equal(sensitiveMention("Keep the layout, or never touch the checkout flow.", gate), null);
   });
+  it("ignores React Hooks lint wording about dependencies", () => {
+    assert.equal(
+      sensitiveMention("`React Hook useEffect has a missing dependency: 'loadChapterNotes'` (react-hooks/exhaustive-deps).", gate),
+      null,
+    );
+    assert.equal(sensitiveMention("Fix the missing dependencies `a` and `b`; keep the dependency array short.", gate), null);
+  });
+  it("still counts package dependencies", () => {
+    assert.equal(sensitiveMention("Bump the axios dependency to 1.20", gate), "dependency");
+    assert.equal(sensitiveMention("Add new dependencies for charts", gate), "dependencies");
+    assert.equal(sensitiveMention("Fix the missing dependency, then add Stripe checkout", gate), "Stripe");
+  });
   it("still counts what follows a guard rail", () => {
     assert.equal(sensitiveMention("Never touch the header, and add Stripe checkout", gate), "Stripe");
     assert.equal(sensitiveMention("Users who don't have admin rights see a banner", gate), "admin");
