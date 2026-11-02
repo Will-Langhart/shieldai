@@ -54,10 +54,10 @@ export default {
   limits: {
     maxLines: 1000, // an agent PR over this waits for the owner
     maxFiles: 30,
-    newIssuesPerNight: 6,
-    queueLimit: 10, // planner adds nothing while this many issues wait for the builder
-    maxInFlight: 2, // roadmap items building at once
-    builderIssuesPerRun: 6,
+    newIssuesPerNight: 8, // enough to file every step of a new item at once
+    queueLimit: 16, // planner adds nothing while this many issues wait for the builder
+    maxInFlight: 3, // roadmap items building at once; each builds one step per run
+    builderIssuesPerRun: 6, // per builder run (four runs a day)
   },
 
   // ---------------------------------------------------------------------------

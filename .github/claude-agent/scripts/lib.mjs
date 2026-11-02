@@ -455,7 +455,50 @@ export function flipReadiness({ item, flagExists, flagOn, hasPreviewSpec, shippe
   }
   const held = shipped.some((s) => s.heldForReview);
   const sensitive = sensitiveMention(`${item.title}\n${item.details}`, gate) !== null;
-  return { ready: reasons.length === 0, lowRisk: !held && !sensitive, reasons };
+  return { ready: reasons.length === 0, lowRisk: !held && !sensitive && !ownerLaunch(item), reasons };
+}
+
+/** A roadmap note line `Launch: owner` keeps the item's flag flip for the owner's merge. */
+export const ownerLaunch = (item) => /^\s*launch:\s*owner\b/im.test(item.details ?? "");
+
+// ---------------------------------------------------------------------------
+// Builder: which queued issues to take this run
+// ---------------------------------------------------------------------------
+
+/**
+ * The builder starts every issue from main, so a roadmap item's feature issues
+ * build one at a time in issue-number order (the order the planner filed its
+ * steps): a step waits while an earlier step of its item is still open. A step
+ * the builder blocked before an earlier step had landed is retried once that
+ * step closed after the block, so a dependency stop never needs a human.
+ *
+ * candidates: queued issues [{ number, item, kind, blocked, blockedAt }]
+ *   (item/kind from the planner marker; item null for anything else)
+ * featureIssues: every planner feature issue [{ number, item, state, closedAt }]
+ */
+export function pickBuildable(candidates, featureIssues, max) {
+  const picked = [];
+  const retry = [];
+  const waiting = [];
+  for (const c of [...candidates].sort((a, b) => a.number - b.number)) {
+    if (picked.length >= max) break;
+    const earlier =
+      c.kind === "feature" && c.item
+        ? featureIssues.filter((f) => f.item === c.item && f.number < c.number)
+        : [];
+    const open = earlier.find((f) => f.state === "open");
+    if (open) {
+      if (!c.blocked) waiting.push({ number: c.number, on: open.number });
+      continue;
+    }
+    if (c.blocked) {
+      const landedSince = earlier.some((f) => f.closedAt && c.blockedAt && f.closedAt > c.blockedAt);
+      if (!landedSince) continue;
+      retry.push(c.number);
+    }
+    picked.push(c.number);
+  }
+  return { picked, retry, waiting };
 }
 
 // ---------------------------------------------------------------------------

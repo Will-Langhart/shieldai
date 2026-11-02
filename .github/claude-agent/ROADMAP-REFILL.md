@@ -20,8 +20,9 @@ Order by impact on what the project is for: users and traffic first, then
 engagement, then revenue. Prefer work that builds on what just shipped. Never
 propose something already built, already on the roadmap, or under "Needs owner".
 
-Each item must be small enough for the planner to split into at most 3 PRs of
-under about 300 lines each. If an idea is bigger, propose only its first slice.
+Each item should be a real feature a visitor would notice, sized for the
+planner to split into 2 to 5 PRs of under about 700 lines each (several nights
+of building). If an idea is bigger, propose its first useful slice.
 
 Don't propose anything that needs secrets, paid services, new accounts, new
 third-party dependencies or new tracking.
