@@ -22,6 +22,7 @@ export type FeatureFlag = {
 export const FEATURE_FLAGS = {
   // Entries look like: "search-v2": { description: "Filter chips on /search", on: false },
   "help-center": { description: "Help Center page at /help", on: false },
+  "not-found-page": { description: "Branded 404 page with links back to Home, Bible and Chat", on: false },
 } satisfies Record<string, FeatureFlag>;
 
 export type FeatureFlagKey = keyof typeof FEATURE_FLAGS;

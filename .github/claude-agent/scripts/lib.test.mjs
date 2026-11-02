@@ -16,8 +16,10 @@ import {
   parseFlagStates,
   parseMarker,
   parsePlan,
+  ownerLaunch,
   parseRoadmap,
   pathIsLowRisk,
+  pickBuildable,
   pickItems,
   recentlyTurnedOn,
   sanitizeBody,
@@ -109,12 +111,17 @@ describe("the gate (this repo's config)", () => {
     it(`lets ${path} through`, () => assert.equal(pathIsLowRisk(path, cfg), true));
   }
   it("lets a new preview spec through", () => assert.equal(pathIsLowRisk("e2e/preview/search-v2-chips.spec.ts", cfg), true));
+  it("lets a new numbered migration through to the SQL check, unless its name is about money or sign-in", () => {
+    assert.equal(pathIsLowRisk("src/config/migrations/0001_reading_plans.sql", cfg), true);
+    assert.equal(pathIsLowRisk("src/config/migrations/0002_stripe_events.sql", cfg), false);
+    assert.equal(pathIsLowRisk("src/config/migrations/reading_plans.sql", cfg), false);
+  });
 });
 
 describe("sensitiveMention", () => {
   it("finds money, auth and database words", () => {
     assert.equal(sensitiveMention("Add Stripe checkout", gate), "Stripe");
-    assert.equal(sensitiveMention("New migration for tags", gate), "migration");
+    assert.equal(sensitiveMention("Store API keys in a new column", gate), "API keys");
     assert.equal(sensitiveMention("Show it on sign-in", gate), "sign-in");
   });
   it("ignores guard-rail clauses", () => {
@@ -126,6 +133,18 @@ describe("sensitiveMention", () => {
     assert.equal(sensitiveMention("The page must work signed out: no ProtectedRoute and no Supabase calls.", gate), null);
     assert.equal(sensitiveMention("Keep the layout, or never touch the checkout flow.", gate), null);
   });
+  it("ignores React Hooks lint wording about dependencies", () => {
+    assert.equal(
+      sensitiveMention("`React Hook useEffect has a missing dependency: 'loadChapterNotes'` (react-hooks/exhaustive-deps).", gate),
+      null,
+    );
+    assert.equal(sensitiveMention("Fix the missing dependencies `a` and `b`; keep the dependency array short.", gate), null);
+  });
+  it("still counts package dependencies", () => {
+    assert.equal(sensitiveMention("Bump the axios dependency to 1.20", gate), "dependency");
+    assert.equal(sensitiveMention("Add new dependencies for charts", gate), "dependencies");
+    assert.equal(sensitiveMention("Fix the missing dependency, then add Stripe checkout", gate), "Stripe");
+  });
   it("still counts what follows a guard rail", () => {
     assert.equal(sensitiveMention("Never touch the header, and add Stripe checkout", gate), "Stripe");
     assert.equal(sensitiveMention("Users who don't have admin rights see a banner", gate), "admin");
@@ -135,6 +154,8 @@ describe("sensitiveMention", () => {
     assert.equal(sensitiveMention("No-op wrapper around auth", gate), "auth");
   });
   it("leaves plain work alone", () => assert.equal(sensitiveMention("Add an empty state to /changes", gate), null));
+  it("leaves database work to the safe-database gate", () =>
+    assert.equal(sensitiveMention("New migration adds a reading_plans table with RLS in Supabase", gate), null));
 });
 
 describe("gatedFiles", () => {
@@ -153,6 +174,13 @@ describe("gatedFiles", () => {
     assert.deepEqual(gatedFiles([f("public/ads.txt", "modified")], cfg), ["public/ads.txt"]);
     assert.deepEqual(gatedFiles([f("public/stripe-logo.svg", "added")], cfg), ["public/stripe-logo.svg"]);
     assert.deepEqual(gatedFiles([f("public/sitemap.xml", "added")], cfg), ["public/sitemap.xml"]);
+  });
+  it("leaves new migrations to the SQL check; edits and deletes are the owner's", () => {
+    assert.deepEqual(gatedFiles([f("src/config/migrations/0001_reading_plans.sql", "added")], cfg), []);
+    assert.deepEqual(gatedFiles([f("src/config/migrations/0001_reading_plans.sql", "modified")], cfg), ["src/config/migrations/0001_reading_plans.sql"]);
+    assert.deepEqual(gatedFiles([f("src/config/migrations/0001_x.sql", "removed")], cfg), ["src/config/migrations/0001_x.sql"]);
+    assert.deepEqual(gatedFiles([f("src/config/migrations/0002_auth_audit.sql", "added")], cfg), ["src/config/migrations/0002_auth_audit.sql"]);
+    assert.deepEqual(gatedFiles([f("src/config/migrations/schema.sql", "modified")], cfg), ["src/config/migrations/schema.sql"]);
   });
   it("in a flip, allows only the flags file, ROADMAP.md and CHANGELOG.md", () => {
     const files = [f("src/lib/feature-flags.ts"), f("ROADMAP.md"), f("CHANGELOG.md"), f("src/x.ts")];
@@ -177,6 +205,21 @@ describe("guardReasons", () => {
   it("requires exactly one flag on in a flip", () => {
     const files = [{ filename: "src/lib/feature-flags.ts", status: "modified", deletions: 1, patch: "+ on: true\n+ on: true" }];
     assert.match(guardReasons({ ...ok, flip: true, pr: { ...base, files } }).join(), /exactly one/);
+  });
+  describe("with a new migration", () => {
+    const files = [{ filename: "src/config/migrations/0001_reading_plans.sql", status: "added", deletions: 0 }];
+    const pr = { ...base, files };
+    const safe = { safe: true, reasons: [] };
+    it("passes when it's additive and production applies it by itself", () =>
+      assert.deepEqual(guardReasons({ ...ok, pr, db: { autoApply: true, verdict: safe } }), []));
+    it("holds when auto-apply is off", () =>
+      assert.match(guardReasons({ ...ok, pr, db: { autoApply: false, verdict: safe } }).join(), /DB_AUTO_APPLY/));
+    it("holds when the SQL isn't additive, naming why", () => {
+      const verdict = { safe: false, reasons: ["0001_reading_plans.sql: DROP TABLE changes or removes existing data or schema"] };
+      assert.match(guardReasons({ ...ok, pr, db: { autoApply: true, verdict } }).join(), /isn't purely additive[\s\S]*DROP TABLE/);
+    });
+    it("holds when the SQL couldn't be read", () =>
+      assert.match(guardReasons({ ...ok, pr, db: { autoApply: true, verdict: null } }).join(), /couldn't read/));
   });
   it("counts added on: true lines only", () => assert.equal(flagsTurnedOn("--- a\n+++ b\n- on: true\n+ on: false\n+  on: true,"), 1));
 });
@@ -268,6 +311,36 @@ describe("planner", () => {
     assert.deepEqual(flipReadiness(args), { ready: true, lowRisk: false, reasons: [] });
     assert.equal(flipReadiness({ ...args, shipped: [{ ...shipped[0], previewE2e: "failure" }] }).ready, false);
     assert.equal(flipReadiness({ ...args, item: { ...item, title: "Search chips" } }).lowRisk, true);
+    const ownerItem = { ...item, title: "Search chips", details: "Goal: x.\nLaunch: owner (reads the copy first)" };
+    assert.equal(ownerLaunch(ownerItem), true);
+    assert.equal(flipReadiness({ ...args, item: ownerItem }).lowRisk, false);
+    assert.equal(flipReadiness({ ...args, item: ownerItem }).ready, true);
+    assert.equal(ownerLaunch({ ...item, details: "Avoid a launch: owner talk." }), false);
+  });
+});
+
+describe("builder pick", () => {
+  const f = (number, item, state = "open", closedAt = null) => ({ number, item, state, closedAt });
+  const c = (number, item, extra = {}) => ({ number, item, kind: item ? "feature" : "maintenance", blocked: false, blockedAt: null, ...extra });
+
+  it("builds an item's steps one at a time, in order", () => {
+    const features = [f(10, "a"), f(11, "a"), f(12, "b")];
+    const r = pickBuildable([c(11, "a"), c(10, "a"), c(12, "b"), c(13, null)], features, 6);
+    assert.deepEqual(r.picked, [10, 12, 13]);
+    assert.deepEqual(r.waiting, [{ number: 11, on: 10 }]);
+  });
+  it("retries a step blocked before its earlier step landed, and nothing else", () => {
+    const features = [f(10, "a", "closed", "2026-11-01T07:00:00Z"), f(11, "a"), f(20, "b", "closed", "2026-11-01T05:00:00Z"), f(21, "b")];
+    const r = pickBuildable(
+      [c(11, "a", { blocked: true, blockedAt: "2026-11-01T06:00:00Z" }), c(21, "b", { blocked: true, blockedAt: "2026-11-01T06:00:00Z" }), c(30, null, { blocked: true, blockedAt: "2026-11-01T06:00:00Z" })],
+      features,
+      6,
+    );
+    assert.deepEqual(r.picked, [11]);
+    assert.deepEqual(r.retry, [11]);
+  });
+  it("stops at the run's cap", () => {
+    assert.deepEqual(pickBuildable([c(1, null), c(2, null), c(3, null)], [], 2).picked, [1, 2]);
   });
 });
 
