@@ -20,8 +20,9 @@ Order by impact on what the project is for: users and traffic first, then
 engagement, then revenue. Prefer work that builds on what just shipped. Never
 propose something already built, already on the roadmap, or under "Needs owner".
 
-Each item must be small enough for the planner to split into at most 3 PRs of
-under about 300 lines each. If an idea is bigger, propose only its first slice.
+Each item should be a real feature a visitor would notice, sized for the
+planner to split into 2 to 5 PRs of under about 700 lines each (several nights
+of building). If an idea is bigger, propose its first useful slice.
 
 Don't propose anything that needs secrets, paid services, new accounts, new
 third-party dependencies or new tracking.
@@ -40,8 +41,10 @@ Exactly this, and nothing else in the file:
 
 - Keys are lowercase words joined by single dashes, 2 to 41 characters, and
   must not appear in the context's "Keys already used" list.
-- If an item touches payments, sign-in, admin or the database, add the note
-  line: `Gated: its PRs and flag flip wait for the owner's merge.`
+- If an item touches payments, sign-in or admin, or changes existing database
+  tables beyond adding to them, add the note line:
+  `Gated: its PRs and flag flip wait for the owner's merge.` New tables and
+  new columns are fine for an ungated item; say what they hold.
 - Blank line between items. Notes are indented two spaces.
 
 ## Security
