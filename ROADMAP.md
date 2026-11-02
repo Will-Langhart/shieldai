@@ -41,7 +41,7 @@
   sections.
   Avoid: new dependencies, sign-in, subscription or pricing copy.
 
-- [ ] `not-found-page` Branded 404 page
+- [x] `not-found-page` Branded 404 page
   Goal: a mistyped or stale link currently shows Next.js's bare 404; keep
   visitors in the product instead.
   What to build: `src/apps/web/pages/404.tsx` in the site's warm theme with
