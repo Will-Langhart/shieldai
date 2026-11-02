@@ -5,7 +5,32 @@ import {
   NOT_FOUND_LINKS,
   NOT_FOUND_MESSAGE,
   PLAIN_NOT_FOUND_TEXT,
+  notFoundView,
+  plainNotFoundParts,
 } from '../not-found';
+
+describe('notFoundView', () => {
+  it('is branded when the flag is on', () => {
+    expect(notFoundView(true)).toBe('branded');
+  });
+
+  it('is plain when the flag is off', () => {
+    expect(notFoundView(false)).toBe('plain');
+  });
+});
+
+describe('plainNotFoundParts', () => {
+  it('splits the default text into code and message', () => {
+    expect(plainNotFoundParts()).toEqual({
+      code: '404',
+      message: 'This page could not be found.',
+    });
+  });
+
+  it('copes with text that has no separator', () => {
+    expect(plainNotFoundParts('404')).toEqual({ code: '404', message: '' });
+  });
+});
 
 describe('not-found content', () => {
   it('links to Home, Bible and Chat in that order', () => {
