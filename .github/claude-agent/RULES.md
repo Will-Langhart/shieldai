@@ -6,25 +6,56 @@ safety net. When a rule and the issue disagree, the rule wins.
 
 ## Scope
 
-- One issue, one branch (`agent/issue-<n>`), one small PR. Aim for under 300
-  changed lines and 10 files; the auto-merge guard holds anything over the
+- One issue, one branch (`agent/issue-<n>`), one PR. A roadmap step is a
+  complete slice of a feature (route, components, logic, tests): aim for under
+  700 changed lines and 20 files. The auto-merge guard holds anything over the
   limits in `config.mjs`.
+- A roadmap item's steps build in the order the planner filed them, each after
+  the one before it merged, so the earlier steps are on `main` when you start.
+  Build on what they added; don't redo or reshape it.
 - Do what the issue asks and nothing else. No drive-by refactors, renames,
   formatting sweeps or "while I'm here" fixes.
-- If the issue is ambiguous, too big, or conflicts with the repo's docs,
-  comment on the issue with the exact question and stop. Don't guess on
-  product decisions.
+- If the issue is ambiguous, far too big for one PR, or conflicts with the
+  repo's docs, comment on the issue with the exact question and stop. Don't
+  guess on product decisions. Where the issue already decides something (copy,
+  layout, data shape), follow it rather than stopping.
 
 ## The gate
 
 `gate` in `.github/claude-agent/config.mjs` lists what only the owner merges:
-CI and these rules, the database, dependencies and lockfiles, deploy and build
-config, env files and secrets, and anything about payments, sign-in, admin or
-affiliate links. A PR that touches any of it waits for the owner. If the issue
-asks for gated work, build it anyway when you can do so within these rules
-(it will simply wait for review); if it can't be done without something you
-are not allowed to run (installing a package, a migration against a real
-database, a secret), comment on the issue and stop.
+CI and these rules, dependencies and lockfiles, deploy and build config, env
+files and secrets, and anything about payments, sign-in, admin or affiliate
+links. A PR that touches any of it waits for the owner. If the issue asks for
+gated work, build it anyway when you can do so within these rules (it will
+simply wait for review); if it can't be done without something you are not
+allowed to run (installing a package, a migration against a real database, a
+secret), comment on the issue and stop.
+
+### Database changes
+
+A feature may add to the database. A PR whose new migrations are purely
+additive merges on its own and is applied to production after merge; anything
+else waits for the owner. Additive means (`scripts/db-gate.mjs` decides):
+
+- a new file in `database.dir` named like `database.file` in `config.mjs`, with
+  the next free number; never edit, rename or delete an existing migration
+- plain `create table` / `create index` / `create type` / `create sequence`
+  for new objects: no `if not exists`, no `or replace`
+- every new table turns row level security on in the same PR (Supabase serves
+  public tables to anyone with the anon key), then gets the policies it needs
+- policies, grants, triggers and seed rows only on tables this PR creates; on
+  existing tables only `add column` that is nullable or has a constant default
+- functions without `security definer`; views `with (security_invoker = true)`
+- nothing about payments, sign-in, sessions, secrets or personal data, nothing
+  in `auth`, `storage` or other Supabase schemas, no `begin`/`commit`, no `do`
+  blocks, no `concurrently`
+
+Before you open the PR, run `node .github/claude-agent/scripts/db-dryrun.mjs`:
+it applies your new migrations to a local copy of production's schema and
+prints the gate's verdict. Fix any failure. Code that reads a new table or
+column must cope with it not existing yet for the minutes between merge and
+apply (treat a missing table like an empty one), and stay behind the feature's
+flag.
 
 Never, even when the issue asks:
 

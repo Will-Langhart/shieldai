@@ -1,6 +1,7 @@
 // Pure logic for the agent pipeline: the gate, ROADMAP.md, planner issues,
 // flag flips, the flag watcher and the roadmap refill. No I/O here; every
 // function is covered by lib.test.mjs (`node --test .github/claude-agent/scripts/`).
+import { isMigrationFile } from "./db-lib.mjs";
 
 // ---------------------------------------------------------------------------
 // The gate (rules live in ../config.mjs)
@@ -13,15 +14,39 @@
  * don't / must not / avoid (an "Avoid:" note too) / no ("No pricing copy",
  * "- no Supabase calls"), and runs to the next sentence break or
  * "and/but/then", so "never touch X, and add Stripe checkout" still counts the
- * second half. Mid-sentence negations ("users who don't have admin rights",
+ * second half. A dot or colon inside a word ("sitemap.xml", "e.g") doesn't
+ * end the clause. Mid-sentence negations ("users who don't have admin rights",
  * "pages with no login") still count.
  */
 const GUARD_CLAUSE =
-  /(^|[\n(;:,.!?*-]|\b(?:and|or)\b)(\s*)(?:never|do not|don't|must not|must never|avoid|no(?=\s))\b:?(?:(?!\b(?:and|but|then|so|while)\b)[^.;:!?\n()])*/gim;
+  /(^|[\n(;:,.!?*-]|\b(?:and|or)\b)(\s*)(?:never|do not|don't|must not|must never|avoid|no(?=\s))\b:?(?:(?!\b(?:and|but|then|so|while)\b)(?:[^.;:!?\n()]|[.:](?=\S)))*/gim;
 
-/** First sensitive word in the text, ignoring guard-rail clauses; null if none. */
+/**
+ * React Hooks lint wording ("React Hook useEffect has a missing dependency",
+ * "the dependency array") is about a hook, not a package, so it doesn't count
+ * as a dependency mention. Package work is still held by kind "deps" and the
+ * protected package files.
+ */
+const HOOK_DEPS =
+  /\b(?:missing|unnecessary|real|actual)\s+dependenc(?:y|ies)\b|\bdependenc(?:y|ies)\s+(?:array|list)s?\b|\beffects?\s+(?:\w+\s+){0,3}dependenc(?:y|ies)\b/gi;
+
+/**
+ * Everyday wording that shares a word with the sensitive list but means
+ * something else: styling tokens ("design tokens", "`shield-*` tokens",
+ * tokens.css), the public build-time variables feature flags read
+ * (`process.env.VITE_FEATURE_FLAGS`, `VERCEL_ENV`), and "pays off". Access,
+ * API and auth tokens, secrets and other env reads still count.
+ */
+const BENIGN =
+  /\b(?:design|css|style|styling|colou?r|theme|tailwind|spacing)\s+tokens?\b|`[^`\n]+`\s+tokens?\b|\btokens\.css\b|\b(?:process|import\.meta)\.env\.(?:VITE_[A-Z0-9_]*|VERCEL_ENV|NODE_ENV)\b|\bpays?\s+off\b/gi;
+
+/** First sensitive word in the text, ignoring guard-rail clauses, hook lint and styling wording; null if none. */
 export function sensitiveMention(text, gate) {
-  const hit = String(text).replace(GUARD_CLAUSE, "$1$2").match(gate.sensitiveText);
+  const hit = String(text)
+    .replace(GUARD_CLAUSE, "$1$2")
+    .replace(HOOK_DEPS, "")
+    .replace(BENIGN, "")
+    .match(gate.sensitiveText);
   return hit ? hit[0] : null;
 }
 
@@ -45,6 +70,8 @@ export function pathIsLowRisk(path, cfg) {
   const { gate } = cfg;
   if (any(gate.never, path)) return false;
   if (isPreviewSpec(path, cfg)) return true;
+  // A new migration: the guard classifies its SQL (db-gate.mjs) on the real diff.
+  if (isMigrationFile(path, cfg.database)) return !ci(gate.sensitivePathWords).test(path);
   if (any(gate.additiveOnly, path)) return true;
   if (any(gate.newFilesOk, path) && !ci(gate.sensitivePathWords).test(path)) return true;
   return !isProtectedPath(path, gate) && !inSpecDir(path, cfg);
@@ -80,6 +107,12 @@ export function gatedFiles(files, cfg, flip = false) {
       hits.push(path);
       continue;
     }
+    if (isMigrationFile(path, cfg.database)) {
+      // Brand-new migrations are judged by their SQL in guardReasons; editing
+      // or deleting one, or a name about money or sign-in, is the owner's.
+      if (!(f.status === "added" && !ci(gate.sensitivePathWords).test(path))) hits.push(path);
+      continue;
+    }
     if (inSpecDir(path, cfg)) {
       // Only brand-new specs; existing browser tests belong to the owner.
       if (!(f.status === "added" && isPreviewSpec(path, cfg))) hits.push(path);
@@ -105,12 +138,28 @@ export function flagsTurnedOn(patch) {
     .filter((l) => /^\+(?!\+\+)/.test(l) && /\bon:\s*true\b/.test(l)).length;
 }
 
+/** The PR's brand-new migration files (the ones the safe-database gate judges). */
+export function newMigrations(files, cfg) {
+  return files.filter((f) => f.status === "added" && isMigrationFile(f.filename, cfg.database)).map((f) => f.filename);
+}
+
 /**
  * Every reason an agent PR may not auto-merge; empty means it may.
  * pr: { additions, deletions, changedFiles, files }.
+ * db (when the PR adds migrations): { autoApply, verdict } where verdict is
+ * classifyMigrations' result and autoApply says production applies safe
+ * migrations by itself (repo variable DB_AUTO_APPLY).
  */
-export function guardReasons({ pr, cfg, enabled, lowRiskLabeled, flip, issue }) {
+export function guardReasons({ pr, cfg, enabled, lowRiskLabeled, flip, issue, db }) {
   const reasons = [];
+  const migrations = flip ? [] : newMigrations(pr.files, cfg);
+  if (migrations.length) {
+    if (!db?.verdict) reasons.push(`adds migrations the safe-database gate couldn't read: ${migrations.join(", ")}`);
+    else if (!db.verdict.safe)
+      reasons.push(`adds a migration that isn't purely additive:\n${db.verdict.reasons.map((r) => `  - ${r}`).join("\n")}`);
+    if (!db?.autoApply)
+      reasons.push('adds a migration, and safe migrations only merge on their own once repo variable DB_AUTO_APPLY is "true"');
+  }
   if (!enabled)
     reasons.push('auto-merge is switched off (repo variable AGENT_AUTOMERGE isn\'t "true")');
   if (!lowRiskLabeled)
@@ -447,7 +496,50 @@ export function flipReadiness({ item, flagExists, flagOn, hasPreviewSpec, shippe
   }
   const held = shipped.some((s) => s.heldForReview);
   const sensitive = sensitiveMention(`${item.title}\n${item.details}`, gate) !== null;
-  return { ready: reasons.length === 0, lowRisk: !held && !sensitive, reasons };
+  return { ready: reasons.length === 0, lowRisk: !held && !sensitive && !ownerLaunch(item), reasons };
+}
+
+/** A roadmap note line `Launch: owner` keeps the item's flag flip for the owner's merge. */
+export const ownerLaunch = (item) => /^\s*launch:\s*owner\b/im.test(item.details ?? "");
+
+// ---------------------------------------------------------------------------
+// Builder: which queued issues to take this run
+// ---------------------------------------------------------------------------
+
+/**
+ * The builder starts every issue from main, so a roadmap item's feature issues
+ * build one at a time in issue-number order (the order the planner filed its
+ * steps): a step waits while an earlier step of its item is still open. A step
+ * the builder blocked before an earlier step had landed is retried once that
+ * step closed after the block, so a dependency stop never needs a human.
+ *
+ * candidates: queued issues [{ number, item, kind, blocked, blockedAt }]
+ *   (item/kind from the planner marker; item null for anything else)
+ * featureIssues: every planner feature issue [{ number, item, state, closedAt }]
+ */
+export function pickBuildable(candidates, featureIssues, max) {
+  const picked = [];
+  const retry = [];
+  const waiting = [];
+  for (const c of [...candidates].sort((a, b) => a.number - b.number)) {
+    if (picked.length >= max) break;
+    const earlier =
+      c.kind === "feature" && c.item
+        ? featureIssues.filter((f) => f.item === c.item && f.number < c.number)
+        : [];
+    const open = earlier.find((f) => f.state === "open");
+    if (open) {
+      if (!c.blocked) waiting.push({ number: c.number, on: open.number });
+      continue;
+    }
+    if (c.blocked) {
+      const landedSince = earlier.some((f) => f.closedAt && c.blockedAt && f.closedAt > c.blockedAt);
+      if (!landedSince) continue;
+      retry.push(c.number);
+    }
+    picked.push(c.number);
+  }
+  return { picked, retry, waiting };
 }
 
 // ---------------------------------------------------------------------------

@@ -348,7 +348,7 @@ async function file() {
       await gh(`/repos/${REPO}/issues/${flip.number}/comments`, {
         method: "POST",
         body: {
-          body: `Preview tests passed on ${shipped.map((s) => `#${s.pr}`).join(", ")}. Queued for the builder${r.lowRisk ? "" : "; its PR will wait for the owner's merge because the feature is gated"}.`,
+          body: `Preview tests passed on ${shipped.map((s) => `#${s.pr}`).join(", ")}. Queued for the builder${r.lowRisk ? "" : "; its PR will wait for the owner's merge because the feature is gated or marked Launch: owner"}.`,
         },
       });
       lines.push(`- Flip #${flip.number} (\`${item.id}\`) queued${r.lowRisk ? " (low-risk)" : " (held for review)"}`);
