@@ -4,6 +4,7 @@ One line per merged PR, newest first. The builder agent adds its own.
 
 ## Unreleased
 
+- feat(web): add the `pricing-page` flag (off), `lib/membership-plans.ts` (plan cards with fallback plans) and a public `/pricing` page comparing the four plans with a monthly/yearly toggle; choosing a plan opens sign-up. `/pricing` is a 404 with the flag off (#103).
 - feat(web): add `/answers/[slug]` topic pages (question, short answer, key points, Scriptures, follow-ups, related topics, "Ask Shield AI about this" link to chat) with FAQPage JSON-LD, behind the `answers-library` flag; they 404 while it is off (#94).
 
 - feat(help-center): add the `help-center` flag (off) and a tested `getHelpSections()` helper with the Help Center content; nothing renders it yet (#72).

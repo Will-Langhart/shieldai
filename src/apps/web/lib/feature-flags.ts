@@ -23,6 +23,7 @@ export const FEATURE_FLAGS = {
   // Entries look like: "search-v2": { description: "Filter chips on /search", on: false },
   "help-center": { description: "Help Center page at /help", on: false },
   "not-found-page": { description: "Branded 404 page with links back to Home, Bible and Chat", on: false },
+  "pricing-page": { description: "Plans page at /pricing comparing the four plans with a monthly/yearly toggle", on: false },
   "answers-library": { description: "Public Answers library at /answers with one page per hard question", on: false },
 } satisfies Record<string, FeatureFlag>;
 
