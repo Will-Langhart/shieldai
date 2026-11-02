@@ -11,6 +11,14 @@ export type HelpSection = {
   items: { question: string; answer: string }[];
 };
 
+/**
+ * getStaticProps result for /help: the page with the flag on, a 404 (exactly
+ * as before the page existed) with it off.
+ */
+export function helpPageStaticProps(flagOn: boolean): { props: Record<string, never> } | { notFound: true } {
+  return flagOn ? { props: {} } : { notFound: true };
+}
+
 export function getHelpSections(): HelpSection[] {
   return [
     {

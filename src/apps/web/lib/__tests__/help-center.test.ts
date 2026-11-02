@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FAQ_ITEMS } from '../../components/features/landing/faqData';
 import { FEATURE_FLAGS } from '../feature-flags';
-import { getHelpSections } from '../help-center';
+import { getHelpSections, helpPageStaticProps } from '../help-center';
 
 const sections = getHelpSections();
 const section = (id: string) => sections.find((s) => s.id === id)!;
@@ -39,6 +39,16 @@ describe('getHelpSections', () => {
     for (const s of sections) {
       for (const item of s.items) expect(itemText(item)).not.toMatch(/price|pricing|subscri|\$\d/i);
     }
+  });
+});
+
+describe('helpPageStaticProps', () => {
+  it('renders the page when the flag is on', () => {
+    expect(helpPageStaticProps(true)).toEqual({ props: {} });
+  });
+
+  it('keeps /help a 404 when the flag is off', () => {
+    expect(helpPageStaticProps(false)).toEqual({ notFound: true });
   });
 });
 
