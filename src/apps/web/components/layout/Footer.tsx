@@ -45,7 +45,9 @@ const Footer = () => {
             </h3>
             <ul className="space-y-2">
               <li>
-                <a href="/help" className="text-shield-muted hover:text-shield-fg text-sm transition-colors">
+                {/* Plain <a> on purpose: /help is a 404 while the help-center flag is off, so keep a full page load. */}
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+                <a href="/help"className="text-shield-muted hover:text-shield-fg text-sm transition-colors">
                   Help Center
                 </a>
               </li>
