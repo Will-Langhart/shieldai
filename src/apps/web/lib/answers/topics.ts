@@ -25,7 +25,7 @@ export const ANSWERS: Answer[] = [
       'How do I keep trusting God while I am suffering?',
       'Does the Bible say all suffering is a punishment?',
     ],
-    related: ['does-god-exist', 'who-is-jesus', 'moral-argument'],
+    related: ['does-god-exist', 'who-is-jesus', 'moral-argument', 'why-does-god-allow-natural-disasters'],
   },
   {
     slug: 'moral-argument',
@@ -65,7 +65,7 @@ export const ANSWERS: Answer[] = [
       'How should I read the creation account in Genesis?',
       'Does the Big Bang point to a beginning?',
     ],
-    related: ['does-god-exist', 'is-the-bible-reliable'],
+    related: ['does-god-exist', 'is-the-bible-reliable', 'evolution-and-genesis'],
   },
   {
     slug: 'resurrection-evidence',
@@ -86,7 +86,7 @@ export const ANSWERS: Answer[] = [
       'What if the body was stolen?',
       'Why does the resurrection matter for my life today?',
     ],
-    related: ['who-is-jesus', 'is-the-bible-reliable', 'how-is-a-person-saved'],
+    related: ['who-is-jesus', 'is-the-bible-reliable', 'how-is-a-person-saved', 'could-the-disciples-have-hallucinated'],
   },
   {
     slug: 'does-god-exist',
@@ -126,7 +126,7 @@ export const ANSWERS: Answer[] = [
       'What is the Trinity?',
       'What do other religions say about Jesus?',
     ],
-    related: ['resurrection-evidence', 'how-is-a-person-saved', 'does-god-exist'],
+    related: ['resurrection-evidence', 'how-is-a-person-saved', 'does-god-exist', 'what-is-the-trinity'],
   },
   {
     slug: 'is-the-bible-reliable',
@@ -147,7 +147,7 @@ export const ANSWERS: Answer[] = [
       'Doesn’t the Bible contradict itself?',
       'How should I read the Old Testament?',
     ],
-    related: ['resurrection-evidence', 'who-is-jesus', 'science-and-faith'],
+    related: ['resurrection-evidence', 'who-is-jesus', 'science-and-faith', 'who-chose-the-books-of-the-bible'],
   },
   {
     slug: 'how-is-a-person-saved',
@@ -167,6 +167,169 @@ export const ANSWERS: Answer[] = [
       'What about people who never hear about Jesus?',
       'What does it mean to repent?',
     ],
-    related: ['who-is-jesus', 'resurrection-evidence', 'moral-argument'],
+    related: ['who-is-jesus', 'resurrection-evidence', 'moral-argument', 'is-jesus-the-only-way'],
+  },
+  {
+    slug: 'what-is-the-trinity',
+    category: 'god',
+    question: 'What is the Trinity, and is it biblical?',
+    shortAnswer:
+      'The Trinity is the Christian teaching that there is one God who eternally exists as three persons: the Father, the Son and the Holy Spirit. It does not mean three gods, nor one God wearing three masks. The word itself is not in the Bible, but the truths it summarizes are. Scripture insists there is only one God, yet it calls the Father God, speaks of the Son as God made flesh, and treats the Spirit as a divine person who can be grieved. The early church, reading these texts carefully, confessed the Trinity in its creeds. It is a mystery beyond full comprehension, but it describes a God who is love within himself.',
+    keyPoints: [
+      'There is one God, not three, as Scripture repeatedly affirms.',
+      'The Father, the Son and the Spirit are each called God and are distinct persons.',
+      'The word "Trinity" is not in the Bible, but the teaching it names is.',
+      'The early creeds summarized what the apostles taught rather than inventing it.',
+      'A triune God means love and relationship are eternal, not created.',
+    ],
+    scriptures: ['Deuteronomy 6:4', 'Matthew 28:19', 'John 1:1-14', '2 Corinthians 13:14'],
+    followUps: [
+      'Isn’t the Trinity a contradiction?',
+      'Why did the early church write creeds?',
+      'Who is the Holy Spirit?',
+    ],
+    related: ['who-is-jesus', 'does-god-exist', 'is-jesus-the-only-way'],
+  },
+  {
+    slug: 'did-jesus-really-exist',
+    category: 'jesus',
+    question: 'Did Jesus really exist as a historical person?',
+    shortAnswer:
+      'Yes. The existence of Jesus is accepted by nearly all historians who study the ancient world, whatever their personal beliefs. Besides the Gospels and Paul’s letters, which were written within decades of his life, Jesus is mentioned by the Jewish historian Josephus and the Roman historian Tacitus, who notes that he was executed under Pontius Pilate. For a Jewish teacher from a small province, that is strong attestation by ancient standards. Scholars still debate what Jesus said and did, and Christians make claims about him that go beyond history alone. But the idea that he never lived at all is a fringe view, not a serious historical position.',
+    keyPoints: [
+      'Nearly all historians, Christian or not, agree Jesus existed.',
+      'Paul’s letters were written within about twenty to thirty years of Jesus’ death.',
+      'Non-Christian writers such as Josephus and Tacitus mention him.',
+      'The real debate is about who Jesus was, not whether he lived.',
+    ],
+    scriptures: ['Luke 1:1-4', '1 Corinthians 15:3-8', '2 Peter 1:16'],
+    followUps: [
+      'What do Roman sources say about Jesus?',
+      'When were the Gospels written?',
+      'Was Jesus just a good moral teacher?',
+    ],
+    related: ['who-is-jesus', 'is-the-bible-reliable', 'resurrection-evidence'],
+  },
+  {
+    slug: 'could-the-disciples-have-hallucinated',
+    category: 'resurrection',
+    question: 'Could the disciples have hallucinated the risen Jesus?',
+    shortAnswer:
+      'Grief can lead people to sense a loved one’s presence, so the question deserves a careful answer. Yet the reports of the risen Jesus do not fit hallucinations well. Hallucinations are private experiences, but the early creed in 1 Corinthians names groups who saw Jesus together, including more than five hundred people at once. The appearances happened in different places and to different kinds of people, including skeptics like James and an opponent like Paul. Hallucinations also would not explain the empty tomb, which the authorities could have answered by producing a body. And first-century Jews had no category for one man rising before the end of history, so visions alone would hardly have produced this belief.',
+    keyPoints: [
+      'Hallucinations are private, but Jesus appeared to groups at once.',
+      'Skeptics and opponents, such as James and Paul, were among the witnesses.',
+      'A hallucination cannot explain the empty tomb.',
+      'Jewish hope expected a resurrection of all at the end, not of one man before it.',
+    ],
+    scriptures: ['1 Corinthians 15:3-8', 'Luke 24:36-43', 'John 20:24-29', 'Acts 9:1-6'],
+    followUps: [
+      'What if the body was stolen?',
+      'Why did James become a believer?',
+      'Did the disciples really die for their faith?',
+    ],
+    related: ['resurrection-evidence', 'did-jesus-really-exist', 'who-is-jesus'],
+  },
+  {
+    slug: 'who-chose-the-books-of-the-bible',
+    category: 'bible',
+    question: 'Who decided which books belong in the Bible?',
+    shortAnswer:
+      'No single council or emperor invented the Bible. The Old Testament books Jesus and the apostles used were already recognized as Scripture by the Jewish people. The New Testament grew as churches read the apostles’ writings in worship and copied them for one another. Most of its books, including the four Gospels and Paul’s letters, were widely accepted by the second century. Later church gatherings did not create the list; they recognized what congregations had long received, asking whether a book came from an apostle or his circle, agreed with apostolic teaching, and was used across the churches. Christians in different traditions also differ on some Old Testament books, which is worth knowing and discussing charitably.',
+    keyPoints: [
+      'The church recognized the books of Scripture rather than inventing them.',
+      'The Gospels and Paul’s letters were widely accepted by the second century.',
+      'Key tests were apostolic origin, faithful teaching and wide church use.',
+      'Later gospels, like the Gospel of Thomas, were written much later and were not widely received.',
+      'Catholic, Orthodox and Protestant Bibles differ on some Old Testament books.',
+    ],
+    scriptures: ['Luke 24:44', '2 Peter 3:15-16', '2 Timothy 3:16-17'],
+    followUps: [
+      'What are the Apocrypha?',
+      'Why aren’t the Gnostic gospels in the Bible?',
+      'Did the Council of Nicaea choose the books of the Bible?',
+    ],
+    related: ['is-the-bible-reliable', 'did-jesus-really-exist'],
+  },
+  {
+    slug: 'why-does-god-allow-natural-disasters',
+    category: 'suffering',
+    question: 'Why does God allow earthquakes, floods and other natural disasters?',
+    shortAnswer:
+      'Natural disasters are painful precisely because no human choice seems to cause them. Christians offer several careful answers without claiming to see the whole picture. A world with stable natural laws lets us act, plan and live, yet the same processes that build mountains and water the earth can also cause great harm. Scripture also describes all creation as groaning and waiting for renewal, broken in ways tied to the human story. Jesus warned against assuming that victims of disaster are worse sinners than anyone else. Most of all, Christians are called to weep with those who weep, to help generously, and to hope in the new creation God has promised.',
+    keyPoints: [
+      'Reliable natural laws make life possible but can also cause harm.',
+      'Scripture describes creation as groaning and awaiting renewal.',
+      'Jesus rejected the idea that disaster victims are worse sinners.',
+      'Christians respond with compassion and practical help, not easy answers.',
+    ],
+    scriptures: ['Romans 8:19-22', 'Luke 13:1-5', 'Revelation 21:1-5'],
+    followUps: [
+      'Are natural disasters a punishment from God?',
+      'How can I help people after a disaster?',
+      'What will the new creation be like?',
+    ],
+    related: ['problem-of-evil', 'does-god-exist', 'how-to-handle-doubt'],
+  },
+  {
+    slug: 'evolution-and-genesis',
+    category: 'science',
+    question: 'How do Christians understand evolution and the creation account in Genesis?',
+    shortAnswer:
+      'Faithful Christians who believe the Bible is God’s word hold several views here. Young-earth creationists read Genesis as describing six ordinary days a few thousand years ago and question much of evolutionary theory. Old-earth creationists accept that the universe is billions of years old but see God creating in stages, often including a special creation of humans. Evolutionary creationists believe God used evolution to bring about life, while affirming that he made humans in his image. Each view tries to honor both Scripture and the evidence of creation. What all orthodox Christians share matters most: God created everything, humans bear his image, sin is real, and Jesus is the answer to it.',
+    keyPoints: [
+      'Young-earth creationism reads the days of Genesis as ordinary days.',
+      'Old-earth creationism accepts an ancient universe with God creating in stages.',
+      'Evolutionary creationism sees evolution as the means God used.',
+      'All three affirm God as Creator and humans as made in his image.',
+    ],
+    scriptures: ['Genesis 1:1', 'Genesis 1:27', 'Psalm 104:24', 'Hebrews 11:3'],
+    followUps: [
+      'Was Adam a historical person?',
+      'How long were the days in Genesis 1?',
+      'Can a Christian be a scientist?',
+    ],
+    related: ['science-and-faith', 'does-god-exist', 'is-the-bible-reliable'],
+  },
+  {
+    slug: 'is-jesus-the-only-way',
+    category: 'religions',
+    question: 'Is Jesus really the only way to God?',
+    shortAnswer:
+      'This can sound narrow, so it helps to begin with respect: people of other faiths often live with deep devotion and real goodness, and Christians should learn from them and treat them with honor. But the major religions make different claims about God, humanity and salvation, so they cannot all be true in the same way. Jesus himself said he is the way, the truth and the life. Christians believe this not because they are better than others, but because Jesus did what no one else could: he died for sin and rose again. The invitation is open to everyone, and the question of those who never hear is left to a just and merciful God.',
+    keyPoints: [
+      'People of other faiths deserve honesty, respect and genuine friendship.',
+      'Religions make conflicting claims, so they cannot all be equally true.',
+      'Jesus himself claimed to be the only way to the Father.',
+      'Salvation through Jesus is a gift open to all, not a reward for the deserving.',
+    ],
+    scriptures: ['John 14:6', 'Acts 4:12', '1 Timothy 2:3-6', 'Acts 17:22-31'],
+    followUps: [
+      'What about people who never hear about Jesus?',
+      'Don’t all religions teach basically the same thing?',
+      'How should I talk about faith with a friend from another religion?',
+    ],
+    related: ['how-is-a-person-saved', 'who-is-jesus', 'what-is-the-trinity'],
+  },
+  {
+    slug: 'how-to-handle-doubt',
+    category: 'christian-living',
+    question: 'Is it wrong for a Christian to have doubts?',
+    shortAnswer:
+      'Doubt is not the opposite of faith, and many faithful people in Scripture wrestled with it. The psalmists asked God hard questions, John the Baptist sent word asking whether Jesus was really the one, and a father told Jesus, I believe; help my unbelief. Jesus met these people with patience, not rejection. Doubt can be a sign that faith is being taken seriously. It helps to name the specific question, look for good answers, talk honestly with trusted believers, and keep praying and gathering with the church even when feelings lag. Faith rests not on the strength of our certainty but on the faithfulness of the God we trust.',
+    keyPoints: [
+      'Many faithful people in Scripture wrestled with doubt.',
+      'Jesus responded to honest doubters with patience and evidence.',
+      'Naming the specific question makes doubt easier to work through.',
+      'Staying connected to prayer and the church helps in seasons of doubt.',
+      'Faith depends on God’s faithfulness, not the strength of our feelings.',
+    ],
+    scriptures: ['Mark 9:24', 'Matthew 11:2-6', 'Jude 1:22', 'Psalm 13:1-6'],
+    followUps: [
+      'What if I feel like God is silent?',
+      'How do I know my faith is real?',
+      'Where can I find good answers to my questions?',
+    ],
+    related: ['does-god-exist', 'resurrection-evidence', 'problem-of-evil'],
   },
 ];

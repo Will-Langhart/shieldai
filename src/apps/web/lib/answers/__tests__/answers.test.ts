@@ -14,7 +14,7 @@ import type { Answer } from '..';
 const wordCount = (s: string) => s.trim().split(/\s+/).length;
 
 describe('answers content', () => {
-  it('has the eight launch topics', () => {
+  it('has the eight launch topics and the eight added topics', () => {
     expect(ANSWERS.map((a) => a.slug).sort()).toEqual(
       [
         'does-god-exist',
@@ -25,8 +25,47 @@ describe('answers content', () => {
         'resurrection-evidence',
         'science-and-faith',
         'who-is-jesus',
+        'what-is-the-trinity',
+        'did-jesus-really-exist',
+        'could-the-disciples-have-hallucinated',
+        'who-chose-the-books-of-the-bible',
+        'why-does-god-allow-natural-disasters',
+        'evolution-and-genesis',
+        'is-jesus-the-only-way',
+        'how-to-handle-doubt',
       ].sort(),
     );
+  });
+
+  it('has at least 16 entries', () => {
+    expect(ANSWERS.length).toBeGreaterThanOrEqual(16);
+  });
+
+  it('puts the added topics in their agreed categories', () => {
+    const expected: Record<string, string> = {
+      'what-is-the-trinity': 'god',
+      'did-jesus-really-exist': 'jesus',
+      'could-the-disciples-have-hallucinated': 'resurrection',
+      'who-chose-the-books-of-the-bible': 'bible',
+      'why-does-god-allow-natural-disasters': 'suffering',
+      'evolution-and-genesis': 'science',
+      'is-jesus-the-only-way': 'religions',
+      'how-to-handle-doubt': 'christian-living',
+    };
+    for (const [slug, category] of Object.entries(expected)) {
+      expect(getAnswerBySlug(slug)?.category, slug).toBe(category);
+    }
+  });
+
+  it('has at least one entry in every category', () => {
+    for (const { id } of ANSWER_CATEGORIES) {
+      expect(ANSWERS.some((a) => a.category === id), id).toBe(true);
+    }
+  });
+
+  it('has no two identical questions', () => {
+    const questions = ANSWERS.map((a) => a.question.trim().toLowerCase());
+    expect(new Set(questions).size).toBe(questions.length);
   });
 
   it.each(ANSWERS.map((a) => [a.slug, a] as const))('%s is complete', (_slug, a) => {
@@ -127,8 +166,8 @@ describe('answers helpers', () => {
     const order = ANSWER_CATEGORIES.map((c) => c.id);
     const ids = groups.map((g) => g.id);
     expect(ids).toEqual(order.filter((id) => ids.includes(id)));
-    expect(ids).not.toContain('religions');
-    expect(ids).not.toContain('christian-living');
+    expect(ids).toContain('religions');
+    expect(ids).toContain('christian-living');
     for (const g of groups) {
       expect(g.answers.length).toBeGreaterThan(0);
       expect(g.label).toBe(ANSWER_CATEGORIES.find((c) => c.id === g.id)?.label);
