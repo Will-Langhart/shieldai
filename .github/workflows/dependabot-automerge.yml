@@ -1,0 +1,38 @@
+name: dependabot-automerge
+
+# Turns on auto-merge (squash) for Dependabot's patch-level updates (x.y.Z),
+# which then merge once main's required checks pass. Minor and major bumps wait
+# for the owner. This is the one place package files merge without the owner;
+# to stop it, delete this workflow or set AGENT_AUTOMERGE to anything but "true"
+# (which also stops agent auto-merge).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    name: Dependabot patch auto-merge
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      vars.AGENT_AUTOMERGE == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read update metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ github.token }}
+
+      - name: Enable auto-merge
+        if: ${{ steps.meta.outputs.update-type == 'version-update:semver-patch' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge "$PR" --auto --squash

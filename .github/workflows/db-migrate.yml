@@ -1,0 +1,97 @@
+name: db-migrate
+
+# Applies new migrations (`database` in .github/claude-agent/config.mjs) to
+# production, and keeps the schema snapshot the CI migration dry run tests
+# against. Scripts: .github/claude-agent/scripts/db-migrate.mjs, db-gate.mjs.
+#
+# - Apply (on a push to main that adds a migration, hourly, or by hand):
+#   applies what production is missing, each migration in one transaction
+#   with its schema_migrations row, but only when all of it is purely additive
+#   (new tables with their RLS and policies, new columns, indexes, invoker
+#   functions and views). Anything else waits for you: run this workflow by
+#   hand with mode `apply`; your run is the approval.
+# - Schema snapshot (nightly, after any apply, or by hand): `supabase db dump` of production's
+#   schema (no data) as artifact `prod-schema`, for the dry run.
+#
+# Hourly matters because merges made by auto-merge (the workflow token) don't
+# start push runs.
+#
+# Setup (owner): an environment `db-auto` limited to the main branch, with no
+# required reviewers, holding secret SUPABASE_DB_URL (Supabase → Connect →
+# Session pooler URI). Run this workflow once with mode `snapshot`, then set
+# repo variable DB_AUTO_APPLY to "true". Until then nothing here runs on its
+# own (runs you start by hand still work), and agent PRs with migrations wait
+# for you.
+
+on:
+  push:
+    branches: [main]
+    paths: ["src/config/migrations/**"]
+  schedule:
+    - cron: "15 * * * *" # apply, hourly
+    - cron: "40 4 * * *" # schema snapshot, before the planner and builder
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "auto: apply only additive migrations. apply: apply everything pending (you approve it by running this). plan: list only. snapshot: refresh the schema snapshot."
+        type: choice
+        options: [auto, apply, plan, snapshot]
+        default: auto
+
+concurrency:
+  group: db-migrate
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    name: Apply to production
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.mode != 'snapshot') ||
+      (vars.DB_AUTO_APPLY == 'true' &&
+       (github.event_name == 'push' ||
+        (github.event_name == 'schedule' && github.event.schedule == '15 * * * *')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: db-auto
+    outputs:
+      applied: ${{ steps.apply.outputs.applied }}
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      MODE: ${{ inputs.mode || 'auto' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install psql
+        run: command -v psql || (sudo apt-get update -q && sudo apt-get install -y -q postgresql-client)
+      - name: Apply
+        id: apply
+        run: node .github/claude-agent/scripts/db-migrate.mjs "$MODE"
+
+  snapshot:
+    name: Schema snapshot
+    needs: apply
+    if: >-
+      always() &&
+      ((github.event_name == 'workflow_dispatch' && inputs.mode == 'snapshot') ||
+       needs.apply.outputs.applied == 'true' ||
+       (vars.DB_AUTO_APPLY == 'true' && github.event_name == 'schedule' && github.event.schedule == '40 4 * * *'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: db-auto
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - name: Dump production's schema
+        run: npx --yes supabase@2.122.0 db dump --db-url "$SUPABASE_DB_URL" -f schema.sql
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prod-schema
+          path: schema.sql
+          retention-days: 14

@@ -493,7 +493,7 @@ class EnhancedConversationStorage {
     
     return {
       total_conversations: conversations.length,
-      total_messages,
+      total_messages: totalMessages,
       average_session_duration: averageSessionDuration,
       favorite_topics: favoriteTopics,
       most_used_mode: mostUsedMode,
@@ -552,7 +552,7 @@ class EnhancedConversationStorage {
 
   private extractTopics(text: string): string[] {
     // Simple topic extraction - in production, use proper NLP
-    const topics = [];
+    const topics: string[] = [];
     const bibleTopics = ['jesus', 'god', 'christ', 'bible', 'faith', 'prayer', 'salvation', 'sin', 'heaven', 'hell'];
     const apologeticsTopics = ['apologetics', 'evidence', 'proof', 'resurrection', 'creation', 'evolution', 'atheism'];
     
@@ -575,7 +575,7 @@ class EnhancedConversationStorage {
 
   private extractEntities(text: string): string[] {
     // Simple entity extraction - in production, use proper NLP
-    const entities = [];
+    const entities: string[] = [];
     const bibleNames = ['jesus', 'christ', 'god', 'moses', 'david', 'paul', 'peter', 'john', 'mary'];
     const places = ['jerusalem', 'bethlehem', 'galilee', 'judea', 'rome', 'corinth', 'ephesus'];
     

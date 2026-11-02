@@ -223,6 +223,7 @@ export const withFeatureGate = <P extends object>(
   requiredFeature: string,
   fallbackComponent?: React.ComponentType<any>
 ) => {
+  // eslint-disable-next-line react/display-name
   return (props: P & { userId?: string }) => {
     const [hasAccess, setHasAccess] = React.useState<boolean | null>(null);
     const { userId } = props;
