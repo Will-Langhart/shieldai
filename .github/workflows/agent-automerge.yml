@@ -7,6 +7,10 @@ name: agent-automerge
 #   - the PR is claude[bot]'s, from branch agent/issue-<n> in this repo
 #   - the owner or the planner (github-actions[bot]) put `agent:low-risk` on issue <n>
 #   - no gated path is touched and the diff is within the size limits
+#   - any new migration is purely additive (scripts/db-gate.mjs) and repo
+#     variable DB_AUTO_APPLY is "true" (db-migrate.yml applies it on merge);
+#     the CI "Agent rules" check has already applied it to a copy of
+#     production's schema
 #   - no feature flag turns on, unless issue <n> is a planner flip issue and the
 #     PR changes only that flag, ROADMAP.md and CHANGELOG.md
 # Auto-merge then waits for the checks main's ruleset requires. Anything else
@@ -44,12 +48,16 @@ jobs:
       PR: ${{ github.event.pull_request.number }}
       HEAD: ${{ github.head_ref }}
       AGENT_AUTOMERGE: ${{ vars.AGENT_AUTOMERGE }}
+      DB_AUTO_APPLY: ${{ vars.DB_AUTO_APPLY }}
     steps:
-      # main's copy of the gate, never the PR's.
+      # main's copy of the gate, never the PR's, and main's migrations (a new
+      # one is judged against them; its own SQL is read through the API).
       - uses: actions/checkout@v4
         with:
           ref: main
-          sparse-checkout: .github/claude-agent
+          sparse-checkout: |
+            .github/claude-agent
+            src/config/migrations
 
       - name: Check
         id: check

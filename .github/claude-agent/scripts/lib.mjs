@@ -1,6 +1,7 @@
 // Pure logic for the agent pipeline: the gate, ROADMAP.md, planner issues,
 // flag flips, the flag watcher and the roadmap refill. No I/O here; every
 // function is covered by lib.test.mjs (`node --test .github/claude-agent/scripts/`).
+import { isMigrationFile } from "./db-lib.mjs";
 
 // ---------------------------------------------------------------------------
 // The gate (rules live in ../config.mjs)
@@ -53,6 +54,8 @@ export function pathIsLowRisk(path, cfg) {
   const { gate } = cfg;
   if (any(gate.never, path)) return false;
   if (isPreviewSpec(path, cfg)) return true;
+  // A new migration: the guard classifies its SQL (db-gate.mjs) on the real diff.
+  if (isMigrationFile(path, cfg.database)) return !ci(gate.sensitivePathWords).test(path);
   if (any(gate.additiveOnly, path)) return true;
   if (any(gate.newFilesOk, path) && !ci(gate.sensitivePathWords).test(path)) return true;
   return !isProtectedPath(path, gate) && !inSpecDir(path, cfg);
@@ -88,6 +91,12 @@ export function gatedFiles(files, cfg, flip = false) {
       hits.push(path);
       continue;
     }
+    if (isMigrationFile(path, cfg.database)) {
+      // Brand-new migrations are judged by their SQL in guardReasons; editing
+      // or deleting one, or a name about money or sign-in, is the owner's.
+      if (!(f.status === "added" && !ci(gate.sensitivePathWords).test(path))) hits.push(path);
+      continue;
+    }
     if (inSpecDir(path, cfg)) {
       // Only brand-new specs; existing browser tests belong to the owner.
       if (!(f.status === "added" && isPreviewSpec(path, cfg))) hits.push(path);
@@ -113,12 +122,28 @@ export function flagsTurnedOn(patch) {
     .filter((l) => /^\+(?!\+\+)/.test(l) && /\bon:\s*true\b/.test(l)).length;
 }
 
+/** The PR's brand-new migration files (the ones the safe-database gate judges). */
+export function newMigrations(files, cfg) {
+  return files.filter((f) => f.status === "added" && isMigrationFile(f.filename, cfg.database)).map((f) => f.filename);
+}
+
 /**
  * Every reason an agent PR may not auto-merge; empty means it may.
  * pr: { additions, deletions, changedFiles, files }.
+ * db (when the PR adds migrations): { autoApply, verdict } where verdict is
+ * classifyMigrations' result and autoApply says production applies safe
+ * migrations by itself (repo variable DB_AUTO_APPLY).
  */
-export function guardReasons({ pr, cfg, enabled, lowRiskLabeled, flip, issue }) {
+export function guardReasons({ pr, cfg, enabled, lowRiskLabeled, flip, issue, db }) {
   const reasons = [];
+  const migrations = flip ? [] : newMigrations(pr.files, cfg);
+  if (migrations.length) {
+    if (!db?.verdict) reasons.push(`adds migrations the safe-database gate couldn't read: ${migrations.join(", ")}`);
+    else if (!db.verdict.safe)
+      reasons.push(`adds a migration that isn't purely additive:\n${db.verdict.reasons.map((r) => `  - ${r}`).join("\n")}`);
+    if (!db?.autoApply)
+      reasons.push('adds a migration, and safe migrations only merge on their own once repo variable DB_AUTO_APPLY is "true"');
+  }
   if (!enabled)
     reasons.push('auto-merge is switched off (repo variable AGENT_AUTOMERGE isn\'t "true")');
   if (!lowRiskLabeled)

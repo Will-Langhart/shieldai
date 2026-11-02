@@ -65,10 +65,18 @@ notes means its flip waits for the owner; plan the steps as usual.
 
 Set `risk: "protected"` for anything the gate in `config.mjs` covers: payments
 (Stripe, billing, checkout, subscriptions, paid listings), sign-in and
-sessions, admin, affiliate links, the database (migrations, RLS, SQL, schema,
-generated types), server functions holding secrets, CI, config, dependencies.
+sessions, admin, affiliate links, server functions holding secrets, CI,
+config, dependencies, and database changes that alter or remove what exists
+(drops, renames, type changes, backfills, policy changes on existing tables).
 The builder still builds those, but they wait for the owner's merge.
-Everything else is `"low"`. List in `paths` every file you expect the issue to
+Everything else is `"low"`, including a step that only adds to the database
+(new tables with their RLS and policies, new nullable columns, indexes): it
+merges once its migration passes the dry run and the safe-database gate, so
+put that step's migration and the code that uses it in the same issue, and
+list the migration file in `paths`. A migration reaches production only after its PR
+merges, and previews use production's database, so that step's preview spec
+checks what shows without the new table (an empty state); a later step's spec
+can check the data. List in `paths` every file you expect the issue to
 change; the script holds an issue whose paths are gated even if you said `"low"`.
 Guard rails in your wording ("never touch auth", "Avoid: Stripe") are fine and
 don't make an issue sensitive.

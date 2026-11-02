@@ -85,8 +85,13 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+      actions: read # the production schema snapshot for the migration dry run
       id-token: write # Claude GitHub App auth (OIDC); its token makes the PR trigger CI
     env:
+      # The migration dry run (one of config.checks) tests new migrations
+      # against this copy of production's schema.
+      DB_SCHEMA_FILE: ${{ github.workspace }}/../prod-schema.sql
+      DB_AUTO_APPLY: ${{ vars.DB_AUTO_APPLY }}
       # Builds with every feature flag on, as on a Vercel preview, so the
       # self-test sees the unreleased feature. This build is never deployed.
       VERCEL_ENV: preview
@@ -106,6 +111,12 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
+
+      - name: Production schema snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: .github/claude-agent/scripts/db-snapshot.sh "$DB_SCHEMA_FILE"
 
       # Installed up front so the agent never needs (or gets) `npm install`.
       - run: npm ci # workspaces install from the root
