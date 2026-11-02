@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { 
   Search, 
   BookOpen, 
@@ -11,6 +11,7 @@ import {
   Heart,
   Cross
 } from 'lucide-react'
+import { apiErrorMessage } from '../../../lib/api-error-message'
 
 interface CrossReference {
   id: string
@@ -64,14 +65,7 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
     { id: 'weak', label: 'Weak' }
   ]
 
-  // Generate cross-references when passage changes
-  useEffect(() => {
-    if (passage) {
-      generateCrossReferences()
-    }
-  }, [passage])
-
-  const generateCrossReferences = async () => {
+  const generateCrossReferences = useCallback(async () => {
     setLoading(true)
     setError(null)
 
@@ -102,7 +96,7 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || `Failed to generate cross-references (${response.status})`)
+        throw new Error(apiErrorMessage(errorData, response.status, 'generate cross-references'))
       }
 
       const data = await response.json()
@@ -113,7 +107,14 @@ export function AICrossReferences({ passage, onReferenceSelect }: AICrossReferen
     } finally {
       setLoading(false)
     }
-  }
+  }, [passage])
+
+  // Generate cross-references when passage changes
+  useEffect(() => {
+    if (passage) {
+      generateCrossReferences()
+    }
+  }, [passage, generateCrossReferences])
 
   const toggleExpanded = (refId: string) => {
     const newExpanded = new Set(expandedRefs)
