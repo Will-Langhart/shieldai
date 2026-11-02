@@ -140,6 +140,27 @@ describe("sensitiveMention", () => {
     );
     assert.equal(sensitiveMention("Fix the missing dependencies `a` and `b`; keep the dependency array short.", gate), null);
   });
+  it("ignores wording from real planner issues that isn't money, auth or packages", () => {
+    // Issues 93, 96 and 97 (Nov 2) were held over these lines alone.
+    assert.equal(sensitiveMention("Style with `shield-*` tokens.", gate), null);
+    assert.equal(sensitiveMention("Use design tokens and `var(--space-section)`; see tokens.css.", gate), null);
+    assert.equal(
+      sensitiveMention("Add a CHANGELOG.md line. Avoid: sitemap.xml, robots.txt, new dependencies, changing existing preview specs.", gate),
+      null,
+    );
+    assert.equal(sensitiveMention("Move each loader into its effect so the effects list their real dependencies.", gate), null);
+    assert.equal(
+      sensitiveMention("Resolve with `{ overrides: process.env.VITE_FEATURE_FLAGS, vercelEnv: process.env.VERCEL_ENV }`.", gate),
+      null,
+    );
+    assert.equal(sensitiveMention("Grading pays off if PSA 10s sell for $X; it doesn't pay off below that.", gate), null);
+  });
+  it("still counts real tokens, env and payments", () => {
+    assert.equal(sensitiveMention("Store refresh tokens in a new table", gate), "tokens");
+    assert.equal(sensitiveMention("Read the API token from process.env.BIBLE_API_KEY", gate), "token");
+    assert.equal(sensitiveMention("Avoid: sitemap.xml. Add Stripe checkout.", gate), "Stripe");
+    assert.equal(sensitiveMention("Show the price, then pay with Link", gate), "pay");
+  });
   it("still counts package dependencies", () => {
     assert.equal(sensitiveMention("Bump the axios dependency to 1.20", gate), "dependency");
     assert.equal(sensitiveMention("Add new dependencies for charts", gate), "dependencies");
