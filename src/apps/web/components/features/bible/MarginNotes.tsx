@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Loader2, Sparkles, Check, PenLine } from 'lucide-react'
-
-interface NoteSlot {
-  id?: string
-  note: string
-  saving: boolean
-  saved: boolean
-  dirty: boolean
-}
+import { notesToSlots, type NoteSlot } from '../../../lib/margin-notes'
 
 interface MarginNotesProps {
   book: string
@@ -33,20 +26,7 @@ export function MarginNotes({
   const [loadingNotes, setLoadingNotes] = useState(false)
   const activeRef = useRef<HTMLDivElement>(null)
 
-  // Load all notes for this chapter when book/chapter changes
-  useEffect(() => {
-    if (!userId) return
-    loadChapterNotes()
-  }, [book, chapter, userId])
-
-  // Scroll active verse slot into view
-  useEffect(() => {
-    if (activeVerseNumber !== null && activeRef.current) {
-      activeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }
-  }, [activeVerseNumber])
-
-  const loadChapterNotes = async () => {
+  const loadChapterNotes = useCallback(async () => {
     if (!userId) return
     setLoadingNotes(true)
     try {
@@ -55,22 +35,26 @@ export function MarginNotes({
       )
       if (!res.ok) return
       const data = await res.json()
-      const slots: Record<number, NoteSlot> = {}
-      for (const n of data.notes || []) {
-        // reference is like "Genesis 1:3" — extract verse number
-        const match = n.reference.match(/:(\d+)$/)
-        if (match) {
-          const verseNum = parseInt(match[1])
-          slots[verseNum] = { id: n.id, note: n.note || '', saving: false, saved: true, dirty: false }
-        }
-      }
-      setNoteSlots(slots)
+      setNoteSlots(notesToSlots(data.notes))
     } catch {
       // silently fail — notes are supplemental
     } finally {
       setLoadingNotes(false)
     }
-  }
+  }, [userId, book, chapter])
+
+  // Load all notes for this chapter when book/chapter changes
+  useEffect(() => {
+    if (!userId) return
+    loadChapterNotes()
+  }, [userId, loadChapterNotes])
+
+  // Scroll active verse slot into view
+  useEffect(() => {
+    if (activeVerseNumber !== null && activeRef.current) {
+      activeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [activeVerseNumber])
 
   const handleNoteChange = (verseNum: number, value: string) => {
     setNoteSlots(prev => ({
