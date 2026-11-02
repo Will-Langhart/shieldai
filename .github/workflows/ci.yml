@@ -23,14 +23,36 @@ jobs:
   agent:
     name: Agent rules
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read # the production schema snapshot for the migration dry run
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test .github/claude-agent/scripts/lib.test.mjs
+      - run: node --test .github/claude-agent/scripts/*.test.mjs
       - run: node .github/claude-agent/scripts/roadmap.mjs check
+
+      # A PR's new migrations must apply cleanly to a throwaway local Supabase
+      # database loaded with production's schema before the PR can merge.
+      # No-op when the PR adds none. db-dryrun.mjs explains when it skips.
+      - name: Production schema snapshot
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: .github/claude-agent/scripts/db-snapshot.sh "$RUNNER_TEMP/prod-schema.sql"
+      - name: Migration dry run
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          DB_SCHEMA_FILE: ${{ runner.temp }}/prod-schema.sql
+          DB_AUTO_APPLY: ${{ vars.DB_AUTO_APPLY }}
+        run: node .github/claude-agent/scripts/db-dryrun.mjs
 
   typecheck:
     name: Typecheck

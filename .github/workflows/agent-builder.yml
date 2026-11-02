@@ -1,6 +1,6 @@
 name: agent-builder
 
-# Builder agent. Twice a day it picks open issues labeled `agent` (queued by the
+# Builder agent. Three times a night and once in the afternoon it picks open issues labeled `agent` (queued by the
 # owner or the planner), and Claude Code implements each on its own
 # `agent/issue-<n>` branch, self-tests it and opens a PR. CI is the reviewer;
 # agent-automerge.yml decides whether the PR may merge without the owner.
@@ -11,17 +11,22 @@ name: agent-builder
 # role keys, payment keys or deploy hooks.
 
 on:
+  # Three overnight runs, so a roadmap item's steps (built one at a time, each
+  # after the previous one merged) move several steps a night. Cron is UTC:
+  # 1:30, 3:30 and 5:30am New York in winter (EST), an hour later in summer.
   schedule:
-    - cron: "30 6 * * *" # 2:30am New York (EDT)
-    - cron: "30 18 * * *" # 2:30pm New York (EDT)
+    - cron: "30 6 * * *"
+    - cron: "30 8 * * *"
+    - cron: "30 10 * * *"
+    - cron: "30 19 * * *" # 2:30pm New York (EST)
   workflow_dispatch:
     inputs:
       issue:
         description: "Work this issue number only (still needs the `agent` label)"
         default: ""
       max_issues:
-        description: "Most issues to take this run"
-        default: "6"
+        description: "Most issues to take this run (empty: builderIssuesPerRun in config.mjs)"
+        default: ""
 
 concurrency:
   group: agent-builder
@@ -38,7 +43,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      issues: write # creates the agent labels on first run
+      issues: write # labels; closes shipped issues; retries steps whose earlier step landed
       pull-requests: read
     outputs:
       issues: ${{ steps.pick.outputs.issues }}
@@ -46,7 +51,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       ONLY: ${{ inputs.issue }}
-      MAX: ${{ inputs.max_issues || '6' }}
+      MAX: ${{ inputs.max_issues }} # empty: limits.builderIssuesPerRun in config.mjs
     steps:
       - name: Ensure labels exist
         run: |
@@ -55,45 +60,22 @@ jobs:
           gh label create agent:blocked --color B60205 --description "Agent stopped; see its comment. Remove to retry" --force
           gh label create agent:needs-review --color FBCA04 --description "Agent PR waits for the owner's merge" --force
 
+      # Ordering, retries and trust checks: .github/claude-agent/scripts/builder-pick.mjs
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          sparse-checkout: .github/claude-agent
+
       - name: Pick
         id: pick
-        run: |
-          picked="[]"
-          numbers=$(gh issue list --label agent --state open --limit 100 \
-            --json number,labels \
-            --jq '[.[] | select([.labels[].name] | (index("agent:blocked") or index("agent:needs-review")) | not) | .number] | sort | .[]')
-          for n in $numbers; do
-            if [ -n "$ONLY" ] && [ "$n" != "$ONLY" ]; then continue; fi
-            [ "$(echo "$picked" | jq length)" -ge "$MAX" ] && break
-            # Only issues the owner or the planner (github-actions[bot]) queued.
-            by=$(gh api "repos/$GH_REPO/issues/$n/events" --paginate \
-              --jq '.[] | select(.event == "labeled" and .label.name == "agent") | .actor.login' | tail -n1)
-            if [ "${by,,}" != "${OWNER,,}" ] && [ "$by" != "github-actions[bot]" ]; then
-              echo "::notice::#$n skipped: \`agent\` label added by '$by', not the owner or the planner"
-              continue
-            fi
-            if [ -n "$(gh pr list --head "agent/issue-$n" --state open --json number --jq '.[0].number')" ]; then
-              echo "::notice::#$n skipped: PR already open"
-              continue
-            fi
-            # A merged agent PR means the work shipped; the bot's squash merge
-            # doesn't always close the issue, so close it instead of redoing it.
-            merged=$(gh pr list --head "agent/issue-$n" --state merged --json number --jq '.[0].number')
-            if [ -n "$merged" ]; then
-              gh issue close "$n" --reason completed --comment "Shipped in #$merged."
-              continue
-            fi
-            picked=$(echo "$picked" | jq -c ". + [$n]")
-          done
-          echo "Picked: $picked" >> "$GITHUB_STEP_SUMMARY"
-          echo "issues=$picked" >> "$GITHUB_OUTPUT"
+        run: node .github/claude-agent/scripts/builder-pick.mjs
 
   build:
     name: Issue #${{ matrix.issue }}
     needs: pick
     if: ${{ needs.pick.outputs.issues != '[]' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75 # a feature step builds twice (check + preview specs) and needs room to fix
     strategy:
       matrix:
         issue: ${{ fromJSON(needs.pick.outputs.issues) }}
@@ -103,8 +85,13 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+      actions: read # the production schema snapshot for the migration dry run
       id-token: write # Claude GitHub App auth (OIDC); its token makes the PR trigger CI
     env:
+      # The migration dry run (one of config.checks) tests new migrations
+      # against this copy of production's schema.
+      DB_SCHEMA_FILE: ${{ github.workspace }}/../prod-schema.sql
+      DB_AUTO_APPLY: ${{ vars.DB_AUTO_APPLY }}
       # Builds with every feature flag on, as on a Vercel preview, so the
       # self-test sees the unreleased feature. This build is never deployed.
       VERCEL_ENV: preview
@@ -124,6 +111,12 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
+
+      - name: Production schema snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: .github/claude-agent/scripts/db-snapshot.sh "$DB_SCHEMA_FILE"
 
       # Installed up front so the agent never needs (or gets) `npm install`.
       - run: npm ci # workspaces install from the root
@@ -154,8 +147,9 @@ jobs:
             BRANCH: agent/issue-${{ matrix.issue }}
 
             You are this repo's builder agent. Nobody is awake to answer questions:
-            either ship one small, tested PR for this issue, or explain on the
-            issue why you can't and stop.
+            either ship one complete, tested PR for this issue, or explain on the
+            issue why you can't and stop. An earlier step of the same roadmap item
+            has already merged to main (the pick step waits for it), so build on it.
 
             1. Read .github/claude-agent/RULES.md (binding), .github/claude-agent/config.mjs
                and .claude/CLAUDE.md (repo conventions).
@@ -186,7 +180,7 @@ jobs:
             If you stop at any point without opening the PR, your last act is one
             issue comment saying what stopped you and what would unblock it.
           claude_args: |
-            --max-turns 80
+            --max-turns 150
             --allowedTools "${{ steps.tools.outputs.allowed }}"
             --disallowedTools "WebFetch,WebSearch,Bash(npm install:*),Bash(npm i:*),Bash(gh pr merge:*),Bash(gh issue edit:*),Bash(gh api:*)"
 

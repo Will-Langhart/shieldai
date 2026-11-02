@@ -25,13 +25,15 @@ export default {
   // Commands the builder must pass before it opens a PR, run in order from the
   // repo root. They also become the builder's only allowed shell commands
   // (besides git/gh basics), so write them exactly as it should type them.
-  // The last one serves a production build with every flag on and runs the
-  // preview specs against it.
+  // db-dryrun.mjs applies the branch's new migrations to a local copy of
+  // production's schema (needs Docker). The last one serves a production build
+  // with every flag on and runs the preview specs against it.
   checks: [
     "npm run type-check --workspace src/apps/web",
     "npm run lint --workspace src/apps/web",
     "npm run test --workspace src/apps/web",
     "npm run build --workspace src/apps/web",
+    "node .github/claude-agent/scripts/db-dryrun.mjs", // no-op unless the branch adds a migration
     "node .github/claude-agent/scripts/preview-local.mjs",
   ],
 
@@ -51,13 +53,27 @@ export default {
     todoDirs: ["src/apps/web"],
   },
 
+  // Database migrations and the safe-database gate (scripts/db-gate.mjs).
+  // A brand-new file named `NNNN_snake_case.sql` in `dir` is judged by its SQL:
+  // purely additive ones (new tables with their RLS and policies, new columns,
+  // indexes, invoker functions and views) may merge without the owner once
+  // they apply cleanly in the CI dry run and DB_AUTO_APPLY is "true";
+  // db-migrate.yml then applies them to production. Anything else in `dir`
+  // stays gated. Numbers at or below `baseline` count as applied: the
+  // unnumbered files already there were applied by hand.
+  database: {
+    dir: "src/config/migrations",
+    file: /^\d{4}_[a-z0-9_]+\.sql$/,
+    baseline: 0,
+  },
+
   limits: {
     maxLines: 1000, // an agent PR over this waits for the owner
     maxFiles: 30,
-    newIssuesPerNight: 6,
-    queueLimit: 10, // planner adds nothing while this many issues wait for the builder
-    maxInFlight: 2, // roadmap items building at once
-    builderIssuesPerRun: 6,
+    newIssuesPerNight: 8, // enough to file every step of a new item at once
+    queueLimit: 16, // planner adds nothing while this many issues wait for the builder
+    maxInFlight: 3, // roadmap items building at once; each builds one step per run
+    builderIssuesPerRun: 6, // per builder run (four runs a day)
   },
 
   // ---------------------------------------------------------------------------
@@ -98,9 +114,12 @@ export default {
     sensitivePathWords:
       /(stripe|billing|checkout|payment|payout|pricing|subscription|invoice|revenuecat|paypal|webhook|affiliate|auth|login|signin|sign-in|signup|sign-up|session|password|admin|secret|credential)/,
     // Words in a roadmap item or issue that mean the same. Guard-rail clauses
-    // ("never touch auth") don't count; see sensitiveMention in lib.mjs.
+    // ("never touch auth") don't count; see sensitiveMention in lib.mjs. The
+    // database isn't here: new migrations are judged by their SQL instead
+    // (`database` above). The safe-database gate also holds any new table,
+    // column or function whose name matches these words.
     sensitiveText:
-      /\b(stripe|billing|checkout|payments?|paid|pay|payouts?|pricing|subscriptions?|invoices?|revenuecat|paypal|in-app purchases?|iap|sponsor(ed|ship)?|affiliate|auth|authentication|authorization|log ?in|sign[- ]?(in|up)|passwords?|sessions?|admin|database|migrations?|schema|rls|sql|supabase|prisma|edge functions?|webhooks?|env|environment variables?|secrets?|api keys?|dependenc(y|ies))\b/i,
+      /\b(stripe|billing|checkout|payments?|paid|pay|payouts?|pricing|subscriptions?|invoices?|revenuecat|paypal|in-app purchases?|iap|sponsor(ed|ship)?|affiliate|auth|authentication|authorization|log ?in|sign[- ]?(in|up)|passwords?|sessions?|admin|edge functions?|webhooks?|env|environment variables?|secrets?|api keys?|tokens?|credentials?|dependenc(y|ies))\b/i,
     // Protected files where adding lines (removing none) is still fine.
     additiveOnly: [],
     // Folders where a brand-new file is fine (an existing one is protected).

@@ -1,7 +1,7 @@
 name: agent-planner
 
 # Nightly planner, an hour before the builder. Reads ROADMAP.md, picks the next
-# unfinished item (up to config.limits.maxInFlight at once) and files small
+# unfinished item (up to config.limits.maxInFlight at once) and files the
 # issues for it, labeled `agent` (plus `agent:low-risk` when they stay clear of
 # the gate). Queues the flip that turns a finished feature's flag on once its
 # PRs passed Preview e2e. Maintenance (TODOs, lint) fills any room left.
@@ -12,7 +12,7 @@ name: agent-planner
 
 on:
   schedule:
-    - cron: "30 5 * * *" # 1:30am New York (EDT); builder runs an hour later
+    - cron: "30 5 * * *" # 12:30am New York (EST), 1:30am in summer; builder runs an hour later
   workflow_dispatch:
 
 concurrency:
@@ -69,7 +69,7 @@ jobs:
             3. Read ROADMAP.md and the code the work touches.
             4. Write planner/plan.json exactly as PLANNER.md describes, then stop.
           claude_args: |
-            --max-turns 40
+            --max-turns 60
             --allowedTools "Read,Glob,Grep,Write"
             --disallowedTools "Bash,Edit,WebFetch,WebSearch"
 
