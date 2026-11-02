@@ -1,7 +1,24 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Button, Input } from '../../ui'
 import { LoadingSpinner } from '../../common'
 import { BibleVerse, BibleBook, BibleChapter } from '../../../types/bible'
+
+/**
+ * A chapters response may only be applied while its effect is still active
+ * (not unmounted or superseded) and the book it was requested for is still
+ * the selected one. Anything else is stale and must be ignored.
+ */
+export function shouldApplyChapters({
+  requestedBook,
+  currentBook,
+  active,
+}: {
+  requestedBook: string
+  currentBook: string
+  active: boolean
+}): boolean {
+  return active && requestedBook !== '' && requestedBook === currentBook
+}
 
 export interface BibleReaderProps {
   onGetVerses: (book: string, chapter: number, verseStart?: number, verseEnd?: number) => Promise<BibleVerse>
@@ -25,33 +42,43 @@ const BibleReader: React.FC<BibleReaderProps> = ({
   const [verses, setVerses] = useState<BibleVerse | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const selectedBookRef = useRef(selectedBook)
+  selectedBookRef.current = selectedBook
+
   useEffect(() => {
+    let active = true
+    const loadBooks = async () => {
+      try {
+        const booksData = await onGetBooks()
+        if (active) setBooks(booksData)
+      } catch (error) {
+        console.error('Failed to load books:', error)
+      }
+    }
     loadBooks()
-  }, [])
+    return () => {
+      active = false
+    }
+  }, [onGetBooks])
 
   useEffect(() => {
-    if (selectedBook) {
-      loadChapters(selectedBook)
+    if (!selectedBook) return
+    let active = true
+    const loadChapters = async (book: string) => {
+      try {
+        const chaptersData = await onGetChapters(book)
+        if (shouldApplyChapters({ requestedBook: book, currentBook: selectedBookRef.current, active })) {
+          setChapters(chaptersData)
+        }
+      } catch (error) {
+        console.error('Failed to load chapters:', error)
+      }
     }
-  }, [selectedBook])
-
-  const loadBooks = async () => {
-    try {
-      const booksData = await onGetBooks()
-      setBooks(booksData)
-    } catch (error) {
-      console.error('Failed to load books:', error)
+    loadChapters(selectedBook)
+    return () => {
+      active = false
     }
-  }
-
-  const loadChapters = async (book: string) => {
-    try {
-      const chaptersData = await onGetChapters(book)
-      setChapters(chaptersData)
-    } catch (error) {
-      console.error('Failed to load chapters:', error)
-    }
-  }
+  }, [selectedBook, onGetChapters])
 
   const loadVerses = async () => {
     if (!selectedBook || !selectedChapter) return
