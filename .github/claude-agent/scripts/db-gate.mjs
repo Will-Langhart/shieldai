@@ -10,7 +10,9 @@
 //     constant DEFAULT, no volatile default that rewrites existing rows)
 //   - CREATE INDEX (not UNIQUE, not CONCURRENTLY) on any table
 //   - on tables created in the same PR: anything (RLS, policies, grants,
-//     triggers, constraints, seed rows)
+//     triggers, constraints, seed rows), and each of them must turn RLS on:
+//     Supabase's Data API serves every public table, so a table without RLS
+//     would be readable and writable by anyone with the anon key
 //   - grants on functions, views and sequences created in the same PR
 //   - COMMENT ON, NOTIFY pgrst, SET search_path/lock_timeout/statement_timeout
 //
@@ -195,13 +197,20 @@ export function classifyMigrations(added, existing = [], sensitive = null) {
   const newSequence = (key) => isNew("sequence", key) || [...plain.table].some((t) => !before.table.has(t) && key.startsWith(`${t}_`));
   const reasons = [];
 
+  const rlsOn = new Set();
   for (const { path, sql } of added) {
     const stmts = splitStatements(sql);
     if (stmts.length === 0) reasons.push(`${path}: is empty`);
     for (const { masked } of stmts) {
       const why = statementProblem(masked, { isNew, newAny, newSequence, sensitive });
       if (why) reasons.push(`${path}: ${why} (\`${masked.slice(0, 90)}${masked.length > 90 ? "…" : ""}\`)`);
+      const alter = masked.match(new RegExp(`^alter table (?:if exists )?(?:only )?(${IDENT}) (.*)$`));
+      if (alter && topLevelParts(alter[2]).some((a) => /^enable row level security$/.test(a))) rlsOn.add(objectName(alter[1]).key);
     }
+  }
+  for (const key of plain.table) {
+    if (!before.table.has(key) && !rlsOn.has(key))
+      reasons.push(`new table ${key} doesn't turn on row level security (add \`alter table ${key} enable row level security;\`)`);
   }
   return {
     safe: reasons.length === 0,
@@ -283,6 +292,7 @@ function statementProblem(s, { isNew, newAny, newSequence, sensitive }) {
   m = s.match(new RegExp(`^alter table (?:if exists )?(?:only )?(${IDENT}) (.*)$`));
   if (m) {
     const key = objectName(m[1]).key;
+    if (/\b(disable|no force) row level security\b/.test(m[2])) return "turns row level security off";
     if (isNew("table", key)) return null;
     if (touchesPlatform(key)) return `changes a table in the ${objectName(key).schema} schema`;
     for (const action of topLevelParts(m[2])) {

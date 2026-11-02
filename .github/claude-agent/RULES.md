@@ -41,9 +41,10 @@ else waits for the owner. Additive means (`scripts/db-gate.mjs` decides):
   the next free number; never edit, rename or delete an existing migration
 - plain `create table` / `create index` / `create type` / `create sequence`
   for new objects: no `if not exists`, no `or replace`
-- RLS turned on, policies, grants, triggers and seed rows only on tables this
-  PR creates; on existing tables only `add column` that is nullable or has a
-  constant default
+- every new table turns row level security on in the same PR (Supabase serves
+  public tables to anyone with the anon key), then gets the policies it needs
+- policies, grants, triggers and seed rows only on tables this PR creates; on
+  existing tables only `add column` that is nullable or has a constant default
 - functions without `security definer`; views `with (security_invoker = true)`
 - nothing about payments, sign-in, sessions, secrets or personal data, nothing
   in `auth`, `storage` or other Supabase schemas, no `begin`/`commit`, no `do`

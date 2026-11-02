@@ -77,6 +77,7 @@ describe("classifyMigrations: safe", () => {
   it("new types and sequences, and identity sequences of new tables", () => {
     safe(`create type public.badge_kind as enum ('new', 'hot');
           create table public.badges (id bigserial primary key, kind badge_kind);
+          alter table public.badges enable row level security;
           grant usage on sequence public.badges_id_seq to authenticated;`);
   });
 });
@@ -134,6 +135,12 @@ describe("classifyMigrations: waits for the owner", () => {
     unsafe("create table public.user_sessions (id uuid primary key)", /money, sign-in or secrets/);
     unsafe("alter table tools add column api_key text", /money, sign-in or secrets/);
     unsafe("create function public.admin_stats() returns int language sql as $$ select 1 $$", /money, sign-in or secrets/);
+  });
+  it("a new table without row level security", () => {
+    unsafe("create table public.lists (id uuid primary key)", /doesn't turn on row level security/);
+    unsafe(`create table public.lists (id uuid primary key);
+            alter table public.lists enable row level security;
+            alter table public.lists disable row level security;`, /turns row level security off/);
   });
   it("is empty", () => unsafe("-- nothing\n", /empty/));
 });
