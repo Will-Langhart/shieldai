@@ -19,9 +19,17 @@
 const GUARD_CLAUSE =
   /(^|[\n(;:,.!?*-]|\b(?:and|or)\b)(\s*)(?:never|do not|don't|must not|must never|avoid|no(?=\s))\b:?(?:(?!\b(?:and|but|then|so|while)\b)[^.;:!?\n()])*/gim;
 
-/** First sensitive word in the text, ignoring guard-rail clauses; null if none. */
+/**
+ * React Hooks lint wording ("React Hook useEffect has a missing dependency",
+ * "the dependency array") is about a hook, not a package, so it doesn't count
+ * as a dependency mention. Package work is still held by kind "deps" and the
+ * protected package files.
+ */
+const HOOK_DEPS = /\b(?:missing|unnecessary)\s+dependenc(?:y|ies)\b|\bdependenc(?:y|ies)\s+(?:array|list)s?\b/gi;
+
+/** First sensitive word in the text, ignoring guard-rail clauses and hook lint wording; null if none. */
 export function sensitiveMention(text, gate) {
-  const hit = String(text).replace(GUARD_CLAUSE, "$1$2").match(gate.sensitiveText);
+  const hit = String(text).replace(GUARD_CLAUSE, "$1$2").replace(HOOK_DEPS, "").match(gate.sensitiveText);
   return hit ? hit[0] : null;
 }
 
