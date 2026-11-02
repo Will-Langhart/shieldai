@@ -12,7 +12,7 @@ name: agent-planner
 
 on:
   schedule:
-    - cron: "30 5 * * *" # 12:30am New York (EST), 1:30am in summer; builder runs an hour later
+    - cron: "17 5 * * *" # 12:17am New York (EST), 1:17am in summer; the builder starts when it finishes
   workflow_dispatch:
 
 concurrency:

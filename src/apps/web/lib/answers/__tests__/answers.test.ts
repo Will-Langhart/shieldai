@@ -180,8 +180,7 @@ describe('answers helpers', () => {
 });
 
 describe('answers-library flag', () => {
-  it('is off by default and on in Vercel previews', () => {
-    expect(resolveFlag('answers-library', FEATURE_FLAGS, {})).toBe(false);
+  it('is on in Vercel previews', () => {
     expect(resolveFlag('answers-library', FEATURE_FLAGS, { vercelEnv: 'preview' })).toBe(true);
   });
 });

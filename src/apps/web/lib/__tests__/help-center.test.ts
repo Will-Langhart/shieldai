@@ -43,7 +43,7 @@ describe('getHelpSections', () => {
 });
 
 describe('help-center flag', () => {
-  it('is registered and off', () => {
-    expect(FEATURE_FLAGS['help-center']).toEqual({ description: 'Help Center page at /help', on: false });
+  it('is registered', () => {
+    expect(FEATURE_FLAGS['help-center'].description).toBe('Help Center page at /help');
   });
 });

@@ -13,8 +13,8 @@
   shipping or building, splits it into 2 to 5 steps (each one PR, a slice a
   visitor can see on the preview) and queues them all. The builder takes one
   step per item per run, in order, each after the one before merged; it runs
-  three times a night and once in the afternoon, so a big item takes a few
-  nights. Up to three items build at a time; order is priority.
+  hourly through the night and once in the afternoon, so a big item can
+  finish in a night or two. Up to three items build at a time; order is priority.
 - The feature ships behind its flag, off for visitors. Once all its PRs merged
   and passed the Preview e2e check, the planner queues a PR that turns the flag
   on and ticks the box here.
