@@ -59,8 +59,8 @@ describe('not-found content', () => {
 });
 
 describe('not-found-page flag', () => {
-  it('is off by default and on in Vercel previews', () => {
-    expect(resolveFlag('not-found-page', FEATURE_FLAGS, {})).toBe(false);
+  it('is on in production and in Vercel previews', () => {
+    expect(resolveFlag('not-found-page', FEATURE_FLAGS, {})).toBe(true);
     expect(resolveFlag('not-found-page', FEATURE_FLAGS, { vercelEnv: 'preview' })).toBe(true);
   });
 });
