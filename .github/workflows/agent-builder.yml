@@ -1,6 +1,6 @@
 name: agent-builder
 
-# Builder agent. Three times a night and once in the afternoon it picks open issues labeled `agent` (queued by the
+# Builder agent. Hourly through the night, once in the afternoon and right after the planner, it picks open issues labeled `agent` (queued by the
 # owner or the planner), and Claude Code implements each on its own
 # `agent/issue-<n>` branch, self-tests it and opens a PR. CI is the reviewer;
 # agent-automerge.yml decides whether the PR may merge without the owner.
@@ -11,14 +11,19 @@ name: agent-builder
 # role keys, payment keys or deploy hooks.
 
 on:
-  # Three overnight runs, so a roadmap item's steps (built one at a time, each
-  # after the previous one merged) move several steps a night. Cron is UTC:
-  # 1:30, 3:30 and 5:30am New York in winter (EST), an hour later in summer.
+  # Hourly through the night, so a roadmap item's steps (built one at a time,
+  # each after the previous one merged) move several steps a night, and a run
+  # GitHub delays or drops doesn't stall the night. A run with nothing to build
+  # stops after the pick job. Off the hour and half hour, when GitHub's
+  # scheduler is busiest. Cron is UTC: 1:17 to 7:17am New York in winter (EST),
+  # an hour later in summer, plus 2:17pm.
   schedule:
-    - cron: "30 6 * * *"
-    - cron: "30 8 * * *"
-    - cron: "30 10 * * *"
-    - cron: "30 19 * * *" # 2:30pm New York (EST)
+    - cron: "17 6-12 * * *"
+    - cron: "17 19 * * *"
+  # And right after the planner files the night's issues.
+  workflow_run:
+    workflows: [agent-planner]
+    types: [completed]
   workflow_dispatch:
     inputs:
       issue:
@@ -39,6 +44,7 @@ env:
 jobs:
   pick:
     name: Pick issues
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

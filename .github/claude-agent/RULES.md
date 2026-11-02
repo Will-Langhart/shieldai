@@ -77,6 +77,10 @@ Never, even when the issue asks:
   flag on. Never set a flag's `on: true` unless the issue is a flag-flip issue
   (label `agent:flip`); a flip PR changes only that flag, its `ROADMAP.md`
   checkbox and `CHANGELOG.md`.
+- Unit tests must not assert a flag's default (`on: false`, or that it resolves
+  off in production): the flip PR can't touch tests, so such a test holds the
+  launch for the owner. Test the flag-off behavior through an explicit
+  override instead.
 - The site must work exactly as before with the flag off.
 - Before pushing, every command in `checks` in `config.mjs` must pass, run in
   order exactly as written. The last one serves your build with every flag on

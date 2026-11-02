@@ -4,6 +4,7 @@ One line per merged PR, newest first. The builder agent adds its own.
 
 ## Unreleased
 
+- fix(agent): the builder runs hourly overnight and right after the planner, so a delayed or dropped GitHub schedule no longer stalls the night; unit tests no longer assert a flag's default, so flag flips can merge without the owner.
 - feat(help-center): add the `help-center` flag (off) and a tested `getHelpSections()` helper with the Help Center content; nothing renders it yet (#72).
 - feat(web): add the `answers-library` flag (off), the `lib/answers` content module with 8 hard-question topics, and a filterable `/answers` index that 404s while the flag is off (#93).
 - fix(agent): the planner no longer holds a step for review just because it says "`shield-*` tokens" or "design tokens", reads `process.env.VITE_FEATURE_FLAGS`, lists "new dependencies" after "Avoid:" next to a file name, or says an effect lists its dependencies; money, auth, secrets, real tokens and package work are still held.
