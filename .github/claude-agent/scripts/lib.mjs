@@ -14,11 +14,12 @@ import { isMigrationFile } from "./db-lib.mjs";
  * don't / must not / avoid (an "Avoid:" note too) / no ("No pricing copy",
  * "- no Supabase calls"), and runs to the next sentence break or
  * "and/but/then", so "never touch X, and add Stripe checkout" still counts the
- * second half. Mid-sentence negations ("users who don't have admin rights",
+ * second half. A dot or colon inside a word ("sitemap.xml", "e.g") doesn't
+ * end the clause. Mid-sentence negations ("users who don't have admin rights",
  * "pages with no login") still count.
  */
 const GUARD_CLAUSE =
-  /(^|[\n(;:,.!?*-]|\b(?:and|or)\b)(\s*)(?:never|do not|don't|must not|must never|avoid|no(?=\s))\b:?(?:(?!\b(?:and|but|then|so|while)\b)[^.;:!?\n()])*/gim;
+  /(^|[\n(;:,.!?*-]|\b(?:and|or)\b)(\s*)(?:never|do not|don't|must not|must never|avoid|no(?=\s))\b:?(?:(?!\b(?:and|but|then|so|while)\b)(?:[^.;:!?\n()]|[.:](?=\S)))*/gim;
 
 /**
  * React Hooks lint wording ("React Hook useEffect has a missing dependency",
@@ -26,11 +27,26 @@ const GUARD_CLAUSE =
  * as a dependency mention. Package work is still held by kind "deps" and the
  * protected package files.
  */
-const HOOK_DEPS = /\b(?:missing|unnecessary)\s+dependenc(?:y|ies)\b|\bdependenc(?:y|ies)\s+(?:array|list)s?\b/gi;
+const HOOK_DEPS =
+  /\b(?:missing|unnecessary|real|actual)\s+dependenc(?:y|ies)\b|\bdependenc(?:y|ies)\s+(?:array|list)s?\b|\beffects?\s+(?:\w+\s+){0,3}dependenc(?:y|ies)\b/gi;
 
-/** First sensitive word in the text, ignoring guard-rail clauses and hook lint wording; null if none. */
+/**
+ * Everyday wording that shares a word with the sensitive list but means
+ * something else: styling tokens ("design tokens", "`shield-*` tokens",
+ * tokens.css), the public build-time variables feature flags read
+ * (`process.env.VITE_FEATURE_FLAGS`, `VERCEL_ENV`), and "pays off". Access,
+ * API and auth tokens, secrets and other env reads still count.
+ */
+const BENIGN =
+  /\b(?:design|css|style|styling|colou?r|theme|tailwind|spacing)\s+tokens?\b|`[^`\n]+`\s+tokens?\b|\btokens\.css\b|\b(?:process|import\.meta)\.env\.(?:VITE_[A-Z0-9_]*|VERCEL_ENV|NODE_ENV)\b|\bpays?\s+off\b/gi;
+
+/** First sensitive word in the text, ignoring guard-rail clauses, hook lint and styling wording; null if none. */
 export function sensitiveMention(text, gate) {
-  const hit = String(text).replace(GUARD_CLAUSE, "$1$2").replace(HOOK_DEPS, "").match(gate.sensitiveText);
+  const hit = String(text)
+    .replace(GUARD_CLAUSE, "$1$2")
+    .replace(HOOK_DEPS, "")
+    .replace(BENIGN, "")
+    .match(gate.sensitiveText);
   return hit ? hit[0] : null;
 }
 
