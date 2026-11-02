@@ -61,7 +61,7 @@ jobs:
           gh label create agent:needs-review --color FBCA04 --description "Agent PR waits for the owner's merge" --force
 
       # Ordering, retries and trust checks: .github/claude-agent/scripts/builder-pick.mjs
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
           sparse-checkout: .github/claude-agent
@@ -101,7 +101,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
