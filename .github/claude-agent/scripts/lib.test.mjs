@@ -111,12 +111,17 @@ describe("the gate (this repo's config)", () => {
     it(`lets ${path} through`, () => assert.equal(pathIsLowRisk(path, cfg), true));
   }
   it("lets a new preview spec through", () => assert.equal(pathIsLowRisk("e2e/preview/search-v2-chips.spec.ts", cfg), true));
+  it("lets a new numbered migration through to the SQL check, unless its name is about money or sign-in", () => {
+    assert.equal(pathIsLowRisk("src/config/migrations/0001_reading_plans.sql", cfg), true);
+    assert.equal(pathIsLowRisk("src/config/migrations/0002_stripe_events.sql", cfg), false);
+    assert.equal(pathIsLowRisk("src/config/migrations/reading_plans.sql", cfg), false);
+  });
 });
 
 describe("sensitiveMention", () => {
   it("finds money, auth and database words", () => {
     assert.equal(sensitiveMention("Add Stripe checkout", gate), "Stripe");
-    assert.equal(sensitiveMention("New migration for tags", gate), "migration");
+    assert.equal(sensitiveMention("Store API keys in a new column", gate), "API keys");
     assert.equal(sensitiveMention("Show it on sign-in", gate), "sign-in");
   });
   it("ignores guard-rail clauses", () => {
@@ -149,6 +154,8 @@ describe("sensitiveMention", () => {
     assert.equal(sensitiveMention("No-op wrapper around auth", gate), "auth");
   });
   it("leaves plain work alone", () => assert.equal(sensitiveMention("Add an empty state to /changes", gate), null));
+  it("leaves database work to the safe-database gate", () =>
+    assert.equal(sensitiveMention("New migration adds a reading_plans table with RLS in Supabase", gate), null));
 });
 
 describe("gatedFiles", () => {
@@ -167,6 +174,13 @@ describe("gatedFiles", () => {
     assert.deepEqual(gatedFiles([f("public/ads.txt", "modified")], cfg), ["public/ads.txt"]);
     assert.deepEqual(gatedFiles([f("public/stripe-logo.svg", "added")], cfg), ["public/stripe-logo.svg"]);
     assert.deepEqual(gatedFiles([f("public/sitemap.xml", "added")], cfg), ["public/sitemap.xml"]);
+  });
+  it("leaves new migrations to the SQL check; edits and deletes are the owner's", () => {
+    assert.deepEqual(gatedFiles([f("src/config/migrations/0001_reading_plans.sql", "added")], cfg), []);
+    assert.deepEqual(gatedFiles([f("src/config/migrations/0001_reading_plans.sql", "modified")], cfg), ["src/config/migrations/0001_reading_plans.sql"]);
+    assert.deepEqual(gatedFiles([f("src/config/migrations/0001_x.sql", "removed")], cfg), ["src/config/migrations/0001_x.sql"]);
+    assert.deepEqual(gatedFiles([f("src/config/migrations/0002_auth_audit.sql", "added")], cfg), ["src/config/migrations/0002_auth_audit.sql"]);
+    assert.deepEqual(gatedFiles([f("src/config/migrations/schema.sql", "modified")], cfg), ["src/config/migrations/schema.sql"]);
   });
   it("in a flip, allows only the flags file, ROADMAP.md and CHANGELOG.md", () => {
     const files = [f("src/lib/feature-flags.ts"), f("ROADMAP.md"), f("CHANGELOG.md"), f("src/x.ts")];
@@ -191,6 +205,21 @@ describe("guardReasons", () => {
   it("requires exactly one flag on in a flip", () => {
     const files = [{ filename: "src/lib/feature-flags.ts", status: "modified", deletions: 1, patch: "+ on: true\n+ on: true" }];
     assert.match(guardReasons({ ...ok, flip: true, pr: { ...base, files } }).join(), /exactly one/);
+  });
+  describe("with a new migration", () => {
+    const files = [{ filename: "src/config/migrations/0001_reading_plans.sql", status: "added", deletions: 0 }];
+    const pr = { ...base, files };
+    const safe = { safe: true, reasons: [] };
+    it("passes when it's additive and production applies it by itself", () =>
+      assert.deepEqual(guardReasons({ ...ok, pr, db: { autoApply: true, verdict: safe } }), []));
+    it("holds when auto-apply is off", () =>
+      assert.match(guardReasons({ ...ok, pr, db: { autoApply: false, verdict: safe } }).join(), /DB_AUTO_APPLY/));
+    it("holds when the SQL isn't additive, naming why", () => {
+      const verdict = { safe: false, reasons: ["0001_reading_plans.sql: DROP TABLE changes or removes existing data or schema"] };
+      assert.match(guardReasons({ ...ok, pr, db: { autoApply: true, verdict } }).join(), /isn't purely additive[\s\S]*DROP TABLE/);
+    });
+    it("holds when the SQL couldn't be read", () =>
+      assert.match(guardReasons({ ...ok, pr, db: { autoApply: true, verdict: null } }).join(), /couldn't read/));
   });
   it("counts added on: true lines only", () => assert.equal(flagsTurnedOn("--- a\n+++ b\n- on: true\n+ on: false\n+  on: true,"), 1));
 });

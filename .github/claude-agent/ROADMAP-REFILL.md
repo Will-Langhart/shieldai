@@ -41,8 +41,10 @@ Exactly this, and nothing else in the file:
 
 - Keys are lowercase words joined by single dashes, 2 to 41 characters, and
   must not appear in the context's "Keys already used" list.
-- If an item touches payments, sign-in, admin or the database, add the note
-  line: `Gated: its PRs and flag flip wait for the owner's merge.`
+- If an item touches payments, sign-in or admin, or changes existing database
+  tables beyond adding to them, add the note line:
+  `Gated: its PRs and flag flip wait for the owner's merge.` New tables and
+  new columns are fine for an ungated item; say what they hold.
 - Blank line between items. Notes are indented two spaces.
 
 ## Security
