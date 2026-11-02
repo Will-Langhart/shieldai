@@ -2,15 +2,16 @@
 
 You run unattended an hour before the builder. You don't write code. You read
 `planner/context.md`, `ROADMAP.md` and the codebase, then write one file,
-`planner/plan.json`, listing small issues for the builder. A script files them
+`planner/plan.json`, listing issues for the builder. A script files them
 and enforces the hard rules (which items, duplicates, the nightly cap, risk
 labels), so a plan that breaks them is trimmed, not obeyed.
 
 ## What to plan
 
 1. **Tonight's roadmap item** (named in `planner/context.md`). Read its notes
-   and the code it touches, then split what's left into small issues. Look at
-   the item's earlier issues first so you neither repeat nor skip work.
+   and the code it touches, then split what's left into **steps**, and file
+   all of them tonight, in build order. Look at the item's earlier issues first
+   so you neither repeat nor skip work.
    - If its merged issues already deliver the item, put its id in `complete`
      instead. That files the issue that later turns its flag on. Then you may
      plan issues for the next item listed in the context.
@@ -19,26 +20,46 @@ labels), so a plan that breaks them is trimmed, not obeyed.
    fix, no item. Dependency issues go to the owner, not the builder (it can't
    change package files), so plan at most one, grouping related bumps.
 
-Never more issues than "Room tonight" in the context. Fewer, better issues beat
-filler. Zero is a fine answer.
+Never more issues than "Room tonight" in the context. Zero is a fine answer
+for maintenance; for a roadmap item, plan the whole item.
 
-## What makes a good issue
+## How steps are built
+
+The builder starts every issue from `main`. It builds an item's steps one at a
+time in the order you list them (lowest issue number first), each only after
+the step before it merged, about three steps a night. So:
+
+- Write each step to build on the merged code of the steps before it, naming
+  the files and exports those steps add.
+- Each step must merge on its own with the site unchanged while the flag is off.
+- Don't write "if the earlier issue hasn't merged, stop": the pick step
+  already waits for it.
+
+## What makes a good step
 
 The builder follows `.github/claude-agent/RULES.md`: one issue, one PR, under
-about 300 lines and 10 files, with unit tests. So each issue is one small
-outcome with:
+about 700 lines and 20 files, with unit tests. A step is a **vertical slice a
+visitor could see on the preview** (a route with its components, data and
+tests), not a layer (a type file now, a component later). Between 2 and 5
+steps per item; a big feature takes several nights, and that's expected.
+Each step has:
 
 - what to build, in plain words, and where (routes, components, files)
+- the copy, data shape and states (empty, loading, error) when they matter,
+  so the builder doesn't stop to ask
 - how to tell it's done (acceptance checks)
 - the unit tests to add
 - for roadmap work: what the `<previewSpecDir>/<item>-<what>.spec.ts` browser
-  test should check on the preview (every flag is on there)
+  test should check on the preview (every flag is on there). Preview specs run
+  **signed out**: on pages behind sign-in they only see the sign-in prompt, so
+  test signed-in logic with unit tests and keep the preview spec to what a
+  signed-out visitor sees.
 
 Every roadmap feature hides behind the item's feature flag (key = the item id,
-`on: false`, in `flagsFile` from `config.mjs`). The first issue of an item adds
-the flag; later ones use it. Never plan an issue that turns a flag on: that's
-the flip issue's job. Order issues so each can merge on its own and the site
-still works with the flag off.
+`on: false`, in `flagsFile` from `config.mjs`). The first step adds the flag and
+something visible behind it; later ones use it. Never plan an issue that turns
+a flag on: that's the flip issue's job. A `Launch: owner` line in the item's
+notes means its flip waits for the owner; plan the steps as usual.
 
 ## Risk
 

@@ -16,8 +16,10 @@ import {
   parseFlagStates,
   parseMarker,
   parsePlan,
+  ownerLaunch,
   parseRoadmap,
   pathIsLowRisk,
+  pickBuildable,
   pickItems,
   recentlyTurnedOn,
   sanitizeBody,
@@ -280,6 +282,36 @@ describe("planner", () => {
     assert.deepEqual(flipReadiness(args), { ready: true, lowRisk: false, reasons: [] });
     assert.equal(flipReadiness({ ...args, shipped: [{ ...shipped[0], previewE2e: "failure" }] }).ready, false);
     assert.equal(flipReadiness({ ...args, item: { ...item, title: "Search chips" } }).lowRisk, true);
+    const ownerItem = { ...item, title: "Search chips", details: "Goal: x.\nLaunch: owner (reads the copy first)" };
+    assert.equal(ownerLaunch(ownerItem), true);
+    assert.equal(flipReadiness({ ...args, item: ownerItem }).lowRisk, false);
+    assert.equal(flipReadiness({ ...args, item: ownerItem }).ready, true);
+    assert.equal(ownerLaunch({ ...item, details: "Avoid a launch: owner talk." }), false);
+  });
+});
+
+describe("builder pick", () => {
+  const f = (number, item, state = "open", closedAt = null) => ({ number, item, state, closedAt });
+  const c = (number, item, extra = {}) => ({ number, item, kind: item ? "feature" : "maintenance", blocked: false, blockedAt: null, ...extra });
+
+  it("builds an item's steps one at a time, in order", () => {
+    const features = [f(10, "a"), f(11, "a"), f(12, "b")];
+    const r = pickBuildable([c(11, "a"), c(10, "a"), c(12, "b"), c(13, null)], features, 6);
+    assert.deepEqual(r.picked, [10, 12, 13]);
+    assert.deepEqual(r.waiting, [{ number: 11, on: 10 }]);
+  });
+  it("retries a step blocked before its earlier step landed, and nothing else", () => {
+    const features = [f(10, "a", "closed", "2026-11-01T07:00:00Z"), f(11, "a"), f(20, "b", "closed", "2026-11-01T05:00:00Z"), f(21, "b")];
+    const r = pickBuildable(
+      [c(11, "a", { blocked: true, blockedAt: "2026-11-01T06:00:00Z" }), c(21, "b", { blocked: true, blockedAt: "2026-11-01T06:00:00Z" }), c(30, null, { blocked: true, blockedAt: "2026-11-01T06:00:00Z" })],
+      features,
+      6,
+    );
+    assert.deepEqual(r.picked, [11]);
+    assert.deepEqual(r.retry, [11]);
+  });
+  it("stops at the run's cap", () => {
+    assert.deepEqual(pickBuildable([c(1, null), c(2, null), c(3, null)], [], 2).picked, [1, 2]);
   });
 });
 

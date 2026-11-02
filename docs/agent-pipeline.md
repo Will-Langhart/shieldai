@@ -6,10 +6,10 @@ config, dependencies and CI still wait for the owner's merge (the gate in
 
 ## The loop
 
-| When (New York) | Workflow | What it does |
+| When (New York, winter; an hour later in summer) | Workflow | What it does |
 |---|---|---|
-| 1:30am | `agent-planner.yml` | Reads `ROADMAP.md`, files up to 6 small issues for the next item (2 items at most in flight), queues flag flips whose feature passed Preview e2e |
-| 2:30am, 2:30pm | `agent-builder.yml` | Claude Code works up to 6 queued issues, one PR each, after passing every check in `config.mjs` locally, including the preview specs against its own build with all flags on |
+| 12:30am | `agent-planner.yml` | Reads `ROADMAP.md`, files every step of the next item (up to 8 issues; 3 items at most in flight), queues flag flips whose feature passed Preview e2e |
+| 1:30am, 3:30am, 5:30am, 2:30pm | `agent-builder.yml` | Claude Code works up to 6 queued issues, one PR each, after passing every check in `config.mjs` locally, including the preview specs against its own build with all flags on. An item's steps build one per run, in order, each after the one before merged; a step blocked because its earlier step hadn't landed is retried automatically |
 | every PR | `ci.yml`, `preview-e2e.yml` | Required checks: Agent rules, Typecheck, Lint, Unit tests, Build, Preview e2e (browser specs on the Vercel preview, all flags on) |
 | every agent PR | `agent-automerge.yml` | Turns on auto-merge when the issue is `agent:low-risk`, nothing gated is touched, no flag turns on outside a flip, and the diff is within limits; otherwise labels it `agent:needs-review` and says why |
 | hourly | `flag-watch.yml` | For flags turned on in the last 72 hours, runs their specs on production; two failures 5 minutes apart open and merge a PR turning the flag off, and file a fix issue |
@@ -19,7 +19,9 @@ config, dependencies and CI still wait for the owner's merge (the gate in
 Every feature ships behind a flag that starts off (`flagsFile` in `config.mjs`),
 so unfinished work can merge without visitors seeing it. Vercel previews turn
 every flag on. When the planner judges an item built and every PR for it passed
-Preview e2e, it queues a flip; the flip auto-merges unless the item is gated.
+Preview e2e, it queues a flip; the flip auto-merges unless the item is gated or
+its roadmap notes say `Launch: owner` (for content you want to read before it
+goes public).
 
 ## Labels
 

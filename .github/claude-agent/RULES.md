@@ -6,14 +6,19 @@ safety net. When a rule and the issue disagree, the rule wins.
 
 ## Scope
 
-- One issue, one branch (`agent/issue-<n>`), one small PR. Aim for under 300
-  changed lines and 10 files; the auto-merge guard holds anything over the
+- One issue, one branch (`agent/issue-<n>`), one PR. A roadmap step is a
+  complete slice of a feature (route, components, logic, tests): aim for under
+  700 changed lines and 20 files. The auto-merge guard holds anything over the
   limits in `config.mjs`.
+- A roadmap item's steps build in the order the planner filed them, each after
+  the one before it merged, so the earlier steps are on `main` when you start.
+  Build on what they added; don't redo or reshape it.
 - Do what the issue asks and nothing else. No drive-by refactors, renames,
   formatting sweeps or "while I'm here" fixes.
-- If the issue is ambiguous, too big, or conflicts with the repo's docs,
-  comment on the issue with the exact question and stop. Don't guess on
-  product decisions.
+- If the issue is ambiguous, far too big for one PR, or conflicts with the
+  repo's docs, comment on the issue with the exact question and stop. Don't
+  guess on product decisions. Where the issue already decides something (copy,
+  layout, data shape), follow it rather than stopping.
 
 ## The gate
 
