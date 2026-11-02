@@ -36,7 +36,7 @@ import {
   MessageSquare,
   PenTool,
   Calendar,
-  Image,
+  Image as ImageIcon,
   Palette,
   Wand2,
   X
@@ -748,7 +748,7 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
                   {isGeneratingImage ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Image className="h-4 w-4" />
+                    <ImageIcon className="h-4 w-4" />
                   )}
                   <span>{isGeneratingImage ? 'Generating...' : 'Generate Image'}</span>
                 </button>

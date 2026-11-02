@@ -1,0 +1,95 @@
+name: preview-e2e
+
+# Browser specs (config.previewSpecDir) against each Vercel preview deployment,
+# where every feature flag is on. A required check on main, so every PR must
+# pass them, and the planner turns a flag on only after the PRs that built it
+# passed here.
+#
+# Shield AI's previews are public (no Deployment Protection), so no secret is
+# needed. If you turn protection on, also create a bypass secret (Vercel →
+# project → Settings → Deployment Protection → Protection Bypass for Automation)
+# and save it as the repo secret VERCEL_AUTOMATION_BYPASS_SECRET; the tests
+# send it when it's set.
+#
+# Skipped (which counts as passing) on flag-watch's rollback/* branches: their
+# preview still has every flag on, so the broken feature's specs would block the
+# rollback that turns it off.
+
+on:
+  deployment_status:
+
+concurrency:
+  group: preview-e2e-${{ github.event.deployment.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  APP_DIR: src/apps/web # same as appDir in config.mjs
+  SPEC_DIR: e2e/preview # previewSpecDir relative to APP_DIR
+
+jobs:
+  ready:
+    name: Preview ready
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      !startsWith(github.event.deployment.environment, 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      ok: ${{ steps.check.outputs.ok }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.deployment.sha }}
+        run: |
+          branch=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/pulls" --jq '.[0].head.ref // ""' || true)
+          if [[ "$branch" == rollback/* ]]; then
+            echo "::notice::$branch is a flag-watch rollback, so preview tests are skipped."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  preview:
+    name: Preview e2e
+    needs: ready
+    if: ${{ needs.ready.outputs.ok == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+        working-directory: . # workspaces install from the root
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Run preview tests
+        run: npx playwright test "$SPEC_DIR"
+        env:
+          CI: "true"
+          PLAYWRIGHT_BASE_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-preview-report
+          path: ${{ env.APP_DIR }}/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
