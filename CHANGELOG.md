@@ -5,6 +5,8 @@ One line per merged PR, newest first. The builder agent adds its own.
 ## Unreleased
 
 - fix(web): clear the `react-hooks/exhaustive-deps` warning in `MarginNotes` and move its note-to-verse parsing into a tested `lib/margin-notes.ts` (`notesToSlots`); no visible change (#83).
+- feat(web): add `/answers/[slug]` topic pages (question, short answer, key points, Scriptures, follow-ups, related topics, "Ask Shield AI about this" link to chat) with FAQPage JSON-LD, behind the `answers-library` flag; they 404 while it is off (#94).
+
 - feat(help-center): add the `help-center` flag (off) and a tested `getHelpSections()` helper with the Help Center content; nothing renders it yet (#72).
 - feat(web): add the `answers-library` flag (off), the `lib/answers` content module with 8 hard-question topics, and a filterable `/answers` index that 404s while the flag is off (#93).
 - fix(agent): the planner no longer holds a step for review just because it says "`shield-*` tokens" or "design tokens", reads `process.env.VITE_FEATURE_FLAGS`, lists "new dependencies" after "Avoid:" next to a file name, or says an effect lists its dependencies; money, auth, secrets, real tokens and package work are still held.
