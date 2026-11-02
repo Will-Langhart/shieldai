@@ -5,6 +5,7 @@ One line per merged PR, newest first. The builder agent adds its own.
 ## Unreleased
 
 - fix(web): move `BibleReader`'s book and chapter loaders into their effects with real dependencies, clearing two `react-hooks/exhaustive-deps` warnings, and ignore chapter responses that arrive after unmount or for a book no longer selected (#97).
+- feat(web): add `/answers/[slug]` topic pages (question, short answer, key points, Scriptures, follow-ups, related topics, "Ask Shield AI about this" link to chat) with FAQPage JSON-LD, behind the `answers-library` flag; they 404 while it is off (#94).
 
 - feat(help-center): add the `help-center` flag (off) and a tested `getHelpSections()` helper with the Help Center content; nothing renders it yet (#72).
 - feat(web): add the `answers-library` flag (off), the `lib/answers` content module with 8 hard-question topics, and a filterable `/answers` index that 404s while the flag is off (#93).
