@@ -5,6 +5,7 @@ One line per merged PR, newest first. The builder agent adds its own.
 ## Unreleased
 
 - feat(help-center): add the `help-center` flag (off) and a tested `getHelpSections()` helper with the Help Center content; nothing renders it yet (#72).
+- feat(web): add the `answers-library` flag (off), the `lib/answers` content module with 8 hard-question topics, and a filterable `/answers` index that 404s while the flag is off (#93).
 - fix(agent): the planner no longer holds a step for review just because it says "`shield-*` tokens" or "design tokens", reads `process.env.VITE_FEATURE_FLAGS`, lists "new dependencies" after "Avoid:" next to a file name, or says an effect lists its dependencies; money, auth, secrets, real tokens and package work are still held.
 - feat(web): add a custom `/404` page that shows a branded "Page not found" with Home/Bible/Chat links behind the `not-found-page` flag, and Next's plain 404 text with the flag off (#80).
 - feat(agent): safe database changes ship overnight: a new migration that only adds (new tables with RLS and policies, nullable columns, indexes, invoker functions) is dry-run in CI against production's schema, merges without the owner and is applied by `db-migrate.yml`; anything else in the database still waits for the owner. Off until `DB_AUTO_APPLY` is `true`.
