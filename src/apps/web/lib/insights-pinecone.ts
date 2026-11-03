@@ -67,8 +67,8 @@ export class InsightsPineconeService {
   private static backoffMs = Number(process.env.PINECONE_BACKOFF_MS || 300);
   private static targetDim = Number(process.env.PINECONE_DIMENSION || 1024);
 
-  // Hardcoded Pinecone configuration (temporary fix for env loading issue)
-  private static PINECONE_API_KEY = 'pcsk_3MJJaR_EjBt6ktRBUfLAmCTa8DTtQpRBKtwDKB657XofsBYVY6S9aWXxrLCtpvkUGuCULy';
+  // Pinecone configuration (API key from env)
+  private static PINECONE_API_KEY = process.env.PINECONE_API_KEY || '';
   private static SHIELDAI_INDEX_HOST = 'shieldai-smb4qh6.svc.aped-4627-b74a.pinecone.io';
 
   // Utility: sleep

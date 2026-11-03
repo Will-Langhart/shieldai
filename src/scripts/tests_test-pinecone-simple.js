@@ -4,7 +4,7 @@
 const fetch = require('node-fetch');
 
 async function testPineconeSimple() {
-  const apiKey = 'pcsk_3MJJaR_EjBt6ktRBUfLAmCTa8DTtQpRBKtwDKB657XofsBYVY6S9aWXxrLCtpvkUGuCULy';
+  const apiKey = process.env.PINECONE_API_KEY;
   
   try {
     console.log('🔍 Testing Pinecone API key...');

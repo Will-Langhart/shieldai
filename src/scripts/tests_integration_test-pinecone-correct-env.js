@@ -5,7 +5,7 @@ async function testPineconeCorrectEnv() {
   
   try {
     // Use the correct environment format for your serverless index
-    const apiKey = 'pcsk_6La4fD_KxUwby6c62E93h7pPAdgjhSG5szTKgqh9Pych3nSwCPVx1Ze5mFEzuFixbqszw1';
+    const apiKey = process.env.PINECONE_API_KEY;
     const environment = 'us-east-1-aws'; // Correct format for your index
     const indexName = 'shieldai';
     

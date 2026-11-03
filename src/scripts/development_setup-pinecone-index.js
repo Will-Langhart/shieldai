@@ -1,6 +1,6 @@
 const { Pinecone } = require('@pinecone-database/pinecone');
 
-const API_KEY = 'pcsk_2hg47f_SqUMV911FXV5RnMccoDnQMKKnopEkRpGkVCCNyDKGRUu5y97hiWcyUibc6jUkne';
+const API_KEY = process.env.PINECONE_API_KEY;
 const INDEX_NAME = 'shieldai';
 
 // Test both environments

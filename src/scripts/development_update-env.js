@@ -15,13 +15,13 @@ function updateEnvFile() {
 
   // Update Pinecone variables
   const newEnvContent = envContent
-    .replace(/PINECONE_API_KEY=.*/g, 'PINECONE_API_KEY=pcsk_2hg47f_SqUMV911FXV5RnMccoDnQMKKnopEkRpGkVCCNyDKGRUu5y97hiWcyUibc6jUkne')
+    .replace(/PINECONE_API_KEY=.*/g, 'PINECONE_API_KEY=your_pinecone_api_key')
     .replace(/PINECONE_ENVIRONMENT=.*/g, 'PINECONE_ENVIRONMENT=us-west1-gcp')
     .replace(/PINECONE_INDEX_NAME=.*/g, 'PINECONE_INDEX_NAME=shieldai');
 
   // Add if not present
   if (!newEnvContent.includes('PINECONE_API_KEY=')) {
-    newEnvContent += '\nPINECONE_API_KEY=pcsk_2hg47f_SqUMV911FXV5RnMccoDnQMKKnopEkRpGkVCCNyDKGRUu5y97hiWcyUibc6jUkne';
+    newEnvContent += '\nPINECONE_API_KEY=your_pinecone_api_key';
   }
   if (!newEnvContent.includes('PINECONE_ENVIRONMENT=')) {
     newEnvContent += '\nPINECONE_ENVIRONMENT=us-west1-gcp';
@@ -35,7 +35,7 @@ function updateEnvFile() {
   
   console.log('✅ Updated .env.local with new Pinecone configuration');
   console.log('📝 Environment variables set:');
-  console.log('   PINECONE_API_KEY=pcsk_2hg47f_SqUMV911FXV5RnMccoDnQMKKnopEkRpGkVCCNyDKGRUu5y97hiWcyUibc6jUkne');
+  console.log('   PINECONE_API_KEY=your_pinecone_api_key');
   console.log('   PINECONE_ENVIRONMENT=us-west1-gcp');
   console.log('   PINECONE_INDEX_NAME=shieldai');
 }
