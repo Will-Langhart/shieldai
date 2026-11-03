@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { JournalNoteEditor } from './JournalNoteEditor'
 import { devFallbackToken } from '../../../lib/test-token'
+import { insightInteractionsUrl, insightResponsesUrl } from '../../../lib/insight-detail-urls'
 import { ShieldMark } from '../chat/ShieldMark'
 import {
   Brain,
@@ -72,6 +73,15 @@ interface Insight {
   relevance_score?: number
 }
 
+const getAuthToken = async (): Promise<string> => {
+  try {
+    const { data: { session } } = await import('../../../lib/supabase').then(m => m.supabase.auth.getSession())
+    return session?.access_token || devFallbackToken()
+  } catch (error) {
+    return devFallbackToken()
+  }
+}
+
 interface InsightDetailViewProps {
   insight: Insight
   onClose?: () => void
@@ -113,26 +123,13 @@ export function InsightDetailView({
   const [imageError, setImageError] = useState<string | null>(null)
   const [showImageModal, setShowImageModal] = useState(false)
 
-  useEffect(() => {
-    if (insight) {
-      loadResponses()
-      loadInteractions()
-    }
-  }, [insight])
+  const insightId = insight?.id
 
-  const getAuthToken = async (): Promise<string> => {
-    try {
-      const { data: { session } } = await import('../../../lib/supabase').then(m => m.supabase.auth.getSession())
-      return session?.access_token || devFallbackToken()
-    } catch (error) {
-      return devFallbackToken()
-    }
-  }
-
-  const loadResponses = async () => {
+  const loadResponses = useCallback(async () => {
+    if (!insightId) return
     try {
       const authToken = await getAuthToken()
-      const response = await fetch(`/api/ai-insights/responses?insight_id=${insight.id}`, {
+      const response = await fetch(insightResponsesUrl(insightId), {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -146,12 +143,13 @@ export function InsightDetailView({
     } catch (error) {
       console.error('Error loading responses:', error)
     }
-  }
+  }, [insightId])
 
-  const loadInteractions = async () => {
+  const loadInteractions = useCallback(async () => {
+    if (!insightId) return
     try {
       const authToken = await getAuthToken()
-      const response = await fetch(`/api/ai-insights/interactions?insight_id=${insight.id}`, {
+      const response = await fetch(insightInteractionsUrl(insightId), {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -165,7 +163,14 @@ export function InsightDetailView({
     } catch (error) {
       console.error('Error loading interactions:', error)
     }
-  }
+  }, [insightId])
+
+  useEffect(() => {
+    if (insightId) {
+      loadResponses()
+      loadInteractions()
+    }
+  }, [insightId, loadResponses, loadInteractions])
 
   const submitResponse = async () => {
     if (!newResponse.text.trim()) return
