@@ -4,6 +4,7 @@ One line per merged PR, newest first. The builder agent adds its own.
 
 ## Unreleased
 
+- feat(web): grow the Answers library to 24 topics (other religions, those who never heard, Jesus' claims to divinity, Bible contradictions, hell, Old Testament violence, prayer, anxiety) and link `/answers` from the footer and home page, behind the `answers-library` flag (#96).
 - fix(agent): the builder runs hourly overnight and right after the planner, so a delayed or dropped GitHub schedule no longer stalls the night; unit tests no longer assert a flag's default, so flag flips can merge without the owner.
 - feat(web): add 8 more Answers topics (Trinity, Jesus' historicity, hallucination theory, the biblical canon, natural disasters, evolution and Genesis, other religions, doubt), filling the "Other religions" and "Christian living" categories, behind the `answers-library` flag (#95).
 - feat(web): add `/answers/[slug]` topic pages (question, short answer, key points, Scriptures, follow-ups, related topics, "Ask Shield AI about this" link to chat) with FAQPage JSON-LD, behind the `answers-library` flag; they 404 while it is off (#94).
