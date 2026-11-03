@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { 
   Search, 
   Zap, 
@@ -19,17 +19,7 @@ import {
   Settings,
   RotateCcw
 } from 'lucide-react'
-
-interface QuickNavItem {
-  id: string
-  label: string
-  description: string
-  reference: string
-  type: 'passage' | 'search' | 'ai-feature' | 'shortcut'
-  icon: React.ComponentType<any>
-  shortcut?: string
-  category: string
-}
+import { getQuickNavItems, type QuickNavItem } from '../../../lib/quick-navigation'
 
 interface QuickNavigationProps {
   onNavigate: (reference: string) => void
@@ -198,7 +188,7 @@ export function QuickNavigation({
   ]
 
   // Search functionality
-  const handleSearch = async (query: string) => {
+  const handleSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([])
       return
@@ -217,7 +207,7 @@ export function QuickNavigation({
     } finally {
       setIsSearching(false)
     }
-  }
+  }, [])
 
   // Debounced search
   useEffect(() => {
@@ -226,7 +216,7 @@ export function QuickNavigation({
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [searchQuery])
+  }, [searchQuery, handleSearch])
 
   // Focus input when opened
   useEffect(() => {
@@ -234,39 +224,6 @@ export function QuickNavigation({
       inputRef.current.focus()
     }
   }, [isOpen])
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return
-
-      const allItems = getFilteredItems()
-      
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault()
-          setSelectedIndex(prev => Math.min(prev + 1, allItems.length - 1))
-          break
-        case 'ArrowUp':
-          e.preventDefault()
-          setSelectedIndex(prev => Math.max(prev - 1, 0))
-          break
-        case 'Enter':
-          e.preventDefault()
-          if (allItems[selectedIndex]) {
-            handleItemSelect(allItems[selectedIndex])
-          }
-          break
-        case 'Escape':
-          e.preventDefault()
-          onClose()
-          break
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, selectedIndex])
 
   // Scroll selected item into view
   useEffect(() => {
@@ -277,61 +234,6 @@ export function QuickNavigation({
       }
     }
   }, [selectedIndex])
-
-  const getFilteredItems = () => {
-    let items: QuickNavItem[] = []
-
-    if (searchQuery.trim()) {
-      // Show search results
-      return searchResults.map((result, index) => ({
-        id: `search-${index}`,
-        label: result.reference,
-        description: result.text.substring(0, 100) + '...',
-        reference: result.reference,
-        type: 'passage' as const,
-        icon: BookOpen,
-        category: 'search'
-      }))
-    }
-
-    switch (activeCategory) {
-      case 'ai':
-        items = quickNavItems.filter(item => item.category === 'ai')
-        break
-      case 'popular':
-        items = quickNavItems.filter(item => item.category === 'popular')
-        break
-      case 'navigation':
-        items = quickNavItems.filter(item => item.category === 'navigation')
-        break
-      case 'recent':
-        items = recentPassages.map((passage, index) => ({
-          id: `recent-${index}`,
-          label: passage.reference,
-          description: `Visited ${passage.timestamp.toLocaleDateString()}`,
-          reference: passage.reference,
-          type: 'passage' as const,
-          icon: Clock,
-          category: 'recent'
-        }))
-        break
-      case 'favorites':
-        items = favoritePassages.map((passage, index) => ({
-          id: `favorite-${index}`,
-          label: passage.reference,
-          description: `${passage.book} ${passage.chapter}${passage.verse ? ':' + passage.verse : ''}`,
-          reference: passage.reference,
-          type: 'passage' as const,
-          icon: Star,
-          category: 'favorites'
-        }))
-        break
-      default:
-        items = quickNavItems
-    }
-
-    return items
-  }
 
   const handleItemSelect = (item: QuickNavItem) => {
     switch (item.type) {
@@ -369,7 +271,56 @@ export function QuickNavigation({
     }
   }
 
-  const filteredItems = getFilteredItems()
+  const filteredItems = getQuickNavItems({
+    searchQuery,
+    searchResults,
+    activeCategory,
+    baseItems: quickNavItems,
+    recentPassages,
+    favoritePassages
+  })
+
+  // Keep the latest key handler so the window listener never uses a stale list
+  // or stale callbacks.
+  const keyDownRef = useRef<(e: KeyboardEvent) => void>(() => {})
+  keyDownRef.current = (e: KeyboardEvent) => {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        setSelectedIndex(prev => Math.max(0, Math.min(prev + 1, filteredItems.length - 1)))
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        setSelectedIndex(prev => Math.max(prev - 1, 0))
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (filteredItems[selectedIndex]) {
+          handleItemSelect(filteredItems[selectedIndex])
+        }
+        break
+      case 'Escape':
+        e.preventDefault()
+        onClose()
+        break
+    }
+  }
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => keyDownRef.current(e)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
+
+  // Clamp the selection when the list shrinks so Enter never targets a missing item
+  const itemCount = filteredItems.length
+  useEffect(() => {
+    if (selectedIndex !== 0 && selectedIndex >= itemCount) {
+      setSelectedIndex(0)
+    }
+  }, [itemCount, selectedIndex])
 
   if (!isOpen) return null
 
