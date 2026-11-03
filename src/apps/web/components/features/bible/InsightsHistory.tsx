@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { buildInsightsHistoryQuery, type InsightsHistoryFilters } from '../../../lib/insights-history-query'
 import { 
   Brain, 
   BookOpen, 
@@ -136,17 +137,7 @@ interface Statistics {
   versions_used: string[]
 }
 
-interface Filters {
-  search_query: string
-  bible_version: string
-  tags: string[]
-  key_themes: string[]
-  is_favorite: boolean | null
-  is_shared: boolean | null
-  date_from: string
-  date_to: string
-  passage_reference: string
-}
+type Filters = InsightsHistoryFilters
 
 interface InsightsHistoryProps {
   userId?: string
@@ -205,43 +196,22 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
     suggestions: ''
   })
 
-  useEffect(() => {
-    loadInsightsHistory()
-    loadStatistics()
-  }, [])
-
-  const getAuthToken = async (): Promise<string> => {
+  const getAuthToken = useCallback(async (): Promise<string> => {
     try {
       const { data: { session } } = await import('../../../lib/supabase').then(m => m.supabase.auth.getSession())
       return session?.access_token || 'test-token'
     } catch (error) {
       return 'test-token'
     }
-  }
+  }, [])
 
-  const loadInsightsHistory = async () => {
+  const fetchInsightsHistory = useCallback(async (activeFilters: Filters) => {
     setLoading(true)
     setError(null)
 
     try {
       const authToken = await getAuthToken()
-      const queryParams = new URLSearchParams({
-        limit: '100',
-        offset: '0',
-        sort_by: 'created_at',
-        sort_order: 'desc'
-      })
-
-      // Add filters to query params
-      if (filters.search_query) queryParams.append('search_query', filters.search_query)
-      if (filters.bible_version) queryParams.append('bible_version', filters.bible_version)
-      if (filters.passage_reference) queryParams.append('passage_reference', filters.passage_reference)
-      if (filters.is_favorite !== null) queryParams.append('is_favorite', filters.is_favorite.toString())
-      if (filters.is_shared !== null) queryParams.append('is_shared', filters.is_shared.toString())
-      if (filters.date_from) queryParams.append('date_from', filters.date_from)
-      if (filters.date_to) queryParams.append('date_to', filters.date_to)
-      filters.tags.forEach(tag => queryParams.append('tags', tag))
-      filters.key_themes.forEach(theme => queryParams.append('key_themes', theme))
+      const queryParams = buildInsightsHistoryQuery(activeFilters)
 
       const response = await fetch(`/api/ai-insights/history?${queryParams}`, {
         headers: {
@@ -263,9 +233,11 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
     } finally {
       setLoading(false)
     }
-  }
+  }, [getAuthToken])
 
-  const loadStatistics = async () => {
+  const loadInsightsHistory = useCallback(() => fetchInsightsHistory(filters), [fetchInsightsHistory, filters])
+
+  const loadStatistics = useCallback(async () => {
     try {
       const authToken = await getAuthToken()
       const response = await fetch('/api/ai-insights/statistics', {
@@ -282,7 +254,16 @@ export function InsightsHistory({ userId, onInsightSelect }: InsightsHistoryProp
     } catch (error) {
       console.error('Error loading statistics:', error)
     }
-  }
+  }, [getAuthToken])
+
+  // Initial load only: read the filters as they were on mount so changing a
+  // filter doesn't refetch until the user applies or refreshes.
+  const initialFiltersRef = useRef(filters)
+
+  useEffect(() => {
+    fetchInsightsHistory(initialFiltersRef.current)
+    loadStatistics()
+  }, [fetchInsightsHistory, loadStatistics])
 
   const toggleInsightExpansion = (insightId: string) => {
     const newExpanded = new Set(expandedInsights)
