@@ -4,6 +4,7 @@ One line per merged PR, newest first. The builder agent adds its own.
 
 ## Unreleased
 
+- fix(web): Quick Navigation's arrow keys and Enter now use the current list (search results, category, recent/favorites) instead of a stale one, the selection is reset when the list shrinks, and the list comes from a tested `getQuickNavItems()` helper (#112).
 - fix(agent): the builder runs hourly overnight and right after the planner, so a delayed or dropped GitHub schedule no longer stalls the night; unit tests no longer assert a flag's default, so flag flips can merge without the owner.
 - feat(web): add 8 more Answers topics (Trinity, Jesus' historicity, hallucination theory, the biblical canon, natural disasters, evolution and Genesis, other religions, doubt), filling the "Other religions" and "Christian living" categories, behind the `answers-library` flag (#95).
 - feat(web): add `/answers/[slug]` topic pages (question, short answer, key points, Scriptures, follow-ups, related topics, "Ask Shield AI about this" link to chat) with FAQPage JSON-LD, behind the `answers-library` flag; they 404 while it is off (#94).
