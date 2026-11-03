@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { 
   Brain, 
   Search, 
@@ -41,6 +41,7 @@ import { supabase } from '../../../lib/supabase'
 import { InsightDetailView } from './InsightDetailView'
 import { InsightsAnalytics } from './InsightsAnalytics'
 import { ShieldMark } from '../chat/ShieldMark'
+import { filterAndSortInsights } from '../../../lib/insights-filter'
 
 interface Insight {
   id: string
@@ -92,9 +93,17 @@ interface EnhancedInsightsQueryProps {
   refreshTrigger?: number // Add this to trigger refresh when it changes
 }
 
+const getAuthToken = async (): Promise<string | null> => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.access_token || null
+  } catch (error) {
+    return null
+  }
+}
+
 export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger }: EnhancedInsightsQueryProps) {
   const [insights, setInsights] = useState<Insight[]>([])
-  const [filteredInsights, setFilteredInsights] = useState<Insight[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set())
@@ -130,33 +139,12 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
     versions: []
   })
 
-  // Load insights
-  useEffect(() => {
-    loadInsights()
-  }, [])
+  const filteredInsights = useMemo(
+    () => filterAndSortInsights(insights, filters),
+    [insights, filters]
+  )
 
-  // Refresh insights when refreshTrigger changes
-  useEffect(() => {
-    if (refreshTrigger) {
-      loadInsights()
-    }
-  }, [refreshTrigger])
-
-  // Filter insights when filters change
-  useEffect(() => {
-    filterInsights()
-  }, [insights, filters])
-
-  const getAuthToken = async (): Promise<string | null> => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      return session?.access_token || null
-    } catch (error) {
-      return null
-    }
-  }
-
-  const loadInsights = async () => {
+  const loadInsights = useCallback(async () => {
     setLoading(true)
     setError(null)
 
@@ -187,96 +175,19 @@ export function EnhancedInsightsQuery({ userId, onInsightSelect, refreshTrigger 
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const filterInsights = () => {
-    let filtered = [...insights]
+  // Load insights
+  useEffect(() => {
+    loadInsights()
+  }, [loadInsights])
 
-    // Text search
-    if (filters.query) {
-      const query = filters.query.toLowerCase()
-      filtered = filtered.filter(insight => 
-        insight.passage_reference.toLowerCase().includes(query) ||
-        insight.explanation.toLowerCase().includes(query) ||
-        insight.passage_text.toLowerCase().includes(query) ||
-        insight.key_themes.some(theme => theme.toLowerCase().includes(query)) ||
-        insight.tags.some(tag => tag.toLowerCase().includes(query))
-      )
+  // Refresh insights when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger) {
+      loadInsights()
     }
-
-    // Bible version filter
-    if (filters.bible_version) {
-      filtered = filtered.filter(insight => insight.bible_version === filters.bible_version)
-    }
-
-    // Tags filter
-    if (filters.tags.length > 0) {
-      filtered = filtered.filter(insight => 
-        filters.tags.every(tag => insight.tags.includes(tag))
-      )
-    }
-
-    // Themes filter
-    if (filters.themes.length > 0) {
-      filtered = filtered.filter(insight => 
-        filters.themes.every(theme => insight.key_themes.includes(theme))
-      )
-    }
-
-    // Date filters
-    if (filters.date_from) {
-      filtered = filtered.filter(insight => 
-        new Date(insight.created_at) >= new Date(filters.date_from)
-      )
-    }
-    if (filters.date_to) {
-      filtered = filtered.filter(insight => 
-        new Date(insight.created_at) <= new Date(filters.date_to)
-      )
-    }
-
-    // Boolean filters
-    if (filters.is_favorite !== null) {
-      filtered = filtered.filter(insight => insight.is_favorite === filters.is_favorite)
-    }
-    if (filters.is_shared !== null) {
-      filtered = filtered.filter(insight => insight.is_shared === filters.is_shared)
-    }
-
-    // Sort
-    filtered.sort((a, b) => {
-      let aValue: any, bValue: any
-      
-      switch (filters.sort_by) {
-        case 'passage_reference':
-          aValue = a.passage_reference
-          bValue = b.passage_reference
-          break
-        case 'rating':
-          aValue = a.average_rating || 0
-          bValue = b.average_rating || 0
-          break
-        case 'engagement':
-          aValue = a.engagement_score || 0
-          bValue = b.engagement_score || 0
-          break
-        case 'relevance':
-          // For relevance, we could implement a more sophisticated scoring
-          aValue = a.response_count || 0
-          bValue = b.response_count || 0
-          break
-        default:
-          aValue = new Date(a.created_at)
-          bValue = new Date(b.created_at)
-      }
-
-      if (aValue < bValue) return filters.sort_order === 'asc' ? -1 : 1
-      if (aValue > bValue) return filters.sort_order === 'asc' ? 1 : -1
-      return 0
-    })
-
-    setFilteredInsights(filtered)
-  }
+  }, [refreshTrigger, loadInsights])
 
   const toggleInsightExpansion = (insightId: string) => {
     const newExpanded = new Set(expandedInsights)
