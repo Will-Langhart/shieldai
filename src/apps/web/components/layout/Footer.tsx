@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { isFeatureOn } from '../../lib/feature-flags'
 
 const Footer = () => {
   return (
@@ -35,6 +36,13 @@ const Footer = () => {
                   AI Chat
                 </Link>
               </li>
+              {isFeatureOn('answers-library') && (
+                <li>
+                  <Link href="/answers" className="text-shield-muted hover:text-shield-fg text-sm transition-colors">
+                    Answers
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
 

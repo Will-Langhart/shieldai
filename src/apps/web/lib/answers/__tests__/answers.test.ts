@@ -14,7 +14,7 @@ import type { Answer } from '..';
 const wordCount = (s: string) => s.trim().split(/\s+/).length;
 
 describe('answers content', () => {
-  it('has the eight launch topics and the eight added topics', () => {
+  it('has the launch topics and both rounds of added topics', () => {
     expect(ANSWERS.map((a) => a.slug).sort()).toEqual(
       [
         'does-god-exist',
@@ -33,12 +33,41 @@ describe('answers content', () => {
         'evolution-and-genesis',
         'is-jesus-the-only-way',
         'how-to-handle-doubt',
+        'do-all-religions-lead-to-god',
+        'what-about-those-who-never-heard',
+        'did-jesus-claim-to-be-god',
+        'are-there-contradictions-in-the-bible',
+        'is-hell-fair',
+        'old-testament-violence',
+        'why-pray-if-god-knows-everything',
+        'what-does-the-bible-say-about-anxiety',
       ].sort(),
     );
   });
 
-  it('has at least 16 entries', () => {
-    expect(ANSWERS.length).toBeGreaterThanOrEqual(16);
+  it('has at least 24 entries', () => {
+    expect(ANSWERS.length).toBeGreaterThanOrEqual(24);
+  });
+
+  it('puts the third round of topics in their agreed categories', () => {
+    const expected: Record<string, string> = {
+      'do-all-religions-lead-to-god': 'religions',
+      'what-about-those-who-never-heard': 'religions',
+      'did-jesus-claim-to-be-god': 'jesus',
+      'are-there-contradictions-in-the-bible': 'bible',
+      'is-hell-fair': 'salvation',
+      'old-testament-violence': 'morality',
+      'why-pray-if-god-knows-everything': 'christian-living',
+      'what-does-the-bible-say-about-anxiety': 'christian-living',
+    };
+    for (const [slug, category] of Object.entries(expected)) {
+      expect(getAnswerBySlug(slug)?.category, slug).toBe(category);
+    }
+  });
+
+  it('populates all 10 categories', () => {
+    expect(ANSWER_CATEGORIES).toHaveLength(10);
+    expect(getAnswersByCategory()).toHaveLength(10);
   });
 
   it('puts the added topics in their agreed categories', () => {

@@ -17,6 +17,7 @@ import {
 import { LiveChatDemo } from './LiveChatDemo'
 import { Reveal } from './Reveal'
 import { FAQ_ITEMS } from './faqData'
+import { isFeatureOn } from '../../../lib/feature-flags'
 
 const STEPS = [
   {
@@ -453,6 +454,18 @@ export function Home() {
               ))}
             </div>
           </Reveal>
+
+          {isFeatureOn('answers-library') && (
+            <div className="mt-8 text-center">
+              <Link
+                href="/answers"
+                className="group inline-flex items-center gap-2 text-sm font-semibold text-shield-brand transition-colors hover:text-shield-fg"
+              >
+                <span>Browse answers to hard questions</span>
+                <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 

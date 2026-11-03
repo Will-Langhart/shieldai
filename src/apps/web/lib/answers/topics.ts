@@ -45,7 +45,7 @@ export const ANSWERS: Answer[] = [
       'Why does God allow people to do evil?',
       'What does the Bible say goodness actually is?',
     ],
-    related: ['does-god-exist', 'problem-of-evil', 'how-is-a-person-saved'],
+    related: ['does-god-exist', 'problem-of-evil', 'how-is-a-person-saved', 'old-testament-violence'],
   },
   {
     slug: 'science-and-faith',
@@ -188,7 +188,7 @@ export const ANSWERS: Answer[] = [
       'Why did the early church write creeds?',
       'Who is the Holy Spirit?',
     ],
-    related: ['who-is-jesus', 'does-god-exist', 'is-jesus-the-only-way'],
+    related: ['who-is-jesus', 'does-god-exist', 'is-jesus-the-only-way', 'did-jesus-claim-to-be-god'],
   },
   {
     slug: 'did-jesus-really-exist',
@@ -208,7 +208,7 @@ export const ANSWERS: Answer[] = [
       'When were the Gospels written?',
       'Was Jesus just a good moral teacher?',
     ],
-    related: ['who-is-jesus', 'is-the-bible-reliable', 'resurrection-evidence'],
+    related: ['who-is-jesus', 'is-the-bible-reliable', 'resurrection-evidence', 'did-jesus-claim-to-be-god'],
   },
   {
     slug: 'could-the-disciples-have-hallucinated',
@@ -249,7 +249,7 @@ export const ANSWERS: Answer[] = [
       'Why aren’t the Gnostic gospels in the Bible?',
       'Did the Council of Nicaea choose the books of the Bible?',
     ],
-    related: ['is-the-bible-reliable', 'did-jesus-really-exist'],
+    related: ['is-the-bible-reliable', 'did-jesus-really-exist', 'are-there-contradictions-in-the-bible'],
   },
   {
     slug: 'why-does-god-allow-natural-disasters',
@@ -309,7 +309,7 @@ export const ANSWERS: Answer[] = [
       'Don’t all religions teach basically the same thing?',
       'How should I talk about faith with a friend from another religion?',
     ],
-    related: ['how-is-a-person-saved', 'who-is-jesus', 'what-is-the-trinity'],
+    related: ['how-is-a-person-saved', 'who-is-jesus', 'what-is-the-trinity', 'do-all-religions-lead-to-god'],
   },
   {
     slug: 'how-to-handle-doubt',
@@ -330,6 +330,169 @@ export const ANSWERS: Answer[] = [
       'How do I know my faith is real?',
       'Where can I find good answers to my questions?',
     ],
-    related: ['does-god-exist', 'resurrection-evidence', 'problem-of-evil'],
+    related: ['does-god-exist', 'resurrection-evidence', 'problem-of-evil', 'why-pray-if-god-knows-everything'],
+  },
+  {
+    slug: 'do-all-religions-lead-to-god',
+    category: 'religions',
+    question: 'Don’t all religions lead to the same God?',
+    shortAnswer:
+      'It is a generous instinct, and it rightly honors the sincerity and wisdom found in many faiths. Yet the world’s religions do not actually claim to be climbing the same mountain. They describe ultimate reality very differently: one personal God, many gods, or an impersonal absolute. They disagree about the human problem and its solution, and about who Jesus is. Saying they are all the same can quietly ignore what their own followers believe. Christians can respect others deeply while holding that Jesus uniquely reveals God and reconciles us to him, and they can welcome honest, friendly conversation about where the paths truly differ.',
+    keyPoints: [
+      'Many religions contain real wisdom and sincere devotion worth respecting.',
+      'Religions give conflicting answers about God, sin and salvation.',
+      'Treating every faith as the same can overlook what its followers actually believe.',
+      'Christians hold that Jesus uniquely reveals God and brings people to him.',
+    ],
+    scriptures: ['John 14:6', 'Acts 4:12', 'Acts 17:22-31', '1 Peter 3:15'],
+    followUps: [
+      'How is Christianity different from other religions?',
+      'How can I talk respectfully with a friend of another faith?',
+      'Isn’t it arrogant to think one religion is true?',
+    ],
+    related: ['is-jesus-the-only-way', 'what-about-those-who-never-heard', 'who-is-jesus'],
+  },
+  {
+    slug: 'what-about-those-who-never-heard',
+    category: 'religions',
+    question: 'What happens to people who never hear about Jesus?',
+    shortAnswer:
+      'This question usually comes from a good place: concern for people we will never meet. Scripture assures us that God is perfectly just and merciful, that he judges people according to the light they have, and that he wants all people to be saved. Everyone has some knowledge of God through creation and conscience. Christians differ on the details. Some believe salvation always comes through hearing and believing the gospel, while others hope God may apply Christ’s work to those who respond to the light they received. All agree that any salvation comes through Jesus alone, and that the right response is to share the good news gladly.',
+    keyPoints: [
+      'God is perfectly just and will judge every person fairly.',
+      'Scripture says God desires all people to be saved.',
+      'Creation and conscience give every person some knowledge of God.',
+      'Christians differ on details but agree salvation comes only through Jesus.',
+      'The question should move believers toward mission, not anxiety.',
+    ],
+    scriptures: ['Genesis 18:25', 'Romans 1:19-20', '1 Timothy 2:3-6', 'Romans 10:13-15'],
+    followUps: [
+      'What happens to babies who die?',
+      'Is it fair for God to judge people who never heard?',
+      'Why should I share my faith?',
+    ],
+    related: ['is-jesus-the-only-way', 'do-all-religions-lead-to-god', 'is-hell-fair', 'how-is-a-person-saved'],
+  },
+  {
+    slug: 'did-jesus-claim-to-be-god',
+    category: 'jesus',
+    question: 'Did Jesus ever actually claim to be God?',
+    shortAnswer:
+      'Some people say Jesus never claimed to be God and that the idea came later. A careful reading of the Gospels suggests otherwise, even though Jesus usually revealed his identity through actions and titles rather than a single slogan. He forgave sins committed against others, something only the offended God can do. He called himself Lord of the Sabbath, accepted worship, and applied the divine name I AM to himself, which is why his hearers picked up stones. At his trial he identified himself with the Son of Man in Daniel, who receives everlasting dominion. These claims appear in Mark, the earliest Gospel, not only in John.',
+    keyPoints: [
+      'Jesus forgave sins, which his hearers saw as something only God could do.',
+      'He took the divine name I AM for himself and accepted worship.',
+      'At his trial he identified himself with the divine Son of Man in Daniel.',
+      'These claims appear in Mark, the earliest Gospel, not only in John.',
+    ],
+    scriptures: ['Mark 2:5-12', 'John 8:58-59', 'Mark 14:61-64', 'Daniel 7:13-14', 'John 20:28'],
+    followUps: [
+      'Why didn’t Jesus say plainly that he was God?',
+      'What does the title Son of Man mean?',
+      'Did the early church invent the divinity of Jesus?',
+    ],
+    related: ['who-is-jesus', 'what-is-the-trinity', 'did-jesus-really-exist', 'resurrection-evidence'],
+  },
+  {
+    slug: 'are-there-contradictions-in-the-bible',
+    category: 'bible',
+    question: 'Are there contradictions in the Bible?',
+    shortAnswer:
+      'Readers do notice passages that seem to disagree, such as different details in the Gospel accounts of the same event, and Christians have studied these carefully for centuries. Many apparent contradictions dissolve once we remember that ancient writers often summarized, arranged material by theme rather than strict order, and wrote from different vantage points, much as honest witnesses do today. Some differences come from the copying of numbers or names, which textual study can often trace. A few passages remain hard, and it is fine to say so. But no difficulty overturns the Bible’s central message, and the variety of accounts reflects independent testimony rather than collusion.',
+    keyPoints: [
+      'Different details often reflect different witnesses, not errors.',
+      'Ancient writers summarized and arranged material in ways modern readers may not expect.',
+      'Some difficulties come from copying, which textual study can often trace.',
+      'Remaining hard passages do not change any central Christian teaching.',
+    ],
+    scriptures: ['Luke 1:1-4', 'John 20:30-31', '2 Timothy 3:16-17', 'Proverbs 25:2'],
+    followUps: [
+      'Why do the Gospels tell the resurrection differently?',
+      'How should I handle a passage I cannot reconcile?',
+      'What does it mean that the Bible is inspired?',
+    ],
+    related: ['is-the-bible-reliable', 'who-chose-the-books-of-the-bible', 'resurrection-evidence'],
+  },
+  {
+    slug: 'is-hell-fair',
+    category: 'salvation',
+    question: 'Is it fair for a loving God to send people to hell?',
+    shortAnswer:
+      'Few teachings are harder, and Christians should speak about hell with tears rather than glee. Jesus himself spoke of it often, as a warning given in love. Scripture presents hell not as God delighting in punishment, but as the just outcome of rejecting the God who is the source of all life and goodness. Justice matters: we rightly want evil to be answered, and a God who ignored it would not be good. Christians hold differing views on the nature and duration of hell, but all agree that God is perfectly fair, takes no pleasure in the death of the wicked, and has opened a way of mercy through the cross.',
+    keyPoints: [
+      'Jesus spoke about hell as a loving warning.',
+      'A good God must finally answer evil rather than ignore it.',
+      'Hell is the outcome of rejecting the God who is the source of all good.',
+      'God takes no pleasure in judgment and offers mercy to all through Jesus.',
+      'Christians hold differing views on the nature and duration of hell.',
+    ],
+    scriptures: ['Ezekiel 33:11', 'Matthew 10:28', '2 Peter 3:9', 'Romans 6:23'],
+    followUps: [
+      'Is hell eternal conscious punishment?',
+      'Why would a loving God judge anyone?',
+      'What about people who never heard the gospel?',
+    ],
+    related: ['how-is-a-person-saved', 'what-about-those-who-never-heard', 'problem-of-evil', 'is-jesus-the-only-way'],
+  },
+  {
+    slug: 'old-testament-violence',
+    category: 'morality',
+    question: 'Why does the Old Testament describe God commanding violence?',
+    shortAnswer:
+      'These passages are troubling, and serious Christians do not wave them away. A few things help. The conquest commands were limited to a specific time, place and people; they were never a standing command for God’s people. The text describes the Canaanite nations as practicing grave evils, including child sacrifice, and says God waited centuries before judging them. Ancient war reports often used sweeping language that went beyond literal events, as other passages in the same books suggest. Israel itself faced the same judgment when it did the same things. And the whole story moves toward Jesus, who forbade his followers to spread his kingdom by the sword.',
+    keyPoints: [
+      'The conquest commands were tied to one moment and were never a general command.',
+      'Scripture presents them as judgment on grave evil after long patience.',
+      'Ancient war accounts often used sweeping, hyperbolic language.',
+      'Israel was held to the same standard and was also judged.',
+      'Jesus forbade his followers to advance his kingdom by violence.',
+    ],
+    scriptures: ['Genesis 15:16', 'Deuteronomy 9:4-5', 'Leviticus 18:24-28', 'Matthew 26:52'],
+    followUps: [
+      'Is the God of the Old Testament different from Jesus?',
+      'How should Christians read hard passages?',
+      'Does the Bible approve of slavery?',
+    ],
+    related: ['moral-argument', 'problem-of-evil', 'are-there-contradictions-in-the-bible', 'is-hell-fair'],
+  },
+  {
+    slug: 'why-pray-if-god-knows-everything',
+    category: 'christian-living',
+    question: 'Why pray if God already knows everything?',
+    shortAnswer:
+      'Jesus said our Father knows what we need before we ask, and then immediately taught his disciples how to pray. So prayer is not about informing God. It is about relationship: children speak with their father not because he lacks information, but because they love and trust him. Scripture also teaches that God freely chooses to work through the prayers of his people, so prayer genuinely matters in how he acts. And prayer changes us, aligning our desires with his, quieting our fears, and reminding us who is really in charge. Even when answers are not what we expect, prayer keeps us close to the one who cares for us.',
+    keyPoints: [
+      'Prayer is relationship with God, not information for him.',
+      'God chooses to act through the prayers of his people.',
+      'Prayer shapes our desires and quiets our fears.',
+      'Jesus taught persistent, trusting prayer.',
+    ],
+    scriptures: ['Matthew 6:7-13', 'James 5:16', 'Philippians 4:6-7', 'Luke 18:1-8'],
+    followUps: [
+      'Why does God sometimes seem not to answer?',
+      'How should I pray when I do not know what to say?',
+      'Does prayer change God’s mind?',
+    ],
+    related: ['how-to-handle-doubt', 'what-does-the-bible-say-about-anxiety', 'does-god-exist'],
+  },
+  {
+    slug: 'what-does-the-bible-say-about-anxiety',
+    category: 'christian-living',
+    question: 'What does the Bible say about anxiety?',
+    shortAnswer:
+      'Scripture speaks to anxious hearts with remarkable tenderness. Many faithful people in the Bible were afraid or overwhelmed, including David in the Psalms and Jesus himself in Gethsemane, so anxiety is not a sign of weak faith. God invites us to bring our worries to him in prayer, to remember that he cares for us, and to live one day at a time. His peace is promised, not as the absence of trouble, but as his presence within it. Caring for body and mind also honors God, so seeking help from a doctor or counselor is wise, not faithless. Anxious believers are held by a faithful God.',
+    keyPoints: [
+      'Anxiety is a common human struggle, not proof of weak faith.',
+      'God invites us to bring every worry to him in prayer.',
+      'His peace is his presence in trouble, not merely its absence.',
+      'Seeking medical or counseling help is a wise and faithful step.',
+    ],
+    scriptures: ['Philippians 4:6-7', '1 Peter 5:7', 'Matthew 6:25-34', 'Psalm 94:19', 'Matthew 26:36-39'],
+    followUps: [
+      'Is it a sin to feel anxious?',
+      'How can I pray when I feel overwhelmed?',
+      'Should a Christian take medication for anxiety?',
+    ],
+    related: ['why-pray-if-god-knows-everything', 'how-to-handle-doubt', 'problem-of-evil'],
   },
 ];
