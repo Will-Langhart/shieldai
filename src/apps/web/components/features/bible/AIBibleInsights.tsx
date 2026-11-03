@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { 
   Brain, 
   BookOpen, 
@@ -42,6 +42,7 @@ import {
   X
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
+import { buildSavedInsightsUrl } from '../../../lib/saved-insights-url'
 import { AIDiagnostics } from './AIDiagnostics'
 import { DenominationSelector } from '../../ui/DenominationSelector'
 
@@ -125,6 +126,15 @@ interface AIBibleInsightsProps {
   version: string
 }
 
+const getAuthToken = async (): Promise<string | null> => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    return session?.access_token || null
+  } catch (error) {
+    return null
+  }
+}
+
 export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
   const [insights, setInsights] = useState<AIInsights | null>(null)
   const [loading, setLoading] = useState(false)
@@ -182,17 +192,10 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
     })
   }, [])
 
-  // Load saved insights for this passage
-  useEffect(() => {
-    if (passage) {
-      loadSavedInsights()
-    }
-  }, [passage])
-
-  const loadSavedInsights = async () => {
+  const loadSavedInsights = useCallback(async (isCurrent: () => boolean = () => true) => {
     try {
       const authToken = await getAuthToken()
-      const response = await fetch(`/api/ai-insights/by-passage?passage_reference=${encodeURIComponent(passage.reference)}&bible_version=${version}`, {
+      const response = await fetch(buildSavedInsightsUrl(passage.reference, version), {
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -201,21 +204,25 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
       if (response.ok) {
         const data = await response.json()
-        setSavedInsights(data.insights || [])
+        if (isCurrent()) {
+          setSavedInsights(data.insights || [])
+        }
       }
     } catch (error) {
       console.error('Failed to load saved insights:', error)
     }
-  }
+  }, [passage, version])
 
-  const getAuthToken = async (): Promise<string | null> => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      return session?.access_token || null
-    } catch (error) {
-      return null
+  // Load saved insights for this passage and version
+  useEffect(() => {
+    let ignore = false
+    if (passage) {
+      loadSavedInsights(() => !ignore)
     }
-  }
+    return () => {
+      ignore = true
+    }
+  }, [passage, loadSavedInsights])
 
   const testWithMockData = async () => {
     setLoading(true)
