@@ -13,7 +13,7 @@
    ```
 
 2. **Find Your API Key**
-   - Look for the key: `AIzaSyCdReXcamaFj0d6eM03Ro1kSzkiJbbGhMg`
+   - Look for the key: the key stored in Vercel as `GOOGLE_PLACES_API_KEY`
 
 3. **Update Application Restrictions**
    - Click on the API key
