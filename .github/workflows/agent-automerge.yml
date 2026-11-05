@@ -52,7 +52,7 @@ jobs:
     steps:
       # main's copy of the gate, never the PR's, and main's migrations (a new
       # one is judged against them; its own SQL is read through the API).
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
           sparse-checkout: |
