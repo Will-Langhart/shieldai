@@ -11,6 +11,7 @@ import { DenominationSelector } from '../../ui/DenominationSelector'
 import { UserButton } from '../../auth/UserButton'
 import { AuthModal } from '../../auth/AuthModal'
 import { useWarmTheme } from '../../../hooks/useWarmTheme'
+import { APOLOGETICS_PLACEHOLDERS, THINKING_PHRASES, nextRotationIndex } from '../../../lib/chat-rotating-labels'
 import {
   Plus,
   Search,
@@ -144,39 +145,6 @@ export function Chat() {
   // Follow the stream only while the reader is already at the bottom.
   const stickToBottomRef = useRef(true)
 
-  // Rotating labels shown while the multi-agent graph works before the first
-  // token (retrieval + specialists run first, ~a few seconds), so the wait reads
-  // as purposeful rather than slow.
-  const thinkingPhrases = [
-    'Searching Scripture…',
-    'Consulting the specialists…',
-    'Weighing the arguments…',
-    'Grounding the response…',
-  ]
-
-  const apologeticsQuestions = [
-    "How can we know God exists?",
-    "What evidence supports the resurrection?",
-    "How do you explain the problem of evil?",
-    "Is the Bible historically reliable?",
-    "What about other religions?",
-    "How can God be three in one?",
-    "Why does God allow suffering?",
-    "What about evolution vs creation?",
-    "How do we know Jesus was divine?",
-    "What about the reliability of miracles?",
-    "How can we trust the Bible?",
-    "What about the problem of hell?",
-    "How do you explain the Trinity?",
-    "What about the age of the earth?",
-    "How can we know truth exists?",
-    "What about the problem of pain?",
-    "How do we know God is good?",
-    "What about biblical contradictions?",
-    "How can we prove God's existence?",
-    "What about the problem of evil?"
-  ]
-
   // Sidebar toggle SVG matching Claude's layout icon style
   const SidebarToggleIcon = ({ className = '' }: { className?: string }) => (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className={className}>
@@ -276,7 +244,7 @@ export function Chat() {
   // Cycle through apologetics questions
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentPlaceholderIndex((prev) => (prev + 1) % apologeticsQuestions.length)
+      setCurrentPlaceholderIndex((prev) => nextRotationIndex(prev, APOLOGETICS_PLACEHOLDERS.length))
     }, 3000) // Change every 3 seconds
 
     return () => clearInterval(interval)
@@ -286,7 +254,7 @@ export function Chat() {
   useEffect(() => {
     if (!isLoading) { setThinkingIdx(0); return }
     const interval = setInterval(() => {
-      setThinkingIdx((prev) => (prev + 1) % thinkingPhrases.length)
+      setThinkingIdx((prev) => nextRotationIndex(prev, THINKING_PHRASES.length))
     }, 2200)
     return () => clearInterval(interval)
   }, [isLoading])
@@ -696,7 +664,7 @@ export function Chat() {
             handleSendMessage()
           }
         }}
-        placeholder={hero ? apologeticsQuestions[currentPlaceholderIndex] : 'Reply to Shield AI…'}
+        placeholder={hero ? APOLOGETICS_PLACEHOLDERS[currentPlaceholderIndex] : 'Reply to Shield AI…'}
         className={`block max-h-[200px] w-full resize-none bg-transparent px-4 pt-3.5 text-[15px] leading-6 text-shield-fg placeholder:text-shield-muted/80 focus:outline-none scrollbar-hide ${
           hero ? 'min-h-[60px]' : 'min-h-[28px]'
         }`}
@@ -1010,7 +978,7 @@ export function Chat() {
               </h2>
               {renderComposer(true)}
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {apologeticsQuestions.slice(0, 4).map((q) => (
+                {APOLOGETICS_PLACEHOLDERS.slice(0, 4).map((q) => (
                   <button
                     key={q}
                     onClick={() => {
@@ -1051,7 +1019,7 @@ export function Chat() {
                     <div className="chat-message-in mb-8 flex items-center gap-2.5">
                       <ShieldMark className="chat-mark-pulse h-5 w-5 text-shield-brand" />
                       <span key={thinkingIdx} className="chat-shimmer chat-message-in font-serif text-[15px] italic">
-                        {thinkingPhrases[thinkingIdx]}
+                        {THINKING_PHRASES[thinkingIdx]}
                       </span>
                     </div>
                   )}
