@@ -165,10 +165,8 @@ The active Bible component tree is: `Bible.tsx` → `MarginNotes`, `Denomination
 - `EnhancedBibleNavigation.tsx`, `MobileBibleNavigation.tsx`, `QuickNavigation.tsx` — imported by `AIBibleInsights` or `EnhancedInsightsQuery`
 
 **Zero imports — dead code:**
-- `EnhancedBibleInterface.tsx` (432 lines) — never imported anywhere
 - `InsightsHistory.tsx` (1208 lines) — never imported anywhere; superseded by `EnhancedInsightsQuery`
 - `SmartTextSelection.tsx` (451 lines) — never imported anywhere
-- `UltimateBibleInterface.tsx` (553 lines) — never imported anywhere
 - `BibleReader.tsx` — exported from `index.ts` but only used there; not imported by any page or component that renders
 
 **`index.ts` exports:** Only `BibleSearch` and `BibleReader`. Neither is imported by any page directly — pages import directly from `Bible.tsx`.
@@ -305,10 +303,8 @@ The feature gating **is wired into `/api/chat`** — gentle mode checks `ai_conv
 - `lib/multilingual-service.ts.backup` — duplicate of `lib/multilingual-service.ts`
 
 ### Unused components
-- `components/features/bible/EnhancedBibleInterface.tsx` (432 lines) — zero imports
 - `components/features/bible/InsightsHistory.tsx` (1208 lines) — zero imports, superseded by `EnhancedInsightsQuery`
 - `components/features/bible/SmartTextSelection.tsx` (451 lines) — zero imports
-- `components/features/bible/UltimateBibleInterface.tsx` (553 lines) — zero imports
 - `components/auth/AuthModal.tsx` — zero imports
 - `components/layout/Header.tsx` and `components/layout/Footer.tsx` — may be unused (pages import root-level `components/Header.tsx` not `components/layout/Header.tsx`)
 
