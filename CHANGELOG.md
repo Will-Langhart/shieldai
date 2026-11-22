@@ -4,6 +4,7 @@ One line per merged PR, newest first. The builder agent adds its own.
 
 ## Unreleased
 
+- fix(web): the Bible reader's ambient AI insight now uses the current denomination after it changes (`loadPassage` no longer holds a stale `loadAmbientInsight`); fix six exhaustive-deps warnings in `Bible.tsx` without extra fetches, and move book selection and insight payload parsing into tested `resolveBookSelection()` / `normalizeInsightPayload()` helpers (`lib/bible-reader.ts`) (#131).
 - chore(web): delete the unused `EnhancedBibleInterface` and `UltimateBibleInterface` components (zero imports), clearing their exhaustive-deps lint warnings; no page changes (#125).
 - fix(web): InsightDetailView builds its responses/interactions URLs with tested `insightResponsesUrl()` / `insightInteractionsUrl()` helpers that encode the insight id, and wraps the loaders in `useCallback` keyed on the insight id, fixing its exhaustive-deps warning (#120).
 - refactor(web): move InsightsHistory's history query building into a tested pure `buildInsightsHistoryQuery()` helper (`lib/insights-history-query.ts`) and fix its mount effect's exhaustive-deps warning; still one history and one statistics request on mount, no behaviour change (#119).
