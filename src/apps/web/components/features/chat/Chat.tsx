@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useAuth } from '../../../contexts/AuthContext'
 import { chatService, AGENT_CHAT_ENABLED } from '../../../services/chatService'
@@ -6,6 +6,7 @@ import { useRouter } from 'next/router'
 import { navItems, isActivePath } from '../../layout/navItems'
 import { EnhancedMessage, type AgentState } from './EnhancedMessage'
 import type { WidgetEnvelope } from '../../../lib/scripture/widgets'
+import { takePrefillQuery } from '../../../lib/chat-prefill'
 import { ShieldMark } from './ShieldMark'
 import { DenominationSelector } from '../../ui/DenominationSelector'
 import { UserButton } from '../../auth/UserButton'
@@ -325,20 +326,14 @@ export function Chat() {
   // spends a free-tier message without the user pressing send.
   useEffect(() => {
     if (!router.isReady) return
-    const q = router.query.q
-    if (typeof q !== 'string' || !q.trim()) return
-    setInputMessage(q.slice(0, 500))
+    const taken = takePrefillQuery(router.query)
+    if (!taken) return
+    setInputMessage(taken.prefill)
     textareaRef.current?.focus()
-    const { q: _q, ...rest } = router.query
-    router.replace({ pathname: router.pathname, query: rest }, undefined, { shallow: true })
-  }, [router.isReady, router.query.q])
+    router.replace({ pathname: router.pathname, query: taken.rest }, undefined, { shallow: true })
+  }, [router])
 
-  // Load conversations on mount
-  useEffect(() => {
-    loadConversations()
-  }, [session])
-
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     if (!session) {
       setConversations([])
       return
@@ -355,7 +350,12 @@ export function Chat() {
     } catch (error) {
       console.error('❌ Error loading conversations:', error)
     }
-  }
+  }, [session])
+
+  // Load conversations on mount and whenever the session changes
+  useEffect(() => {
+    loadConversations()
+  }, [loadConversations])
 
   const loadConversation = async (conversationId: string) => {
     try {
