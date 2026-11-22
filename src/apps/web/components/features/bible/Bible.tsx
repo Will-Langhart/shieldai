@@ -11,6 +11,7 @@ import { BibleLibrary } from './BibleLibrary'
 import { PassageInsightCard, PassageInsight } from './PassageInsightCard'
 import { getBookMeta, TESTAMENT_LABEL } from './bookCatalog'
 import { useAuth } from '../../../contexts/AuthContext'
+import { normalizeInsightPayload, resolveBookSelection } from '../../../lib/bible-reader'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -208,9 +209,11 @@ export function Bible() {
 
   // ── Boot ──────────────────────────────────────────────────────────────────
 
+  // Latest selection, for callbacks/effects that read it without re-running on navigation
+  const selectionRef = useRef({ selectedBook, selectedBookId, selectedChapter, currentPassage })
+  selectionRef.current = { selectedBook, selectedBookId, selectedChapter, currentPassage }
+
   useEffect(() => { loadVersions() }, [])
-  useEffect(() => { loadProgress() }, [user])
-  useEffect(() => { if (progressLoaded) loadBooks() }, [selectedVersion, progressLoaded])
   useEffect(() => { loadAudioBibles() }, [])
 
   // Side panels become overlay drawers below the lg breakpoint
@@ -259,28 +262,6 @@ export function Bible() {
     } catch { }
   }
 
-  // ── Books (dynamic per version) ───────────────────────────────────────────
-
-  const loadBooks = useCallback(async () => {
-    setBooksLoading(true)
-    try {
-      const res = await fetch(`/api/bible/books?versionId=${selectedVersion}`)
-      const d = await res.json()
-      if (d.books && d.books.length > 0) {
-        setBooks(d.books)
-        // Check if selectedBook exists in new list; if not, pick the first
-        const found = d.books.find((b: BibleBook) => b.name === selectedBook || b.id === selectedBookId)
-        const book = found || d.books[0]
-        if (!found) {
-          setSelectedBook(book.name); setSelectedBookId(book.id)
-          setSelectedChapter(1)
-        }
-        await loadChapters(book.id, selectedVersion)
-      }
-    } catch { }
-    finally { setBooksLoading(false) }
-  }, [selectedVersion, selectedBook, selectedBookId])
-
   // ── Chapters (dynamic per book) ───────────────────────────────────────────
 
   const loadChapters = useCallback(async (bookId: string, versionId: string): Promise<BibleChapter[]> => {
@@ -297,6 +278,30 @@ export function Bible() {
     } catch { }
     return []
   }, [])
+
+  // ── Books (dynamic per version) ───────────────────────────────────────────
+
+  const loadBooks = useCallback(async () => {
+    setBooksLoading(true)
+    try {
+      const res = await fetch(`/api/bible/books?versionId=${selectedVersion}`)
+      const d = await res.json()
+      if (d.books && d.books.length > 0) {
+        setBooks(d.books)
+        // Keep the current book if the new list has it; otherwise pick the first
+        const { selectedBook, selectedBookId } = selectionRef.current
+        const resolved = resolveBookSelection<BibleBook>(d.books, selectedBook, selectedBookId)
+        if (!resolved) return
+        const { book, changed } = resolved
+        if (changed) {
+          setSelectedBook(book.name); setSelectedBookId(book.id)
+          setSelectedChapter(1)
+        }
+        await loadChapters(book.id, selectedVersion)
+      }
+    } catch { }
+    finally { setBooksLoading(false) }
+  }, [selectedVersion, loadChapters])
 
   // ── Sections ──────────────────────────────────────────────────────────────
 
@@ -341,7 +346,7 @@ export function Bible() {
 
   useEffect(() => {
     if (showAudio && selectedAudioId && selectedChapterId) loadAudio(selectedAudioId, selectedChapterId)
-  }, [showAudio, selectedAudioId, selectedChapterId])
+  }, [showAudio, selectedAudioId, selectedChapterId, loadAudio])
 
   // ── Reading progress ──────────────────────────────────────────────────────
 
@@ -369,6 +374,9 @@ export function Bible() {
     setProgressLoaded(true)
   }, [user])
 
+  useEffect(() => { loadProgress() }, [loadProgress])
+  useEffect(() => { if (progressLoaded) loadBooks() }, [loadBooks, progressLoaded])
+
   // Load passage after progress loads + books ready
   useEffect(() => {
     if (progressLoaded && books.length > 0) {
@@ -379,6 +387,86 @@ export function Bible() {
       }
     }
   }, [progressLoaded, books]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Ambient AI insight ────────────────────────────────────────────────────
+
+  const loadAmbientInsight = useCallback(async (passage: BiblePassage) => {
+    if (!passage.verses.length) return
+    setAmbientLoading(true)
+    setInsightFailed(false)
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
+      const res = await fetch('/api/bible/ai-insights', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ passage, version: selectedVersion, denomination }),
+      })
+      if (!res.ok) { setInsightFailed(true); return }
+
+      const ins = normalizeInsightPayload(await res.json())
+
+      if (!ins.explanation) { setInsightFailed(true); return }
+
+      const insight: PassageInsight = {
+        explanation: ins.explanation,
+        keyThemes: ins.keyThemes || [],
+        crossReferences: ins.crossReferences || [],
+        studyQuestions: ins.studyQuestions || [],
+        historicalContext: ins.historicalContext,
+        theologicalMeaning: ins.theologicalMeaning,
+        practicalApplication: ins.practicalApplication,
+        denomination: ins.denomination,
+      }
+      setAmbientInsight(insight)
+
+      // Save to insights history (non-blocking)
+      if (session?.access_token && user?.id) {
+        fetch('/api/ai-insights/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+          body: JSON.stringify({
+            passage_reference: passage.reference,
+            passage_text: passage.text,
+            bible_version: passage.version?.name || selectedVersion,
+            explanation: insight.explanation,
+            key_themes: insight.keyThemes,
+            cross_references: insight.crossReferences,
+            study_questions: insight.studyQuestions,
+            historical_context: insight.historicalContext || '',
+            theological_meaning: insight.theologicalMeaning || '',
+            practical_application: insight.practicalApplication || '',
+            prayer_points: ins.prayerPoints || [],
+            denomination: insight.denomination || denomination || null,
+            tags: insight.keyThemes?.slice(0, 5) || [],
+          }),
+        }).catch(() => { /* save failure is non-critical */ })
+      }
+    } catch { setInsightFailed(true) }
+    finally { setAmbientLoading(false) }
+  }, [selectedVersion, denomination, session, user])
+
+  // ── Compare translation ───────────────────────────────────────────────────
+
+  const loadComparePassage = useCallback(async (bookName: string, chapter: number, versionId: string) => {
+    if (!versionId) return
+    setCompareLoading(true); setComparePassage(null)
+    try {
+      const res = await fetch(`/api/bible/passage?reference=${encodeURIComponent(`${bookName} ${chapter}`)}&versionId=${versionId}`)
+      const d = await res.json()
+      if (res.ok) {
+        const raw = d.passage || d
+        const verses = extractVersesFromPassage(raw, bookName, chapter)
+        const vInfo = availableVersions.find(v => v.id === versionId)
+        setComparePassage({
+          id: raw.id || '', reference: raw.reference || `${bookName} ${chapter}`,
+          text: verses.map(v => v.text).join(' '), verses,
+          version: { id: versionId, name: vInfo?.name || '', description: '', language: { id: 'eng', name: 'English' }, type: 'text' },
+        })
+      }
+    } catch { }
+    finally { setCompareLoading(false) }
+  }, [availableVersions])
 
   // ── Passage loading ───────────────────────────────────────────────────────
 
@@ -428,72 +516,7 @@ export function Bible() {
     } finally {
       setIsLoading(false)
     }
-  }, [selectedVersion, availableVersions, showCompare, compareVersion, loadSections])
-
-  // ── Ambient AI insight ────────────────────────────────────────────────────
-
-  const loadAmbientInsight = useCallback(async (passage: BiblePassage) => {
-    if (!passage.verses.length) return
-    setAmbientLoading(true)
-    setInsightFailed(false)
-    try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`
-      const res = await fetch('/api/bible/ai-insights', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ passage, version: selectedVersion, denomination }),
-      })
-      if (!res.ok) { setInsightFailed(true); return }
-
-      const d = await res.json()
-      let ins = d.insights || d
-
-      // Sometimes the server returns the raw JSON string in explanation when its own
-      // JSON.parse fails — detect and re-parse
-      if (ins.explanation && typeof ins.explanation === 'string' && ins.explanation.trim().startsWith('{')) {
-        try { ins = { ...ins, ...JSON.parse(ins.explanation) } } catch { /* keep as-is */ }
-      }
-
-      if (!ins.explanation) { setInsightFailed(true); return }
-
-      const insight: PassageInsight = {
-        explanation: ins.explanation,
-        keyThemes: ins.keyThemes || [],
-        crossReferences: ins.crossReferences || [],
-        studyQuestions: ins.studyQuestions || [],
-        historicalContext: ins.historicalContext,
-        theologicalMeaning: ins.theologicalMeaning,
-        practicalApplication: ins.practicalApplication,
-        denomination: ins.denomination,
-      }
-      setAmbientInsight(insight)
-
-      // Save to insights history (non-blocking)
-      if (session?.access_token && user?.id) {
-        fetch('/api/ai-insights/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-          body: JSON.stringify({
-            passage_reference: passage.reference,
-            passage_text: passage.text,
-            bible_version: passage.version?.name || selectedVersion,
-            explanation: insight.explanation,
-            key_themes: insight.keyThemes,
-            cross_references: insight.crossReferences,
-            study_questions: insight.studyQuestions,
-            historical_context: insight.historicalContext || '',
-            theological_meaning: insight.theologicalMeaning || '',
-            practical_application: insight.practicalApplication || '',
-            prayer_points: ins.prayerPoints || [],
-            denomination: insight.denomination || denomination || null,
-            tags: insight.keyThemes?.slice(0, 5) || [],
-          }),
-        }).catch(() => { /* save failure is non-critical */ })
-      }
-    } catch { setInsightFailed(true) }
-    finally { setAmbientLoading(false) }
-  }, [selectedVersion, denomination, session, user])
+  }, [selectedVersion, availableVersions, showCompare, compareVersion, loadSections, saveProgress, loadAmbientInsight, loadComparePassage])
 
   // ── Verse insight ─────────────────────────────────────────────────────────
 
@@ -514,12 +537,7 @@ export function Bible() {
         body: JSON.stringify({ passage: versePassage, version: selectedVersion, denomination }),
       })
       if (res.ok) {
-        const d = await res.json()
-        let ins = d.insights || d
-        // Re-parse if explanation contains raw JSON
-        if (ins.explanation?.trim().startsWith('{')) {
-          try { ins = { ...ins, ...JSON.parse(ins.explanation) } } catch { /* keep */ }
-        }
+        const ins = normalizeInsightPayload(await res.json())
         const text = ins.explanation || ins.theologicalMeaning || ''
         if (text) { verseInsightCache.current[key] = text; setVerseInsight(text) }
       }
@@ -527,31 +545,12 @@ export function Bible() {
     finally { setVerseInsightLoading(false) }
   }, [selectedBook, selectedBookId, selectedChapter, selectedVersion, denomination])
 
-  // ── Compare translation ───────────────────────────────────────────────────
-
-  const loadComparePassage = useCallback(async (bookName: string, chapter: number, versionId: string) => {
-    if (!versionId) return
-    setCompareLoading(true); setComparePassage(null)
-    try {
-      const res = await fetch(`/api/bible/passage?reference=${encodeURIComponent(`${bookName} ${chapter}`)}&versionId=${versionId}`)
-      const d = await res.json()
-      if (res.ok) {
-        const raw = d.passage || d
-        const verses = extractVersesFromPassage(raw, bookName, chapter)
-        const vInfo = availableVersions.find(v => v.id === versionId)
-        setComparePassage({
-          id: raw.id || '', reference: raw.reference || `${bookName} ${chapter}`,
-          text: verses.map(v => v.text).join(' '), verses,
-          version: { id: versionId, name: vInfo?.name || '', description: '', language: { id: 'eng', name: 'English' }, type: 'text' },
-        })
-      }
-    } catch { }
-    finally { setCompareLoading(false) }
-  }, [availableVersions])
-
+  // Fires only when compare is toggled or its version changes; loadPassage
+  // already reloads the compare passage on navigation.
   useEffect(() => {
+    const { currentPassage, selectedBook, selectedChapter } = selectionRef.current
     if (showCompare && compareVersion && currentPassage) loadComparePassage(selectedBook, selectedChapter, compareVersion)
-  }, [showCompare, compareVersion])
+  }, [showCompare, compareVersion, loadComparePassage])
 
   // ── Denomination recommendation ───────────────────────────────────────────
 
