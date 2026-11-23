@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import BrandLogo from './BrandLogo'
 
 const Footer = () => {
   return (
@@ -10,7 +11,7 @@ const Footer = () => {
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <img src="/logo.png" alt="" className="h-8 w-8 rounded-lg" />
+              <BrandLogo size={32} className="h-8 w-8 rounded-lg" />
               <span className="font-serif text-xl font-semibold text-shield-fg">Shield AI</span>
             </div>
             <p className="text-shield-muted text-sm max-w-md">
