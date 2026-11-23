@@ -4,7 +4,7 @@ async function testPineconeIndexHost() {
   console.log('🧪 Pinecone Test with Index Host Environment Format\n');
   
   try {
-    const apiKey = 'pcsk_6La4fD_KxUwby6c62E93h7pPAdgjhSG5szTKgqh9Pych3nSwCPVx1Ze5mFEzuFixbqszw1';
+    const apiKey = process.env.PINECONE_API_KEY;
     
     // Based on your index host URL: https://shieldai-smb4qh6.svc.aped-4627-b74a.pinecone.io
     // The environment might be: aped-4627-b74a

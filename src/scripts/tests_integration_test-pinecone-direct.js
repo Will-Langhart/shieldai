@@ -5,7 +5,7 @@ async function testPineconeDirect() {
   
   try {
     // Use the credentials directly from your .env.local file
-    const apiKey = 'pcsk_6La4fD_KxUwby6c62E93h7pPAdgjhSG5szTKgqh9Pych3nSwCPVx1Ze5mFEzuFixbqszw1';
+    const apiKey = process.env.PINECONE_API_KEY;
     const environment = 'us-east-1';
     const indexName = 'shieldai';
     

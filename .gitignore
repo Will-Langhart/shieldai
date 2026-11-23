@@ -153,6 +153,10 @@ coverage/
 *.tar.gz
 *.backup
 
+# Secrets: never commit keys or env files
+.env*
+!.env.example
+src/config/secrets/
 # Agent pipeline (docs/agent-pipeline.md) and Playwright output
 planner/
 refill/

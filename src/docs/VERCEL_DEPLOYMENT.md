@@ -33,7 +33,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
 # Pinecone
-PINECONE_API_KEY=pcsk_7EHeL4_MwuoUVnDmfAXDetkY8XzmJmaqcCHj2eeYyQ8j5pgrRvRGFm41NmaypZ9WsxGYa7
+PINECONE_API_KEY=your_pinecone_api_key
 PINECONE_ENVIRONMENT=us-east-1-aws
 PINECONE_INDEX_NAME=shieldai
 

@@ -130,7 +130,7 @@ node tests/test-pinecone-connection.js
 Make sure these are set correctly in your `config/env/.env.local`:
 
 ```bash
-PINECONE_API_KEY=pcsk_6La4fD_KxUwby6c62E93h7pPAdgjhSG5szTKgqh9Pych3nSwCPVx1Ze5mFEzuFixbqszw1
+PINECONE_API_KEY=your_pinecone_api_key
 PINECONE_ENVIRONMENT=us-east-1-aws  # Try different formats
 PINECONE_INDEX_NAME=shieldai
 ```

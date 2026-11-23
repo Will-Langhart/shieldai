@@ -13,7 +13,7 @@
    ```
 
 2. **Find Your API Key**
-   - Look for the key: `AIzaSyCdReXcamaFj0d6eM03Ro1kSzkiJbbGhMg`
+   - Look for the key: `AIza… (old key, revoked)`
 
 3. **Update Application Restrictions**
    - Click on the API key
