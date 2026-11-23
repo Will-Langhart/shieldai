@@ -64,7 +64,7 @@ jobs:
             --allowedTools "Read,Glob,Grep,Write"
             --disallowedTools "Bash,Edit,WebFetch,WebSearch"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ steps.context.outputs.run_claude == 'true' }}
         with:
           name: refill

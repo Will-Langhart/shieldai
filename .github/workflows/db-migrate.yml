@@ -90,7 +90,7 @@ jobs:
     steps:
       - name: Dump production's schema
         run: npx --yes supabase@2.122.0 db dump --db-url "$SUPABASE_DB_URL" -f schema.sql
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: prod-schema
           path: schema.sql
