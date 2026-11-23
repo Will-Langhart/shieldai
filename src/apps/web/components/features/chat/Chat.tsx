@@ -12,6 +12,12 @@ import { UserButton } from '../../auth/UserButton'
 import { AuthModal } from '../../auth/AuthModal'
 import { useWarmTheme } from '../../../hooks/useWarmTheme'
 import {
+  browserSessionStorage,
+  clearPendingMessage,
+  savePendingMessage,
+  takePendingMessage,
+} from './pending-message'
+import {
   Plus,
   Search,
   ChevronDown,
@@ -54,9 +60,6 @@ interface Message {
   agent?: AgentState
 }
 
-// Holds a signed-out user's message while they authenticate. sessionStorage
-// (not state) so it survives the full-page OAuth redirect.
-const PENDING_MESSAGE_KEY = 'shieldai-pending-message'
 const SIDEBAR_KEY = 'shieldai-sidebar-collapsed'
 
 type ChatMode = 'gentle' | 'scholarly' | 'debate'
@@ -548,7 +551,7 @@ export function Chat() {
 
     // Signed-out users can compose, but must authenticate before sending.
     if (!user) {
-      try { sessionStorage.setItem(PENDING_MESSAGE_KEY, inputMessage) } catch {}
+      savePendingMessage(browserSessionStorage(), inputMessage)
       setShowAuthModal(true)
       return
     }
@@ -556,18 +559,19 @@ export function Chat() {
     await sendText(inputMessage)
   }
 
+  // sendText is recreated every render; the effect below reads the latest one
+  // through this ref so it only re-runs when sign-in state changes.
+  const sendTextRef = useRef(sendText)
+  sendTextRef.current = sendText
+
   // Once the user is signed in (via the modal or back from an OAuth redirect),
   // send the message they tried to send while signed out.
   useEffect(() => {
     if (authLoading || !user) return
-    let pending: string | null = null
-    try {
-      pending = sessionStorage.getItem(PENDING_MESSAGE_KEY)
-      sessionStorage.removeItem(PENDING_MESSAGE_KEY)
-    } catch {}
-    if (pending?.trim()) {
+    const pending = takePendingMessage(browserSessionStorage())
+    if (pending) {
       setShowAuthModal(false)
-      sendText(pending)
+      sendTextRef.current(pending)
     }
   }, [user, authLoading])
 
@@ -1092,7 +1096,7 @@ export function Chat() {
           onClose={() => {
             setShowAuthModal(false)
             if (!authSucceededRef.current) {
-              try { sessionStorage.removeItem(PENDING_MESSAGE_KEY) } catch {}
+              clearPendingMessage(browserSessionStorage())
             }
           }}
         />
