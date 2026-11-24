@@ -3,6 +3,7 @@ import { JournalNoteEditor } from './JournalNoteEditor'
 import { devFallbackToken } from '../../../lib/test-token'
 import { insightInteractionsUrl, insightResponsesUrl } from '../../../lib/insight-detail-urls'
 import { ShieldMark } from '../chat/ShieldMark'
+import { GeneratedImage } from './GeneratedImage'
 import {
   Brain,
   BookOpen,
@@ -863,10 +864,10 @@ export function InsightDetailView({
 
             <div className="space-y-4">
               <div className="relative">
-                <img
-                  src={generatedImage.url}
-                  alt={`Visual representation of ${insight.passage_reference}`}
-                  className="w-full rounded-lg shadow-lg"
+                <GeneratedImage
+                  url={generatedImage.url}
+                  reference={insight.passage_reference}
+                  className="w-full h-auto rounded-lg shadow-lg"
                 />
                 <div className="absolute top-4 right-4">
                   <div className="bg-black/50 rounded-lg p-2">

@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Lightbulb
 } from 'lucide-react'
+import { GeneratedImage } from './GeneratedImage'
 
 interface SelectedText {
   id?: string
@@ -431,10 +432,9 @@ export function SmartTextSelection({ passage, onInsightGenerated, onImageGenerat
                 </div>
                 
                 <div className="p-4 bg-shield-panel rounded-lg">
-                  <img
-                    src={generatedImage.url}
-                    alt={`Visual representation of ${selectedText.reference}`}
-                    className="w-full rounded-lg"
+                  <GeneratedImage
+                    url={generatedImage.url}
+                    reference={selectedText.reference}
                   />
                   {generatedImage.revisedPrompt && (
                     <p className="text-xs text-shield-muted mt-2 italic">

@@ -45,6 +45,7 @@ import { supabase } from '../../../lib/supabase'
 import { buildSavedInsightsUrl } from '../../../lib/saved-insights-url'
 import { AIDiagnostics } from './AIDiagnostics'
 import { DenominationSelector } from '../../ui/DenominationSelector'
+import { GeneratedImage } from './GeneratedImage'
 
 interface BiblePassage {
   id: string
@@ -1449,10 +1450,10 @@ export function AIBibleInsights({ passage, version }: AIBibleInsightsProps) {
 
             <div className="space-y-4">
               <div className="relative">
-                <img
-                  src={generatedImage.url}
-                  alt={`Visual representation of ${passage.reference}`}
-                  className="w-full rounded-lg shadow-lg"
+                <GeneratedImage
+                  url={generatedImage.url}
+                  reference={passage.reference}
+                  className="w-full h-auto rounded-lg shadow-lg"
                 />
                 <div className="absolute top-4 right-4">
                   <div className="bg-black bg-opacity-50 rounded-lg p-2">
